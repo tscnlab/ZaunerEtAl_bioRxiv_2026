@@ -145,7 +145,7 @@ light_chest_expanded |>
   imap(\(x, idx) x |> 
     mutate(MEDI = replace_when(MEDI, 
                                wear == "off" & (State.Brown != "sleep" | is.na(State.Brown)) ~ NA,
-                               MEDI >= 10^5 ~ NA
+                               MEDI >= 120000 ~ NA
                                )) |> 
       add_photoperiod(melidos_coordinates[[idx]])
   )
@@ -155,7 +155,7 @@ light_glasses_expanded |>
   imap(\(x, idx) x |> 
     mutate(MEDI = replace_when(MEDI, 
                                wear == "off" & (State.Brown != "sleep" | is.na(State.Brown)) ~ NA,
-                               MEDI >= 10^5 ~ NA
+                               MEDI >= 120000 ~ NA
                                )) |> 
       add_photoperiod(melidos_coordinates[[idx]])
   )
@@ -382,3 +382,11 @@ save(metric_glasses_participanthour,
      metric_glasses_participantday, 
      file = "data/metrics_glasses.RData")
 ```
+
+
+## Session info
+
+```{r}
+sessionInfo()
+```
+

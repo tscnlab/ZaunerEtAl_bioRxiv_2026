@@ -164,8 +164,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <code>M10</code>: midpoint of brightest 10 hours (HH:MM)</li>
 <li>
 <code>L5</code>: midpoint of darkest 5 hours (HH:MM)</li>
-<li>
-<code>MPAT250</code>: midpoint of longest period above 250 lx melanopic EDI (HH:MM)</li>
 </ul>
 </li>
 <li>exposure-history-based:
@@ -191,21 +189,439 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <code>Mean</code>: geometric mean of melanopic EDI (lx)</li>
 </ul>
 </li>
-</ul></section><section id="running-code" class="level2"><h2 class="anchored" data-anchor-id="running-code">Running Code</h2>
-<p>When you click the <strong>Render</strong> button a document will be generated that includes both content and the output of embedded code. You can embed code like this:</p>
+</ul></section><section id="setup" class="level2"><h2 class="anchored" data-anchor-id="setup">Setup</h2>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fl">1</span> <span class="op">+</span> <span class="fl">1</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>[1] 2</code></pre>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://tidyverse.tidyverse.org">tidyverse</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/tscnlab/LightLogR">LightLogR</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://melidosproject.github.io/melidosData/">melidosData</a></span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-</div>
-<p>You can add options to executable code like this</p>
+</section><section id="importing-data" class="level2"><h2 class="anchored" data-anchor-id="importing-data">Importing data</h2>
+<section id="light" class="level3"><h3 class="anchored" data-anchor-id="light">Light</h3>
+<p>In the first step, we import the unaggregated light eposure data for the glasses and the chest. These will be loaded from the <a href="https://github.com/MeLiDosProject">GitHub project page</a>. These data have been imported already, trimmed by trial dates, checked for irregular data and gaps. All of them run on a <code>10 second</code> interval.</p>
 <div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">light_glasses</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://melidosproject.github.io/melidosData/reference/load_data.html">load_data</a></span><span class="op">(</span><span class="st">"light_glasses"</span><span class="op">)</span></span>
+<span><span class="va">light_chest</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://melidosproject.github.io/melidosData/reference/load_data.html">load_data</a></span><span class="op">(</span><span class="st">"light_chest"</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section><section id="sleep" class="level3"><h3 class="anchored" data-anchor-id="sleep">Sleep</h3>
+<p>The sleep data comes from a morning sleep diary. They contain both sleep and wake times.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">sleepdiary</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://melidosproject.github.io/melidosData/reference/load_data.html">load_data</a></span><span class="op">(</span><span class="st">"sleepdiaries"</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section><section id="wear-log" class="level3"><h3 class="anchored" data-anchor-id="wear-log">Wear log</h3>
+<p>The non-wear data comes from an app-based wear log that participants filled in whenever they removed or put on the device(s).</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">wearlog</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://melidosproject.github.io/melidosData/reference/load_data.html">load_data</a></span><span class="op">(</span><span class="st">"wearlog"</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section><section id="combine-light-exposure-data-with-log-and-diary-data" class="level3"><h3 class="anchored" data-anchor-id="combine-light-exposure-data-with-log-and-diary-data">Combine light exposure data with log and diary data</h3>
+<p>For the sleepdiary, a selection of sleep and wake times will be added. For the wearlog, the start and end times of a removal, as well as the type (<code>state</code>) of removal will be used.</p>
+</section><section id="preparation" class="level3"><h3 class="anchored" data-anchor-id="preparation">Preparation</h3>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">sleepdiary_adj</span> <span class="op">&lt;-</span></span>
+<span>  <span class="va">sleepdiary</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://purrr.tidyverse.org/reference/map.html">map</a></span><span class="op">(</span>\<span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="va">x</span> <span class="op">|&gt;</span></span>
+<span>        <span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html">select</a></span><span class="op">(</span><span class="va">Id</span>, <span class="va">sleep</span>, <span class="va">wake</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>        <span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html">group_by</a></span><span class="op">(</span><span class="va">Id</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>        <span class="fu"><a href="https://tidyr.tidyverse.org/reference/pivot_longer.html">pivot_longer</a></span><span class="op">(</span><span class="op">-</span><span class="va">Id</span>, names_to <span class="op">=</span> <span class="st">"sleep"</span>, values_to <span class="op">=</span> <span class="st">"Datetime"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>        <span class="fu"><a href="https://tscnlab.github.io/LightLogR/reference/sc2interval.html">sc2interval</a></span><span class="op">(</span>Statechange.colname <span class="op">=</span> <span class="va">sleep</span>, starting.state <span class="op">=</span> <span class="st">"wake"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>        <span class="fu"><a href="https://tscnlab.github.io/LightLogR/reference/sleep_int2Brown.html">sleep_int2Brown</a></span><span class="op">(</span>Brown.day <span class="op">=</span> <span class="st">"wake"</span>, Brown.evening <span class="op">=</span> <span class="st">"pre-sleep"</span>, Brown.night <span class="op">=</span> <span class="st">"sleep"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>        <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span><span class="op">(</span>sleep <span class="op">=</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/case-and-replace-when.html">case_when</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html">is.na</a></span><span class="op">(</span><span class="va">sleep</span><span class="op">)</span> <span class="op">&amp;</span> <span class="va">State.Brown</span> <span class="op">==</span> <span class="st">"pre-sleep"</span> <span class="op">~</span> <span class="st">"wake"</span>,</span>
+<span>                                 .default <span class="op">=</span> <span class="va">sleep</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="op">)</span></span>
+<span></span>
+<span><span class="va">wearlog_adj</span> <span class="op">&lt;-</span></span>
+<span>  <span class="va">wearlog</span> <span class="op">|&gt;</span>  </span>
+<span>    <span class="fu"><a href="https://purrr.tidyverse.org/reference/map.html">map</a></span><span class="op">(</span>\<span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="va">x</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html">select</a></span><span class="op">(</span><span class="va">Id</span>, <span class="va">start</span>, <span class="va">end</span>, wear <span class="op">=</span> <span class="va">state</span><span class="op">)</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section><section id="combination" class="level3"><h3 class="anchored" data-anchor-id="combination">Combination</h3>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">light_chest_expanded</span> <span class="op">&lt;-</span> </span>
+<span><span class="va">light_chest</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu"><a href="https://purrr.tidyverse.org/reference/imap.html">imap</a></span><span class="op">(</span>\<span class="op">(</span><span class="va">x</span>, <span class="va">idx</span><span class="op">)</span> <span class="va">x</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html">select</a></span><span class="op">(</span><span class="va">Id</span>, <span class="va">Datetime</span>, <span class="va">MEDI</span>, <span class="va">LIGHT</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu"><a href="https://tscnlab.github.io/LightLogR/reference/add_states.html">add_states</a></span><span class="op">(</span><span class="va">sleepdiary_adj</span><span class="op">[[</span><span class="va">idx</span><span class="op">]</span><span class="op">]</span>, start <span class="op">=</span> <span class="va">Interval</span>, end <span class="op">=</span> <span class="va">Interval</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu"><a href="https://tscnlab.github.io/LightLogR/reference/add_states.html">add_states</a></span><span class="op">(</span><span class="va">wearlog_adj</span><span class="op">[[</span><span class="va">idx</span><span class="op">]</span><span class="op">]</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
+<span>    <span class="fu"><a href="https://tscnlab.github.io/LightLogR/reference/aggregate_Datetime.html">aggregate_Datetime</a></span><span class="op">(</span><span class="st">"1 min"</span><span class="op">)</span></span>
+<span>  <span class="op">)</span></span>
+<span></span>
+<span><span class="va">light_glasses_expanded</span> <span class="op">&lt;-</span> </span>
+<span><span class="va">light_glasses</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu"><a href="https://purrr.tidyverse.org/reference/imap.html">imap</a></span><span class="op">(</span>\<span class="op">(</span><span class="va">x</span>, <span class="va">idx</span><span class="op">)</span> <span class="va">x</span> <span class="op">|&gt;</span> </span>
+<span>    <span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html">select</a></span><span class="op">(</span><span class="va">Id</span>, <span class="va">Datetime</span>, <span class="va">MEDI</span>, <span class="va">LIGHT</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
+<span>    <span class="fu"><a href="https://tscnlab.github.io/LightLogR/reference/add_states.html">add_states</a></span><span class="op">(</span><span class="va">sleepdiary_adj</span><span class="op">[[</span><span class="va">idx</span><span class="op">]</span><span class="op">]</span>, start <span class="op">=</span> <span class="va">Interval</span>, end <span class="op">=</span> <span class="va">Interval</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
+<span>    <span class="fu"><a href="https://tscnlab.github.io/LightLogR/reference/add_states.html">add_states</a></span><span class="op">(</span><span class="va">wearlog_adj</span><span class="op">[[</span><span class="va">idx</span><span class="op">]</span><span class="op">]</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
+<span>    <span class="fu"><a href="https://tscnlab.github.io/LightLogR/reference/aggregate_Datetime.html">aggregate_Datetime</a></span><span class="op">(</span><span class="st">"1 min"</span><span class="op">)</span></span>
+<span>  <span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section></section><section id="preprocessing-step-1" class="level2"><h2 class="anchored" data-anchor-id="preprocessing-step-1">Preprocessing step 1</h2>
+<p>In this step, we will remove non-wear instances that are neither marked as sleep, nor fall into a sleep window (sleepdiary). We will also add photoperiod, and remove instances ≥ 10^5 lx melanopic EDI.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">light_chest_expanded</span> <span class="op">&lt;-</span> </span>
+<span><span class="va">light_chest_expanded</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu"><a href="https://purrr.tidyverse.org/reference/imap.html">imap</a></span><span class="op">(</span>\<span class="op">(</span><span class="va">x</span>, <span class="va">idx</span><span class="op">)</span> <span class="va">x</span> <span class="op">|&gt;</span> </span>
+<span>    <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span><span class="op">(</span>MEDI <span class="op">=</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/case-and-replace-when.html">replace_when</a></span><span class="op">(</span><span class="va">MEDI</span>, </span>
+<span>                               <span class="va">wear</span> <span class="op">==</span> <span class="st">"off"</span> <span class="op">&amp;</span> <span class="op">(</span><span class="va">State.Brown</span> <span class="op">!=</span> <span class="st">"sleep"</span> <span class="op">|</span> <span class="fu"><a href="https://rdrr.io/r/base/NA.html">is.na</a></span><span class="op">(</span><span class="va">State.Brown</span><span class="op">)</span><span class="op">)</span> <span class="op">~</span> <span class="cn">NA</span>,</span>
+<span>                               <span class="va">MEDI</span> <span class="op">&gt;=</span> <span class="fl">120000</span> <span class="op">~</span> <span class="cn">NA</span></span>
+<span>                               <span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
+<span>      <span class="fu"><a href="https://tscnlab.github.io/LightLogR/reference/photoperiod.html">add_photoperiod</a></span><span class="op">(</span><span class="va">melidos_coordinates</span><span class="op">[[</span><span class="va">idx</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span>
+<span>  <span class="op">)</span></span>
+<span></span>
+<span><span class="va">light_glasses_expanded</span> <span class="op">&lt;-</span> </span>
+<span><span class="va">light_glasses_expanded</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu"><a href="https://purrr.tidyverse.org/reference/imap.html">imap</a></span><span class="op">(</span>\<span class="op">(</span><span class="va">x</span>, <span class="va">idx</span><span class="op">)</span> <span class="va">x</span> <span class="op">|&gt;</span> </span>
+<span>    <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span><span class="op">(</span>MEDI <span class="op">=</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/case-and-replace-when.html">replace_when</a></span><span class="op">(</span><span class="va">MEDI</span>, </span>
+<span>                               <span class="va">wear</span> <span class="op">==</span> <span class="st">"off"</span> <span class="op">&amp;</span> <span class="op">(</span><span class="va">State.Brown</span> <span class="op">!=</span> <span class="st">"sleep"</span> <span class="op">|</span> <span class="fu"><a href="https://rdrr.io/r/base/NA.html">is.na</a></span><span class="op">(</span><span class="va">State.Brown</span><span class="op">)</span><span class="op">)</span> <span class="op">~</span> <span class="cn">NA</span>,</span>
+<span>                               <span class="va">MEDI</span> <span class="op">&gt;=</span> <span class="fl">120000</span> <span class="op">~</span> <span class="cn">NA</span></span>
+<span>                               <span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
+<span>      <span class="fu"><a href="https://tscnlab.github.io/LightLogR/reference/photoperiod.html">add_photoperiod</a></span><span class="op">(</span><span class="va">melidos_coordinates</span><span class="op">[[</span><span class="va">idx</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span>
+<span>  <span class="op">)</span></span>
+<span></span>
+<span><span class="va">light_chest_processed1</span> <span class="op">&lt;-</span> </span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/structure.html">structure</a></span><span class="op">(</span><span class="va">light_chest_expanded</span>, class <span class="op">=</span> <span class="st">"melidos_data"</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://melidosproject.github.io/melidosData/reference/flatten_data.html">flatten_data</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html">group_by</a></span><span class="op">(</span><span class="va">site</span>, <span class="va">Id</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">light_glasses_processed1</span> <span class="op">&lt;-</span> </span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/structure.html">structure</a></span><span class="op">(</span><span class="va">light_glasses_expanded</span>, class <span class="op">=</span> <span class="st">"melidos_data"</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://melidosproject.github.io/melidosData/reference/flatten_data.html">flatten_data</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html">group_by</a></span><span class="op">(</span><span class="va">site</span>, <span class="va">Id</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p><strong>This marks our first dataset</strong></p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/save.html">save</a></span><span class="op">(</span><span class="va">light_chest_processed1</span>, file <span class="op">=</span> <span class="st">"data/preprocessed_chest_1.RData"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/save.html">save</a></span><span class="op">(</span><span class="va">light_glasses_processed1</span>, file <span class="op">=</span> <span class="st">"data/preprocessed_glasses_1.RData"</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section><section id="preprocessing-step-2" class="level2"><h2 class="anchored" data-anchor-id="preprocessing-step-2">Preprocessing step 2</h2>
+<p>Here we further process the data: - hours with less than 50% data availability are removed - days with less than 80% data availability (after the previous step) are removed</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">light_chest_processed2</span> <span class="op">&lt;-</span> </span>
+<span>  <span class="va">light_chest_processed1</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu"><a href="https://tscnlab.github.io/LightLogR/reference/cut_Datetime.html">cut_Datetime</a></span><span class="op">(</span>unit <span class="op">=</span> <span class="st">"1 hour"</span>, group_by <span class="op">=</span> <span class="cn">TRUE</span>, type <span class="op">=</span> <span class="st">"floor"</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu"><a href="https://tscnlab.github.io/LightLogR/reference/remove_partial_data.html">remove_partial_data</a></span><span class="op">(</span><span class="va">MEDI</span>, threshold.missing <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html">ungroup</a></span><span class="op">(</span><span class="va">Datetime.rounded</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html">select</a></span><span class="op">(</span><span class="op">-</span><span class="va">Datetime.rounded</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu"><a href="https://tscnlab.github.io/LightLogR/reference/add_Date_col.html">add_Date_col</a></span><span class="op">(</span>group.by <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu"><a href="https://tscnlab.github.io/LightLogR/reference/gap_handler.html">gap_handler</a></span><span class="op">(</span>full.days <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu"><a href="https://tscnlab.github.io/LightLogR/reference/remove_partial_data.html">remove_partial_data</a></span><span class="op">(</span><span class="va">MEDI</span>, threshold.missing <span class="op">=</span> <span class="fl">0.2</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html">ungroup</a></span><span class="op">(</span><span class="va">Date</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>This dataset has irregular or singular data. Singular data will automatically be removed. If you are uncertain about irregular data, you can check them with `gap_finder`, `gap_table`, and `gg_gaps`.</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">light_glasses_processed2</span> <span class="op">&lt;-</span> </span>
+<span>  <span class="va">light_glasses_processed1</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu"><a href="https://tscnlab.github.io/LightLogR/reference/cut_Datetime.html">cut_Datetime</a></span><span class="op">(</span>unit <span class="op">=</span> <span class="st">"1 hour"</span>, group_by <span class="op">=</span> <span class="cn">TRUE</span>, type <span class="op">=</span> <span class="st">"floor"</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu"><a href="https://tscnlab.github.io/LightLogR/reference/remove_partial_data.html">remove_partial_data</a></span><span class="op">(</span><span class="va">MEDI</span>, threshold.missing <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html">ungroup</a></span><span class="op">(</span><span class="va">Datetime.rounded</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html">select</a></span><span class="op">(</span><span class="op">-</span><span class="va">Datetime.rounded</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu"><a href="https://tscnlab.github.io/LightLogR/reference/add_Date_col.html">add_Date_col</a></span><span class="op">(</span>group.by <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu"><a href="https://tscnlab.github.io/LightLogR/reference/gap_handler.html">gap_handler</a></span><span class="op">(</span>full.days <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu"><a href="https://tscnlab.github.io/LightLogR/reference/remove_partial_data.html">remove_partial_data</a></span><span class="op">(</span><span class="va">MEDI</span>, threshold.missing <span class="op">=</span> <span class="fl">0.2</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html">ungroup</a></span><span class="op">(</span><span class="va">Date</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>This dataset has irregular or singular data. Singular data will automatically be removed. If you are uncertain about irregular data, you can check them with `gap_finder`, `gap_table`, and `gg_gaps`.</code></pre>
+</div>
+</div>
+<p><strong>This marks our second dataset</strong></p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/save.html">save</a></span><span class="op">(</span><span class="va">light_chest_processed2</span>, file <span class="op">=</span> <span class="st">"data/preprocessed_chest_2.RData"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/save.html">save</a></span><span class="op">(</span><span class="va">light_glasses_processed2</span>, file <span class="op">=</span> <span class="st">"data/preprocessed_glasses_2.RData"</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section><section id="preprocessing-step-3" class="level2"><h2 class="anchored" data-anchor-id="preprocessing-step-3">Preprocessing step 3</h2>
+<section id="per-participant-metric" class="level3"><h3 class="anchored" data-anchor-id="per-participant-metric">Per participant metric</h3>
+<ul>
+<li>dynamics-based:
+<ul>
+<li>
+<em>IS</em>: interdaily stability</li>
+<li>
+<em>IV</em>: intradaily variability</li>
+</ul>
+</li>
+</ul>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">metric_chest_participant</span> <span class="op">&lt;-</span> </span>
+<span>  <span class="va">light_chest_processed2</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/summarise.html">summarize</a></span><span class="op">(</span></span>
+<span>    <span class="fu"><a href="https://tscnlab.github.io/LightLogR/reference/interdaily_stability.html">interdaily_stability</a></span><span class="op">(</span><span class="va">MEDI</span>, <span class="va">Datetime</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span>, as.df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
+<span>    <span class="fu"><a href="https://tscnlab.github.io/LightLogR/reference/intradaily_variability.html">intradaily_variability</a></span><span class="op">(</span><span class="va">MEDI</span>, <span class="va">Datetime</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span>, as.df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
+<span>  <span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: There were 248 warnings in `summarize()`.
+The first warning was:
+ℹ In argument: `interdaily_stability(MEDI, Datetime, na.rm = TRUE, as.df =
+  TRUE)`.
+ℹ In group 1: `site = "BAUA"`, `Id = "BAUA_S001"`.
+Caused by warning in `interdaily_stability()`:
+! Data contains some hours with only missing values
+These hours contain only missing values: 
+[1] "2025-06-12 15:00:00 UTC" "2025-06-12 16:00:00 UTC"
+[3] "2025-06-13 15:00:00 UTC" "2025-06-13 16:00:00 UTC"
+[5] "2025-06-14 15:00:00 UTC" "2025-06-14 16:00:00 UTC"
+ℹ Run `dplyr::last_dplyr_warnings()` to see the 247 remaining warnings.</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>`summarise()` has regrouped the output.
+ℹ Summaries were computed grouped by site and Id.
+ℹ Output is grouped by site.
+ℹ Use `summarise(.groups = "drop_last")` to silence this message.
+ℹ Use `summarise(.by = c(site, Id))` for per-operation grouping
+  (`?dplyr::dplyr_by`) instead.</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">metric_glasses_participant</span> <span class="op">&lt;-</span> </span>
+<span>  <span class="va">light_glasses_processed2</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/summarise.html">summarize</a></span><span class="op">(</span></span>
+<span>    <span class="fu"><a href="https://tscnlab.github.io/LightLogR/reference/interdaily_stability.html">interdaily_stability</a></span><span class="op">(</span><span class="va">MEDI</span>, <span class="va">Datetime</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span>, as.df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
+<span>    <span class="fu"><a href="https://tscnlab.github.io/LightLogR/reference/intradaily_variability.html">intradaily_variability</a></span><span class="op">(</span><span class="va">MEDI</span>, <span class="va">Datetime</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span>, as.df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
+<span>  <span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: There were 182 warnings in `summarize()`.
+The first warning was:
+ℹ In argument: `interdaily_stability(MEDI, Datetime, na.rm = TRUE, as.df =
+  TRUE)`.
+ℹ In group 1: `site = "BAUA"`, `Id = "BAUA_S001"`.
+Caused by warning in `interdaily_stability()`:
+! Data contains some hours with only missing values
+These hours contain only missing values: 
+[1] "2025-06-12 15:00:00 UTC" "2025-06-12 16:00:00 UTC"
+[3] "2025-06-13 15:00:00 UTC" "2025-06-13 16:00:00 UTC"
+[5] "2025-06-14 15:00:00 UTC" "2025-06-14 16:00:00 UTC"
+ℹ Run `dplyr::last_dplyr_warnings()` to see the 181 remaining warnings.</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>`summarise()` has regrouped the output.
+ℹ Summaries were computed grouped by site and Id.
+ℹ Output is grouped by site.
+ℹ Use `summarise(.groups = "drop_last")` to silence this message.
+ℹ Use `summarise(.by = c(site, Id))` for per-operation grouping
+  (`?dplyr::dplyr_by`) instead.</code></pre>
+</div>
+</div>
+</section><section id="per-participant-day-metric" class="level3"><h3 class="anchored" data-anchor-id="per-participant-day-metric">Per participant-day metric</h3>
+<ul>
+<li>level-based:
+<ul>
+<li>
+<code>Mean</code>: geometric mean of melanopic EDI (lx)</li>
+<li>
+<code>M10mean</code>: geometric mean of melanopic EDI during 10 brightest hours of the day (lx)</li>
+<li>
+<code>L5mean</code>: geometric mean of melanopic EDI during 5 darkest hours of the day (lx)</li>
+</ul>
+</li>
+<li>duration-based:
+<ul>
+<li>
+<code>TAT1000</code>: time above 1000 lx melanopic EDI (minutes)</li>
+<li>
+<code>TAT250</code>: time above 250 lx melanopic EDI (during wake) (hours)</li>
+<li>
+<code>TBT10</code>: time below 10 lx melanopic EDI (during evening, i.e.&nbsp;3 hours before sleep) (hours)</li>
+<li>
+<code>TBT1</code>: time below 1 lx melanopic EDI (during sleep) (hours)</li>
+<li>
+<code>PAT250</code>: longest period above 250lx melanopic EDI (minutes)</li>
+</ul>
+</li>
+<li>timing-based:
+<ul>
+<li>
+<code>FLIT250</code>: first time above 250 lx melanopic EDI (HH:MM)</li>
+<li>
+<code>LLIT250</code>: last time above 250 lx melanopic EDI (HH:MM)</li>
+<li>
+<code>M10</code>: midpoint of brightest 10 hours (HH:MM)</li>
+<li>
+<code>L5</code>: midpoint of darkest 5 hours (HH:MM)</li>
+</ul>
+</li>
+<li>exposure-history-based:
+<ul>
+<li>
+<code>Dose</code>: melanopic EDI dose (lx·h)</li>
+</ul>
+</li>
+<li>spectrum-based:
+<ul>
+<li>
+<code>MDER</code>: melanopic daylight efficacy ratio</li>
+</ul>
+</li>
+</ul>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">metric_chest_participantday</span> <span class="op">&lt;-</span></span>
+<span>  <span class="va">light_chest_processed2</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html">group_by</a></span><span class="op">(</span><span class="va">Date</span>, .add <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/summarise.html">summarize</a></span><span class="op">(</span></span>
+<span>    Mean <span class="op">=</span> <span class="va">MEDI</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://tscnlab.github.io/LightLogR/reference/log_zero_inflated.html">log_zero_inflated</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html">mean</a></span><span class="op">(</span>na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://tscnlab.github.io/LightLogR/reference/log_zero_inflated.html">exp_zero_inflated</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>    <span class="fu"><a href="https://tscnlab.github.io/LightLogR/reference/bright_dark_period.html">bright_dark_period</a></span><span class="op">(</span><span class="fu"><a href="https://tscnlab.github.io/LightLogR/reference/log_zero_inflated.html">log_zero_inflated</a></span><span class="op">(</span><span class="va">MEDI</span><span class="op">)</span>, <span class="va">Datetime</span>, <span class="st">"brightest"</span>, <span class="st">"10 hours"</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span>, as.df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
+<span>    <span class="fu"><a href="https://tscnlab.github.io/LightLogR/reference/bright_dark_period.html">bright_dark_period</a></span><span class="op">(</span><span class="fu"><a href="https://tscnlab.github.io/LightLogR/reference/log_zero_inflated.html">log_zero_inflated</a></span><span class="op">(</span><span class="va">MEDI</span><span class="op">)</span>, <span class="va">Datetime</span>, <span class="st">"darkest"</span>, <span class="st">"5 hours"</span>, loop <span class="op">=</span> <span class="cn">TRUE</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span>, as.df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
+<span>    <span class="fu"><a href="https://tscnlab.github.io/LightLogR/reference/duration_above_threshold.html">duration_above_threshold</a></span><span class="op">(</span><span class="va">MEDI</span>, <span class="va">Datetime</span>, <span class="st">"above"</span>, <span class="fl">1000</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span>, as.df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
+<span>    <span class="fu"><a href="https://tscnlab.github.io/LightLogR/reference/duration_above_threshold.html">duration_above_threshold</a></span><span class="op">(</span><span class="va">MEDI</span>, <span class="va">Datetime</span>, <span class="st">"above"</span>, <span class="fl">250</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span>, as.df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
+<span>    <span class="fu"><a href="https://tscnlab.github.io/LightLogR/reference/period_above_threshold.html">period_above_threshold</a></span><span class="op">(</span><span class="va">MEDI</span>, <span class="va">Datetime</span>, <span class="st">"above"</span>, <span class="fl">250</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span>, as.df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
+<span>    <span class="fu"><a href="https://tscnlab.github.io/LightLogR/reference/timing_above_threshold.html">timing_above_threshold</a></span><span class="op">(</span><span class="va">MEDI</span>, <span class="va">Datetime</span>, <span class="st">"above"</span>, <span class="fl">250</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span>, as.df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
+<span>    <span class="fu"><a href="https://tscnlab.github.io/LightLogR/reference/dose.html">dose</a></span><span class="op">(</span><span class="va">MEDI</span>, <span class="va">Datetime</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span>, as.df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
+<span>    MDER <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html">mean</a></span><span class="op">(</span><span class="va">MEDI</span> <span class="op">/</span> <span class="va">LIGHT</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
+<span>    .groups <span class="op">=</span> <span class="st">"drop_last"</span></span>
+<span>  <span class="op">)</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span><span class="op">(</span>MDER <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html">ifelse</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html">abs</a></span><span class="op">(</span><span class="va">MDER</span><span class="op">)</span> <span class="op">==</span> <span class="cn">Inf</span>, <span class="cn">NA</span>, <span class="va">MDER</span><span class="op">)</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: There were 4 warnings in `summarize()`.
+The first warning was:
+ℹ In argument: `bright_dark_period(...)`.
+ℹ In group 145: `site = "FUSPCEU"`, `Id = "FUSPCEU_S007"`, `Date = 2024-10-27`.
+Caused by warning in `bright_dark_period()`:
+! `Time.vector` is not regularly spaced. Calculated results may be incorrect!
+ℹ Run `dplyr::last_dplyr_warnings()` to see the 3 remaining warnings.</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">metric_glasses_participantday</span> <span class="op">&lt;-</span></span>
+<span>  <span class="va">light_glasses_processed2</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html">group_by</a></span><span class="op">(</span><span class="va">Date</span>, .add <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/summarise.html">summarize</a></span><span class="op">(</span></span>
+<span>    Mean <span class="op">=</span> <span class="va">MEDI</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://tscnlab.github.io/LightLogR/reference/log_zero_inflated.html">log_zero_inflated</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html">mean</a></span><span class="op">(</span>na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://tscnlab.github.io/LightLogR/reference/log_zero_inflated.html">exp_zero_inflated</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>    <span class="fu"><a href="https://tscnlab.github.io/LightLogR/reference/bright_dark_period.html">bright_dark_period</a></span><span class="op">(</span><span class="fu"><a href="https://tscnlab.github.io/LightLogR/reference/log_zero_inflated.html">log_zero_inflated</a></span><span class="op">(</span><span class="va">MEDI</span><span class="op">)</span>, <span class="va">Datetime</span>, <span class="st">"brightest"</span>, <span class="st">"10 hours"</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span>, as.df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
+<span>    <span class="fu"><a href="https://tscnlab.github.io/LightLogR/reference/bright_dark_period.html">bright_dark_period</a></span><span class="op">(</span><span class="fu"><a href="https://tscnlab.github.io/LightLogR/reference/log_zero_inflated.html">log_zero_inflated</a></span><span class="op">(</span><span class="va">MEDI</span><span class="op">)</span>, <span class="va">Datetime</span>, <span class="st">"darkest"</span>, <span class="st">"5 hours"</span>, loop <span class="op">=</span> <span class="cn">TRUE</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span>, as.df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
+<span>    <span class="fu"><a href="https://tscnlab.github.io/LightLogR/reference/duration_above_threshold.html">duration_above_threshold</a></span><span class="op">(</span><span class="va">MEDI</span>, <span class="va">Datetime</span>, <span class="st">"above"</span>, <span class="fl">1000</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span>, as.df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
+<span>    <span class="fu"><a href="https://tscnlab.github.io/LightLogR/reference/duration_above_threshold.html">duration_above_threshold</a></span><span class="op">(</span><span class="va">MEDI</span>, <span class="va">Datetime</span>, <span class="st">"above"</span>, <span class="fl">250</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span>, as.df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
+<span>    <span class="fu"><a href="https://tscnlab.github.io/LightLogR/reference/period_above_threshold.html">period_above_threshold</a></span><span class="op">(</span><span class="va">MEDI</span>, <span class="va">Datetime</span>, <span class="st">"above"</span>, <span class="fl">250</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span>, as.df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
+<span>    <span class="fu"><a href="https://tscnlab.github.io/LightLogR/reference/timing_above_threshold.html">timing_above_threshold</a></span><span class="op">(</span><span class="va">MEDI</span>, <span class="va">Datetime</span>, <span class="st">"above"</span>, <span class="fl">250</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span>, as.df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
+<span>    <span class="fu"><a href="https://tscnlab.github.io/LightLogR/reference/dose.html">dose</a></span><span class="op">(</span><span class="va">MEDI</span>, <span class="va">Datetime</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span>, as.df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
+<span>    MDER <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html">mean</a></span><span class="op">(</span><span class="va">MEDI</span> <span class="op">/</span> <span class="va">LIGHT</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
+<span>    .groups <span class="op">=</span> <span class="st">"drop_last"</span></span>
+<span>  <span class="op">)</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span><span class="op">(</span>MDER <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html">ifelse</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html">abs</a></span><span class="op">(</span><span class="va">MDER</span><span class="op">)</span> <span class="op">==</span> <span class="cn">Inf</span>, <span class="cn">NA</span>, <span class="va">MDER</span><span class="op">)</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: There were 8 warnings in `summarize()`.
+The first warning was:
+ℹ In argument: `bright_dark_period(...)`.
+ℹ In group 135: `site = "FUSPCEU"`, `Id = "FUSPCEU_S007"`, `Date = 2024-10-27`.
+Caused by warning in `bright_dark_period()`:
+! `Time.vector` is not regularly spaced. Calculated results may be incorrect!
+ℹ Run `dplyr::last_dplyr_warnings()` to see the 7 remaining warnings.</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb24"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">metric_chest_participantday2</span> <span class="op">&lt;-</span> </span>
+<span>  <span class="va">light_chest_processed2</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html">group_by</a></span><span class="op">(</span><span class="va">Date</span>, <span class="va">State.Brown</span>, .add <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/summarise.html">summarize</a></span><span class="op">(</span></span>
+<span>    <span class="fu"><a href="https://tscnlab.github.io/LightLogR/reference/duration_above_threshold.html">duration_above_threshold</a></span><span class="op">(</span><span class="va">MEDI</span>, <span class="va">Datetime</span>, <span class="st">"above"</span>, <span class="fl">250</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span>, as.df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
+<span>    <span class="fu"><a href="https://tscnlab.github.io/LightLogR/reference/duration_above_threshold.html">duration_above_threshold</a></span><span class="op">(</span><span class="va">MEDI</span>, <span class="va">Datetime</span>, <span class="st">"below"</span>, <span class="fl">10</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span>, as.df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
+<span>    <span class="fu"><a href="https://tscnlab.github.io/LightLogR/reference/duration_above_threshold.html">duration_above_threshold</a></span><span class="op">(</span><span class="va">MEDI</span>, <span class="va">Datetime</span>, <span class="st">"below"</span>, <span class="fl">1</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span>, as.df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
+<span>    .groups <span class="op">=</span> <span class="st">"drop_last"</span></span>
+<span>  <span class="op">)</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu"><a href="https://tidyr.tidyverse.org/reference/pivot_longer.html">pivot_longer</a></span><span class="op">(</span><span class="op">-</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="va">site</span><span class="op">:</span><span class="va">State.Brown</span><span class="op">)</span>, names_to <span class="op">=</span> <span class="st">"metric"</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html">filter_out</a></span><span class="op">(</span></span>
+<span>    <span class="op">!</span><span class="op">(</span><span class="va">State.Brown</span> <span class="op">==</span> <span class="st">"wake"</span> <span class="op">&amp;</span> <span class="va">metric</span> <span class="op">==</span> <span class="st">"duration_above_250"</span><span class="op">)</span>,</span>
+<span>    <span class="op">!</span><span class="op">(</span><span class="va">State.Brown</span> <span class="op">==</span> <span class="st">"pre-sleep"</span> <span class="op">&amp;</span> <span class="va">metric</span> <span class="op">==</span> <span class="st">"duration_below_10"</span><span class="op">)</span>,</span>
+<span>    <span class="op">!</span><span class="op">(</span><span class="va">State.Brown</span> <span class="op">==</span> <span class="st">"sleep"</span> <span class="op">&amp;</span> <span class="va">metric</span> <span class="op">==</span> <span class="st">"duration_below_1"</span><span class="op">)</span>,</span>
+<span>    <span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://tidyr.tidyverse.org/reference/drop_na.html">drop_na</a></span><span class="op">(</span><span class="va">State.Brown</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu"><a href="https://tidyr.tidyverse.org/reference/unite.html">unite</a></span><span class="op">(</span><span class="va">metric</span>, <span class="va">metric</span>, <span class="va">State.Brown</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu"><a href="https://tidyr.tidyverse.org/reference/pivot_wider.html">pivot_wider</a></span><span class="op">(</span>id_cols <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="va">site</span>, <span class="va">Id</span>, <span class="va">Date</span><span class="op">)</span>, values_from <span class="op">=</span> <span class="va">value</span>, names_from <span class="op">=</span> <span class="va">metric</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">metric_glasses_participantday2</span> <span class="op">&lt;-</span> </span>
+<span>  <span class="va">light_glasses_processed2</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html">group_by</a></span><span class="op">(</span><span class="va">Date</span>, <span class="va">State.Brown</span>, .add <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/summarise.html">summarize</a></span><span class="op">(</span></span>
+<span>    <span class="fu"><a href="https://tscnlab.github.io/LightLogR/reference/duration_above_threshold.html">duration_above_threshold</a></span><span class="op">(</span><span class="va">MEDI</span>, <span class="va">Datetime</span>, <span class="st">"above"</span>, <span class="fl">250</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span>, as.df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
+<span>    <span class="fu"><a href="https://tscnlab.github.io/LightLogR/reference/duration_above_threshold.html">duration_above_threshold</a></span><span class="op">(</span><span class="va">MEDI</span>, <span class="va">Datetime</span>, <span class="st">"below"</span>, <span class="fl">10</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span>, as.df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
+<span>    <span class="fu"><a href="https://tscnlab.github.io/LightLogR/reference/duration_above_threshold.html">duration_above_threshold</a></span><span class="op">(</span><span class="va">MEDI</span>, <span class="va">Datetime</span>, <span class="st">"below"</span>, <span class="fl">1</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span>, as.df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
+<span>    .groups <span class="op">=</span> <span class="st">"drop_last"</span></span>
+<span>  <span class="op">)</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu"><a href="https://tidyr.tidyverse.org/reference/pivot_longer.html">pivot_longer</a></span><span class="op">(</span><span class="op">-</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="va">site</span><span class="op">:</span><span class="va">State.Brown</span><span class="op">)</span>, names_to <span class="op">=</span> <span class="st">"metric"</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html">filter_out</a></span><span class="op">(</span></span>
+<span>    <span class="op">!</span><span class="op">(</span><span class="va">State.Brown</span> <span class="op">==</span> <span class="st">"wake"</span> <span class="op">&amp;</span> <span class="va">metric</span> <span class="op">==</span> <span class="st">"duration_above_250"</span><span class="op">)</span>,</span>
+<span>    <span class="op">!</span><span class="op">(</span><span class="va">State.Brown</span> <span class="op">==</span> <span class="st">"pre-sleep"</span> <span class="op">&amp;</span> <span class="va">metric</span> <span class="op">==</span> <span class="st">"duration_below_10"</span><span class="op">)</span>,</span>
+<span>    <span class="op">!</span><span class="op">(</span><span class="va">State.Brown</span> <span class="op">==</span> <span class="st">"sleep"</span> <span class="op">&amp;</span> <span class="va">metric</span> <span class="op">==</span> <span class="st">"duration_below_1"</span><span class="op">)</span>,</span>
+<span>    <span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://tidyr.tidyverse.org/reference/drop_na.html">drop_na</a></span><span class="op">(</span><span class="va">State.Brown</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu"><a href="https://tidyr.tidyverse.org/reference/unite.html">unite</a></span><span class="op">(</span><span class="va">metric</span>, <span class="va">metric</span>, <span class="va">State.Brown</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu"><a href="https://tidyr.tidyverse.org/reference/pivot_wider.html">pivot_wider</a></span><span class="op">(</span>id_cols <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="va">site</span>, <span class="va">Id</span>, <span class="va">Date</span><span class="op">)</span>, values_from <span class="op">=</span> <span class="va">value</span>, names_from <span class="op">=</span> <span class="va">metric</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb25"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">metric_chest_participantday</span> <span class="op">&lt;-</span></span>
+<span>  <span class="va">metric_chest_participantday</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate-joins.html">left_join</a></span><span class="op">(</span><span class="va">metric_chest_participantday2</span>, </span>
+<span>            by <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"site"</span>, <span class="st">"Id"</span>, <span class="st">"Date"</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">metric_glasses_participantday</span> <span class="op">&lt;-</span></span>
+<span>  <span class="va">metric_glasses_participantday</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate-joins.html">left_join</a></span><span class="op">(</span><span class="va">metric_chest_participantday2</span>, </span>
+<span>            by <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"site"</span>, <span class="st">"Id"</span>, <span class="st">"Date"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section><section id="per-participant-hour-metric" class="level3"><h3 class="anchored" data-anchor-id="per-participant-hour-metric">Per participant-hour metric</h3>
+<ul>
+<li>level-based:
+<ul>
+<li>
+<code>Mean</code>: geometric mean of melanopic EDI (lx)</li>
+</ul>
+</li>
+</ul>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb26"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">metric_chest_participanthour</span> <span class="op">&lt;-</span> </span>
+<span>  <span class="va">light_chest_processed2</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu"><a href="https://tscnlab.github.io/LightLogR/reference/aggregate_Datetime.html">aggregate_Datetime</a></span><span class="op">(</span></span>
+<span>    <span class="st">"1 hour"</span>,</span>
+<span>    type <span class="op">=</span> <span class="st">"floor"</span>,</span>
+<span>    numeric.handler <span class="op">=</span> \<span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="va">x</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://tscnlab.github.io/LightLogR/reference/log_zero_inflated.html">log_zero_inflated</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html">mean</a></span><span class="op">(</span>na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://tscnlab.github.io/LightLogR/reference/log_zero_inflated.html">exp_zero_inflated</a></span><span class="op">(</span><span class="op">)</span></span>
+<span>  <span class="op">)</span></span>
+<span></span>
+<span><span class="va">metric_glasses_participanthour</span> <span class="op">&lt;-</span> </span>
+<span>  <span class="va">light_glasses_processed2</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu"><a href="https://tscnlab.github.io/LightLogR/reference/aggregate_Datetime.html">aggregate_Datetime</a></span><span class="op">(</span></span>
+<span>    <span class="st">"1 hour"</span>,</span>
+<span>    type <span class="op">=</span> <span class="st">"floor"</span>,</span>
+<span>    numeric.handler <span class="op">=</span> \<span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="va">x</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://tscnlab.github.io/LightLogR/reference/log_zero_inflated.html">log_zero_inflated</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html">mean</a></span><span class="op">(</span>na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://tscnlab.github.io/LightLogR/reference/log_zero_inflated.html">exp_zero_inflated</a></span><span class="op">(</span><span class="op">)</span></span>
+<span>  <span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p><strong>This marks our third dataset</strong></p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb27"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/save.html">save</a></span><span class="op">(</span><span class="va">metric_chest_participanthour</span>, </span>
+<span>     <span class="va">metric_chest_participant</span>, </span>
+<span>     <span class="va">metric_chest_participantday</span>, </span>
+<span>     file <span class="op">=</span> <span class="st">"data/metrics_chest.RData"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/save.html">save</a></span><span class="op">(</span><span class="va">metric_glasses_participanthour</span>, </span>
+<span>     <span class="va">metric_glasses_participant</span>, </span>
+<span>     <span class="va">metric_glasses_participantday</span>, </span>
+<span>     file <span class="op">=</span> <span class="st">"data/metrics_glasses.RData"</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section></section><section id="session-info" class="level2"><h2 class="anchored" data-anchor-id="session-info">Session info</h2>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb28"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/sessionInfo.html">sessionInfo</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>[1] 4</code></pre>
+<pre><code>R version 4.5.0 (2025-04-11)
+Platform: aarch64-apple-darwin20
+Running under: macOS 26.3.1
+
+Matrix products: default
+BLAS:   /Library/Frameworks/R.framework/Versions/4.5-arm64/Resources/lib/libRblas.0.dylib 
+LAPACK: /Library/Frameworks/R.framework/Versions/4.5-arm64/Resources/lib/libRlapack.dylib;  LAPACK version 3.12.1
+
+locale:
+[1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
+
+time zone: Europe/Berlin
+tzcode source: internal
+
+attached base packages:
+[1] stats     graphics  grDevices utils     datasets  methods   base     
+
+other attached packages:
+ [1] melidosData_1.0.0 LightLogR_0.10.0  lubridate_1.9.4   forcats_1.0.0    
+ [5] stringr_1.6.0     dplyr_1.2.0       purrr_1.2.0       readr_2.1.5      
+ [9] tidyr_1.3.2       tibble_3.3.0      ggplot2_4.0.0     tidyverse_2.0.0  
+
+loaded via a namespace (and not attached):
+ [1] generics_0.1.4     class_7.3-23       KernSmooth_2.23-26 stringi_1.8.7     
+ [5] hms_1.1.3          digest_0.6.37      magrittr_2.0.4     evaluate_1.0.4    
+ [9] grid_4.5.0         timechange_0.3.0   RColorBrewer_1.1-3 fastmap_1.2.0     
+[13] jsonlite_2.0.0     slider_0.3.2       e1071_1.7-16       DBI_1.2.3         
+[17] scales_1.4.0       cli_3.6.5          rlang_1.1.7        units_0.8-7       
+[21] withr_3.0.2        yaml_2.3.10        tools_4.5.0        tzdb_0.5.0        
+[25] vctrs_0.7.1        R6_2.6.1           proxy_0.4-27       lifecycle_1.0.5   
+[29] classInt_0.4-11    htmlwidgets_1.6.4  warp_0.2.1         pkgconfig_2.0.3   
+[33] pillar_1.10.2      gtable_0.3.6       Rcpp_1.1.0         glue_1.8.0        
+[37] sf_1.0-21          xfun_0.52          tidyselect_1.2.1   rstudioapi_0.17.1 
+[41] knitr_1.50         farver_2.1.2       htmltools_0.5.8.1  rmarkdown_2.29    
+[45] suntools_1.0.1     compiler_4.5.0     S7_0.2.0          </code></pre>
 </div>
 </div>
-<p>The <code>echo: false</code> option disables the printing of code (only output is displayed).</p>
 <!-- -->
 
 </section></main><!-- /main column --><script id="quarto-html-after-body" type="application/javascript">
@@ -659,72 +1075,397 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     }
   });
   </script><div class="modal fade" id="quarto-embedded-source-code-modal" tabindex="-1" aria-labelledby="quarto-embedded-source-code-modal-label" aria-hidden="true"><div class="modal-dialog modal-dialog-scrollable"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="quarto-embedded-source-code-modal-label">Source Code</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4" data-shortcodes="false"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co">---</span></span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="an">title:</span><span class="co"> "Personal light exposure: Data preparation"</span></span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="an">subtitle:</span><span class="co"> "Individual, behavioural, and environmental determinants of personal light exposure in daily life: a multi-country wearable and experience-sampling study"</span></span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="an">author:</span><span class="co"> "Johannes Zauner"</span></span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="an">format:</span><span class="co"> </span></span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="co">  html:</span></span>
-<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="co">    code-tools: true</span></span>
-<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="co">    code-link: true</span></span>
-<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="co">---</span></span>
-<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="fu">## Preface</span></span>
-<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>This supplement documents the import and preprocessing of personal light exposure data for the MeLiDos field study analysis. The goal is to derive at three sets of data:</span>
-<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>An unaggregated set of light exposure data, both for the eye-level and chest-level wearing position where</span>
-<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a><span class="ss">  - </span>Values &gt; 120 000 lx are removed (set to <span class="in">`NA`</span>)</span>
-<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a><span class="ss">  - </span>non-wear periods, that are not also sleep periods, are removed</span>
-<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>A further processed set (from 1.) where</span>
-<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a><span class="ss">  - </span>hours with less than 50% data availability are removed</span>
-<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a><span class="ss">  - </span>days with less than 80% data availability (after the previous step) are removed</span>
-<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>A further processed set (from 2.) where personal light exposure metrics are calculated</span>
-<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a>  a. per participant:</span>
-<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a><span class="ss">  - </span>dynamics-based:</span>
-<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a><span class="ss">      - </span>*IS*: interdaily stability</span>
-<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a><span class="ss">      - </span>*IV*: intradaily variability</span>
-<span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a>  b. per participant-day:</span>
-<span id="cb4-27"><a href="#cb4-27" aria-hidden="true" tabindex="-1"></a><span class="ss">  - </span>level-based:</span>
-<span id="cb4-28"><a href="#cb4-28" aria-hidden="true" tabindex="-1"></a><span class="ss">      - </span><span class="in">`Mean`</span>: geometric mean of melanopic EDI (lx)</span>
-<span id="cb4-29"><a href="#cb4-29" aria-hidden="true" tabindex="-1"></a><span class="ss">      - </span><span class="in">`M10mean`</span>: geometric mean of melanopic EDI during 10 brightest hours of the day (lx)</span>
-<span id="cb4-30"><a href="#cb4-30" aria-hidden="true" tabindex="-1"></a><span class="ss">      - </span><span class="in">`L5mean`</span>: geometric mean of melanopic EDI during 5 darkest hours of the day (lx)</span>
-<span id="cb4-31"><a href="#cb4-31" aria-hidden="true" tabindex="-1"></a><span class="ss">  - </span>duration-based:  </span>
-<span id="cb4-32"><a href="#cb4-32" aria-hidden="true" tabindex="-1"></a><span class="ss">      - </span><span class="in">`TAT1000`</span>: time above 1000 lx melanopic EDI (minutes)</span>
-<span id="cb4-33"><a href="#cb4-33" aria-hidden="true" tabindex="-1"></a><span class="ss">      - </span><span class="in">`TAT250`</span>: time above 250 lx melanopic EDI (during wake) (hours)</span>
-<span id="cb4-34"><a href="#cb4-34" aria-hidden="true" tabindex="-1"></a><span class="ss">      - </span><span class="in">`TBT10`</span>: time below 10 lx melanopic EDI (during evening, i.e. 3 hours before sleep) (hours)</span>
-<span id="cb4-35"><a href="#cb4-35" aria-hidden="true" tabindex="-1"></a><span class="ss">      - </span><span class="in">`TBT1`</span>: time below 1 lx melanopic EDI (during sleep) (hours)</span>
-<span id="cb4-36"><a href="#cb4-36" aria-hidden="true" tabindex="-1"></a><span class="ss">      - </span><span class="in">`PAT250`</span>: longest period above 250lx melanopic EDI (minutes)</span>
-<span id="cb4-37"><a href="#cb4-37" aria-hidden="true" tabindex="-1"></a><span class="ss">  - </span>timing-based:</span>
-<span id="cb4-38"><a href="#cb4-38" aria-hidden="true" tabindex="-1"></a><span class="ss">      - </span><span class="in">`FLIT250`</span>: first time above 250 lx melanopic EDI (HH:MM)</span>
-<span id="cb4-39"><a href="#cb4-39" aria-hidden="true" tabindex="-1"></a><span class="ss">      - </span><span class="in">`LLIT250`</span>: last time above 250 lx melanopic EDI (HH:MM)</span>
-<span id="cb4-40"><a href="#cb4-40" aria-hidden="true" tabindex="-1"></a><span class="ss">      - </span><span class="in">`M10`</span>: midpoint of brightest 10 hours (HH:MM)</span>
-<span id="cb4-41"><a href="#cb4-41" aria-hidden="true" tabindex="-1"></a><span class="ss">      - </span><span class="in">`L5`</span>: midpoint of darkest 5 hours (HH:MM)</span>
-<span id="cb4-42"><a href="#cb4-42" aria-hidden="true" tabindex="-1"></a><span class="ss">      - </span><span class="in">`MPAT250`</span>: midpoint of longest period above 250 lx melanopic EDI (HH:MM)</span>
-<span id="cb4-43"><a href="#cb4-43" aria-hidden="true" tabindex="-1"></a><span class="ss">  - </span>exposure-history-based:</span>
-<span id="cb4-44"><a href="#cb4-44" aria-hidden="true" tabindex="-1"></a><span class="ss">      - </span><span class="in">`Dose`</span>: melanopic EDI dose (lx·h)</span>
-<span id="cb4-45"><a href="#cb4-45" aria-hidden="true" tabindex="-1"></a><span class="ss">  - </span>spectrum-based:  </span>
-<span id="cb4-46"><a href="#cb4-46" aria-hidden="true" tabindex="-1"></a><span class="ss">      - </span><span class="in">`MDER`</span>: melanopic daylight efficacy ratio</span>
-<span id="cb4-47"><a href="#cb4-47" aria-hidden="true" tabindex="-1"></a>  c. per participant-hour:</span>
-<span id="cb4-48"><a href="#cb4-48" aria-hidden="true" tabindex="-1"></a><span class="ss">  - </span>level-based:</span>
-<span id="cb4-49"><a href="#cb4-49" aria-hidden="true" tabindex="-1"></a><span class="ss">      - </span><span class="in">`Mean`</span>:  geometric mean of melanopic EDI (lx)</span>
-<span id="cb4-50"><a href="#cb4-50" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-51"><a href="#cb4-51" aria-hidden="true" tabindex="-1"></a><span class="fu">## Running Code</span></span>
-<span id="cb4-52"><a href="#cb4-52" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-53"><a href="#cb4-53" aria-hidden="true" tabindex="-1"></a>When you click the **Render** button a document will be generated that includes both content and the output of embedded code. You can embed code like this:</span>
-<span id="cb4-54"><a href="#cb4-54" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-57"><a href="#cb4-57" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
-<span id="cb4-58"><a href="#cb4-58" aria-hidden="true" tabindex="-1"></a><span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span></span>
-<span id="cb4-59"><a href="#cb4-59" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb4-60"><a href="#cb4-60" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-61"><a href="#cb4-61" aria-hidden="true" tabindex="-1"></a>You can add options to executable code like this</span>
-<span id="cb4-62"><a href="#cb4-62" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-65"><a href="#cb4-65" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
-<span id="cb4-66"><a href="#cb4-66" aria-hidden="true" tabindex="-1"></a><span class="co">#| echo: false</span></span>
-<span id="cb4-67"><a href="#cb4-67" aria-hidden="true" tabindex="-1"></a><span class="dv">2</span> <span class="sc">*</span> <span class="dv">2</span></span>
-<span id="cb4-68"><a href="#cb4-68" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb4-69"><a href="#cb4-69" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-70"><a href="#cb4-70" aria-hidden="true" tabindex="-1"></a>The <span class="in">`echo: false`</span> option disables the printing of code (only output is displayed).</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb30" data-shortcodes="false"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="co">---</span></span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a><span class="an">title:</span><span class="co"> "Personal light exposure: Data preparation"</span></span>
+<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a><span class="an">subtitle:</span><span class="co"> "Individual, behavioural, and environmental determinants of personal light exposure in daily life: a multi-country wearable and experience-sampling study"</span></span>
+<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a><span class="an">author:</span><span class="co"> "Johannes Zauner"</span></span>
+<span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a><span class="an">format:</span><span class="co"> </span></span>
+<span id="cb30-6"><a href="#cb30-6" aria-hidden="true" tabindex="-1"></a><span class="co">  html:</span></span>
+<span id="cb30-7"><a href="#cb30-7" aria-hidden="true" tabindex="-1"></a><span class="co">    code-tools: true</span></span>
+<span id="cb30-8"><a href="#cb30-8" aria-hidden="true" tabindex="-1"></a><span class="co">    code-link: true</span></span>
+<span id="cb30-9"><a href="#cb30-9" aria-hidden="true" tabindex="-1"></a><span class="co">---</span></span>
+<span id="cb30-10"><a href="#cb30-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-11"><a href="#cb30-11" aria-hidden="true" tabindex="-1"></a><span class="fu">## Preface</span></span>
+<span id="cb30-12"><a href="#cb30-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-13"><a href="#cb30-13" aria-hidden="true" tabindex="-1"></a>This supplement documents the import and preprocessing of personal light exposure data for the MeLiDos field study analysis. The goal is to derive at three sets of data:</span>
+<span id="cb30-14"><a href="#cb30-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-15"><a href="#cb30-15" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>An unaggregated set of light exposure data, both for the eye-level and chest-level wearing position where</span>
+<span id="cb30-16"><a href="#cb30-16" aria-hidden="true" tabindex="-1"></a><span class="ss">  - </span>Values &gt; 120 000 lx are removed (set to <span class="in">`NA`</span>)</span>
+<span id="cb30-17"><a href="#cb30-17" aria-hidden="true" tabindex="-1"></a><span class="ss">  - </span>non-wear periods, that are not also sleep periods, are removed</span>
+<span id="cb30-18"><a href="#cb30-18" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>A further processed set (from 1.) where</span>
+<span id="cb30-19"><a href="#cb30-19" aria-hidden="true" tabindex="-1"></a><span class="ss">  - </span>hours with less than 50% data availability are removed</span>
+<span id="cb30-20"><a href="#cb30-20" aria-hidden="true" tabindex="-1"></a><span class="ss">  - </span>days with less than 80% data availability (after the previous step) are removed</span>
+<span id="cb30-21"><a href="#cb30-21" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>A further processed set (from 2.) where personal light exposure metrics are calculated</span>
+<span id="cb30-22"><a href="#cb30-22" aria-hidden="true" tabindex="-1"></a>  a. per participant:</span>
+<span id="cb30-23"><a href="#cb30-23" aria-hidden="true" tabindex="-1"></a><span class="ss">  - </span>dynamics-based:</span>
+<span id="cb30-24"><a href="#cb30-24" aria-hidden="true" tabindex="-1"></a><span class="ss">      - </span>*IS*: interdaily stability</span>
+<span id="cb30-25"><a href="#cb30-25" aria-hidden="true" tabindex="-1"></a><span class="ss">      - </span>*IV*: intradaily variability</span>
+<span id="cb30-26"><a href="#cb30-26" aria-hidden="true" tabindex="-1"></a>  b. per participant-day:</span>
+<span id="cb30-27"><a href="#cb30-27" aria-hidden="true" tabindex="-1"></a><span class="ss">  - </span>level-based:</span>
+<span id="cb30-28"><a href="#cb30-28" aria-hidden="true" tabindex="-1"></a><span class="ss">      - </span><span class="in">`Mean`</span>: geometric mean of melanopic EDI (lx)</span>
+<span id="cb30-29"><a href="#cb30-29" aria-hidden="true" tabindex="-1"></a><span class="ss">      - </span><span class="in">`M10mean`</span>: geometric mean of melanopic EDI during 10 brightest hours of the day (lx)</span>
+<span id="cb30-30"><a href="#cb30-30" aria-hidden="true" tabindex="-1"></a><span class="ss">      - </span><span class="in">`L5mean`</span>: geometric mean of melanopic EDI during 5 darkest hours of the day (lx)</span>
+<span id="cb30-31"><a href="#cb30-31" aria-hidden="true" tabindex="-1"></a><span class="ss">  - </span>duration-based:  </span>
+<span id="cb30-32"><a href="#cb30-32" aria-hidden="true" tabindex="-1"></a><span class="ss">      - </span><span class="in">`TAT1000`</span>: time above 1000 lx melanopic EDI (minutes)</span>
+<span id="cb30-33"><a href="#cb30-33" aria-hidden="true" tabindex="-1"></a><span class="ss">      - </span><span class="in">`TAT250`</span>: time above 250 lx melanopic EDI (during wake) (hours)</span>
+<span id="cb30-34"><a href="#cb30-34" aria-hidden="true" tabindex="-1"></a><span class="ss">      - </span><span class="in">`TBT10`</span>: time below 10 lx melanopic EDI (during evening, i.e. 3 hours before sleep) (hours)</span>
+<span id="cb30-35"><a href="#cb30-35" aria-hidden="true" tabindex="-1"></a><span class="ss">      - </span><span class="in">`TBT1`</span>: time below 1 lx melanopic EDI (during sleep) (hours)</span>
+<span id="cb30-36"><a href="#cb30-36" aria-hidden="true" tabindex="-1"></a><span class="ss">      - </span><span class="in">`PAT250`</span>: longest period above 250lx melanopic EDI (minutes)</span>
+<span id="cb30-37"><a href="#cb30-37" aria-hidden="true" tabindex="-1"></a><span class="ss">  - </span>timing-based:</span>
+<span id="cb30-38"><a href="#cb30-38" aria-hidden="true" tabindex="-1"></a><span class="ss">      - </span><span class="in">`FLIT250`</span>: first time above 250 lx melanopic EDI (HH:MM)</span>
+<span id="cb30-39"><a href="#cb30-39" aria-hidden="true" tabindex="-1"></a><span class="ss">      - </span><span class="in">`LLIT250`</span>: last time above 250 lx melanopic EDI (HH:MM)</span>
+<span id="cb30-40"><a href="#cb30-40" aria-hidden="true" tabindex="-1"></a><span class="ss">      - </span><span class="in">`M10`</span>: midpoint of brightest 10 hours (HH:MM)</span>
+<span id="cb30-41"><a href="#cb30-41" aria-hidden="true" tabindex="-1"></a><span class="ss">      - </span><span class="in">`L5`</span>: midpoint of darkest 5 hours (HH:MM)</span>
+<span id="cb30-42"><a href="#cb30-42" aria-hidden="true" tabindex="-1"></a><span class="ss">  - </span>exposure-history-based:</span>
+<span id="cb30-43"><a href="#cb30-43" aria-hidden="true" tabindex="-1"></a><span class="ss">      - </span><span class="in">`Dose`</span>: melanopic EDI dose (lx·h)</span>
+<span id="cb30-44"><a href="#cb30-44" aria-hidden="true" tabindex="-1"></a><span class="ss">  - </span>spectrum-based:  </span>
+<span id="cb30-45"><a href="#cb30-45" aria-hidden="true" tabindex="-1"></a><span class="ss">      - </span><span class="in">`MDER`</span>: melanopic daylight efficacy ratio</span>
+<span id="cb30-46"><a href="#cb30-46" aria-hidden="true" tabindex="-1"></a>  c. per participant-hour:</span>
+<span id="cb30-47"><a href="#cb30-47" aria-hidden="true" tabindex="-1"></a><span class="ss">  - </span>level-based:</span>
+<span id="cb30-48"><a href="#cb30-48" aria-hidden="true" tabindex="-1"></a><span class="ss">      - </span><span class="in">`Mean`</span>:  geometric mean of melanopic EDI (lx)</span>
+<span id="cb30-49"><a href="#cb30-49" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-50"><a href="#cb30-50" aria-hidden="true" tabindex="-1"></a><span class="fu">## Setup</span></span>
+<span id="cb30-51"><a href="#cb30-51" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-54"><a href="#cb30-54" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb30-55"><a href="#cb30-55" aria-hidden="true" tabindex="-1"></a><span class="co">#| message: false</span></span>
+<span id="cb30-56"><a href="#cb30-56" aria-hidden="true" tabindex="-1"></a><span class="co">#| warning: false</span></span>
+<span id="cb30-57"><a href="#cb30-57" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
+<span id="cb30-58"><a href="#cb30-58" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(LightLogR)</span>
+<span id="cb30-59"><a href="#cb30-59" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(melidosData)</span>
+<span id="cb30-60"><a href="#cb30-60" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb30-61"><a href="#cb30-61" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-62"><a href="#cb30-62" aria-hidden="true" tabindex="-1"></a><span class="fu">## Importing data</span></span>
+<span id="cb30-63"><a href="#cb30-63" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-64"><a href="#cb30-64" aria-hidden="true" tabindex="-1"></a><span class="fu">### Light</span></span>
+<span id="cb30-65"><a href="#cb30-65" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-66"><a href="#cb30-66" aria-hidden="true" tabindex="-1"></a>In the first step, we import the unaggregated light eposure data for the glasses and the chest. These will be loaded from the <span class="co">[</span><span class="ot">GitHub project page</span><span class="co">](https://github.com/MeLiDosProject)</span>. These data have been imported already, trimmed by trial dates, checked for irregular data and gaps. All of them run on a <span class="in">`10 second`</span> interval.</span>
+<span id="cb30-67"><a href="#cb30-67" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-70"><a href="#cb30-70" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb30-71"><a href="#cb30-71" aria-hidden="true" tabindex="-1"></a><span class="co">#| message: false</span></span>
+<span id="cb30-72"><a href="#cb30-72" aria-hidden="true" tabindex="-1"></a>light_glasses <span class="ot">&lt;-</span> <span class="fu">load_data</span>(<span class="st">"light_glasses"</span>)</span>
+<span id="cb30-73"><a href="#cb30-73" aria-hidden="true" tabindex="-1"></a>light_chest <span class="ot">&lt;-</span> <span class="fu">load_data</span>(<span class="st">"light_chest"</span>)</span>
+<span id="cb30-74"><a href="#cb30-74" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb30-75"><a href="#cb30-75" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-76"><a href="#cb30-76" aria-hidden="true" tabindex="-1"></a><span class="fu">### Sleep</span></span>
+<span id="cb30-77"><a href="#cb30-77" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-78"><a href="#cb30-78" aria-hidden="true" tabindex="-1"></a>The sleep data comes from a morning sleep diary. They contain both sleep and wake times.</span>
+<span id="cb30-79"><a href="#cb30-79" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-82"><a href="#cb30-82" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb30-83"><a href="#cb30-83" aria-hidden="true" tabindex="-1"></a><span class="co">#| message: false</span></span>
+<span id="cb30-84"><a href="#cb30-84" aria-hidden="true" tabindex="-1"></a>sleepdiary <span class="ot">&lt;-</span> <span class="fu">load_data</span>(<span class="st">"sleepdiaries"</span>)</span>
+<span id="cb30-85"><a href="#cb30-85" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb30-86"><a href="#cb30-86" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-87"><a href="#cb30-87" aria-hidden="true" tabindex="-1"></a><span class="fu">### Wear log</span></span>
+<span id="cb30-88"><a href="#cb30-88" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-89"><a href="#cb30-89" aria-hidden="true" tabindex="-1"></a>The non-wear data comes from an app-based wear log that participants filled in whenever they removed or put on the device(s). </span>
+<span id="cb30-90"><a href="#cb30-90" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-93"><a href="#cb30-93" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb30-94"><a href="#cb30-94" aria-hidden="true" tabindex="-1"></a><span class="co">#| message: false</span></span>
+<span id="cb30-95"><a href="#cb30-95" aria-hidden="true" tabindex="-1"></a>wearlog <span class="ot">&lt;-</span> <span class="fu">load_data</span>(<span class="st">"wearlog"</span>)</span>
+<span id="cb30-96"><a href="#cb30-96" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb30-97"><a href="#cb30-97" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-98"><a href="#cb30-98" aria-hidden="true" tabindex="-1"></a><span class="fu">### Combine light exposure data with log and diary data</span></span>
+<span id="cb30-99"><a href="#cb30-99" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-100"><a href="#cb30-100" aria-hidden="true" tabindex="-1"></a>For the sleepdiary, a selection of sleep and wake times will be added. For the wearlog, the start and end times of a removal, as well as the type (<span class="in">`state`</span>) of removal will be used.</span>
+<span id="cb30-101"><a href="#cb30-101" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-102"><a href="#cb30-102" aria-hidden="true" tabindex="-1"></a><span class="fu">### Preparation</span></span>
+<span id="cb30-103"><a href="#cb30-103" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-106"><a href="#cb30-106" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb30-107"><a href="#cb30-107" aria-hidden="true" tabindex="-1"></a><span class="co">#| message: false</span></span>
+<span id="cb30-108"><a href="#cb30-108" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-109"><a href="#cb30-109" aria-hidden="true" tabindex="-1"></a>sleepdiary_adj <span class="ot">&lt;-</span></span>
+<span id="cb30-110"><a href="#cb30-110" aria-hidden="true" tabindex="-1"></a>  sleepdiary <span class="sc">|&gt;</span></span>
+<span id="cb30-111"><a href="#cb30-111" aria-hidden="true" tabindex="-1"></a>  <span class="fu">map</span>(\(x) x <span class="sc">|&gt;</span></span>
+<span id="cb30-112"><a href="#cb30-112" aria-hidden="true" tabindex="-1"></a>        <span class="fu">select</span>(Id, sleep, wake) <span class="sc">|&gt;</span></span>
+<span id="cb30-113"><a href="#cb30-113" aria-hidden="true" tabindex="-1"></a>        <span class="fu">group_by</span>(Id) <span class="sc">|&gt;</span></span>
+<span id="cb30-114"><a href="#cb30-114" aria-hidden="true" tabindex="-1"></a>        <span class="fu">pivot_longer</span>(<span class="sc">-</span>Id, <span class="at">names_to =</span> <span class="st">"sleep"</span>, <span class="at">values_to =</span> <span class="st">"Datetime"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb30-115"><a href="#cb30-115" aria-hidden="true" tabindex="-1"></a>        <span class="fu">sc2interval</span>(<span class="at">Statechange.colname =</span> sleep, <span class="at">starting.state =</span> <span class="st">"wake"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb30-116"><a href="#cb30-116" aria-hidden="true" tabindex="-1"></a>        <span class="fu">sleep_int2Brown</span>(<span class="at">Brown.day =</span> <span class="st">"wake"</span>, <span class="at">Brown.evening =</span> <span class="st">"pre-sleep"</span>, <span class="at">Brown.night =</span> <span class="st">"sleep"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb30-117"><a href="#cb30-117" aria-hidden="true" tabindex="-1"></a>        <span class="fu">mutate</span>(<span class="at">sleep =</span> <span class="fu">case_when</span>(<span class="fu">is.na</span>(sleep) <span class="sc">&amp;</span> State.Brown <span class="sc">==</span> <span class="st">"pre-sleep"</span> <span class="sc">~</span> <span class="st">"wake"</span>,</span>
+<span id="cb30-118"><a href="#cb30-118" aria-hidden="true" tabindex="-1"></a>                                 <span class="at">.default =</span> sleep))</span>
+<span id="cb30-119"><a href="#cb30-119" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb30-120"><a href="#cb30-120" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-121"><a href="#cb30-121" aria-hidden="true" tabindex="-1"></a>wearlog_adj <span class="ot">&lt;-</span></span>
+<span id="cb30-122"><a href="#cb30-122" aria-hidden="true" tabindex="-1"></a>  wearlog <span class="sc">|&gt;</span>  </span>
+<span id="cb30-123"><a href="#cb30-123" aria-hidden="true" tabindex="-1"></a>    <span class="fu">map</span>(\(x) x <span class="sc">|&gt;</span> <span class="fu">select</span>(Id, start, end, <span class="at">wear =</span> state))</span>
+<span id="cb30-124"><a href="#cb30-124" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb30-125"><a href="#cb30-125" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-126"><a href="#cb30-126" aria-hidden="true" tabindex="-1"></a><span class="fu">### Combination</span></span>
+<span id="cb30-127"><a href="#cb30-127" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-130"><a href="#cb30-130" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb30-131"><a href="#cb30-131" aria-hidden="true" tabindex="-1"></a>light_chest_expanded <span class="ot">&lt;-</span> </span>
+<span id="cb30-132"><a href="#cb30-132" aria-hidden="true" tabindex="-1"></a>light_chest <span class="sc">|&gt;</span> </span>
+<span id="cb30-133"><a href="#cb30-133" aria-hidden="true" tabindex="-1"></a>  <span class="fu">imap</span>(\(x, idx) x <span class="sc">|&gt;</span></span>
+<span id="cb30-134"><a href="#cb30-134" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span>(Id, Datetime, MEDI, LIGHT) <span class="sc">|&gt;</span></span>
+<span id="cb30-135"><a href="#cb30-135" aria-hidden="true" tabindex="-1"></a>    <span class="fu">add_states</span>(sleepdiary_adj[[idx]], <span class="at">start =</span> Interval, <span class="at">end =</span> Interval) <span class="sc">|&gt;</span></span>
+<span id="cb30-136"><a href="#cb30-136" aria-hidden="true" tabindex="-1"></a>    <span class="fu">add_states</span>(wearlog_adj[[idx]]) <span class="sc">|&gt;</span> </span>
+<span id="cb30-137"><a href="#cb30-137" aria-hidden="true" tabindex="-1"></a>    <span class="fu">aggregate_Datetime</span>(<span class="st">"1 min"</span>)</span>
+<span id="cb30-138"><a href="#cb30-138" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb30-139"><a href="#cb30-139" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-140"><a href="#cb30-140" aria-hidden="true" tabindex="-1"></a>light_glasses_expanded <span class="ot">&lt;-</span> </span>
+<span id="cb30-141"><a href="#cb30-141" aria-hidden="true" tabindex="-1"></a>light_glasses <span class="sc">|&gt;</span> </span>
+<span id="cb30-142"><a href="#cb30-142" aria-hidden="true" tabindex="-1"></a>  <span class="fu">imap</span>(\(x, idx) x <span class="sc">|&gt;</span> </span>
+<span id="cb30-143"><a href="#cb30-143" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span>(Id, Datetime, MEDI, LIGHT) <span class="sc">|&gt;</span> </span>
+<span id="cb30-144"><a href="#cb30-144" aria-hidden="true" tabindex="-1"></a>    <span class="fu">add_states</span>(sleepdiary_adj[[idx]], <span class="at">start =</span> Interval, <span class="at">end =</span> Interval) <span class="sc">|&gt;</span> </span>
+<span id="cb30-145"><a href="#cb30-145" aria-hidden="true" tabindex="-1"></a>    <span class="fu">add_states</span>(wearlog_adj[[idx]]) <span class="sc">|&gt;</span> </span>
+<span id="cb30-146"><a href="#cb30-146" aria-hidden="true" tabindex="-1"></a>    <span class="fu">aggregate_Datetime</span>(<span class="st">"1 min"</span>)</span>
+<span id="cb30-147"><a href="#cb30-147" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb30-148"><a href="#cb30-148" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb30-149"><a href="#cb30-149" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-150"><a href="#cb30-150" aria-hidden="true" tabindex="-1"></a><span class="fu">## Preprocessing step 1</span></span>
+<span id="cb30-151"><a href="#cb30-151" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-152"><a href="#cb30-152" aria-hidden="true" tabindex="-1"></a>In this step, we will remove non-wear instances that are neither marked as sleep, nor fall into a sleep window (sleepdiary). We will also add photoperiod, and remove instances ≥ 10^5 lx melanopic EDI.</span>
+<span id="cb30-153"><a href="#cb30-153" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-156"><a href="#cb30-156" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb30-157"><a href="#cb30-157" aria-hidden="true" tabindex="-1"></a>light_chest_expanded <span class="ot">&lt;-</span> </span>
+<span id="cb30-158"><a href="#cb30-158" aria-hidden="true" tabindex="-1"></a>light_chest_expanded <span class="sc">|&gt;</span> </span>
+<span id="cb30-159"><a href="#cb30-159" aria-hidden="true" tabindex="-1"></a>  <span class="fu">imap</span>(\(x, idx) x <span class="sc">|&gt;</span> </span>
+<span id="cb30-160"><a href="#cb30-160" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">MEDI =</span> <span class="fu">replace_when</span>(MEDI, </span>
+<span id="cb30-161"><a href="#cb30-161" aria-hidden="true" tabindex="-1"></a>                               wear <span class="sc">==</span> <span class="st">"off"</span> <span class="sc">&amp;</span> (State.Brown <span class="sc">!=</span> <span class="st">"sleep"</span> <span class="sc">|</span> <span class="fu">is.na</span>(State.Brown)) <span class="sc">~</span> <span class="cn">NA</span>,</span>
+<span id="cb30-162"><a href="#cb30-162" aria-hidden="true" tabindex="-1"></a>                               MEDI <span class="sc">&gt;=</span> <span class="dv">120000</span> <span class="sc">~</span> <span class="cn">NA</span></span>
+<span id="cb30-163"><a href="#cb30-163" aria-hidden="true" tabindex="-1"></a>                               )) <span class="sc">|&gt;</span> </span>
+<span id="cb30-164"><a href="#cb30-164" aria-hidden="true" tabindex="-1"></a>      <span class="fu">add_photoperiod</span>(melidos_coordinates[[idx]])</span>
+<span id="cb30-165"><a href="#cb30-165" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb30-166"><a href="#cb30-166" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-167"><a href="#cb30-167" aria-hidden="true" tabindex="-1"></a>light_glasses_expanded <span class="ot">&lt;-</span> </span>
+<span id="cb30-168"><a href="#cb30-168" aria-hidden="true" tabindex="-1"></a>light_glasses_expanded <span class="sc">|&gt;</span> </span>
+<span id="cb30-169"><a href="#cb30-169" aria-hidden="true" tabindex="-1"></a>  <span class="fu">imap</span>(\(x, idx) x <span class="sc">|&gt;</span> </span>
+<span id="cb30-170"><a href="#cb30-170" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">MEDI =</span> <span class="fu">replace_when</span>(MEDI, </span>
+<span id="cb30-171"><a href="#cb30-171" aria-hidden="true" tabindex="-1"></a>                               wear <span class="sc">==</span> <span class="st">"off"</span> <span class="sc">&amp;</span> (State.Brown <span class="sc">!=</span> <span class="st">"sleep"</span> <span class="sc">|</span> <span class="fu">is.na</span>(State.Brown)) <span class="sc">~</span> <span class="cn">NA</span>,</span>
+<span id="cb30-172"><a href="#cb30-172" aria-hidden="true" tabindex="-1"></a>                               MEDI <span class="sc">&gt;=</span> <span class="dv">120000</span> <span class="sc">~</span> <span class="cn">NA</span></span>
+<span id="cb30-173"><a href="#cb30-173" aria-hidden="true" tabindex="-1"></a>                               )) <span class="sc">|&gt;</span> </span>
+<span id="cb30-174"><a href="#cb30-174" aria-hidden="true" tabindex="-1"></a>      <span class="fu">add_photoperiod</span>(melidos_coordinates[[idx]])</span>
+<span id="cb30-175"><a href="#cb30-175" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb30-176"><a href="#cb30-176" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-177"><a href="#cb30-177" aria-hidden="true" tabindex="-1"></a>light_chest_processed1 <span class="ot">&lt;-</span> </span>
+<span id="cb30-178"><a href="#cb30-178" aria-hidden="true" tabindex="-1"></a>  <span class="fu">structure</span>(light_chest_expanded, <span class="at">class =</span> <span class="st">"melidos_data"</span>) <span class="sc">|&gt;</span> <span class="fu">flatten_data</span>() <span class="sc">|&gt;</span> <span class="fu">group_by</span>(site, Id)</span>
+<span id="cb30-179"><a href="#cb30-179" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-180"><a href="#cb30-180" aria-hidden="true" tabindex="-1"></a>light_glasses_processed1 <span class="ot">&lt;-</span> </span>
+<span id="cb30-181"><a href="#cb30-181" aria-hidden="true" tabindex="-1"></a>  <span class="fu">structure</span>(light_glasses_expanded, <span class="at">class =</span> <span class="st">"melidos_data"</span>) <span class="sc">|&gt;</span> <span class="fu">flatten_data</span>() <span class="sc">|&gt;</span> <span class="fu">group_by</span>(site, Id)</span>
+<span id="cb30-182"><a href="#cb30-182" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb30-183"><a href="#cb30-183" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-184"><a href="#cb30-184" aria-hidden="true" tabindex="-1"></a>**This marks our first dataset**</span>
+<span id="cb30-185"><a href="#cb30-185" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-188"><a href="#cb30-188" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb30-189"><a href="#cb30-189" aria-hidden="true" tabindex="-1"></a><span class="fu">save</span>(light_chest_processed1, <span class="at">file =</span> <span class="st">"data/preprocessed_chest_1.RData"</span>)</span>
+<span id="cb30-190"><a href="#cb30-190" aria-hidden="true" tabindex="-1"></a><span class="fu">save</span>(light_glasses_processed1, <span class="at">file =</span> <span class="st">"data/preprocessed_glasses_1.RData"</span>)</span>
+<span id="cb30-191"><a href="#cb30-191" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb30-192"><a href="#cb30-192" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-193"><a href="#cb30-193" aria-hidden="true" tabindex="-1"></a><span class="fu">## Preprocessing step 2</span></span>
+<span id="cb30-194"><a href="#cb30-194" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-195"><a href="#cb30-195" aria-hidden="true" tabindex="-1"></a>Here we further process the data:</span>
+<span id="cb30-196"><a href="#cb30-196" aria-hidden="true" tabindex="-1"></a><span class="ss">  - </span>hours with less than 50% data availability are removed</span>
+<span id="cb30-197"><a href="#cb30-197" aria-hidden="true" tabindex="-1"></a><span class="ss">  - </span>days with less than 80% data availability (after the previous step) are removed</span>
+<span id="cb30-198"><a href="#cb30-198" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-201"><a href="#cb30-201" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb30-202"><a href="#cb30-202" aria-hidden="true" tabindex="-1"></a>light_chest_processed2 <span class="ot">&lt;-</span> </span>
+<span id="cb30-203"><a href="#cb30-203" aria-hidden="true" tabindex="-1"></a>  light_chest_processed1 <span class="sc">|&gt;</span> </span>
+<span id="cb30-204"><a href="#cb30-204" aria-hidden="true" tabindex="-1"></a>  <span class="fu">cut_Datetime</span>(<span class="at">unit =</span> <span class="st">"1 hour"</span>, <span class="at">group_by =</span> <span class="cn">TRUE</span>, <span class="at">type =</span> <span class="st">"floor"</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb30-205"><a href="#cb30-205" aria-hidden="true" tabindex="-1"></a>  <span class="fu">remove_partial_data</span>(MEDI, <span class="at">threshold.missing =</span> <span class="fl">0.5</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb30-206"><a href="#cb30-206" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ungroup</span>(Datetime.rounded) <span class="sc">|&gt;</span> </span>
+<span id="cb30-207"><a href="#cb30-207" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="sc">-</span>Datetime.rounded) <span class="sc">|&gt;</span> </span>
+<span id="cb30-208"><a href="#cb30-208" aria-hidden="true" tabindex="-1"></a>  <span class="fu">add_Date_col</span>(<span class="at">group.by =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb30-209"><a href="#cb30-209" aria-hidden="true" tabindex="-1"></a>  <span class="fu">gap_handler</span>(<span class="at">full.days =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb30-210"><a href="#cb30-210" aria-hidden="true" tabindex="-1"></a>  <span class="fu">remove_partial_data</span>(MEDI, <span class="at">threshold.missing =</span> <span class="fl">0.2</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb30-211"><a href="#cb30-211" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ungroup</span>(Date)</span>
+<span id="cb30-212"><a href="#cb30-212" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-213"><a href="#cb30-213" aria-hidden="true" tabindex="-1"></a>light_glasses_processed2 <span class="ot">&lt;-</span> </span>
+<span id="cb30-214"><a href="#cb30-214" aria-hidden="true" tabindex="-1"></a>  light_glasses_processed1 <span class="sc">|&gt;</span> </span>
+<span id="cb30-215"><a href="#cb30-215" aria-hidden="true" tabindex="-1"></a>  <span class="fu">cut_Datetime</span>(<span class="at">unit =</span> <span class="st">"1 hour"</span>, <span class="at">group_by =</span> <span class="cn">TRUE</span>, <span class="at">type =</span> <span class="st">"floor"</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb30-216"><a href="#cb30-216" aria-hidden="true" tabindex="-1"></a>  <span class="fu">remove_partial_data</span>(MEDI, <span class="at">threshold.missing =</span> <span class="fl">0.5</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb30-217"><a href="#cb30-217" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ungroup</span>(Datetime.rounded) <span class="sc">|&gt;</span> </span>
+<span id="cb30-218"><a href="#cb30-218" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="sc">-</span>Datetime.rounded) <span class="sc">|&gt;</span> </span>
+<span id="cb30-219"><a href="#cb30-219" aria-hidden="true" tabindex="-1"></a>  <span class="fu">add_Date_col</span>(<span class="at">group.by =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb30-220"><a href="#cb30-220" aria-hidden="true" tabindex="-1"></a>  <span class="fu">gap_handler</span>(<span class="at">full.days =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb30-221"><a href="#cb30-221" aria-hidden="true" tabindex="-1"></a>  <span class="fu">remove_partial_data</span>(MEDI, <span class="at">threshold.missing =</span> <span class="fl">0.2</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb30-222"><a href="#cb30-222" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ungroup</span>(Date)</span>
+<span id="cb30-223"><a href="#cb30-223" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb30-224"><a href="#cb30-224" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-225"><a href="#cb30-225" aria-hidden="true" tabindex="-1"></a>**This marks our second dataset**</span>
+<span id="cb30-226"><a href="#cb30-226" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-229"><a href="#cb30-229" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb30-230"><a href="#cb30-230" aria-hidden="true" tabindex="-1"></a><span class="fu">save</span>(light_chest_processed2, <span class="at">file =</span> <span class="st">"data/preprocessed_chest_2.RData"</span>)</span>
+<span id="cb30-231"><a href="#cb30-231" aria-hidden="true" tabindex="-1"></a><span class="fu">save</span>(light_glasses_processed2, <span class="at">file =</span> <span class="st">"data/preprocessed_glasses_2.RData"</span>)</span>
+<span id="cb30-232"><a href="#cb30-232" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb30-233"><a href="#cb30-233" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-234"><a href="#cb30-234" aria-hidden="true" tabindex="-1"></a><span class="fu">## Preprocessing step 3</span></span>
+<span id="cb30-235"><a href="#cb30-235" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-236"><a href="#cb30-236" aria-hidden="true" tabindex="-1"></a><span class="fu">### Per participant metric</span></span>
+<span id="cb30-237"><a href="#cb30-237" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-238"><a href="#cb30-238" aria-hidden="true" tabindex="-1"></a><span class="ss">  - </span>dynamics-based:</span>
+<span id="cb30-239"><a href="#cb30-239" aria-hidden="true" tabindex="-1"></a><span class="ss">      - </span>*IS*: interdaily stability</span>
+<span id="cb30-240"><a href="#cb30-240" aria-hidden="true" tabindex="-1"></a><span class="ss">      - </span>*IV*: intradaily variability</span>
+<span id="cb30-241"><a href="#cb30-241" aria-hidden="true" tabindex="-1"></a>      </span>
+<span id="cb30-244"><a href="#cb30-244" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb30-245"><a href="#cb30-245" aria-hidden="true" tabindex="-1"></a>metric_chest_participant <span class="ot">&lt;-</span> </span>
+<span id="cb30-246"><a href="#cb30-246" aria-hidden="true" tabindex="-1"></a>  light_chest_processed2 <span class="sc">|&gt;</span> </span>
+<span id="cb30-247"><a href="#cb30-247" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(</span>
+<span id="cb30-248"><a href="#cb30-248" aria-hidden="true" tabindex="-1"></a>    <span class="fu">interdaily_stability</span>(MEDI, Datetime, <span class="at">na.rm =</span> <span class="cn">TRUE</span>, <span class="at">as.df =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb30-249"><a href="#cb30-249" aria-hidden="true" tabindex="-1"></a>    <span class="fu">intradaily_variability</span>(MEDI, Datetime, <span class="at">na.rm =</span> <span class="cn">TRUE</span>, <span class="at">as.df =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb30-250"><a href="#cb30-250" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb30-251"><a href="#cb30-251" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-252"><a href="#cb30-252" aria-hidden="true" tabindex="-1"></a>metric_glasses_participant <span class="ot">&lt;-</span> </span>
+<span id="cb30-253"><a href="#cb30-253" aria-hidden="true" tabindex="-1"></a>  light_glasses_processed2 <span class="sc">|&gt;</span> </span>
+<span id="cb30-254"><a href="#cb30-254" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(</span>
+<span id="cb30-255"><a href="#cb30-255" aria-hidden="true" tabindex="-1"></a>    <span class="fu">interdaily_stability</span>(MEDI, Datetime, <span class="at">na.rm =</span> <span class="cn">TRUE</span>, <span class="at">as.df =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb30-256"><a href="#cb30-256" aria-hidden="true" tabindex="-1"></a>    <span class="fu">intradaily_variability</span>(MEDI, Datetime, <span class="at">na.rm =</span> <span class="cn">TRUE</span>, <span class="at">as.df =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb30-257"><a href="#cb30-257" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb30-258"><a href="#cb30-258" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb30-259"><a href="#cb30-259" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-260"><a href="#cb30-260" aria-hidden="true" tabindex="-1"></a><span class="fu">### Per participant-day metric</span></span>
+<span id="cb30-261"><a href="#cb30-261" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-262"><a href="#cb30-262" aria-hidden="true" tabindex="-1"></a><span class="ss">  - </span>level-based:</span>
+<span id="cb30-263"><a href="#cb30-263" aria-hidden="true" tabindex="-1"></a><span class="ss">      - </span><span class="in">`Mean`</span>: geometric mean of melanopic EDI (lx)</span>
+<span id="cb30-264"><a href="#cb30-264" aria-hidden="true" tabindex="-1"></a><span class="ss">      - </span><span class="in">`M10mean`</span>: geometric mean of melanopic EDI during 10 brightest hours of the day (lx)</span>
+<span id="cb30-265"><a href="#cb30-265" aria-hidden="true" tabindex="-1"></a><span class="ss">      - </span><span class="in">`L5mean`</span>: geometric mean of melanopic EDI during 5 darkest hours of the day (lx)</span>
+<span id="cb30-266"><a href="#cb30-266" aria-hidden="true" tabindex="-1"></a><span class="ss">  - </span>duration-based:  </span>
+<span id="cb30-267"><a href="#cb30-267" aria-hidden="true" tabindex="-1"></a><span class="ss">      - </span><span class="in">`TAT1000`</span>: time above 1000 lx melanopic EDI (minutes)</span>
+<span id="cb30-268"><a href="#cb30-268" aria-hidden="true" tabindex="-1"></a><span class="ss">      - </span><span class="in">`TAT250`</span>: time above 250 lx melanopic EDI (during wake) (hours)</span>
+<span id="cb30-269"><a href="#cb30-269" aria-hidden="true" tabindex="-1"></a><span class="ss">      - </span><span class="in">`TBT10`</span>: time below 10 lx melanopic EDI (during evening, i.e. 3 hours before sleep) (hours)</span>
+<span id="cb30-270"><a href="#cb30-270" aria-hidden="true" tabindex="-1"></a><span class="ss">      - </span><span class="in">`TBT1`</span>: time below 1 lx melanopic EDI (during sleep) (hours)</span>
+<span id="cb30-271"><a href="#cb30-271" aria-hidden="true" tabindex="-1"></a><span class="ss">      - </span><span class="in">`PAT250`</span>: longest period above 250lx melanopic EDI (minutes)</span>
+<span id="cb30-272"><a href="#cb30-272" aria-hidden="true" tabindex="-1"></a><span class="ss">  - </span>timing-based:</span>
+<span id="cb30-273"><a href="#cb30-273" aria-hidden="true" tabindex="-1"></a><span class="ss">      - </span><span class="in">`FLIT250`</span>: first time above 250 lx melanopic EDI (HH:MM)</span>
+<span id="cb30-274"><a href="#cb30-274" aria-hidden="true" tabindex="-1"></a><span class="ss">      - </span><span class="in">`LLIT250`</span>: last time above 250 lx melanopic EDI (HH:MM)</span>
+<span id="cb30-275"><a href="#cb30-275" aria-hidden="true" tabindex="-1"></a><span class="ss">      - </span><span class="in">`M10`</span>: midpoint of brightest 10 hours (HH:MM)</span>
+<span id="cb30-276"><a href="#cb30-276" aria-hidden="true" tabindex="-1"></a><span class="ss">      - </span><span class="in">`L5`</span>: midpoint of darkest 5 hours (HH:MM)</span>
+<span id="cb30-277"><a href="#cb30-277" aria-hidden="true" tabindex="-1"></a><span class="ss">  - </span>exposure-history-based:</span>
+<span id="cb30-278"><a href="#cb30-278" aria-hidden="true" tabindex="-1"></a><span class="ss">      - </span><span class="in">`Dose`</span>: melanopic EDI dose (lx·h)</span>
+<span id="cb30-279"><a href="#cb30-279" aria-hidden="true" tabindex="-1"></a><span class="ss">  - </span>spectrum-based:  </span>
+<span id="cb30-280"><a href="#cb30-280" aria-hidden="true" tabindex="-1"></a><span class="ss">      - </span><span class="in">`MDER`</span>: melanopic daylight efficacy ratio</span>
+<span id="cb30-281"><a href="#cb30-281" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-284"><a href="#cb30-284" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb30-285"><a href="#cb30-285" aria-hidden="true" tabindex="-1"></a>metric_chest_participantday <span class="ot">&lt;-</span></span>
+<span id="cb30-286"><a href="#cb30-286" aria-hidden="true" tabindex="-1"></a>  light_chest_processed2 <span class="sc">|&gt;</span> </span>
+<span id="cb30-287"><a href="#cb30-287" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(Date, <span class="at">.add =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb30-288"><a href="#cb30-288" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(</span>
+<span id="cb30-289"><a href="#cb30-289" aria-hidden="true" tabindex="-1"></a>    <span class="at">Mean =</span> MEDI <span class="sc">|&gt;</span> <span class="fu">log_zero_inflated</span>() <span class="sc">|&gt;</span> <span class="fu">mean</span>(<span class="at">na.rm =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span> <span class="fu">exp_zero_inflated</span>(),</span>
+<span id="cb30-290"><a href="#cb30-290" aria-hidden="true" tabindex="-1"></a>    <span class="fu">bright_dark_period</span>(<span class="fu">log_zero_inflated</span>(MEDI), Datetime, <span class="st">"brightest"</span>, <span class="st">"10 hours"</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>, <span class="at">as.df =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb30-291"><a href="#cb30-291" aria-hidden="true" tabindex="-1"></a>    <span class="fu">bright_dark_period</span>(<span class="fu">log_zero_inflated</span>(MEDI), Datetime, <span class="st">"darkest"</span>, <span class="st">"5 hours"</span>, <span class="at">loop =</span> <span class="cn">TRUE</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>, <span class="at">as.df =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb30-292"><a href="#cb30-292" aria-hidden="true" tabindex="-1"></a>    <span class="fu">duration_above_threshold</span>(MEDI, Datetime, <span class="st">"above"</span>, <span class="dv">1000</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>, <span class="at">as.df =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb30-293"><a href="#cb30-293" aria-hidden="true" tabindex="-1"></a>    <span class="fu">duration_above_threshold</span>(MEDI, Datetime, <span class="st">"above"</span>, <span class="dv">250</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>, <span class="at">as.df =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb30-294"><a href="#cb30-294" aria-hidden="true" tabindex="-1"></a>    <span class="fu">period_above_threshold</span>(MEDI, Datetime, <span class="st">"above"</span>, <span class="dv">250</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>, <span class="at">as.df =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb30-295"><a href="#cb30-295" aria-hidden="true" tabindex="-1"></a>    <span class="fu">timing_above_threshold</span>(MEDI, Datetime, <span class="st">"above"</span>, <span class="dv">250</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>, <span class="at">as.df =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb30-296"><a href="#cb30-296" aria-hidden="true" tabindex="-1"></a>    <span class="fu">dose</span>(MEDI, Datetime, <span class="at">na.rm =</span> <span class="cn">TRUE</span>, <span class="at">as.df =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb30-297"><a href="#cb30-297" aria-hidden="true" tabindex="-1"></a>    <span class="at">MDER =</span> <span class="fu">mean</span>(MEDI <span class="sc">/</span> LIGHT, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb30-298"><a href="#cb30-298" aria-hidden="true" tabindex="-1"></a>    <span class="at">.groups =</span> <span class="st">"drop_last"</span></span>
+<span id="cb30-299"><a href="#cb30-299" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">|&gt;</span> </span>
+<span id="cb30-300"><a href="#cb30-300" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">MDER =</span> <span class="fu">ifelse</span>(<span class="fu">abs</span>(MDER) <span class="sc">==</span> <span class="cn">Inf</span>, <span class="cn">NA</span>, MDER))</span>
+<span id="cb30-301"><a href="#cb30-301" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-302"><a href="#cb30-302" aria-hidden="true" tabindex="-1"></a>metric_glasses_participantday <span class="ot">&lt;-</span></span>
+<span id="cb30-303"><a href="#cb30-303" aria-hidden="true" tabindex="-1"></a>  light_glasses_processed2 <span class="sc">|&gt;</span> </span>
+<span id="cb30-304"><a href="#cb30-304" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(Date, <span class="at">.add =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb30-305"><a href="#cb30-305" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(</span>
+<span id="cb30-306"><a href="#cb30-306" aria-hidden="true" tabindex="-1"></a>    <span class="at">Mean =</span> MEDI <span class="sc">|&gt;</span> <span class="fu">log_zero_inflated</span>() <span class="sc">|&gt;</span> <span class="fu">mean</span>(<span class="at">na.rm =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span> <span class="fu">exp_zero_inflated</span>(),</span>
+<span id="cb30-307"><a href="#cb30-307" aria-hidden="true" tabindex="-1"></a>    <span class="fu">bright_dark_period</span>(<span class="fu">log_zero_inflated</span>(MEDI), Datetime, <span class="st">"brightest"</span>, <span class="st">"10 hours"</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>, <span class="at">as.df =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb30-308"><a href="#cb30-308" aria-hidden="true" tabindex="-1"></a>    <span class="fu">bright_dark_period</span>(<span class="fu">log_zero_inflated</span>(MEDI), Datetime, <span class="st">"darkest"</span>, <span class="st">"5 hours"</span>, <span class="at">loop =</span> <span class="cn">TRUE</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>, <span class="at">as.df =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb30-309"><a href="#cb30-309" aria-hidden="true" tabindex="-1"></a>    <span class="fu">duration_above_threshold</span>(MEDI, Datetime, <span class="st">"above"</span>, <span class="dv">1000</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>, <span class="at">as.df =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb30-310"><a href="#cb30-310" aria-hidden="true" tabindex="-1"></a>    <span class="fu">duration_above_threshold</span>(MEDI, Datetime, <span class="st">"above"</span>, <span class="dv">250</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>, <span class="at">as.df =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb30-311"><a href="#cb30-311" aria-hidden="true" tabindex="-1"></a>    <span class="fu">period_above_threshold</span>(MEDI, Datetime, <span class="st">"above"</span>, <span class="dv">250</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>, <span class="at">as.df =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb30-312"><a href="#cb30-312" aria-hidden="true" tabindex="-1"></a>    <span class="fu">timing_above_threshold</span>(MEDI, Datetime, <span class="st">"above"</span>, <span class="dv">250</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>, <span class="at">as.df =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb30-313"><a href="#cb30-313" aria-hidden="true" tabindex="-1"></a>    <span class="fu">dose</span>(MEDI, Datetime, <span class="at">na.rm =</span> <span class="cn">TRUE</span>, <span class="at">as.df =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb30-314"><a href="#cb30-314" aria-hidden="true" tabindex="-1"></a>    <span class="at">MDER =</span> <span class="fu">mean</span>(MEDI <span class="sc">/</span> LIGHT, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb30-315"><a href="#cb30-315" aria-hidden="true" tabindex="-1"></a>    <span class="at">.groups =</span> <span class="st">"drop_last"</span></span>
+<span id="cb30-316"><a href="#cb30-316" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">|&gt;</span> </span>
+<span id="cb30-317"><a href="#cb30-317" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">MDER =</span> <span class="fu">ifelse</span>(<span class="fu">abs</span>(MDER) <span class="sc">==</span> <span class="cn">Inf</span>, <span class="cn">NA</span>, MDER))</span>
+<span id="cb30-318"><a href="#cb30-318" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb30-319"><a href="#cb30-319" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-320"><a href="#cb30-320" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-323"><a href="#cb30-323" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb30-324"><a href="#cb30-324" aria-hidden="true" tabindex="-1"></a>metric_chest_participantday2 <span class="ot">&lt;-</span> </span>
+<span id="cb30-325"><a href="#cb30-325" aria-hidden="true" tabindex="-1"></a>  light_chest_processed2 <span class="sc">|&gt;</span> </span>
+<span id="cb30-326"><a href="#cb30-326" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(Date, State.Brown, <span class="at">.add =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb30-327"><a href="#cb30-327" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(</span>
+<span id="cb30-328"><a href="#cb30-328" aria-hidden="true" tabindex="-1"></a>    <span class="fu">duration_above_threshold</span>(MEDI, Datetime, <span class="st">"above"</span>, <span class="dv">250</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>, <span class="at">as.df =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb30-329"><a href="#cb30-329" aria-hidden="true" tabindex="-1"></a>    <span class="fu">duration_above_threshold</span>(MEDI, Datetime, <span class="st">"below"</span>, <span class="dv">10</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>, <span class="at">as.df =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb30-330"><a href="#cb30-330" aria-hidden="true" tabindex="-1"></a>    <span class="fu">duration_above_threshold</span>(MEDI, Datetime, <span class="st">"below"</span>, <span class="dv">1</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>, <span class="at">as.df =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb30-331"><a href="#cb30-331" aria-hidden="true" tabindex="-1"></a>    <span class="at">.groups =</span> <span class="st">"drop_last"</span></span>
+<span id="cb30-332"><a href="#cb30-332" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">|&gt;</span> </span>
+<span id="cb30-333"><a href="#cb30-333" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_longer</span>(<span class="sc">-</span><span class="fu">c</span>(site<span class="sc">:</span>State.Brown), <span class="at">names_to =</span> <span class="st">"metric"</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb30-334"><a href="#cb30-334" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter_out</span>(</span>
+<span id="cb30-335"><a href="#cb30-335" aria-hidden="true" tabindex="-1"></a>    <span class="sc">!</span>(State.Brown <span class="sc">==</span> <span class="st">"wake"</span> <span class="sc">&amp;</span> metric <span class="sc">==</span> <span class="st">"duration_above_250"</span>),</span>
+<span id="cb30-336"><a href="#cb30-336" aria-hidden="true" tabindex="-1"></a>    <span class="sc">!</span>(State.Brown <span class="sc">==</span> <span class="st">"pre-sleep"</span> <span class="sc">&amp;</span> metric <span class="sc">==</span> <span class="st">"duration_below_10"</span>),</span>
+<span id="cb30-337"><a href="#cb30-337" aria-hidden="true" tabindex="-1"></a>    <span class="sc">!</span>(State.Brown <span class="sc">==</span> <span class="st">"sleep"</span> <span class="sc">&amp;</span> metric <span class="sc">==</span> <span class="st">"duration_below_1"</span>),</span>
+<span id="cb30-338"><a href="#cb30-338" aria-hidden="true" tabindex="-1"></a>    ) <span class="sc">|&gt;</span></span>
+<span id="cb30-339"><a href="#cb30-339" aria-hidden="true" tabindex="-1"></a>  <span class="fu">drop_na</span>(State.Brown) <span class="sc">|&gt;</span> </span>
+<span id="cb30-340"><a href="#cb30-340" aria-hidden="true" tabindex="-1"></a>  <span class="fu">unite</span>(metric, metric, State.Brown) <span class="sc">|&gt;</span> </span>
+<span id="cb30-341"><a href="#cb30-341" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_wider</span>(<span class="at">id_cols =</span> <span class="fu">c</span>(site, Id, Date), <span class="at">values_from =</span> value, <span class="at">names_from =</span> metric)</span>
+<span id="cb30-342"><a href="#cb30-342" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-343"><a href="#cb30-343" aria-hidden="true" tabindex="-1"></a>metric_glasses_participantday2 <span class="ot">&lt;-</span> </span>
+<span id="cb30-344"><a href="#cb30-344" aria-hidden="true" tabindex="-1"></a>  light_glasses_processed2 <span class="sc">|&gt;</span> </span>
+<span id="cb30-345"><a href="#cb30-345" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(Date, State.Brown, <span class="at">.add =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb30-346"><a href="#cb30-346" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(</span>
+<span id="cb30-347"><a href="#cb30-347" aria-hidden="true" tabindex="-1"></a>    <span class="fu">duration_above_threshold</span>(MEDI, Datetime, <span class="st">"above"</span>, <span class="dv">250</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>, <span class="at">as.df =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb30-348"><a href="#cb30-348" aria-hidden="true" tabindex="-1"></a>    <span class="fu">duration_above_threshold</span>(MEDI, Datetime, <span class="st">"below"</span>, <span class="dv">10</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>, <span class="at">as.df =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb30-349"><a href="#cb30-349" aria-hidden="true" tabindex="-1"></a>    <span class="fu">duration_above_threshold</span>(MEDI, Datetime, <span class="st">"below"</span>, <span class="dv">1</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>, <span class="at">as.df =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb30-350"><a href="#cb30-350" aria-hidden="true" tabindex="-1"></a>    <span class="at">.groups =</span> <span class="st">"drop_last"</span></span>
+<span id="cb30-351"><a href="#cb30-351" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">|&gt;</span> </span>
+<span id="cb30-352"><a href="#cb30-352" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_longer</span>(<span class="sc">-</span><span class="fu">c</span>(site<span class="sc">:</span>State.Brown), <span class="at">names_to =</span> <span class="st">"metric"</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb30-353"><a href="#cb30-353" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter_out</span>(</span>
+<span id="cb30-354"><a href="#cb30-354" aria-hidden="true" tabindex="-1"></a>    <span class="sc">!</span>(State.Brown <span class="sc">==</span> <span class="st">"wake"</span> <span class="sc">&amp;</span> metric <span class="sc">==</span> <span class="st">"duration_above_250"</span>),</span>
+<span id="cb30-355"><a href="#cb30-355" aria-hidden="true" tabindex="-1"></a>    <span class="sc">!</span>(State.Brown <span class="sc">==</span> <span class="st">"pre-sleep"</span> <span class="sc">&amp;</span> metric <span class="sc">==</span> <span class="st">"duration_below_10"</span>),</span>
+<span id="cb30-356"><a href="#cb30-356" aria-hidden="true" tabindex="-1"></a>    <span class="sc">!</span>(State.Brown <span class="sc">==</span> <span class="st">"sleep"</span> <span class="sc">&amp;</span> metric <span class="sc">==</span> <span class="st">"duration_below_1"</span>),</span>
+<span id="cb30-357"><a href="#cb30-357" aria-hidden="true" tabindex="-1"></a>    ) <span class="sc">|&gt;</span></span>
+<span id="cb30-358"><a href="#cb30-358" aria-hidden="true" tabindex="-1"></a>  <span class="fu">drop_na</span>(State.Brown) <span class="sc">|&gt;</span> </span>
+<span id="cb30-359"><a href="#cb30-359" aria-hidden="true" tabindex="-1"></a>  <span class="fu">unite</span>(metric, metric, State.Brown) <span class="sc">|&gt;</span> </span>
+<span id="cb30-360"><a href="#cb30-360" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_wider</span>(<span class="at">id_cols =</span> <span class="fu">c</span>(site, Id, Date), <span class="at">values_from =</span> value, <span class="at">names_from =</span> metric)</span>
+<span id="cb30-361"><a href="#cb30-361" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-362"><a href="#cb30-362" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb30-363"><a href="#cb30-363" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-366"><a href="#cb30-366" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb30-367"><a href="#cb30-367" aria-hidden="true" tabindex="-1"></a>metric_chest_participantday <span class="ot">&lt;-</span></span>
+<span id="cb30-368"><a href="#cb30-368" aria-hidden="true" tabindex="-1"></a>  metric_chest_participantday <span class="sc">|&gt;</span> </span>
+<span id="cb30-369"><a href="#cb30-369" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(metric_chest_participantday2, </span>
+<span id="cb30-370"><a href="#cb30-370" aria-hidden="true" tabindex="-1"></a>            <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"site"</span>, <span class="st">"Id"</span>, <span class="st">"Date"</span>))</span>
+<span id="cb30-371"><a href="#cb30-371" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-372"><a href="#cb30-372" aria-hidden="true" tabindex="-1"></a>metric_glasses_participantday <span class="ot">&lt;-</span></span>
+<span id="cb30-373"><a href="#cb30-373" aria-hidden="true" tabindex="-1"></a>  metric_glasses_participantday <span class="sc">|&gt;</span> </span>
+<span id="cb30-374"><a href="#cb30-374" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(metric_chest_participantday2, </span>
+<span id="cb30-375"><a href="#cb30-375" aria-hidden="true" tabindex="-1"></a>            <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"site"</span>, <span class="st">"Id"</span>, <span class="st">"Date"</span>))</span>
+<span id="cb30-376"><a href="#cb30-376" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb30-377"><a href="#cb30-377" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-378"><a href="#cb30-378" aria-hidden="true" tabindex="-1"></a><span class="fu">### Per participant-hour metric</span></span>
+<span id="cb30-379"><a href="#cb30-379" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-380"><a href="#cb30-380" aria-hidden="true" tabindex="-1"></a><span class="ss">  - </span>level-based:</span>
+<span id="cb30-381"><a href="#cb30-381" aria-hidden="true" tabindex="-1"></a><span class="ss">      - </span><span class="in">`Mean`</span>:  geometric mean of melanopic EDI (lx)</span>
+<span id="cb30-382"><a href="#cb30-382" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-385"><a href="#cb30-385" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb30-386"><a href="#cb30-386" aria-hidden="true" tabindex="-1"></a>metric_chest_participanthour <span class="ot">&lt;-</span> </span>
+<span id="cb30-387"><a href="#cb30-387" aria-hidden="true" tabindex="-1"></a>  light_chest_processed2 <span class="sc">|&gt;</span> </span>
+<span id="cb30-388"><a href="#cb30-388" aria-hidden="true" tabindex="-1"></a>  <span class="fu">aggregate_Datetime</span>(</span>
+<span id="cb30-389"><a href="#cb30-389" aria-hidden="true" tabindex="-1"></a>    <span class="st">"1 hour"</span>,</span>
+<span id="cb30-390"><a href="#cb30-390" aria-hidden="true" tabindex="-1"></a>    <span class="at">type =</span> <span class="st">"floor"</span>,</span>
+<span id="cb30-391"><a href="#cb30-391" aria-hidden="true" tabindex="-1"></a>    <span class="at">numeric.handler =</span> \(x) x <span class="sc">|&gt;</span> <span class="fu">log_zero_inflated</span>() <span class="sc">|&gt;</span> <span class="fu">mean</span>(<span class="at">na.rm =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span> <span class="fu">exp_zero_inflated</span>()</span>
+<span id="cb30-392"><a href="#cb30-392" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb30-393"><a href="#cb30-393" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-394"><a href="#cb30-394" aria-hidden="true" tabindex="-1"></a>metric_glasses_participanthour <span class="ot">&lt;-</span> </span>
+<span id="cb30-395"><a href="#cb30-395" aria-hidden="true" tabindex="-1"></a>  light_glasses_processed2 <span class="sc">|&gt;</span> </span>
+<span id="cb30-396"><a href="#cb30-396" aria-hidden="true" tabindex="-1"></a>  <span class="fu">aggregate_Datetime</span>(</span>
+<span id="cb30-397"><a href="#cb30-397" aria-hidden="true" tabindex="-1"></a>    <span class="st">"1 hour"</span>,</span>
+<span id="cb30-398"><a href="#cb30-398" aria-hidden="true" tabindex="-1"></a>    <span class="at">type =</span> <span class="st">"floor"</span>,</span>
+<span id="cb30-399"><a href="#cb30-399" aria-hidden="true" tabindex="-1"></a>    <span class="at">numeric.handler =</span> \(x) x <span class="sc">|&gt;</span> <span class="fu">log_zero_inflated</span>() <span class="sc">|&gt;</span> <span class="fu">mean</span>(<span class="at">na.rm =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span> <span class="fu">exp_zero_inflated</span>()</span>
+<span id="cb30-400"><a href="#cb30-400" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb30-401"><a href="#cb30-401" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb30-402"><a href="#cb30-402" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-403"><a href="#cb30-403" aria-hidden="true" tabindex="-1"></a>**This marks our third dataset**</span>
+<span id="cb30-404"><a href="#cb30-404" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-407"><a href="#cb30-407" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb30-408"><a href="#cb30-408" aria-hidden="true" tabindex="-1"></a><span class="fu">save</span>(metric_chest_participanthour, </span>
+<span id="cb30-409"><a href="#cb30-409" aria-hidden="true" tabindex="-1"></a>     metric_chest_participant, </span>
+<span id="cb30-410"><a href="#cb30-410" aria-hidden="true" tabindex="-1"></a>     metric_chest_participantday, </span>
+<span id="cb30-411"><a href="#cb30-411" aria-hidden="true" tabindex="-1"></a>     <span class="at">file =</span> <span class="st">"data/metrics_chest.RData"</span>)</span>
+<span id="cb30-412"><a href="#cb30-412" aria-hidden="true" tabindex="-1"></a><span class="fu">save</span>(metric_glasses_participanthour, </span>
+<span id="cb30-413"><a href="#cb30-413" aria-hidden="true" tabindex="-1"></a>     metric_glasses_participant, </span>
+<span id="cb30-414"><a href="#cb30-414" aria-hidden="true" tabindex="-1"></a>     metric_glasses_participantday, </span>
+<span id="cb30-415"><a href="#cb30-415" aria-hidden="true" tabindex="-1"></a>     <span class="at">file =</span> <span class="st">"data/metrics_glasses.RData"</span>)</span>
+<span id="cb30-416"><a href="#cb30-416" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb30-417"><a href="#cb30-417" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-418"><a href="#cb30-418" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-419"><a href="#cb30-419" aria-hidden="true" tabindex="-1"></a><span class="fu">## Session info</span></span>
+<span id="cb30-420"><a href="#cb30-420" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-423"><a href="#cb30-423" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb30-424"><a href="#cb30-424" aria-hidden="true" tabindex="-1"></a><span class="fu">sessionInfo</span>()</span>
+<span id="cb30-425"><a href="#cb30-425" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 </code></pre></div><button title="Copy to Clipboard" class="code-copy-button" data-in-quarto-modal=""><i class="bi"></i></button></div>
 </div></div></div></div></div>
 </div> <!-- /content -->
