@@ -55,6 +55,7 @@ This supplement documents the import and preprocessing of personal light exposur
 library(tidyverse)
 library(LightLogR)
 library(melidosData)
+library(cowplot)
 ```
 
 ## Importing data
@@ -78,6 +79,41 @@ The sleep data comes from a morning sleep diary. They contain both sleep and wak
 sleepdiary <- load_data("sleepdiaries")
 ```
 
+```{r}
+# sleepdiary <- sleepdiary |> flatten_data()
+# trial_times <- load_data("trial_times") |> flatten_data()
+```
+
+```{r}
+sleep_tester <- function(sleepdiary, trial_times, filter) {
+  trial_times <- trial_times |> filter(site == filter) |> drop_na(start, end)
+  
+  sleepdiary |> 
+  group_by(Id) |> 
+  filter(site == filter) |> 
+  ggplot(aes(y = Id)) +
+  geom_linerange(aes(xmin = sleepprep, xmax = wake),
+                 col = "red", linewidth = 2) +
+  geom_point(data = trial_times, aes(x = start), col = "green3", size = 4) +
+  geom_point(data = trial_times, aes(x = end), col = "green3", size = 4) +
+  facet_wrap(~Id, ncol = 1, scales = "free") +
+  scale_x_datetime(date_breaks = "24 hours",
+                   date_labels = "%H:%M %D",
+                   limits = LightLogR::Datetime_limits,
+                   )+
+  labs(y = NULL) +
+  # theme_cowplot() +
+  theme_sub_strip(background = element_blank(),
+                  text = element_blank()) +
+  coord_cartesian(clip = "off")
+}
+```
+
+```{r}
+#| fig-height: 10
+# sleep_tester(sleepdiary, trial_times, "UCR")
+```
+
 ### Wear log
 
 The non-wear data comes from an app-based wear log that participants filled in whenever they removed or put on the device(s). 
@@ -85,6 +121,36 @@ The non-wear data comes from an app-based wear log that participants filled in w
 ```{r}
 #| message: false
 wearlog <- load_data("wearlog")
+# wearlog <- wearlog |> flatten_data()
+```
+
+```{r}
+wearlog_tester <- function(wearlog, trial_times, filter) {
+  trial_times <- trial_times |> filter(site == filter) |> drop_na(start, end)
+  wearlog |> 
+  group_by(Id) |> 
+  filter(site == filter) |> 
+  ggplot(aes(y = Id)) +
+  geom_linerange(aes(xmin = start, xmax = end, colour = state), linewidth = 2) +
+  geom_point(data = trial_times, aes(x = start), col = "green3", size = 4) +
+  geom_point(data = trial_times, aes(x = end), col = "green3", size = 4) +
+  facet_wrap(~Id, ncol = 1, scales = "free") +
+  scale_x_datetime(date_breaks = "24 hours",
+                   date_labels = "%H:%M %D",
+                   limits = LightLogR::Datetime_limits,
+                   )+
+  labs(y = NULL) +
+  # theme_cowplot() +
+  theme_sub_strip(background = element_blank(),
+                  text = element_blank()) +
+  coord_cartesian(clip = "off")
+}
+
+```
+
+```{r}
+#| fig-height: 10
+# wearlog_tester(wearlog, trial_times, "BAUA")
 ```
 
 ### Combine light exposure data with log and diary data
@@ -99,11 +165,12 @@ For the sleepdiary, a selection of sleep and wake times will be added. For the w
 sleepdiary_adj <-
   sleepdiary |>
   map(\(x) x |>
-        select(Id, sleep, wake) |>
+        select(Id, sleepprep, wake) |>
         group_by(Id) |>
         pivot_longer(-Id, names_to = "sleep", values_to = "Datetime") |>
         sc2interval(Statechange.colname = sleep, starting.state = "wake") |>
-        sleep_int2Brown(Brown.day = "wake", Brown.evening = "pre-sleep", Brown.night = "sleep") |>
+        sleep_int2Brown(sleep.state = "sleepprep", Brown.day = "wake", 
+                        Brown.evening = "pre-sleep", Brown.night = "sleep") |>
         mutate(sleep = case_when(is.na(sleep) & State.Brown == "pre-sleep" ~ "wake",
                                  .default = sleep))
   )
@@ -137,7 +204,7 @@ light_glasses |>
 
 ## Preprocessing step 1
 
-In this step, we will remove non-wear instances that are neither marked as sleep, nor fall into a sleep window (sleepdiary). We will also add photoperiod, and remove instances ≥ 10^5 lx melanopic EDI.
+In this step, we will remove non-wear instances that are neither marked as sleep, nor fall into a sleep window (sleepdiary). We will also add photoperiod, and remove instances ≥ 1.2*10^5 lx melanopic EDI.
 
 ```{r}
 light_chest_expanded <- 
