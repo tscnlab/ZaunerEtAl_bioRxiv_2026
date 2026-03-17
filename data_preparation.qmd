@@ -111,7 +111,7 @@ sleep_tester <- function(sleepdiary, trial_times, filter) {
 
 ```{r}
 #| fig-height: 10
-# sleep_tester(sleepdiary, trial_times, "UCR")
+# sleep_tester(sleepdiary, trial_times, "MPI")
 ```
 
 ### Wear log
@@ -350,7 +350,7 @@ metric_glasses_participantday <-
   summarize(
     Mean = MEDI |> log_zero_inflated() |> mean(na.rm = TRUE) |> exp_zero_inflated(),
     bright_dark_period(log_zero_inflated(MEDI), Datetime, "brightest", "10 hours", na.rm = TRUE, as.df = TRUE),
-    bright_dark_period(log_zero_inflated(MEDI), Datetime, "darkest", "5 hours", loop = TRUE, na.rm = TRUE, as.df = TRUE),
+    bright_dark_period(log_zero_inflated(MEDI), Datetime, "darkest", "10 hours", loop = TRUE, na.rm = TRUE, as.df = TRUE),
     duration_above_threshold(MEDI, Datetime, "above", 1000, na.rm = TRUE, as.df = TRUE),
     duration_above_threshold(MEDI, Datetime, "above", 250, na.rm = TRUE, as.df = TRUE),
     period_above_threshold(MEDI, Datetime, "above", 250, na.rm = TRUE, as.df = TRUE),
@@ -360,7 +360,7 @@ metric_glasses_participantday <-
     .groups = "drop_last"
   ) |> 
   mutate(MDER = ifelse(abs(MDER) == Inf, NA, MDER),
-         across(c(brightest_10h_mean, darkest_5h_mean), exp_zero_inflated)
+         across(c(brightest_10h_mean, darkest_10h_mean), exp_zero_inflated)
   )
 ```
 
@@ -414,7 +414,7 @@ metric_chest_participantday <-
 
 metric_glasses_participantday <-
   metric_glasses_participantday |> 
-  left_join(metric_chest_participantday2, 
+  left_join(metric_glasses_participantday2, 
             by = c("site", "Id", "Date"))
 ```
 

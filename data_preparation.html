@@ -237,7 +237,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span><span class="op">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="co"># sleep_tester(sleepdiary, trial_times, "UCR")</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="co"># sleep_tester(sleepdiary, trial_times, "MPI")</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section><section id="wear-log" class="level3"><h3 class="anchored" data-anchor-id="wear-log">Wear log</h3>
 <p>The non-wear data comes from an app-based wear log that participants filled in whenever they removed or put on the device(s).</p>
@@ -428,7 +428,7 @@ These hours contain only missing values:
 <span>    <span class="fu"><a href="https://tscnlab.github.io/LightLogR/reference/intradaily_variability.html">intradaily_variability</a></span><span class="op">(</span><span class="va">MEDI</span>, <span class="va">Datetime</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span>, as.df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
 <span>  <span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stderr">
-<pre><code>Warning: There were 180 warnings in `summarize()`.
+<pre><code>Warning: There were 226 warnings in `summarize()`.
 The first warning was:
 ℹ In argument: `interdaily_stability(MEDI, Datetime, na.rm = TRUE, as.df =
   TRUE)`.
@@ -439,7 +439,7 @@ These hours contain only missing values:
 [1] "2025-06-12 15:00:00 UTC" "2025-06-12 16:00:00 UTC"
 [3] "2025-06-13 15:00:00 UTC" "2025-06-13 16:00:00 UTC"
 [5] "2025-06-14 15:00:00 UTC" "2025-06-14 16:00:00 UTC"
-ℹ Run `dplyr::last_dplyr_warnings()` to see the 179 remaining warnings.</code></pre>
+ℹ Run `dplyr::last_dplyr_warnings()` to see the 225 remaining warnings.</code></pre>
 </div>
 <div class="cell-output cell-output-stderr">
 <pre><code>`summarise()` has regrouped the output.
@@ -535,7 +535,7 @@ Caused by warning in `bright_dark_period()`:
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/summarise.html">summarize</a></span><span class="op">(</span></span>
 <span>    Mean <span class="op">=</span> <span class="va">MEDI</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://tscnlab.github.io/LightLogR/reference/log_zero_inflated.html">log_zero_inflated</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html">mean</a></span><span class="op">(</span>na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://tscnlab.github.io/LightLogR/reference/log_zero_inflated.html">exp_zero_inflated</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>    <span class="fu"><a href="https://tscnlab.github.io/LightLogR/reference/bright_dark_period.html">bright_dark_period</a></span><span class="op">(</span><span class="fu"><a href="https://tscnlab.github.io/LightLogR/reference/log_zero_inflated.html">log_zero_inflated</a></span><span class="op">(</span><span class="va">MEDI</span><span class="op">)</span>, <span class="va">Datetime</span>, <span class="st">"brightest"</span>, <span class="st">"10 hours"</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span>, as.df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
-<span>    <span class="fu"><a href="https://tscnlab.github.io/LightLogR/reference/bright_dark_period.html">bright_dark_period</a></span><span class="op">(</span><span class="fu"><a href="https://tscnlab.github.io/LightLogR/reference/log_zero_inflated.html">log_zero_inflated</a></span><span class="op">(</span><span class="va">MEDI</span><span class="op">)</span>, <span class="va">Datetime</span>, <span class="st">"darkest"</span>, <span class="st">"5 hours"</span>, loop <span class="op">=</span> <span class="cn">TRUE</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span>, as.df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
+<span>    <span class="fu"><a href="https://tscnlab.github.io/LightLogR/reference/bright_dark_period.html">bright_dark_period</a></span><span class="op">(</span><span class="fu"><a href="https://tscnlab.github.io/LightLogR/reference/log_zero_inflated.html">log_zero_inflated</a></span><span class="op">(</span><span class="va">MEDI</span><span class="op">)</span>, <span class="va">Datetime</span>, <span class="st">"darkest"</span>, <span class="st">"10 hours"</span>, loop <span class="op">=</span> <span class="cn">TRUE</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span>, as.df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
 <span>    <span class="fu"><a href="https://tscnlab.github.io/LightLogR/reference/duration_above_threshold.html">duration_above_threshold</a></span><span class="op">(</span><span class="va">MEDI</span>, <span class="va">Datetime</span>, <span class="st">"above"</span>, <span class="fl">1000</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span>, as.df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
 <span>    <span class="fu"><a href="https://tscnlab.github.io/LightLogR/reference/duration_above_threshold.html">duration_above_threshold</a></span><span class="op">(</span><span class="va">MEDI</span>, <span class="va">Datetime</span>, <span class="st">"above"</span>, <span class="fl">250</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span>, as.df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
 <span>    <span class="fu"><a href="https://tscnlab.github.io/LightLogR/reference/period_above_threshold.html">period_above_threshold</a></span><span class="op">(</span><span class="va">MEDI</span>, <span class="va">Datetime</span>, <span class="st">"above"</span>, <span class="fl">250</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span>, as.df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
@@ -545,7 +545,7 @@ Caused by warning in `bright_dark_period()`:
 <span>    .groups <span class="op">=</span> <span class="st">"drop_last"</span></span>
 <span>  <span class="op">)</span> <span class="op">|&gt;</span> </span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span><span class="op">(</span>MDER <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html">ifelse</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html">abs</a></span><span class="op">(</span><span class="va">MDER</span><span class="op">)</span> <span class="op">==</span> <span class="cn">Inf</span>, <span class="cn">NA</span>, <span class="va">MDER</span><span class="op">)</span>,</span>
-<span>         <span class="fu"><a href="https://dplyr.tidyverse.org/reference/across.html">across</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="va">brightest_10h_mean</span>, <span class="va">darkest_5h_mean</span><span class="op">)</span>, <span class="va">exp_zero_inflated</span><span class="op">)</span></span>
+<span>         <span class="fu"><a href="https://dplyr.tidyverse.org/reference/across.html">across</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="va">brightest_10h_mean</span>, <span class="va">darkest_10h_mean</span><span class="op">)</span>, <span class="va">exp_zero_inflated</span><span class="op">)</span></span>
 <span>  <span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>Warning: There were 8 warnings in `summarize()`.
@@ -604,7 +604,7 @@ Caused by warning in `bright_dark_period()`:
 <span></span>
 <span><span class="va">metric_glasses_participantday</span> <span class="op">&lt;-</span></span>
 <span>  <span class="va">metric_glasses_participantday</span> <span class="op">|&gt;</span> </span>
-<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate-joins.html">left_join</a></span><span class="op">(</span><span class="va">metric_chest_participantday2</span>, </span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate-joins.html">left_join</a></span><span class="op">(</span><span class="va">metric_glasses_participantday2</span>, </span>
 <span>            by <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"site"</span>, <span class="st">"Id"</span>, <span class="st">"Date"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section><section id="per-participant-hour-metric" class="level3"><h3 class="anchored" data-anchor-id="per-participant-hour-metric">Per participant-hour metric</h3>
@@ -1252,7 +1252,7 @@ loaded via a namespace (and not attached):
 <span id="cb35-121"><a href="#cb35-121" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb35-124"><a href="#cb35-124" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
 <span id="cb35-125"><a href="#cb35-125" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-height: 10</span></span>
-<span id="cb35-126"><a href="#cb35-126" aria-hidden="true" tabindex="-1"></a><span class="co"># sleep_tester(sleepdiary, trial_times, "UCR")</span></span>
+<span id="cb35-126"><a href="#cb35-126" aria-hidden="true" tabindex="-1"></a><span class="co"># sleep_tester(sleepdiary, trial_times, "MPI")</span></span>
 <span id="cb35-127"><a href="#cb35-127" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb35-128"><a href="#cb35-128" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb35-129"><a href="#cb35-129" aria-hidden="true" tabindex="-1"></a><span class="fu">### Wear log</span></span>
@@ -1491,7 +1491,7 @@ loaded via a namespace (and not attached):
 <span id="cb35-384"><a href="#cb35-384" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(</span>
 <span id="cb35-385"><a href="#cb35-385" aria-hidden="true" tabindex="-1"></a>    <span class="at">Mean =</span> MEDI <span class="sc">|&gt;</span> <span class="fu">log_zero_inflated</span>() <span class="sc">|&gt;</span> <span class="fu">mean</span>(<span class="at">na.rm =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span> <span class="fu">exp_zero_inflated</span>(),</span>
 <span id="cb35-386"><a href="#cb35-386" aria-hidden="true" tabindex="-1"></a>    <span class="fu">bright_dark_period</span>(<span class="fu">log_zero_inflated</span>(MEDI), Datetime, <span class="st">"brightest"</span>, <span class="st">"10 hours"</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>, <span class="at">as.df =</span> <span class="cn">TRUE</span>),</span>
-<span id="cb35-387"><a href="#cb35-387" aria-hidden="true" tabindex="-1"></a>    <span class="fu">bright_dark_period</span>(<span class="fu">log_zero_inflated</span>(MEDI), Datetime, <span class="st">"darkest"</span>, <span class="st">"5 hours"</span>, <span class="at">loop =</span> <span class="cn">TRUE</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>, <span class="at">as.df =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb35-387"><a href="#cb35-387" aria-hidden="true" tabindex="-1"></a>    <span class="fu">bright_dark_period</span>(<span class="fu">log_zero_inflated</span>(MEDI), Datetime, <span class="st">"darkest"</span>, <span class="st">"10 hours"</span>, <span class="at">loop =</span> <span class="cn">TRUE</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>, <span class="at">as.df =</span> <span class="cn">TRUE</span>),</span>
 <span id="cb35-388"><a href="#cb35-388" aria-hidden="true" tabindex="-1"></a>    <span class="fu">duration_above_threshold</span>(MEDI, Datetime, <span class="st">"above"</span>, <span class="dv">1000</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>, <span class="at">as.df =</span> <span class="cn">TRUE</span>),</span>
 <span id="cb35-389"><a href="#cb35-389" aria-hidden="true" tabindex="-1"></a>    <span class="fu">duration_above_threshold</span>(MEDI, Datetime, <span class="st">"above"</span>, <span class="dv">250</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>, <span class="at">as.df =</span> <span class="cn">TRUE</span>),</span>
 <span id="cb35-390"><a href="#cb35-390" aria-hidden="true" tabindex="-1"></a>    <span class="fu">period_above_threshold</span>(MEDI, Datetime, <span class="st">"above"</span>, <span class="dv">250</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>, <span class="at">as.df =</span> <span class="cn">TRUE</span>),</span>
@@ -1501,7 +1501,7 @@ loaded via a namespace (and not attached):
 <span id="cb35-394"><a href="#cb35-394" aria-hidden="true" tabindex="-1"></a>    <span class="at">.groups =</span> <span class="st">"drop_last"</span></span>
 <span id="cb35-395"><a href="#cb35-395" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">|&gt;</span> </span>
 <span id="cb35-396"><a href="#cb35-396" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">MDER =</span> <span class="fu">ifelse</span>(<span class="fu">abs</span>(MDER) <span class="sc">==</span> <span class="cn">Inf</span>, <span class="cn">NA</span>, MDER),</span>
-<span id="cb35-397"><a href="#cb35-397" aria-hidden="true" tabindex="-1"></a>         <span class="fu">across</span>(<span class="fu">c</span>(brightest_10h_mean, darkest_5h_mean), exp_zero_inflated)</span>
+<span id="cb35-397"><a href="#cb35-397" aria-hidden="true" tabindex="-1"></a>         <span class="fu">across</span>(<span class="fu">c</span>(brightest_10h_mean, darkest_10h_mean), exp_zero_inflated)</span>
 <span id="cb35-398"><a href="#cb35-398" aria-hidden="true" tabindex="-1"></a>  )</span>
 <span id="cb35-399"><a href="#cb35-399" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb35-400"><a href="#cb35-400" aria-hidden="true" tabindex="-1"></a></span>
@@ -1555,7 +1555,7 @@ loaded via a namespace (and not attached):
 <span id="cb35-452"><a href="#cb35-452" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb35-453"><a href="#cb35-453" aria-hidden="true" tabindex="-1"></a>metric_glasses_participantday <span class="ot">&lt;-</span></span>
 <span id="cb35-454"><a href="#cb35-454" aria-hidden="true" tabindex="-1"></a>  metric_glasses_participantday <span class="sc">|&gt;</span> </span>
-<span id="cb35-455"><a href="#cb35-455" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(metric_chest_participantday2, </span>
+<span id="cb35-455"><a href="#cb35-455" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(metric_glasses_participantday2, </span>
 <span id="cb35-456"><a href="#cb35-456" aria-hidden="true" tabindex="-1"></a>            <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"site"</span>, <span class="st">"Id"</span>, <span class="st">"Date"</span>))</span>
 <span id="cb35-457"><a href="#cb35-457" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb35-458"><a href="#cb35-458" aria-hidden="true" tabindex="-1"></a></span>
