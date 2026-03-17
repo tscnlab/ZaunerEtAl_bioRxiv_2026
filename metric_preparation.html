@@ -239,7 +239,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span>               \<span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html">as.numeric</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="op">/</span> <span class="fl">60</span> <span class="op">/</span> <span class="fl">60</span><span class="op">)</span>,</span>
 <span>        <span class="co">#centering nighttime variables on midnight</span></span>
 <span>        <span class="fu"><a href="https://dplyr.tidyverse.org/reference/across.html">across</a></span><span class="op">(</span></span>
-<span>          <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="va">darkest_5h_offset</span>, <span class="va">darkest_5h_onset</span>, <span class="va">darkest_5h_midpoint</span><span class="op">)</span>,</span>
+<span>          <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="va">darkest_10h_offset</span>, <span class="va">darkest_10h_onset</span>, <span class="va">darkest_10h_midpoint</span><span class="op">)</span>,</span>
 <span>          \<span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html">ifelse</a></span><span class="op">(</span><span class="va">x</span> <span class="op">&gt;</span> <span class="fl">12</span>, <span class="va">x</span> <span class="op">-</span> <span class="fl">24</span>, <span class="va">x</span><span class="op">)</span></span>
 <span>        <span class="op">)</span></span>
 <span>      <span class="op">)</span> <span class="op">|&gt;</span></span>
@@ -917,7 +917,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb17-168"><a href="#cb17-168" aria-hidden="true" tabindex="-1"></a>               \(x) <span class="fu">as.numeric</span>(x) <span class="sc">/</span> <span class="dv">60</span> <span class="sc">/</span> <span class="dv">60</span>),</span>
 <span id="cb17-169"><a href="#cb17-169" aria-hidden="true" tabindex="-1"></a>        <span class="co">#centering nighttime variables on midnight</span></span>
 <span id="cb17-170"><a href="#cb17-170" aria-hidden="true" tabindex="-1"></a>        <span class="fu">across</span>(</span>
-<span id="cb17-171"><a href="#cb17-171" aria-hidden="true" tabindex="-1"></a>          <span class="fu">c</span>(darkest_5h_offset, darkest_5h_onset, darkest_5h_midpoint),</span>
+<span id="cb17-171"><a href="#cb17-171" aria-hidden="true" tabindex="-1"></a>          <span class="fu">c</span>(darkest_10h_offset, darkest_10h_onset, darkest_10h_midpoint),</span>
 <span id="cb17-172"><a href="#cb17-172" aria-hidden="true" tabindex="-1"></a>          \(x) <span class="fu">ifelse</span>(x <span class="sc">&gt;</span> <span class="dv">12</span>, x <span class="sc">-</span> <span class="dv">24</span>, x)</span>
 <span id="cb17-173"><a href="#cb17-173" aria-hidden="true" tabindex="-1"></a>        )</span>
 <span id="cb17-174"><a href="#cb17-174" aria-hidden="true" tabindex="-1"></a>      ) <span class="sc">|&gt;</span></span>

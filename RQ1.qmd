@@ -35,8 +35,8 @@ library(lme4)
 library(performance)
 library(cowplot)
 library(ggridges)
+source("scripts/fitting.R")
 ```
-
 
 ```{r}
 #| message: false
@@ -111,12 +111,23 @@ model_tbl <- tibble::tibble(
     "first_timing_above_250",
     "last_timing_above_250"
   ),
-  engine = c(
-    "lmer",
+
+  
+  
+  
+  
+  
+    engine = c(
+    "lm",
+    "glm",
+    "glmer",
     "glmer",
     "lmer",
-    "glmer",
-    "glmer"
+    ""
+  ),
+  response = c(
+    "qlogis(metric)",
+    ""
   ),
   family = list(
     NULL,                        # lmer Gaussian
