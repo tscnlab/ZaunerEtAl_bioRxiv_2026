@@ -517,7 +517,9 @@ These hours contain only missing values:
 <span>    MDER <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html">mean</a></span><span class="op">(</span><span class="va">MEDI</span> <span class="op">/</span> <span class="va">LIGHT</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
 <span>    .groups <span class="op">=</span> <span class="st">"drop_last"</span></span>
 <span>  <span class="op">)</span> <span class="op">|&gt;</span> </span>
-<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span><span class="op">(</span>MDER <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html">ifelse</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html">abs</a></span><span class="op">(</span><span class="va">MDER</span><span class="op">)</span> <span class="op">==</span> <span class="cn">Inf</span>, <span class="cn">NA</span>, <span class="va">MDER</span><span class="op">)</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span><span class="op">(</span>MDER <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html">ifelse</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html">abs</a></span><span class="op">(</span><span class="va">MDER</span><span class="op">)</span> <span class="op">==</span> <span class="cn">Inf</span>, <span class="cn">NA</span>, <span class="va">MDER</span><span class="op">)</span>,</span>
+<span>         <span class="fu"><a href="https://dplyr.tidyverse.org/reference/across.html">across</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="va">brightest_10h_mean</span>, <span class="va">darkest_5h_mean</span><span class="op">)</span>, <span class="va">exp_zero_inflated</span><span class="op">)</span></span>
+<span>  <span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>Warning: There were 4 warnings in `summarize()`.
 The first warning was:
@@ -542,7 +544,9 @@ Caused by warning in `bright_dark_period()`:
 <span>    MDER <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html">mean</a></span><span class="op">(</span><span class="va">MEDI</span> <span class="op">/</span> <span class="va">LIGHT</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
 <span>    .groups <span class="op">=</span> <span class="st">"drop_last"</span></span>
 <span>  <span class="op">)</span> <span class="op">|&gt;</span> </span>
-<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span><span class="op">(</span>MDER <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html">ifelse</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html">abs</a></span><span class="op">(</span><span class="va">MDER</span><span class="op">)</span> <span class="op">==</span> <span class="cn">Inf</span>, <span class="cn">NA</span>, <span class="va">MDER</span><span class="op">)</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span><span class="op">(</span>MDER <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html">ifelse</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html">abs</a></span><span class="op">(</span><span class="va">MDER</span><span class="op">)</span> <span class="op">==</span> <span class="cn">Inf</span>, <span class="cn">NA</span>, <span class="va">MDER</span><span class="op">)</span>,</span>
+<span>         <span class="fu"><a href="https://dplyr.tidyverse.org/reference/across.html">across</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="va">brightest_10h_mean</span>, <span class="va">darkest_5h_mean</span><span class="op">)</span>, <span class="va">exp_zero_inflated</span><span class="op">)</span></span>
+<span>  <span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>Warning: There were 8 warnings in `summarize()`.
 The first warning was:
@@ -662,7 +666,7 @@ attached base packages:
 [1] stats     graphics  grDevices utils     datasets  methods   base     
 
 other attached packages:
- [1] cowplot_1.1.3     melidosData_1.0.1 LightLogR_0.10.0  lubridate_1.9.4  
+ [1] cowplot_1.1.3     melidosData_1.0.1 LightLogR_0.10.2  lubridate_1.9.4  
  [5] forcats_1.0.0     stringr_1.6.0     dplyr_1.2.0       purrr_1.2.0      
  [9] readr_2.1.5       tidyr_1.3.2       tibble_3.3.0      ggplot2_4.0.0    
 [13] tidyverse_2.0.0  
@@ -1477,122 +1481,126 @@ loaded via a namespace (and not attached):
 <span id="cb35-374"><a href="#cb35-374" aria-hidden="true" tabindex="-1"></a>    <span class="at">MDER =</span> <span class="fu">mean</span>(MEDI <span class="sc">/</span> LIGHT, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
 <span id="cb35-375"><a href="#cb35-375" aria-hidden="true" tabindex="-1"></a>    <span class="at">.groups =</span> <span class="st">"drop_last"</span></span>
 <span id="cb35-376"><a href="#cb35-376" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">|&gt;</span> </span>
-<span id="cb35-377"><a href="#cb35-377" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">MDER =</span> <span class="fu">ifelse</span>(<span class="fu">abs</span>(MDER) <span class="sc">==</span> <span class="cn">Inf</span>, <span class="cn">NA</span>, MDER))</span>
-<span id="cb35-378"><a href="#cb35-378" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb35-379"><a href="#cb35-379" aria-hidden="true" tabindex="-1"></a>metric_glasses_participantday <span class="ot">&lt;-</span></span>
-<span id="cb35-380"><a href="#cb35-380" aria-hidden="true" tabindex="-1"></a>  light_glasses_processed2 <span class="sc">|&gt;</span> </span>
-<span id="cb35-381"><a href="#cb35-381" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(Date, <span class="at">.add =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span> </span>
-<span id="cb35-382"><a href="#cb35-382" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(</span>
-<span id="cb35-383"><a href="#cb35-383" aria-hidden="true" tabindex="-1"></a>    <span class="at">Mean =</span> MEDI <span class="sc">|&gt;</span> <span class="fu">log_zero_inflated</span>() <span class="sc">|&gt;</span> <span class="fu">mean</span>(<span class="at">na.rm =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span> <span class="fu">exp_zero_inflated</span>(),</span>
-<span id="cb35-384"><a href="#cb35-384" aria-hidden="true" tabindex="-1"></a>    <span class="fu">bright_dark_period</span>(<span class="fu">log_zero_inflated</span>(MEDI), Datetime, <span class="st">"brightest"</span>, <span class="st">"10 hours"</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>, <span class="at">as.df =</span> <span class="cn">TRUE</span>),</span>
-<span id="cb35-385"><a href="#cb35-385" aria-hidden="true" tabindex="-1"></a>    <span class="fu">bright_dark_period</span>(<span class="fu">log_zero_inflated</span>(MEDI), Datetime, <span class="st">"darkest"</span>, <span class="st">"5 hours"</span>, <span class="at">loop =</span> <span class="cn">TRUE</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>, <span class="at">as.df =</span> <span class="cn">TRUE</span>),</span>
-<span id="cb35-386"><a href="#cb35-386" aria-hidden="true" tabindex="-1"></a>    <span class="fu">duration_above_threshold</span>(MEDI, Datetime, <span class="st">"above"</span>, <span class="dv">1000</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>, <span class="at">as.df =</span> <span class="cn">TRUE</span>),</span>
-<span id="cb35-387"><a href="#cb35-387" aria-hidden="true" tabindex="-1"></a>    <span class="fu">duration_above_threshold</span>(MEDI, Datetime, <span class="st">"above"</span>, <span class="dv">250</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>, <span class="at">as.df =</span> <span class="cn">TRUE</span>),</span>
-<span id="cb35-388"><a href="#cb35-388" aria-hidden="true" tabindex="-1"></a>    <span class="fu">period_above_threshold</span>(MEDI, Datetime, <span class="st">"above"</span>, <span class="dv">250</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>, <span class="at">as.df =</span> <span class="cn">TRUE</span>),</span>
-<span id="cb35-389"><a href="#cb35-389" aria-hidden="true" tabindex="-1"></a>    <span class="fu">timing_above_threshold</span>(MEDI, Datetime, <span class="st">"above"</span>, <span class="dv">250</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>, <span class="at">as.df =</span> <span class="cn">TRUE</span>),</span>
-<span id="cb35-390"><a href="#cb35-390" aria-hidden="true" tabindex="-1"></a>    <span class="fu">dose</span>(MEDI, Datetime, <span class="at">na.rm =</span> <span class="cn">TRUE</span>, <span class="at">as.df =</span> <span class="cn">TRUE</span>),</span>
-<span id="cb35-391"><a href="#cb35-391" aria-hidden="true" tabindex="-1"></a>    <span class="at">MDER =</span> <span class="fu">mean</span>(MEDI <span class="sc">/</span> LIGHT, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
-<span id="cb35-392"><a href="#cb35-392" aria-hidden="true" tabindex="-1"></a>    <span class="at">.groups =</span> <span class="st">"drop_last"</span></span>
-<span id="cb35-393"><a href="#cb35-393" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">|&gt;</span> </span>
-<span id="cb35-394"><a href="#cb35-394" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">MDER =</span> <span class="fu">ifelse</span>(<span class="fu">abs</span>(MDER) <span class="sc">==</span> <span class="cn">Inf</span>, <span class="cn">NA</span>, MDER))</span>
-<span id="cb35-395"><a href="#cb35-395" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb35-396"><a href="#cb35-396" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb35-397"><a href="#cb35-397" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb35-400"><a href="#cb35-400" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
-<span id="cb35-401"><a href="#cb35-401" aria-hidden="true" tabindex="-1"></a>metric_chest_participantday2 <span class="ot">&lt;-</span> </span>
-<span id="cb35-402"><a href="#cb35-402" aria-hidden="true" tabindex="-1"></a>  light_chest_processed2 <span class="sc">|&gt;</span> </span>
-<span id="cb35-403"><a href="#cb35-403" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(Date, State.Brown, <span class="at">.add =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span> </span>
-<span id="cb35-404"><a href="#cb35-404" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(</span>
-<span id="cb35-405"><a href="#cb35-405" aria-hidden="true" tabindex="-1"></a>    <span class="fu">duration_above_threshold</span>(MEDI, Datetime, <span class="st">"above"</span>, <span class="dv">250</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>, <span class="at">as.df =</span> <span class="cn">TRUE</span>),</span>
-<span id="cb35-406"><a href="#cb35-406" aria-hidden="true" tabindex="-1"></a>    <span class="fu">duration_above_threshold</span>(MEDI, Datetime, <span class="st">"below"</span>, <span class="dv">10</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>, <span class="at">as.df =</span> <span class="cn">TRUE</span>),</span>
-<span id="cb35-407"><a href="#cb35-407" aria-hidden="true" tabindex="-1"></a>    <span class="fu">duration_above_threshold</span>(MEDI, Datetime, <span class="st">"below"</span>, <span class="dv">1</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>, <span class="at">as.df =</span> <span class="cn">TRUE</span>),</span>
-<span id="cb35-408"><a href="#cb35-408" aria-hidden="true" tabindex="-1"></a>    <span class="at">.groups =</span> <span class="st">"drop_last"</span></span>
-<span id="cb35-409"><a href="#cb35-409" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">|&gt;</span> </span>
-<span id="cb35-410"><a href="#cb35-410" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_longer</span>(<span class="sc">-</span><span class="fu">c</span>(site<span class="sc">:</span>State.Brown), <span class="at">names_to =</span> <span class="st">"metric"</span>) <span class="sc">|&gt;</span> </span>
-<span id="cb35-411"><a href="#cb35-411" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter_out</span>(</span>
-<span id="cb35-412"><a href="#cb35-412" aria-hidden="true" tabindex="-1"></a>    <span class="sc">!</span>(State.Brown <span class="sc">==</span> <span class="st">"wake"</span> <span class="sc">&amp;</span> metric <span class="sc">==</span> <span class="st">"duration_above_250"</span>),</span>
-<span id="cb35-413"><a href="#cb35-413" aria-hidden="true" tabindex="-1"></a>    <span class="sc">!</span>(State.Brown <span class="sc">==</span> <span class="st">"pre-sleep"</span> <span class="sc">&amp;</span> metric <span class="sc">==</span> <span class="st">"duration_below_10"</span>),</span>
-<span id="cb35-414"><a href="#cb35-414" aria-hidden="true" tabindex="-1"></a>    <span class="sc">!</span>(State.Brown <span class="sc">==</span> <span class="st">"sleep"</span> <span class="sc">&amp;</span> metric <span class="sc">==</span> <span class="st">"duration_below_1"</span>),</span>
-<span id="cb35-415"><a href="#cb35-415" aria-hidden="true" tabindex="-1"></a>    ) <span class="sc">|&gt;</span></span>
-<span id="cb35-416"><a href="#cb35-416" aria-hidden="true" tabindex="-1"></a>  <span class="fu">drop_na</span>(State.Brown) <span class="sc">|&gt;</span> </span>
-<span id="cb35-417"><a href="#cb35-417" aria-hidden="true" tabindex="-1"></a>  <span class="fu">unite</span>(metric, metric, State.Brown) <span class="sc">|&gt;</span> </span>
-<span id="cb35-418"><a href="#cb35-418" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_wider</span>(<span class="at">id_cols =</span> <span class="fu">c</span>(site, Id, Date), <span class="at">values_from =</span> value, <span class="at">names_from =</span> metric)</span>
-<span id="cb35-419"><a href="#cb35-419" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb35-420"><a href="#cb35-420" aria-hidden="true" tabindex="-1"></a>metric_glasses_participantday2 <span class="ot">&lt;-</span> </span>
-<span id="cb35-421"><a href="#cb35-421" aria-hidden="true" tabindex="-1"></a>  light_glasses_processed2 <span class="sc">|&gt;</span> </span>
-<span id="cb35-422"><a href="#cb35-422" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(Date, State.Brown, <span class="at">.add =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span> </span>
-<span id="cb35-423"><a href="#cb35-423" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(</span>
-<span id="cb35-424"><a href="#cb35-424" aria-hidden="true" tabindex="-1"></a>    <span class="fu">duration_above_threshold</span>(MEDI, Datetime, <span class="st">"above"</span>, <span class="dv">250</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>, <span class="at">as.df =</span> <span class="cn">TRUE</span>),</span>
-<span id="cb35-425"><a href="#cb35-425" aria-hidden="true" tabindex="-1"></a>    <span class="fu">duration_above_threshold</span>(MEDI, Datetime, <span class="st">"below"</span>, <span class="dv">10</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>, <span class="at">as.df =</span> <span class="cn">TRUE</span>),</span>
-<span id="cb35-426"><a href="#cb35-426" aria-hidden="true" tabindex="-1"></a>    <span class="fu">duration_above_threshold</span>(MEDI, Datetime, <span class="st">"below"</span>, <span class="dv">1</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>, <span class="at">as.df =</span> <span class="cn">TRUE</span>),</span>
-<span id="cb35-427"><a href="#cb35-427" aria-hidden="true" tabindex="-1"></a>    <span class="at">.groups =</span> <span class="st">"drop_last"</span></span>
-<span id="cb35-428"><a href="#cb35-428" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">|&gt;</span> </span>
-<span id="cb35-429"><a href="#cb35-429" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_longer</span>(<span class="sc">-</span><span class="fu">c</span>(site<span class="sc">:</span>State.Brown), <span class="at">names_to =</span> <span class="st">"metric"</span>) <span class="sc">|&gt;</span> </span>
-<span id="cb35-430"><a href="#cb35-430" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter_out</span>(</span>
-<span id="cb35-431"><a href="#cb35-431" aria-hidden="true" tabindex="-1"></a>    <span class="sc">!</span>(State.Brown <span class="sc">==</span> <span class="st">"wake"</span> <span class="sc">&amp;</span> metric <span class="sc">==</span> <span class="st">"duration_above_250"</span>),</span>
-<span id="cb35-432"><a href="#cb35-432" aria-hidden="true" tabindex="-1"></a>    <span class="sc">!</span>(State.Brown <span class="sc">==</span> <span class="st">"pre-sleep"</span> <span class="sc">&amp;</span> metric <span class="sc">==</span> <span class="st">"duration_below_10"</span>),</span>
-<span id="cb35-433"><a href="#cb35-433" aria-hidden="true" tabindex="-1"></a>    <span class="sc">!</span>(State.Brown <span class="sc">==</span> <span class="st">"sleep"</span> <span class="sc">&amp;</span> metric <span class="sc">==</span> <span class="st">"duration_below_1"</span>),</span>
-<span id="cb35-434"><a href="#cb35-434" aria-hidden="true" tabindex="-1"></a>    ) <span class="sc">|&gt;</span></span>
-<span id="cb35-435"><a href="#cb35-435" aria-hidden="true" tabindex="-1"></a>  <span class="fu">drop_na</span>(State.Brown) <span class="sc">|&gt;</span> </span>
-<span id="cb35-436"><a href="#cb35-436" aria-hidden="true" tabindex="-1"></a>  <span class="fu">unite</span>(metric, metric, State.Brown) <span class="sc">|&gt;</span> </span>
-<span id="cb35-437"><a href="#cb35-437" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_wider</span>(<span class="at">id_cols =</span> <span class="fu">c</span>(site, Id, Date), <span class="at">values_from =</span> value, <span class="at">names_from =</span> metric)</span>
-<span id="cb35-438"><a href="#cb35-438" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb35-439"><a href="#cb35-439" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb35-440"><a href="#cb35-440" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb35-443"><a href="#cb35-443" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
-<span id="cb35-444"><a href="#cb35-444" aria-hidden="true" tabindex="-1"></a>metric_chest_participantday <span class="ot">&lt;-</span></span>
-<span id="cb35-445"><a href="#cb35-445" aria-hidden="true" tabindex="-1"></a>  metric_chest_participantday <span class="sc">|&gt;</span> </span>
-<span id="cb35-446"><a href="#cb35-446" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(metric_chest_participantday2, </span>
-<span id="cb35-447"><a href="#cb35-447" aria-hidden="true" tabindex="-1"></a>            <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"site"</span>, <span class="st">"Id"</span>, <span class="st">"Date"</span>))</span>
-<span id="cb35-448"><a href="#cb35-448" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb35-449"><a href="#cb35-449" aria-hidden="true" tabindex="-1"></a>metric_glasses_participantday <span class="ot">&lt;-</span></span>
-<span id="cb35-450"><a href="#cb35-450" aria-hidden="true" tabindex="-1"></a>  metric_glasses_participantday <span class="sc">|&gt;</span> </span>
-<span id="cb35-451"><a href="#cb35-451" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(metric_chest_participantday2, </span>
-<span id="cb35-452"><a href="#cb35-452" aria-hidden="true" tabindex="-1"></a>            <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"site"</span>, <span class="st">"Id"</span>, <span class="st">"Date"</span>))</span>
-<span id="cb35-453"><a href="#cb35-453" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb35-454"><a href="#cb35-454" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb35-455"><a href="#cb35-455" aria-hidden="true" tabindex="-1"></a><span class="fu">### Per participant-hour metric</span></span>
-<span id="cb35-456"><a href="#cb35-456" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb35-457"><a href="#cb35-457" aria-hidden="true" tabindex="-1"></a><span class="ss">  - </span>level-based:</span>
-<span id="cb35-458"><a href="#cb35-458" aria-hidden="true" tabindex="-1"></a><span class="ss">      - </span><span class="in">`Mean`</span>:  geometric mean of melanopic EDI (lx)</span>
-<span id="cb35-459"><a href="#cb35-459" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb35-462"><a href="#cb35-462" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
-<span id="cb35-463"><a href="#cb35-463" aria-hidden="true" tabindex="-1"></a>metric_chest_participanthour <span class="ot">&lt;-</span> </span>
-<span id="cb35-464"><a href="#cb35-464" aria-hidden="true" tabindex="-1"></a>  light_chest_processed2 <span class="sc">|&gt;</span> </span>
-<span id="cb35-465"><a href="#cb35-465" aria-hidden="true" tabindex="-1"></a>  <span class="fu">aggregate_Datetime</span>(</span>
-<span id="cb35-466"><a href="#cb35-466" aria-hidden="true" tabindex="-1"></a>    <span class="st">"1 hour"</span>,</span>
-<span id="cb35-467"><a href="#cb35-467" aria-hidden="true" tabindex="-1"></a>    <span class="at">type =</span> <span class="st">"floor"</span>,</span>
-<span id="cb35-468"><a href="#cb35-468" aria-hidden="true" tabindex="-1"></a>    <span class="at">numeric.handler =</span> \(x) x <span class="sc">|&gt;</span> <span class="fu">log_zero_inflated</span>() <span class="sc">|&gt;</span> <span class="fu">mean</span>(<span class="at">na.rm =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span> <span class="fu">exp_zero_inflated</span>()</span>
-<span id="cb35-469"><a href="#cb35-469" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb35-470"><a href="#cb35-470" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb35-471"><a href="#cb35-471" aria-hidden="true" tabindex="-1"></a>metric_glasses_participanthour <span class="ot">&lt;-</span> </span>
-<span id="cb35-472"><a href="#cb35-472" aria-hidden="true" tabindex="-1"></a>  light_glasses_processed2 <span class="sc">|&gt;</span> </span>
-<span id="cb35-473"><a href="#cb35-473" aria-hidden="true" tabindex="-1"></a>  <span class="fu">aggregate_Datetime</span>(</span>
-<span id="cb35-474"><a href="#cb35-474" aria-hidden="true" tabindex="-1"></a>    <span class="st">"1 hour"</span>,</span>
-<span id="cb35-475"><a href="#cb35-475" aria-hidden="true" tabindex="-1"></a>    <span class="at">type =</span> <span class="st">"floor"</span>,</span>
-<span id="cb35-476"><a href="#cb35-476" aria-hidden="true" tabindex="-1"></a>    <span class="at">numeric.handler =</span> \(x) x <span class="sc">|&gt;</span> <span class="fu">log_zero_inflated</span>() <span class="sc">|&gt;</span> <span class="fu">mean</span>(<span class="at">na.rm =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span> <span class="fu">exp_zero_inflated</span>()</span>
-<span id="cb35-477"><a href="#cb35-477" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb35-478"><a href="#cb35-478" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb35-479"><a href="#cb35-479" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb35-480"><a href="#cb35-480" aria-hidden="true" tabindex="-1"></a>**This marks our third dataset**</span>
-<span id="cb35-481"><a href="#cb35-481" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb35-484"><a href="#cb35-484" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
-<span id="cb35-485"><a href="#cb35-485" aria-hidden="true" tabindex="-1"></a><span class="fu">save</span>(metric_chest_participanthour, </span>
-<span id="cb35-486"><a href="#cb35-486" aria-hidden="true" tabindex="-1"></a>     metric_chest_participant, </span>
-<span id="cb35-487"><a href="#cb35-487" aria-hidden="true" tabindex="-1"></a>     metric_chest_participantday, </span>
-<span id="cb35-488"><a href="#cb35-488" aria-hidden="true" tabindex="-1"></a>     <span class="at">file =</span> <span class="st">"data/metrics_chest.RData"</span>)</span>
-<span id="cb35-489"><a href="#cb35-489" aria-hidden="true" tabindex="-1"></a><span class="fu">save</span>(metric_glasses_participanthour, </span>
-<span id="cb35-490"><a href="#cb35-490" aria-hidden="true" tabindex="-1"></a>     metric_glasses_participant, </span>
-<span id="cb35-491"><a href="#cb35-491" aria-hidden="true" tabindex="-1"></a>     metric_glasses_participantday, </span>
-<span id="cb35-492"><a href="#cb35-492" aria-hidden="true" tabindex="-1"></a>     <span class="at">file =</span> <span class="st">"data/metrics_glasses.RData"</span>)</span>
-<span id="cb35-493"><a href="#cb35-493" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb35-494"><a href="#cb35-494" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb35-495"><a href="#cb35-495" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb35-496"><a href="#cb35-496" aria-hidden="true" tabindex="-1"></a><span class="fu">## Session info</span></span>
-<span id="cb35-497"><a href="#cb35-497" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb35-500"><a href="#cb35-500" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
-<span id="cb35-501"><a href="#cb35-501" aria-hidden="true" tabindex="-1"></a><span class="fu">sessionInfo</span>()</span>
-<span id="cb35-502"><a href="#cb35-502" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb35-377"><a href="#cb35-377" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">MDER =</span> <span class="fu">ifelse</span>(<span class="fu">abs</span>(MDER) <span class="sc">==</span> <span class="cn">Inf</span>, <span class="cn">NA</span>, MDER),</span>
+<span id="cb35-378"><a href="#cb35-378" aria-hidden="true" tabindex="-1"></a>         <span class="fu">across</span>(<span class="fu">c</span>(brightest_10h_mean, darkest_5h_mean), exp_zero_inflated)</span>
+<span id="cb35-379"><a href="#cb35-379" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb35-380"><a href="#cb35-380" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-381"><a href="#cb35-381" aria-hidden="true" tabindex="-1"></a>metric_glasses_participantday <span class="ot">&lt;-</span></span>
+<span id="cb35-382"><a href="#cb35-382" aria-hidden="true" tabindex="-1"></a>  light_glasses_processed2 <span class="sc">|&gt;</span> </span>
+<span id="cb35-383"><a href="#cb35-383" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(Date, <span class="at">.add =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb35-384"><a href="#cb35-384" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(</span>
+<span id="cb35-385"><a href="#cb35-385" aria-hidden="true" tabindex="-1"></a>    <span class="at">Mean =</span> MEDI <span class="sc">|&gt;</span> <span class="fu">log_zero_inflated</span>() <span class="sc">|&gt;</span> <span class="fu">mean</span>(<span class="at">na.rm =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span> <span class="fu">exp_zero_inflated</span>(),</span>
+<span id="cb35-386"><a href="#cb35-386" aria-hidden="true" tabindex="-1"></a>    <span class="fu">bright_dark_period</span>(<span class="fu">log_zero_inflated</span>(MEDI), Datetime, <span class="st">"brightest"</span>, <span class="st">"10 hours"</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>, <span class="at">as.df =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb35-387"><a href="#cb35-387" aria-hidden="true" tabindex="-1"></a>    <span class="fu">bright_dark_period</span>(<span class="fu">log_zero_inflated</span>(MEDI), Datetime, <span class="st">"darkest"</span>, <span class="st">"5 hours"</span>, <span class="at">loop =</span> <span class="cn">TRUE</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>, <span class="at">as.df =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb35-388"><a href="#cb35-388" aria-hidden="true" tabindex="-1"></a>    <span class="fu">duration_above_threshold</span>(MEDI, Datetime, <span class="st">"above"</span>, <span class="dv">1000</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>, <span class="at">as.df =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb35-389"><a href="#cb35-389" aria-hidden="true" tabindex="-1"></a>    <span class="fu">duration_above_threshold</span>(MEDI, Datetime, <span class="st">"above"</span>, <span class="dv">250</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>, <span class="at">as.df =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb35-390"><a href="#cb35-390" aria-hidden="true" tabindex="-1"></a>    <span class="fu">period_above_threshold</span>(MEDI, Datetime, <span class="st">"above"</span>, <span class="dv">250</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>, <span class="at">as.df =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb35-391"><a href="#cb35-391" aria-hidden="true" tabindex="-1"></a>    <span class="fu">timing_above_threshold</span>(MEDI, Datetime, <span class="st">"above"</span>, <span class="dv">250</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>, <span class="at">as.df =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb35-392"><a href="#cb35-392" aria-hidden="true" tabindex="-1"></a>    <span class="fu">dose</span>(MEDI, Datetime, <span class="at">na.rm =</span> <span class="cn">TRUE</span>, <span class="at">as.df =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb35-393"><a href="#cb35-393" aria-hidden="true" tabindex="-1"></a>    <span class="at">MDER =</span> <span class="fu">mean</span>(MEDI <span class="sc">/</span> LIGHT, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb35-394"><a href="#cb35-394" aria-hidden="true" tabindex="-1"></a>    <span class="at">.groups =</span> <span class="st">"drop_last"</span></span>
+<span id="cb35-395"><a href="#cb35-395" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">|&gt;</span> </span>
+<span id="cb35-396"><a href="#cb35-396" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">MDER =</span> <span class="fu">ifelse</span>(<span class="fu">abs</span>(MDER) <span class="sc">==</span> <span class="cn">Inf</span>, <span class="cn">NA</span>, MDER),</span>
+<span id="cb35-397"><a href="#cb35-397" aria-hidden="true" tabindex="-1"></a>         <span class="fu">across</span>(<span class="fu">c</span>(brightest_10h_mean, darkest_5h_mean), exp_zero_inflated)</span>
+<span id="cb35-398"><a href="#cb35-398" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb35-399"><a href="#cb35-399" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb35-400"><a href="#cb35-400" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-401"><a href="#cb35-401" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-404"><a href="#cb35-404" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb35-405"><a href="#cb35-405" aria-hidden="true" tabindex="-1"></a>metric_chest_participantday2 <span class="ot">&lt;-</span> </span>
+<span id="cb35-406"><a href="#cb35-406" aria-hidden="true" tabindex="-1"></a>  light_chest_processed2 <span class="sc">|&gt;</span> </span>
+<span id="cb35-407"><a href="#cb35-407" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(Date, State.Brown, <span class="at">.add =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb35-408"><a href="#cb35-408" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(</span>
+<span id="cb35-409"><a href="#cb35-409" aria-hidden="true" tabindex="-1"></a>    <span class="fu">duration_above_threshold</span>(MEDI, Datetime, <span class="st">"above"</span>, <span class="dv">250</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>, <span class="at">as.df =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb35-410"><a href="#cb35-410" aria-hidden="true" tabindex="-1"></a>    <span class="fu">duration_above_threshold</span>(MEDI, Datetime, <span class="st">"below"</span>, <span class="dv">10</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>, <span class="at">as.df =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb35-411"><a href="#cb35-411" aria-hidden="true" tabindex="-1"></a>    <span class="fu">duration_above_threshold</span>(MEDI, Datetime, <span class="st">"below"</span>, <span class="dv">1</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>, <span class="at">as.df =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb35-412"><a href="#cb35-412" aria-hidden="true" tabindex="-1"></a>    <span class="at">.groups =</span> <span class="st">"drop_last"</span></span>
+<span id="cb35-413"><a href="#cb35-413" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">|&gt;</span> </span>
+<span id="cb35-414"><a href="#cb35-414" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_longer</span>(<span class="sc">-</span><span class="fu">c</span>(site<span class="sc">:</span>State.Brown), <span class="at">names_to =</span> <span class="st">"metric"</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb35-415"><a href="#cb35-415" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter_out</span>(</span>
+<span id="cb35-416"><a href="#cb35-416" aria-hidden="true" tabindex="-1"></a>    <span class="sc">!</span>(State.Brown <span class="sc">==</span> <span class="st">"wake"</span> <span class="sc">&amp;</span> metric <span class="sc">==</span> <span class="st">"duration_above_250"</span>),</span>
+<span id="cb35-417"><a href="#cb35-417" aria-hidden="true" tabindex="-1"></a>    <span class="sc">!</span>(State.Brown <span class="sc">==</span> <span class="st">"pre-sleep"</span> <span class="sc">&amp;</span> metric <span class="sc">==</span> <span class="st">"duration_below_10"</span>),</span>
+<span id="cb35-418"><a href="#cb35-418" aria-hidden="true" tabindex="-1"></a>    <span class="sc">!</span>(State.Brown <span class="sc">==</span> <span class="st">"sleep"</span> <span class="sc">&amp;</span> metric <span class="sc">==</span> <span class="st">"duration_below_1"</span>),</span>
+<span id="cb35-419"><a href="#cb35-419" aria-hidden="true" tabindex="-1"></a>    ) <span class="sc">|&gt;</span></span>
+<span id="cb35-420"><a href="#cb35-420" aria-hidden="true" tabindex="-1"></a>  <span class="fu">drop_na</span>(State.Brown) <span class="sc">|&gt;</span> </span>
+<span id="cb35-421"><a href="#cb35-421" aria-hidden="true" tabindex="-1"></a>  <span class="fu">unite</span>(metric, metric, State.Brown) <span class="sc">|&gt;</span> </span>
+<span id="cb35-422"><a href="#cb35-422" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_wider</span>(<span class="at">id_cols =</span> <span class="fu">c</span>(site, Id, Date), <span class="at">values_from =</span> value, <span class="at">names_from =</span> metric)</span>
+<span id="cb35-423"><a href="#cb35-423" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-424"><a href="#cb35-424" aria-hidden="true" tabindex="-1"></a>metric_glasses_participantday2 <span class="ot">&lt;-</span> </span>
+<span id="cb35-425"><a href="#cb35-425" aria-hidden="true" tabindex="-1"></a>  light_glasses_processed2 <span class="sc">|&gt;</span> </span>
+<span id="cb35-426"><a href="#cb35-426" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(Date, State.Brown, <span class="at">.add =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb35-427"><a href="#cb35-427" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(</span>
+<span id="cb35-428"><a href="#cb35-428" aria-hidden="true" tabindex="-1"></a>    <span class="fu">duration_above_threshold</span>(MEDI, Datetime, <span class="st">"above"</span>, <span class="dv">250</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>, <span class="at">as.df =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb35-429"><a href="#cb35-429" aria-hidden="true" tabindex="-1"></a>    <span class="fu">duration_above_threshold</span>(MEDI, Datetime, <span class="st">"below"</span>, <span class="dv">10</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>, <span class="at">as.df =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb35-430"><a href="#cb35-430" aria-hidden="true" tabindex="-1"></a>    <span class="fu">duration_above_threshold</span>(MEDI, Datetime, <span class="st">"below"</span>, <span class="dv">1</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>, <span class="at">as.df =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb35-431"><a href="#cb35-431" aria-hidden="true" tabindex="-1"></a>    <span class="at">.groups =</span> <span class="st">"drop_last"</span></span>
+<span id="cb35-432"><a href="#cb35-432" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">|&gt;</span> </span>
+<span id="cb35-433"><a href="#cb35-433" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_longer</span>(<span class="sc">-</span><span class="fu">c</span>(site<span class="sc">:</span>State.Brown), <span class="at">names_to =</span> <span class="st">"metric"</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb35-434"><a href="#cb35-434" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter_out</span>(</span>
+<span id="cb35-435"><a href="#cb35-435" aria-hidden="true" tabindex="-1"></a>    <span class="sc">!</span>(State.Brown <span class="sc">==</span> <span class="st">"wake"</span> <span class="sc">&amp;</span> metric <span class="sc">==</span> <span class="st">"duration_above_250"</span>),</span>
+<span id="cb35-436"><a href="#cb35-436" aria-hidden="true" tabindex="-1"></a>    <span class="sc">!</span>(State.Brown <span class="sc">==</span> <span class="st">"pre-sleep"</span> <span class="sc">&amp;</span> metric <span class="sc">==</span> <span class="st">"duration_below_10"</span>),</span>
+<span id="cb35-437"><a href="#cb35-437" aria-hidden="true" tabindex="-1"></a>    <span class="sc">!</span>(State.Brown <span class="sc">==</span> <span class="st">"sleep"</span> <span class="sc">&amp;</span> metric <span class="sc">==</span> <span class="st">"duration_below_1"</span>),</span>
+<span id="cb35-438"><a href="#cb35-438" aria-hidden="true" tabindex="-1"></a>    ) <span class="sc">|&gt;</span></span>
+<span id="cb35-439"><a href="#cb35-439" aria-hidden="true" tabindex="-1"></a>  <span class="fu">drop_na</span>(State.Brown) <span class="sc">|&gt;</span> </span>
+<span id="cb35-440"><a href="#cb35-440" aria-hidden="true" tabindex="-1"></a>  <span class="fu">unite</span>(metric, metric, State.Brown) <span class="sc">|&gt;</span> </span>
+<span id="cb35-441"><a href="#cb35-441" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_wider</span>(<span class="at">id_cols =</span> <span class="fu">c</span>(site, Id, Date), <span class="at">values_from =</span> value, <span class="at">names_from =</span> metric)</span>
+<span id="cb35-442"><a href="#cb35-442" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-443"><a href="#cb35-443" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb35-444"><a href="#cb35-444" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-447"><a href="#cb35-447" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb35-448"><a href="#cb35-448" aria-hidden="true" tabindex="-1"></a>metric_chest_participantday <span class="ot">&lt;-</span></span>
+<span id="cb35-449"><a href="#cb35-449" aria-hidden="true" tabindex="-1"></a>  metric_chest_participantday <span class="sc">|&gt;</span> </span>
+<span id="cb35-450"><a href="#cb35-450" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(metric_chest_participantday2, </span>
+<span id="cb35-451"><a href="#cb35-451" aria-hidden="true" tabindex="-1"></a>            <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"site"</span>, <span class="st">"Id"</span>, <span class="st">"Date"</span>))</span>
+<span id="cb35-452"><a href="#cb35-452" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-453"><a href="#cb35-453" aria-hidden="true" tabindex="-1"></a>metric_glasses_participantday <span class="ot">&lt;-</span></span>
+<span id="cb35-454"><a href="#cb35-454" aria-hidden="true" tabindex="-1"></a>  metric_glasses_participantday <span class="sc">|&gt;</span> </span>
+<span id="cb35-455"><a href="#cb35-455" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(metric_chest_participantday2, </span>
+<span id="cb35-456"><a href="#cb35-456" aria-hidden="true" tabindex="-1"></a>            <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"site"</span>, <span class="st">"Id"</span>, <span class="st">"Date"</span>))</span>
+<span id="cb35-457"><a href="#cb35-457" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb35-458"><a href="#cb35-458" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-459"><a href="#cb35-459" aria-hidden="true" tabindex="-1"></a><span class="fu">### Per participant-hour metric</span></span>
+<span id="cb35-460"><a href="#cb35-460" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-461"><a href="#cb35-461" aria-hidden="true" tabindex="-1"></a><span class="ss">  - </span>level-based:</span>
+<span id="cb35-462"><a href="#cb35-462" aria-hidden="true" tabindex="-1"></a><span class="ss">      - </span><span class="in">`Mean`</span>:  geometric mean of melanopic EDI (lx)</span>
+<span id="cb35-463"><a href="#cb35-463" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-466"><a href="#cb35-466" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb35-467"><a href="#cb35-467" aria-hidden="true" tabindex="-1"></a>metric_chest_participanthour <span class="ot">&lt;-</span> </span>
+<span id="cb35-468"><a href="#cb35-468" aria-hidden="true" tabindex="-1"></a>  light_chest_processed2 <span class="sc">|&gt;</span> </span>
+<span id="cb35-469"><a href="#cb35-469" aria-hidden="true" tabindex="-1"></a>  <span class="fu">aggregate_Datetime</span>(</span>
+<span id="cb35-470"><a href="#cb35-470" aria-hidden="true" tabindex="-1"></a>    <span class="st">"1 hour"</span>,</span>
+<span id="cb35-471"><a href="#cb35-471" aria-hidden="true" tabindex="-1"></a>    <span class="at">type =</span> <span class="st">"floor"</span>,</span>
+<span id="cb35-472"><a href="#cb35-472" aria-hidden="true" tabindex="-1"></a>    <span class="at">numeric.handler =</span> \(x) x <span class="sc">|&gt;</span> <span class="fu">log_zero_inflated</span>() <span class="sc">|&gt;</span> <span class="fu">mean</span>(<span class="at">na.rm =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span> <span class="fu">exp_zero_inflated</span>()</span>
+<span id="cb35-473"><a href="#cb35-473" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb35-474"><a href="#cb35-474" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-475"><a href="#cb35-475" aria-hidden="true" tabindex="-1"></a>metric_glasses_participanthour <span class="ot">&lt;-</span> </span>
+<span id="cb35-476"><a href="#cb35-476" aria-hidden="true" tabindex="-1"></a>  light_glasses_processed2 <span class="sc">|&gt;</span> </span>
+<span id="cb35-477"><a href="#cb35-477" aria-hidden="true" tabindex="-1"></a>  <span class="fu">aggregate_Datetime</span>(</span>
+<span id="cb35-478"><a href="#cb35-478" aria-hidden="true" tabindex="-1"></a>    <span class="st">"1 hour"</span>,</span>
+<span id="cb35-479"><a href="#cb35-479" aria-hidden="true" tabindex="-1"></a>    <span class="at">type =</span> <span class="st">"floor"</span>,</span>
+<span id="cb35-480"><a href="#cb35-480" aria-hidden="true" tabindex="-1"></a>    <span class="at">numeric.handler =</span> \(x) x <span class="sc">|&gt;</span> <span class="fu">log_zero_inflated</span>() <span class="sc">|&gt;</span> <span class="fu">mean</span>(<span class="at">na.rm =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span> <span class="fu">exp_zero_inflated</span>()</span>
+<span id="cb35-481"><a href="#cb35-481" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb35-482"><a href="#cb35-482" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb35-483"><a href="#cb35-483" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-484"><a href="#cb35-484" aria-hidden="true" tabindex="-1"></a>**This marks our third dataset**</span>
+<span id="cb35-485"><a href="#cb35-485" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-488"><a href="#cb35-488" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb35-489"><a href="#cb35-489" aria-hidden="true" tabindex="-1"></a><span class="fu">save</span>(metric_chest_participanthour, </span>
+<span id="cb35-490"><a href="#cb35-490" aria-hidden="true" tabindex="-1"></a>     metric_chest_participant, </span>
+<span id="cb35-491"><a href="#cb35-491" aria-hidden="true" tabindex="-1"></a>     metric_chest_participantday, </span>
+<span id="cb35-492"><a href="#cb35-492" aria-hidden="true" tabindex="-1"></a>     <span class="at">file =</span> <span class="st">"data/metrics_chest.RData"</span>)</span>
+<span id="cb35-493"><a href="#cb35-493" aria-hidden="true" tabindex="-1"></a><span class="fu">save</span>(metric_glasses_participanthour, </span>
+<span id="cb35-494"><a href="#cb35-494" aria-hidden="true" tabindex="-1"></a>     metric_glasses_participant, </span>
+<span id="cb35-495"><a href="#cb35-495" aria-hidden="true" tabindex="-1"></a>     metric_glasses_participantday, </span>
+<span id="cb35-496"><a href="#cb35-496" aria-hidden="true" tabindex="-1"></a>     <span class="at">file =</span> <span class="st">"data/metrics_glasses.RData"</span>)</span>
+<span id="cb35-497"><a href="#cb35-497" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb35-498"><a href="#cb35-498" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-499"><a href="#cb35-499" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-500"><a href="#cb35-500" aria-hidden="true" tabindex="-1"></a><span class="fu">## Session info</span></span>
+<span id="cb35-501"><a href="#cb35-501" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-504"><a href="#cb35-504" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb35-505"><a href="#cb35-505" aria-hidden="true" tabindex="-1"></a><span class="fu">sessionInfo</span>()</span>
+<span id="cb35-506"><a href="#cb35-506" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 </code></pre></div><button title="Copy to Clipboard" class="code-copy-button" data-in-quarto-modal=""><i class="bi"></i></button></div>
 </div></div></div></div></div>
 </div> <!-- /content -->

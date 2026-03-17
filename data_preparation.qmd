@@ -340,7 +340,9 @@ metric_chest_participantday <-
     MDER = mean(MEDI / LIGHT, na.rm = TRUE),
     .groups = "drop_last"
   ) |> 
-  mutate(MDER = ifelse(abs(MDER) == Inf, NA, MDER))
+  mutate(MDER = ifelse(abs(MDER) == Inf, NA, MDER),
+         across(c(brightest_10h_mean, darkest_5h_mean), exp_zero_inflated)
+  )
 
 metric_glasses_participantday <-
   light_glasses_processed2 |> 
@@ -357,7 +359,9 @@ metric_glasses_participantday <-
     MDER = mean(MEDI / LIGHT, na.rm = TRUE),
     .groups = "drop_last"
   ) |> 
-  mutate(MDER = ifelse(abs(MDER) == Inf, NA, MDER))
+  mutate(MDER = ifelse(abs(MDER) == Inf, NA, MDER),
+         across(c(brightest_10h_mean, darkest_5h_mean), exp_zero_inflated)
+  )
 ```
 
 
