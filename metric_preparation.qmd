@@ -34,6 +34,7 @@ library(tidyverse)
 library(melidosData)
 library(LightLogR)
 library(mgcv)
+library(readxl)
 library(lme4)
 library(performance)
 library(cowplot)
@@ -60,13 +61,25 @@ demographics <- load_data("demographics") |> flatten_data()
 photoperiod_daily <- 
 light_glasses_processed2 |> 
   group_by(site, Id, Date) |> 
-  summarize(photoperiod = mean(photoperiod, na.rm = TRUE),
+  summarize(photoperiod = mean(photoperiod, na.rm = TRUE) |> as.numeric(),
             .groups = "drop_last")
 
 photoperiod_participant <- 
 light_glasses_processed2 |> 
   group_by(site, Id) |> 
-  summarize(photoperiod = mean(photoperiod, na.rm = TRUE),
+  summarize(photoperiod = mean(photoperiod, na.rm = TRUE) |> as.numeric(),
+            .groups = "drop_last")
+
+photoperiod_daily_chest <- 
+light_chest_processed2 |> 
+  group_by(site, Id, Date) |> 
+  summarize(photoperiod = mean(photoperiod, na.rm = TRUE) |> as.numeric(),
+            .groups = "drop_last")
+
+photoperiod_participant_chest <- 
+light_chest_processed2 |> 
+  group_by(site, Id) |> 
+  summarize(photoperiod = mean(photoperiod, na.rm = TRUE) |> as.numeric(),
             .groups = "drop_last")
 ```
 
@@ -111,7 +124,7 @@ metric_glasses_participant |>
 metrics_chest <- 
 metric_chest_participant |> 
   left_join(demographics, by = c("site", "Id")) |> 
-  left_join(photoperiod_participant, by = c("site", "Id")) |> 
+  left_join(photoperiod_participant_chest, by = c("site", "Id")) |> 
   pivot_longer(c(interdaily_stability, intradaily_variability), names_to = "name", values_to = "metric") |> 
   ungroup() |> 
   nest(.by = name) |> 
@@ -161,13 +174,35 @@ metrics_chest <-
         )
       ) |>
       left_join(demographics, by = c("site", "Id")) |> 
-      left_join(photoperiod_daily, by = c("site", "Id", "Date")) |> 
+      left_join(photoperiod_daily_chest, by = c("site", "Id", "Date")) |> 
       pivot_longer(c(Mean:duration_above_250_wake), names_to = "name", values_to = "metric") |>
       ungroup() |>
       nest(.by = name) |> 
       mutate(type = "participant-day")
   )
 ```
+
+```{r}
+types <- read_excel("data/metric_types.xlsx")
+```
+
+
+```{r}
+metrics_glasses <-
+  metrics_glasses |> 
+  unnest(data) |> 
+  mutate(across(c(site, Id, country, city, Date), factor)) |> 
+  nest(data = -c(name, type)) |> 
+  left_join(types, by = "name")
+
+metrics_chest <-
+  metrics_chest |> 
+  unnest(data) |> 
+  mutate(across(c(site, Id, country, city, Date), factor)) |> 
+  nest(data = -c(name, type)) |> 
+  left_join(types, by = "name")
+```
+
 
 ### Distributional characteristics
 

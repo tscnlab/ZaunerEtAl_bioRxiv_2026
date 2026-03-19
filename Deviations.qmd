@@ -9,3 +9,5 @@ This page collects deviations from the [preregistration](	https://aspredicted.or
 
 - For preprocessing, only non-wear times that did not fall within a sleep window were set to `NA`
 - For sleep-environment-related analyses, sleep windows were set based on `sleepprep`, i.e., the moment when participants were trying to sleep, instead of the actual sleep onset, which is `sleepprep` + `sleepdelay`, i.e., the added sleep delay. This mostly affects analyses that are connected to the Brown recommendation windows of healthy lighting (wake, pre-sleep, sleep)
+- Metric change: geometric mean of melanopic EDI during 10 darkest hours of the day (lx) instead of 5 darkest hours were used. This is consistent with the midpoint of darkest 10 hours of the day and leads to a stable time frame.
+- Metric change: the midpoint of longest period above 250 lx melanopic EDI is changed to mean timing above 250 lx melanopic EDI, because that does not reduce the day to a singular event.

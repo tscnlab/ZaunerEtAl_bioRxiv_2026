@@ -4,8 +4,10 @@ subtitle: "Do sites differ in objectively measured personal light exposure? If s
 author: "Johannes Zauner"
 format: 
   html:
+    toc: true
     code-tools: true
     code-link: true
+    page-layout: full
 ---
 
 ## Preface
@@ -35,13 +37,28 @@ library(lme4)
 library(performance)
 library(cowplot)
 library(ggridges)
+library(broom)
+library(broom.mixed)
+library(gt)
+library(performance)
+library(glmmTMB)
+library(gtsummary)
 source("scripts/fitting.R")
+source("scripts/summaries.R")
 ```
 
 ```{r}
 #| message: false
 #| filename: Load data
 load("data/metrics_glasses.RData")
+metrics <- metrics_glasses
+H1 <- "Hypothesis: There is a significant difference in personal light-exposure metrics across sites, even after accounting for latitude and photoperiod."
+sig.level <- 0.05
+
+#for chest:
+# load("data/metrics_chest.RData")
+# metrics <- metrics_chest
+# melidos_cities <- melidos_cities[names(melidos_cities)!="MPI"]
 ```
 
 ## Hypothesis 1
@@ -54,101 +71,249 @@ Hypothesis 1 states:
 
 *Type of model:* LMM
 
-*Base formula:* $\text{Metric} \sim \text{Site} +  \text{Photoperiod} + \text{Latitude} + (1|\text{Site}:\text{Participant})$
+*Base formula:* $\text{Metric} \sim \text{Site} +  \text{Photoperiod} + (1|\text{Site}:\text{Participant})$
 
 *Additional notes:* 
 - For dynamics-based metrics LM without Participant random effect.
-- Photoperiod will only be applied for daytime and nighttime duration metrics.
+- Because latitude and site are each individual values per site (i.e., each site has its unique latitude), they have to be modelled separately and will be compared via AIC.
 
 *Specific formulas:* 
-- $\text{Metric} \sim \text{Site} + \text{Photoperiod} + \text{Latitude}$ (for dynamics-based metrics)
+- $\text{Metric} \sim \text{Site} + \text{Photoperiod} $ (for dynamics-based metrics)
+- $\text{Metric} \sim \text{Latitude} +  \text{Photoperiod} + (1|\text{Site}:\text{Participant})$ (for the latitude version of the base formula)
+- $\text{Metric} \sim \text{Photoperiod} + (1|\text{Site}) + (1|\text{Site}:\text{Participant})$ (to check whether site is better represented as a random effect)
 
 *False-discovery-rate correction:*
-`r nrow(metrics)` (number of metrics that are compared)
+17 (number of metrics that are compared)
 
 ### Preparation
 
 ```{r}
+#| filename: Model setup based on distribution
+model_tbl <- tibble::tribble(
+    ~name, ~engine, ~ response, ~family,
+    "interdaily_stability", "lm", "qlogis(metric)", gaussian(),
+    "intradaily_variability", "lm", "metric", gaussian(),
+    "Mean", "lmer", "log_zero_inflated(metric)", gaussian(),
+    "dose", "lmer", "log_zero_inflated(metric)", gaussian(),
+    "MDER", "lmer", "metric", gaussian(),
+    "darkest_10h_mean", "lmer", "log_zero_inflated(metric)", gaussian(),
+    "brightest_10h_mean", "lmer", "log_zero_inflated(metric)", gaussian(),
+    "duration_above_1000", "glmmTMB", "metric", tweedie(link = "log"),
+    "duration_above_250", "lmer", NA, gaussian(),
+    "duration_below_10", "lmer", NA, gaussian(),
+    "duration_below_1", "lmer", NA, gaussian(),
+    "duration_above_250_wake", "glmmTMB", "metric", tweedie(link = "log"),
+    "duration_below_10_pre-sleep", "glmmTMB", "metric", tweedie(link = "log"),
+    "duration_below_1_sleep", "glmmTMB", "metric", tweedie(link = "log"),
+    "period_above_250", "lmer", "log_zero_inflated(metric)", gaussian(),
+    "brightest_10h_midpoint", "lmer", "metric", gaussian(),
+    "brightest_10h_onset", "lmer", NA, gaussian(),
+    "brightest_10h_offset", "lmer", NA, gaussian(),
+    "darkest_10h_midpoint", "lmer", "metric", gaussian(),
+    "darkest_10h_onset", "lmer", NA, gaussian(),
+    "darkest_10h_offset", "lmer", NA, gaussian(),
+    "mean_timing_above_250", "lmer", "metric", gaussian(),
+    "first_timing_above_250", "lmer", "metric", gaussian(),
+    "last_timing_above_250", "lmer", "metric", gaussian()
+  )
+```
+
+```{r}
+#| filename: Formula setup for inference
 metrics <-
   metrics |> 
-  mutate(H1_formula = case_when(type == "participant" ~ 
-                                  list(metric ~ site + lat + photoperiod),
+  mutate(H1_1 = case_when(type == "participant" ~ 
+                                  "~ site",
                                 type == "participant-day" ~ 
-                                  list(metric ~ site + lat + photoperiod + (1| site:Id))),
-         H1_formula0 = case_when(type == "participant" ~ 
-                                   list(metric ~ lat + photoperiod),
+                                  "~ site + (1| site:Id)"),
+         H1_0 = case_when(type == "participant" ~ 
+                                   "~ 1",
                                  type == "participant-day" ~ 
-                                  list(metric ~ lat + photoperiod + (1| site:Id)))
+                                  "~ 1 + (1| site:Id)"),
+         H1_lat = case_when(type == "participant" ~ 
+                                   "~ lat",
+                                 type == "participant-day" ~ 
+                                  "~ lat + (1|site:Id)"),
+         H1_phot = case_when(type == "participant" ~ 
+                                   "~ photoperiod",
+                                 type == "participant-day" ~ 
+                                  "~ photoperiod + (1|site:Id)"),
+         H1_rand = case_when(type == "participant" ~ 
+                                   NA,
+                                 type == "participant-day" ~ 
+                                  "~ 1 + (1|site/Id)")
+         ) |> 
+  left_join(model_tbl, by = "name")
+
+H1_formulas <-  names(metrics) |> subset(grepl("H1_", names(metrics)))
+
+metrics <- 
+  metrics |> relocate(all_of(H1_formulas), .after = family)
+H1_fdr_n <- metrics |> filter(!is.na(response)) |> nrow()
+```
+
+```{r}
+#| echo: false
+metrics |> 
+  select(-data) |>
+  filter(!is.na(response)) |> 
+  arrange(metric_type, name) |> 
+  mutate(family = map(family, 1),
+         rowname = seq_along(1:length(name))) |> 
+  group_by(metric_type) |> 
+  gt() |> 
+  cols_label_with(fn = \(x) x |> str_to_title() |> str_replace_all("_", " ")) |> 
+  sub_missing(missing_text = "") |> 
+  sub_values(values = "NULL", replacement = "") |> 
+  fmt(name, fns = \(x) x |> str_to_title() |>  str_replace_all("_", " ")) |> 
+  sub_values(values = "MDER", replacement = "MDER") |> 
+  tab_header("Hypothesis 1: metric model specifications",
+             subtitle = H1) |> 
+  tab_footnote("Confirmatory analysis will use a p-value correction through the false-discovery rate for n=17 comparisons") |> 
+  tab_footnote("These are the models used for the confirmatory analysis. Each H1 1 and H1 0 pair are compaired with likelihood-ratio tests to determine whether site is meaningful", locations = cells_column_labels(c(H1_1, H1_0))) |> 
+  tab_footnote("These models will be checked via AIC against H1 1 to see whether there is indeed a site difference beyond the specific difference in the model. Also, this model is compared against the H1 0 model", locations = cells_column_labels(c("H1_lat", "H1_phot", "H1_rand")))
+```
+
+
+```{r}
+#| filename: Formula creation
+metrics <-
+  metrics |> 
+  mutate(across(all_of(H1_formulas),
+                \(x) map2(x, response, \(y,z) make_formula(z, y))
+                )
          )
+```
+
+```{r}
+#| filename: Offset zero-values in mixed gamma models
+ metrics <- 
+  metrics |>
+  mutate(data = map2(data, engine, \(data, engine) {
+    if(engine == "glmer") {
+      data |> mutate(metric = metric + 0.1)
+    } else data
+  }))
 ```
 
 
 ### Analysis
 
-```{r}
-model_tbl <- tibble::tibble(
-  name = c(
-    "interdaily_stability",
-    "intradaily_variability",
-    "Mean",
-    "dose",
-    "MDER",
-    "darkest_10h_mean",
-    "brightest_10h_mean",
-    "duration_above_1000",
-    "duration_above_250",
-    "duration_below_10",
-    "duration_below_1",
-    "duration_below_1_sleep",
-    "period_above_250",
-    "brightest_10h_midpoint",
-    "brightest_10h_onset",
-    "brightest_10h_offset",
-    "darkest_10h_midpoint",
-    "darkest_10h_onset",
-    "darkest_10h_offset",
-    "mean_timing_above_250",
-    "first_timing_above_250",
-    "last_timing_above_250"
-  ),
+#### Fit models
 
-  
-  
-  
-  
-  
-    engine = c(
-    "lm",
-    "glm",
-    "glmer",
-    "glmer",
-    "lmer",
-    ""
-  ),
-  response = c(
-    "qlogis(metric)",
-    ""
-  ),
-  family = list(
-    NULL,                        # lmer Gaussian
-    Gamma(link = "log"),
-    NULL,                        # e.g. log-transform beforehand
-    Gamma(link = "log"),
-    Gamma(link = "log")
-  ),
-  transform = list(
-    qlogis,                      # or your own bounded-data transform
-    log,
-    log,
-    identity,
-    identity
-  )
-)
+```{r}
+#| filename: Model fit
+metrics <-
+  metrics |> 
+  mutate(
+    across(all_of(H1_formulas),
+           \(x) pmap(list(data, x, engine, family), fit_model),
+           .names = "{.col}_model")
+    )
 ```
 
+#### Main model diagnostics
+
+```{r}
+#| filename: Create diagnostic plots for main model
+#| message: false
+metrics <-
+  metrics |> 
+  mutate(
+    across(all_of(paste0(H1_formulas[1], "_model")),
+           \(x) map(x, diagnostics),
+           .names = "{str_remove(.col, '_model')}_diagnostics")
+    )
+```
+
+Model diagnostics overall look good to OK. Anomalies are found but deemed non-critical. Alternative error families, like the `Tweedie` distribution have been used as well. For `Tweedie` models, the homogeneity of variance does not show in the plots (duration metrics), but was checked interactively. 
+
+::: {.panel-tabset}
+
+```{r, results='asis', fig.width = 8, fig.height = 12}
+walk2(metrics$name, metrics$H1_1_diagnostics, function(name, plot) {
+  
+  # skip NULL plots
+  if (is.null(plot)) return()
+  
+  # format tab title
+  tab_title <- name |>
+    str_to_title() |>
+    str_replace_all("_", " ")
+  
+  # emit markdown for tab
+  cat("\n\n##### ", tab_title, "\n\n", sep = "")
+  
+  # print the plot
+  print(plot)
+})
+```
+
+:::
+
+### Model comparisons
+
+```{r}
+#| filename: Model comparisons
+#| message: false
+metrics <- 
+  metrics |> 
+  mutate(
+    H1_1_comp = map2(H1_0_model, H1_1_model, model_anova),
+    H1_1_p = map2(H1_1_comp, engine, model_comp_p, n = H1_fdr_n) |> list_c(),
+    H1_1_sig = H1_1_p <= sig.level,
+    
+    H1_lat_comp = map2(H1_0_model, H1_lat_model, model_anova),
+    H1_lat_p = map2(H1_lat_comp, engine, model_comp_p, n = H1_fdr_n) |> list_c(),
+    H1_lat_sig = H1_lat_p <= sig.level,
+    
+    H1_phot_comp = map2(H1_0_model, H1_phot_model, model_anova),
+    H1_phot_p = map2(H1_phot_comp, engine, model_comp_p, n = H1_fdr_n) |> list_c(),
+    H1_phot_sig = H1_phot_p <= sig.level,
+    
+    H1_rand_comp = map2(H1_0_model, H1_rand_model, model_anova),
+    H1_rand_p = map2(H1_rand_comp, engine, model_comp_p, n = H1_fdr_n) |> list_c(),
+    H1_rand_sig = H1_rand_p <= sig.level,
+    
+    AICs = pmap(list(H1_0_model, H1_1_model, H1_phot_model, H1_lat_model, H1_rand_model), model_AIC),
+    
+    summary = pmap(list(H1_1_sig, H1_0_model, H1_1_model), model_summary),
+    summary_lat = pmap(list(H1_lat_sig, H1_0_model, H1_lat_model), model_summary),
+    summary_phot = pmap(list(H1_phot_sig, H1_0_model, H1_phot_model),
+                        model_summary),
+    summary_rand = pmap(list(H1_rand_sig, H1_0_model, H1_rand_model),
+                        model_summary),
+    
+    table = pmap(list(name, H1_1_p, summary, metric_type, 
+                           response, family), model_table),
+    table_lat = pmap(list(name, H1_lat_p, summary_lat, metric_type, 
+                           response, family), model_table),
+    table_phot = pmap(list(name, H1_phot_p, summary_phot, metric_type, 
+                           response, family), model_table),
+    table_rand = pmap(list(name, H1_rand_p, summary_rand, metric_type, 
+                           response, family),model_table),
+    table = pmap(list(table, table_lat, AICs, "lat", "H1_1", "H1_lat"),
+                 H1_combining_tables),
+    table = pmap(list(table, table_phot, AICs, "photoperiod", "H1_1", "H1_phot"),
+                 H1_combining_tables),
+    table = pmap(list(table, table_rand, AICs, "SD Site", "H1_1", "H1_rand"),
+                 H1_combining_tables),
+    table = map(table, \(x) if(is.null(x)) return() else x |>
+                  mutate(across(any_of("lat"), \(x) x*10)))
+    )
+```
 
 ### Results
 
+```{r}
+#| message: false
+#| warning: false
+H1_tab <- H1_table(metrics, H1_fdr_n)
+H1_tab
+gtsave(H1_tab, "tables/H1.png", vwidth = 1700)
+```
+
+### Interpretation
 
 ## Session info
 
