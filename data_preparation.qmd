@@ -110,7 +110,7 @@ sleep_tester <- function(sleepdiary, trial_times, filter) {
 
 ```{r}
 #| fig-height: 10
-# sleep_tester(sleepdiary, trial_times, "MPI")
+# sleep_tester(sleepdiary, trial_times, "KNUST")
 ```
 
 ### Wear log
@@ -149,7 +149,7 @@ wearlog_tester <- function(wearlog, trial_times, filter) {
 
 ```{r}
 #| fig-height: 10
-# wearlog_tester(wearlog, trial_times, "BAUA")
+# wearlog_tester(wearlog, trial_times, "KNUST")
 ```
 
 ### Combine light exposure data with log and diary data
@@ -185,19 +185,19 @@ wearlog_adj <-
 light_chest_expanded <- 
 light_chest |> 
   imap(\(x, idx) x |>
-    select(Id, Datetime, MEDI, LIGHT) |>
+    select(Id, Datetime, MEDI, LIGHT, is.implicit) |>
     add_states(sleepdiary_adj[[idx]], start = Interval, end = Interval) |>
     add_states(wearlog_adj[[idx]]) |> 
-    aggregate_Datetime("1 min")
+    aggregate_Datetime("1 min", type = "floor")
   )
 
 light_glasses_expanded <- 
 light_glasses |> 
   imap(\(x, idx) x |> 
-    select(Id, Datetime, MEDI, LIGHT) |> 
+    select(Id, Datetime, MEDI, LIGHT, is.implicit) |> 
     add_states(sleepdiary_adj[[idx]], start = Interval, end = Interval) |> 
     add_states(wearlog_adj[[idx]]) |> 
-    aggregate_Datetime("1 min")
+    aggregate_Datetime("1 min", type = "floor")
   )
 ```
 

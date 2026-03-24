@@ -45,6 +45,7 @@ library(glmmTMB)
 library(gtsummary)
 source("scripts/fitting.R")
 source("scripts/summaries.R")
+source("scripts/H1_specific.R")
 ```
 
 ```{r}
@@ -123,25 +124,25 @@ model_tbl <- tibble::tribble(
 metrics <-
   metrics |> 
   mutate(H1_1 = case_when(type == "participant" ~ 
-                                  "~ site",
+                                  "~ site + photoperiod",
                                 type == "participant-day" ~ 
-                                  "~ site + (1| site:Id)"),
+                                  "~ site + photoperiod + (1| site:Id)"),
          H1_0 = case_when(type == "participant" ~ 
-                                   "~ 1",
-                                 type == "participant-day" ~ 
-                                  "~ 1 + (1| site:Id)"),
-         H1_lat = case_when(type == "participant" ~ 
-                                   "~ lat",
-                                 type == "participant-day" ~ 
-                                  "~ lat + (1|site:Id)"),
-         H1_phot = case_when(type == "participant" ~ 
                                    "~ photoperiod",
                                  type == "participant-day" ~ 
-                                  "~ photoperiod + (1|site:Id)"),
+                                  "~ photoperiod + (1| site:Id)"),
+         H1_lat = case_when(type == "participant" ~ 
+                                   "~ lat + photoperiod",
+                                 type == "participant-day" ~ 
+                                  "~ lat + photoperiod + (1|site:Id)"),
+         H1_phot = case_when(type == "participant" ~ 
+                                   "~ site",
+                                 type == "participant-day" ~ 
+                                  "~ site + (1|site:Id)"),
          H1_rand = case_when(type == "participant" ~ 
                                    NA,
                                  type == "participant-day" ~ 
-                                  "~ 1 + (1|site/Id)")
+                                  "~ photoperiod + (1|site/Id)")
          ) |> 
   left_join(model_tbl, by = "name")
 
@@ -171,7 +172,7 @@ metrics |>
              subtitle = H1) |> 
   tab_footnote("Confirmatory analysis will use a p-value correction through the false-discovery rate for n=17 comparisons") |> 
   tab_footnote("These are the models used for the confirmatory analysis. Each H1 1 and H1 0 pair are compaired with likelihood-ratio tests to determine whether site is meaningful", locations = cells_column_labels(c(H1_1, H1_0))) |> 
-  tab_footnote("These models will be checked via AIC against H1 1 to see whether there is indeed a site difference beyond the specific difference in the model. Also, this model is compared against the H1 0 model", locations = cells_column_labels(c("H1_lat", "H1_phot", "H1_rand")))
+  tab_footnote("These models will be checked via AIC against H1 1 to see whether there is indeed a site difference beyond the specific difference in the model. Also, this model is compared against the H1 0 model", locations = cells_column_labels(c("H1_lat", "H1_rand", "H1_phot")))
 ```
 
 
@@ -186,7 +187,7 @@ metrics <-
 ```
 
 ```{r}
-#| filename: Offset zero-values in mixed gamma models
+#| filename: Offset zero-values in mixed gamma models (not necessarily the)
  metrics <- 
   metrics |>
   mutate(data = map2(data, engine, \(data, engine) {
@@ -267,7 +268,7 @@ metrics <-
     H1_lat_p = map2(H1_lat_comp, engine, model_comp_p, n = H1_fdr_n) |> list_c(),
     H1_lat_sig = H1_lat_p <= sig.level,
     
-    H1_phot_comp = map2(H1_0_model, H1_phot_model, model_anova),
+    H1_phot_comp = map2(H1_phot_model, H1_1_model, model_anova),
     H1_phot_p = map2(H1_phot_comp, engine, model_comp_p, n = H1_fdr_n) |> list_c(),
     H1_phot_sig = H1_phot_p <= sig.level,
     
@@ -276,30 +277,32 @@ metrics <-
     H1_rand_sig = H1_rand_p <= sig.level,
     
     AICs = pmap(list(H1_0_model, H1_1_model, H1_phot_model, H1_lat_model, H1_rand_model), model_AIC),
-    
+  
     summary = pmap(list(H1_1_sig, H1_0_model, H1_1_model), model_summary),
     summary_lat = pmap(list(H1_lat_sig, H1_0_model, H1_lat_model), model_summary),
-    summary_phot = pmap(list(H1_phot_sig, H1_0_model, H1_phot_model),
-                        model_summary),
+    # summary_phot = pmap(list(H1_phot_sig, H1_0_model, H1_phot_model),
+    #                     model_summary),
     summary_rand = pmap(list(H1_rand_sig, H1_0_model, H1_rand_model),
                         model_summary),
-    
+  
     table = pmap(list(name, H1_1_p, summary, metric_type, 
                            response, family), model_table),
     table_lat = pmap(list(name, H1_lat_p, summary_lat, metric_type, 
                            response, family), model_table),
-    table_phot = pmap(list(name, H1_phot_p, summary_phot, metric_type, 
-                           response, family), model_table),
+    table_lat = map(table_lat, \(x) if(is.null(x)) return() else x |>
+                  mutate(across(any_of("lat"), \(x) x*10))),
+    table = map2(table, H1_phot_sig, \(x,y) if(is.null(x)) return() else x |>
+                  mutate(dAIC_photoperiod = ifelse(y, 0, -3))),
+    # table_phot = pmap(list(name, H1_phot_p, summary_phot, metric_type,
+    #                        response, family), model_table),
     table_rand = pmap(list(name, H1_rand_p, summary_rand, metric_type, 
                            response, family),model_table),
     table = pmap(list(table, table_lat, AICs, "lat", "H1_1", "H1_lat"),
                  H1_combining_tables),
-    table = pmap(list(table, table_phot, AICs, "photoperiod", "H1_1", "H1_phot"),
-                 H1_combining_tables),
+    # table = pmap(list(table, table_phot, AICs, "photoperiod", "H1_1", "H1_phot"),
+    #              H1_combining_tables),
     table = pmap(list(table, table_rand, AICs, "SD Site", "H1_1", "H1_rand"),
                  H1_combining_tables),
-    table = map(table, \(x) if(is.null(x)) return() else x |>
-                  mutate(across(any_of("lat"), \(x) x*10)))
     )
 ```
 
@@ -308,12 +311,72 @@ metrics <-
 ```{r}
 #| message: false
 #| warning: false
+#| label: tbl-H1
+#| tab-name: Hypothesis 1 results
 H1_tab <- H1_table(metrics, H1_fdr_n)
 H1_tab
 gtsave(H1_tab, "tables/H1.png", vwidth = 1700)
+save(metrics, file = "data/H1_results.RData")
 ```
 
 ### Interpretation
+
+@tbl-H1 shows a comprehensive overview of the main inference results. When site is significant, site coefficients are with reference to the `BAUA` site.
+
+As way of a high-level summary:
+
+- Timing-based metrics show a significant site-specific effect that is neither dependent on photoperiod, nor latitude
+- While level-based metrics show a significant site-specific effect, it can be drawn back to photoperiod and latitude for daytime metrics (but not for nighttime)
+- Duration-based metrics are photoperiod-dependent, but not site specific, same as exposure history and spectrum - these metrics are rather more dependent on inter- and intraindividual differences of participants
+- In general, interindividual differences highly relevant and trump site specific factors, although usually not as large as intraindividual differences
+- None of the above means that individual sites can not be significantly different from the group or another site. But rather that the variance across all nine sites is or is not sufficiently large.
+
+##### Timing and level-based metrics prove site specific
+
+- Both timing and level-based metrics show site specificity, even when controlled for photoperiod
+- The `First timing above 250 lx melanopic EDI` (timing) is the only exception, with neither site nor photoperiod-specific influence
+- Neither duration, dynamics, exposure history, nor spectrum-based metrics show site specificity
+
+###### Level-based
+
+- For the overall daily `Mean`, slight increases over `BAUA` (100%) are `THUAS` (+5%), `TUM` (+6%), `FUSPCEU`(+13%), `RISE` (+14%), and `UCR`(+25%). Quite higher are `IZTECH` (+47%) and `MPI`(+62%). Quite darker is `KNUST` (-46%)
+- For the `Brightest 10h mean`, slight increases over `BAUA` (100%) are `UCR`(+7%), `THUAS` (+14%) and `IZTECH`(+15%). Quite brighter are `FUSPCEU`(+50%), `MPI`(+54%), and `RISE`(+55%). Darker are `TUM` (-25%) and `KNUST`(-46%)
+- For the `Darkest 10h mean`, slight increases over `BAUA` (100%) are `THUAS`(+3%). Quite brighter are `MPI`(+61%), `TUM`(+64%), `UCR`(+71%), and `IZTECH`(+78%). Darker are `FUSPCEU`(-10%), `RISE`(-12%), and `KNUST`()
+
+###### Timing-based
+
+- Values are rounded to full minutes
+- For the `Brightest 10h midpoint`, we see shifts to later timing relative to `BAUA` from `IZTECH`(+20min), `FUSPCEU`(+26min), and `TUM`(+31min). Sites with earlier timing are `THUAS`(-2min), `MPI`(-2min), `RISE`(-45min), `KNUST`(-57min), and `UCR`(-1h 19min)
+- For the `Darkest 10h midpoint`, we see shifts to later timing relative to `BAUA` from `MPI`(+4min), `IZTECH`(+25min), and `TUM`(+51min). Sites with earlier timing are `FUSPCEU`(-2min), `THUAS`(-19min), `RISE`(-33min), `UCR`(-45min), and `KNUST`(-1h 7min)
+- For the `Last timing above 250lx melanopic EDI`, we see shifts to later timing relative to `BAUA` from `RISE`(+2min), `THUAS`(+7min), `TUM`(+26min), `IZTECH`(+44min), and `FUSPCEU`(+1h 5min). Sites with earlier timing are `MPI`(-17min), `KNUST`(-1h 56min), and `UCR`(-2h 12min)
+- For the `Mean timing above 250lx melanopic EDI`, we see shifts to later timing relative to `BAUA` from `MPI`(+0min), `THUAS`(+17min), `TUM`(+18min), `IZTECH`(+41min), and `FUSPCEU`(+41min). Sites with earlier timing are `RISE`(-28min), `KNUST`(-1h 19min), and `UCR`(-2h 4min).
+
+##### Site effects are not random
+
+- With the exception of the `Mean` and the `Darkest 10h mean` (both based on logarithmic scaling), site coefficients are not randomly (normally) distributed, but rather show specific differences, even when controlled for photoperiod
+- for `Mean`, a random site factor translates to ± 32% for 1 standard deviation, and for the `Darkest 10h mean` ± 35% for 1 standard deviation
+
+##### Latitude explains daytime levels better than site specifics coefficients
+
+- For the `Mean` and the `Brightest 10h mean`(both based on logarithmic scaling), `latitude` is a better predictor (based on ∆AIC) compared to the `site` (both controlled for photoperiod).
+- Per 10 degrees of latitude, the `Mean` increases by 15%, and the `Brightest 10h mean` by 24%
+- These coefficients are multiplicative, meaning that, e.g., a 30° latitude increase for `Mean` would not result in and $3*15\%=45\%$ increase, but rather an increase of $1.15^3=1.52=+52%$
+
+##### Photoperiod is highly relevant for duration, exposure history, level, and spectrum based metrics, but not for dynamics and timing based metrics
+
+- Photoperiod is significant for `Dose` (exposure history), `MDER` (spectrum), all level-based metrics, all duration-based metrics sans `Duration below 1 lx melanopic EDI during sleep`, and the `Last timing above 250 lx melanopic EDI` and `Mean timing above 250 lx melanopic EDI` (timing).
+- Photoperiod is not relevant for the `Duration below 1 lx melanopic EDI during sleep` (duration), dynamics-based metrics, and 3 out of 5 timing-based metrics (`Brightest 10h midpoint`, `Darkest 10h midpoint`, `First timing above 250 lx melanopic EDI`)
+- For duration-based metrics, every hour of photoperiod increases `Duration above 1000 lx melanopic EDI` (+17%), `Duration above 250 lx melanopic EDI` (+10%), and `Period above 250 lx melanopic EDI` (+10%). Every hour of photoperiod also decreases the `Duration below 10 lx melanopic EDI during pre-sleep` (-3%).
+- `Dose` is increased by +19% per hour of photoperiod
+- `MDER` is increased by 0.02 per hour of photoperiod
+- For level-based metrics, every hour of photoperiod increases the `Mean` (+18%), the `Brightest 10h mean` (+25%), the `Darkest 10h mean` (+9%)
+- For timing-based metrics, every hour of photoperiod shifts the `Last timing above 250 lx melanopic EDI` (+20 minutes) and the `Mean timing above 250 lx melanopic EDI` (+~8 minutes)
+
+##### Interindividual and intraindividual differences outweigh site-specific differences
+
+- For both level and timing-based metrics *interindividual* differences (`SD Participant`) and *intraindividual* differences (`SD Residual`) outweigh most site-specific differences (i.e., coefficients) 
+- However, the highest site-specific differences (hightest site coefficient minus lowest site coefficient) are in the range of intraindividual differences (1 standard deviation for `SD Residual`)
+- In most cases, *intraindividual* differences (`SD Residual`) outweigh *interindividual* differences (`SD Participant`). A notable exception is the `Darkest 10h mean`, where both are similar (`SD Participant` ±63% vs. `SD Residual` ±60%)
 
 ## Session info
 

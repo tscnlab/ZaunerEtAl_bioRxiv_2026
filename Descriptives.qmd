@@ -1,0 +1,799 @@
+---
+title: "Descriptives"
+subtitle: "Individual, behavioural, and environmental determinants of personal light exposure in daily life: a multi-country wearable and experience-sampling study"
+author: "Johannes Zauner"
+format: 
+  html:
+    toc: true
+    code-tools: true
+    code-link: true
+    page-layout: full
+---
+
+## Preface
+
+This document contains descriptive plots and tables of the dataset.
+
+## Setup
+
+```{r}
+#| message: false
+#| warning: false
+#| filename: Setup
+library(tidyverse)
+library(melidosData)
+library(LightLogR)
+library(cowplot)
+library(ggridges)
+library(gt)
+library(gtsummary)
+source("scripts/helpers.R")
+```
+
+## Load data
+
+```{r}
+#| message: false
+load("data/metrics_glasses.RData")
+load("data/metrics_chest.RData")
+demographics <- load_data("demographics") |> flatten_data()
+chronotype <- load_data("chronotype") |> flatten_data()
+sleep <- load_data("sleepdiaries") |> flatten_data()
+wearlog <- load_data("wearlog") |> flatten_data()
+load("data/preprocessed_glasses_1.RData")
+load("data/preprocessed_chest_1.RData")
+load("data/preprocessed_glasses_2.RData")
+load("data/preprocessed_chest_2.RData")
+```
+
+## Table1: Participant and site characteristics
+
+### Prepare data
+
+#### Site and city
+
+```{r}
+tbl1_country <-
+  melidos_countries |> 
+  enframe("site", "country")
+
+tbl1_city <-
+  melidos_cities |> 
+  enframe("site", "city")
+```
+
+#### Participant N
+
+```{r}
+tbl1_partN <-
+  demographics |> 
+    count(site, name = "partN") |> 
+    add_row(site = "Overall", demographics |> count(name = "partN"))
+
+glasses_partN <- 
+  light_glasses_processed1 |> summarize(Id = unique(Id), .groups = "drop")
+
+glasses_partN <-
+  glasses_partN |> 
+    count(site, name = "partN_glasses") |> 
+    add_row(site = "Overall", glasses_partN |> count(name = "partN_glasses"))
+
+chest_partN <- 
+  light_chest_processed1 |> summarize(Id = unique(Id), .groups = "drop")
+
+chest_partN <-
+  chest_partN |> 
+    count(site, name = "partN_chest") |> 
+    add_row(site = "Overall", chest_partN |> count(name = "partN_chest"))
+
+tbl1_partN <- 
+tbl1_partN |> 
+  left_join(glasses_partN, by = "site") |> 
+  left_join(chest_partN, by = "site") |> 
+    replace_na(list(partN_chest = 0))
+```
+
+#### Participant-days N
+
+```{r}
+glasses_daysN <- 
+  light_glasses_processed1 |> 
+  add_Date_col(group.by = TRUE) |>
+  summarize(Date = unique(Date), .groups = "drop")
+
+tbl1_daysN <-
+  glasses_daysN
+
+glasses_daysN <-
+  glasses_daysN |> 
+    count(site, name = "daysN_glasses") |> 
+    add_row(site = "Overall", glasses_daysN |> count(name = "daysN_glasses"))
+
+chest_daysN <- 
+  light_chest_processed1  |> 
+  add_Date_col(group.by = TRUE) |> 
+  summarize(Date = unique(Date), .groups = "drop")
+
+tbl1_daysN <-
+  tbl1_daysN |> full_join(chest_daysN, by = names(tbl1_daysN))
+
+chest_daysN <-
+  chest_daysN |> 
+    count(site, name = "daysN_chest") |> 
+    add_row(site = "Overall", chest_daysN |> count(name = "daysN_chest"))
+
+tbl1_daysN <- 
+tbl1_daysN |> 
+  count(site, name = "daysN") |> 
+  add_row(site = "Overall", tbl1_daysN |> count(name = "daysN")) |> 
+  left_join(glasses_daysN, by = "site") |> 
+  left_join(chest_daysN, by = "site") |> 
+    replace_na(list(daysN_chest = 0))
+```
+
+
+#### Weekend/weekdays N
+
+```{r}
+glasses_weekdayN <-
+  light_glasses_processed1 |> 
+  add_Date_col(group.by = TRUE) |>
+  mutate(Weekend = wday(Date, week_start = 1) >5) |> 
+  distinct(site, Id, Date, Weekend) 
+
+tbl1_weekdayN <-
+  glasses_weekdayN
+
+glasses_weekdayN <-
+  glasses_weekdayN |> 
+  ungroup(Date) |> 
+  count(Weekend)|> 
+    ungroup() |> 
+    count(site, Weekend, name = "weekdayN_glasses", wt = n) |> 
+    pivot_wider(id_cols = site, 
+                names_from = Weekend, 
+                values_from = weekdayN_glasses) |> 
+    rename_with(\(x) x |> replace_values("FALSE" ~ "weekdayN_glasses", "TRUE" ~ "weekendN_glasses"))
+
+glasses_weekdayN <-
+  glasses_weekdayN |> 
+    add_row(site = "Overall", glasses_weekdayN |> summarize(across(-site, sum)))
+
+chest_weekdayN <-
+  light_chest_processed1 |> 
+  add_Date_col(group.by = TRUE) |>
+  mutate(Weekend = wday(Date, week_start = 1) >5) |> 
+  distinct(site, Id, Date, Weekend) 
+
+tbl1_weekdayN <-
+  tbl1_weekdayN |> full_join(chest_weekdayN, by = names(tbl1_weekdayN))
+
+chest_weekdayN <-
+  chest_weekdayN |> 
+  ungroup(Date) |> 
+  count(Weekend)|> 
+    ungroup() |> 
+    count(site, Weekend, name = "weekdayN_chest", wt = n) |> 
+    pivot_wider(id_cols = site, 
+                names_from = Weekend, 
+                values_from = weekdayN_chest) |> 
+    rename_with(\(x) x |> replace_values("FALSE" ~ "weekdayN_chest", "TRUE" ~ "weekendN_chest"))
+
+chest_weekdayN <-
+  chest_weekdayN |> 
+    add_row(site = "Overall", chest_weekdayN |> summarize(across(-site, sum)))
+
+tbl1_weekdayN <-
+tbl1_weekdayN |> 
+  ungroup(Date) |> 
+  count(Weekend) |> 
+  ungroup() |> 
+  count(site, Weekend, name = "weekdayN", wt = n) |> 
+  pivot_wider(id_cols = site, 
+                names_from = Weekend, 
+                values_from = weekdayN) |> 
+    rename_with(\(x) x |> replace_values("FALSE" ~ "weekdayN", "TRUE" ~ "weekendN"))
+
+tbl1_weekdayN <-
+tbl1_weekdayN |> 
+  add_row(site = "Overall", tbl1_weekdayN |> summarize(across(-site, sum))) |> 
+  left_join(glasses_weekdayN, by = "site") |> 
+  left_join(chest_weekdayN, by = "site") |> 
+    replace_na(list(weekdayN_chest = 0))
+```
+
+#### Geolocation coordinates
+
+```{r}
+tbl1_location <-
+  melidos_coordinates |> 
+  enframe("site", "coordinates") |> 
+  mutate(coordinates = map(coordinates, format_coordinates) |> unlist())
+```
+
+#### Photoperiod
+
+```{r}
+phot_glasses <- 
+light_glasses_processed1 |> 
+  add_Date_col(group.by = TRUE) |> 
+  select(Id, Date, photoperiod) |> 
+  distinct(site, Id, Date, .keep_all = TRUE)
+
+phot_chest <- 
+light_chest_processed1 |> 
+  add_Date_col(group.by = TRUE) |> 
+  select(Id, Date, photoperiod) |> 
+  distinct(site, Id, Date, .keep_all = TRUE)
+
+phot_dates <- 
+  full_join(
+    phot_glasses,
+    phot_chest,
+    by = names(phot_glasses)
+  )
+
+tbl1_photoperiod <-
+  phot_dates |> 
+  ungroup(Date, Id) |> 
+  summarize(
+    phot = median(photoperiod),
+    phot_p05 = quantile(photoperiod, p=0.05),
+    phot_p95 = quantile(photoperiod, p=0.95)
+  ) |> 
+  rbind(phot_dates |> 
+  ungroup() |> 
+  summarize(
+    site = "Overall",
+    phot = median(photoperiod),
+    phot_p05 = quantile(photoperiod, p=0.05),
+    phot_p95 = quantile(photoperiod, p=0.95)
+  ))
+```
+
+#### Data collection dates
+
+```{r}
+tbl1_dates <- 
+phot_dates |> 
+  ungroup(Id, Date) |> 
+  summarize(date_median = median(Date),
+            date_min = min(Date),
+            date_max = max(Date)
+            ) |> 
+  rbind(phot_dates |> 
+  ungroup() |> 
+  summarize(
+    site = "Overall",
+    date_median = median(Date),
+            date_min = min(Date),
+            date_max = max(Date)
+  ))
+```
+
+#### Age, gender, employment status, chronotype
+
+```{r}
+partial_demographics <- 
+demographics |> 
+  left_join(chronotype |> select(Id, meq_type, meq, msf_sc, sjl), by = "Id") |> 
+  mutate(across(c(sex, gender), forcats::fct_drop),
+         meq_type = meq_type |> 
+           fct_collapse(
+             Morning = c("Definitely morning type", "Moderately morning type"),
+             Evening = c("Definitely evening type", "Moderately evening type"),
+                        ),
+         employment_status = employment_status |> 
+           fct_collapse(
+             `Fully` = c("Full time employed", "Not employed but studying or in training", "Studying and employed"),
+             `Partially` = c("Part time employed", "Marginally employed (Minijob)"),
+             None = c("Not employed")
+                        )
+         ) |> 
+  select(-c(Id, native_language, language_specification, comments))
+
+factor_vars <- c("sex", "gender", "employment_status", "meq_type")
+
+tbl1_demographics <-
+  partial_demographics |> 
+  reframe(
+    .by = site,
+    age_median = median(age) |> round(),
+    age_min = min(age),
+    age_max = max(age),
+    across(c(meq),
+           .fns = list(
+             median = ~median(.x, na.rm =TRUE)|> round(),
+             p05 = ~quantile(.x, p=0.05, na.rm = TRUE)|> round(),
+             p95 = ~quantile(.x, p=0.95, na.rm = TRUE)|> round()
+           )), 
+    across(c(sjl, msf_sc),
+           .fns = list(
+             median = ~median(.x, na.rm =TRUE),
+             p05 = ~quantile(.x, p=0.05, na.rm = TRUE),
+             p95 = ~quantile(.x, p=0.95, na.rm = TRUE)
+           )), 
+      across(all_of(factor_vars),
+             \(x) {
+               column <- cur_column()
+               count(cur_data(), pick(column)) |> 
+                 pivot_wider(names_from = cur_column(), 
+                             values_from = "n", 
+                             names_prefix = paste0(cur_column(), "_"))
+             })
+  ) |> 
+  rbind(
+    partial_demographics |> 
+    reframe(
+    site = "Overall",
+    age_median = median(age) |> round(),
+    age_min = min(age),
+    age_max = max(age),
+    across(c(meq),
+           .fns = list(
+             median = ~median(.x, na.rm =TRUE)|> round(),
+             p05 = ~quantile(.x, p=0.05, na.rm = TRUE)|> round(),
+             p95 = ~quantile(.x, p=0.95, na.rm = TRUE)|> round()
+           )), 
+    across(c(sjl, msf_sc),
+           .fns = list(
+             median = ~median(.x, na.rm =TRUE),
+             p05 = ~quantile(.x, p=0.05, na.rm = TRUE),
+             p95 = ~quantile(.x, p=0.95, na.rm = TRUE)
+           )), 
+      across(all_of(factor_vars),
+             \(x) {
+               column <- cur_column()
+               count(cur_data(), pick(column)) |> 
+                 pivot_wider(names_from = cur_column(), 
+                             values_from = "n", 
+                             names_prefix = paste0(cur_column(), "_"))
+             })
+  )) |> 
+  unnest(all_of(factor_vars))
+```
+
+#### Sleep duration
+
+```{r}
+tbl1_sleep <- 
+sleep |> 
+  mutate(daytype = daytype2 |> fct_relabel(\(x) x |> str_extract("work|free"))) |> 
+  select(site, sleep_duration, daytype) |> 
+  summarize(
+    across(where(is.difftime),
+           .fns = list(
+             median = ~median(.x, na.rm =TRUE),
+             p05 = ~quantile(.x, p=0.05, na.rm = TRUE),
+             p95 = ~quantile(.x, p=0.95, na.rm = TRUE)
+           )), 
+      across(where(is.factor),
+             \(x) {
+               column <- cur_column()
+               count(cur_data(), pick(column)) |> 
+                 pivot_wider(names_from = cur_column(), 
+                             values_from = "n", 
+                             names_prefix = paste0(cur_column(), "_"))
+             }),
+    .by = site
+  ) |> 
+  rbind(
+    sleep |> 
+  mutate(daytype = daytype2 |> fct_relabel(\(x) x |> str_extract("work|free"))) |> 
+  select(site, sleep_duration, daytype) |> 
+  summarize(
+    site = "Overall",
+    across(where(is.difftime),
+           .fns = list(
+             median = ~median(.x, na.rm =TRUE),
+             p05 = ~quantile(.x, p=0.05, na.rm = TRUE),
+             p95 = ~quantile(.x, p=0.95, na.rm = TRUE)
+           )), 
+      across(where(is.factor),
+             \(x) {
+               column <- cur_column()
+               count(cur_data(), pick(column)) |> 
+                 pivot_wider(names_from = cur_column(), 
+                             values_from = "n", 
+                             names_prefix = paste0(cur_column(), "_"))
+             })
+  )
+  ) |> 
+  unnest(where(is_tibble))
+```
+
+####  Non-wear time
+
+```{r}
+#| fig-height: 30
+#| fig-width: 10
+tbl1_wear <- 
+light_glasses_processed1 |> 
+  rbind(light_glasses_processed1) |>
+  filter(!is.implicit) |>
+  distinct(site, Id, Datetime, .keep_all = TRUE) |>
+  group_by(site, Id, nonwear = wear == "off" & sleep != "sleepprep") |>
+  mutate(
+    nonwear = replace_na(nonwear, FALSE)
+  ) |>
+  durations() |>  
+  pivot_wider(id_cols = c(site, Id), names_from = "nonwear", values_from = duration) |> 
+  rowwise() |> 
+  mutate(total = sum(dplyr::c_across(c(`FALSE`,`TRUE`)), na.rm = TRUE) |> as.duration()) |> 
+  group_by(site) |> 
+  summarize(
+    nonwear = sum(`TRUE`, na.rm = TRUE) |> as.duration(),
+    total = sum(total, na.rm = TRUE) |> as.duration(),
+    nonwear_pct = nonwear/total
+  ) |> 
+  rbind(
+    light_glasses_processed1 |> 
+  rbind(light_glasses_processed1) |>
+  filter(!is.implicit) |>
+  distinct(site, Id, Datetime, .keep_all = TRUE) |>
+  group_by(site, Id, nonwear = wear == "off" & sleep != "sleepprep") |>
+  mutate(
+    nonwear = replace_na(nonwear, FALSE)
+  ) |>
+  durations() |>  
+  pivot_wider(id_cols = c(site, Id), names_from = "nonwear", values_from = duration) |> 
+  rowwise() |> 
+  mutate(total = sum(dplyr::c_across(c(`FALSE`,`TRUE`)), na.rm = TRUE) |> as.duration()) |> 
+  ungroup() |> 
+  summarize(
+    site = "Overall",
+    nonwear = sum(`TRUE`, na.rm = TRUE) |> as.duration(),
+    total = sum(total, na.rm = TRUE) |> as.duration(),
+    nonwear_pct = nonwear/total
+  )
+  )
+  
+```
+
+#### Days included in calculations
+
+```{r}
+glasses_validdaysN <- 
+  light_glasses_processed2 |> 
+  add_Date_col(group.by = TRUE) |>
+  summarize(Date = unique(Date), .groups = "drop")
+
+tbl1_validdaysN <-
+  glasses_validdaysN
+
+glasses_validdaysN <-
+  glasses_validdaysN |> 
+    count(site, name = "validdaysN_glasses") |> 
+    add_row(site = "Overall", glasses_validdaysN |> count(name = "validdaysN_glasses"))
+
+chest_validdaysN <- 
+  light_chest_processed1  |> 
+  add_Date_col(group.by = TRUE) |> 
+  summarize(Date = unique(Date), .groups = "drop")
+
+tbl1_validdaysN <-
+  tbl1_validdaysN |> full_join(chest_validdaysN, by = names(tbl1_validdaysN))
+
+chest_validdaysN <-
+  chest_validdaysN |> 
+    count(site, name = "validdaysN_chest") |> 
+    add_row(site = "Overall", chest_validdaysN |> count(name = "validdaysN_chest"))
+
+tbl1_validdaysN <- 
+tbl1_validdaysN |> 
+  count(site, name = "validdaysN") |> 
+  add_row(site = "Overall", tbl1_validdaysN |> count(name = "validdaysN")) |> 
+  left_join(glasses_validdaysN, by = "site") |> 
+  left_join(chest_validdaysN, by = "site") |> 
+    replace_na(list(validdaysN_chest = 0))
+```
+
+### Combine data
+
+```{r}
+tbl1_data <-
+  tbl1_country |> 
+  add_row(site = "Overall") |> 
+    left_join(by = "site", tbl1_city) |> 
+    left_join(by = "site", tbl1_location) |> 
+    left_join(by = "site", tbl1_partN) |> 
+    left_join(by = "site", tbl1_daysN) |> 
+    left_join(by = "site", tbl1_weekdayN) |> 
+    left_join(by = "site", tbl1_wear) |> 
+    left_join(by = "site", tbl1_validdaysN) |> 
+    left_join(by = "site", tbl1_dates) |> 
+    left_join(by = "site", tbl1_photoperiod) |> 
+    left_join(by = "site", tbl1_demographics) |> 
+    left_join(by = "site", tbl1_sleep)
+```
+
+```{r}
+tbl1_data_formatted <- 
+tbl1_data |> 
+  gt() |> 
+  cols_merge(starts_with("partN"), pattern = "{1}<br>(**g:{2}**, c:{3})") |> 
+  cols_merge(starts_with("daysN"), pattern = "{1}d<br>(**g:{2}d**, c:{3}d)") |> 
+  cols_merge(starts_with("date_"), pattern = "{1}<br>({2}, {3})") |> 
+  cols_merge(starts_with("validdaysN"), pattern = "{1}d<br>(**g:{2}d**, c:{3}d)") |> 
+  cols_merge(starts_with("phot"), pattern = "{1}<br>({2}, {3})") |> 
+  cols_merge(starts_with("age"), pattern = "{1}yr<br>({2}yr, {3}yr)") |> 
+  cols_merge(starts_with("meq_type_"), pattern = "<<{1}m/>>{2}i<</{3}e>>") |> 
+  cols_merge(c("meq_median","meq_p05", "meq_p95"), pattern = "{1}<br>({2}, {3})") |> 
+  cols_merge(starts_with("sjl"), pattern = "{1}<br>({2}, {3})") |> 
+  cols_merge(starts_with("sex_"), pattern = "{1}F/{2}M") |> 
+  cols_merge(starts_with("gender_"), pattern = "{1}W/{2}M<</{3}NB>>") |> 
+  cols_merge(starts_with("nonwear"), pattern = "{1} ({2})") |> 
+  cols_merge(starts_with("msf_sc"), pattern = "{1}<br>({2}, {3})") |> 
+  cols_merge(starts_with("sleep_duration"), pattern = "{1}\n({2}, {3})") |> 
+  cols_merge(starts_with("employment_status"), pattern = "{1}F<</{2}P>><</{3}N>>") |> 
+  cols_merge(c(weekdayN, weekendN), pattern = "{1}wd / {2}we") |> 
+  cols_merge(c(daytype_free, daytype_work), pattern = "{2}work / {1}free") |> 
+  cols_hide(c(starts_with("weekdayN_"), starts_with("weekendN_"), daytype_NA)) |> 
+  fmt_percent(nonwear_pct, decimals = 1) |> 
+  fmt_integer(c("meq_median","meq_p05", "meq_p95")) |> 
+  fmt_date(starts_with("date_"), date_style = "y.mn.day") |> 
+  fmt(starts_with("msf_sc"), fns = \(x) x |> strptime(format = "%H:%M:%S") |> format(format = "%H:%M")) |> 
+  fmt_duration(all_of(c("total")),
+               input_units = "secs", max_output_units = 2
+               ) |> 
+  fmt_duration(all_of(c("nonwear", "phot", "phot_p05", "phot_p95", 
+                        "sjl_median", "sjl_p05", "sjl_p95", 
+                        "sleep_duration_median", "sleep_duration_p05", "sleep_duration_p95")),
+               input_units = "secs", max_output_units = 2
+               ) |> 
+  cols_move(nonwear, after = total) |> 
+  cols_move(daytype_free, after = weekdayN) |> 
+  cols_move(c(meq_median, sjl_median), after = meq_type_Morning) |> 
+  cols_label_with(everything(), fn= str_to_sentence) |> 
+  as.data.frame() |> 
+  select(site:partN, daysN, weekdayN, daytype_free, total, nonwear, validdaysN, 
+         date_median, phot, age_median, sex_Female, gender_Woman,
+         employment_status_Fully, meq_type_Morning, msf_sc_median, meq_median, sjl_median, 
+         sleep_duration_median)
+
+tbl1_transposed <- 
+tbl1_data_formatted |> 
+  t()
+  
+colnames(tbl1_transposed) <- tbl1_transposed[1,]
+
+tbl1_transposed <- 
+tbl1_transposed[-1,] |> 
+  as_tibble(rownames = "description") |> 
+  mutate(
+    description = replace_values(
+      description,
+      "country" ~ "Country",
+      "city" ~ "City",
+      "coordinates" ~ "Coordinates",
+    "partN" ~ "Participants",
+    "daysN" ~ "Participant-days",
+    "weekdayN" ~ "Weekday / weekend",
+    "daytype_free" ~ "Workday / free",
+    "date_median" ~ "Collection dates",
+    "total" ~ "Participant time",
+    "nonwear" ~ "Nonwear time (%)",
+    "validdaysN" ~ "Complete days (>80% data)",
+    "phot" ~ "Photoperiod",
+    "age_median" ~ "Age",
+    "meq_median" ~ "Chronotype (MEQ-score)",
+    "sex_Female" ~ "Sex",
+    "gender_Woman" ~ "Gender",
+    "employment_status_Fully" ~ "Employment status",
+    "sleep_duration_median" ~ "Sleep duration",
+    "meq_type_Morning" ~ "Chronotype (MEQ-based)",
+    "sjl_median" ~ "Social jetlag",
+    "msf_sc_median" ~ "Chronotype (MCTQ-score)"
+    ),
+    type = c(rep("Site specifics", 3),rep("Data collection", 9), rep("Participant information", 9))
+  ) |> 
+  relocate(Overall, all_of(names(melidos_cities) |> sort()))
+
+```
+
+### Finish table
+
+```{r}
+tbl1 <- 
+tbl1_transposed |> 
+  group_by(type) |> 
+  gt(rowname_col = "description") |> 
+  # cols_move(Overall, 1) |> 
+  sub_missing() |> 
+  gt_multiple(names(melidos_cities), style_tab) |> 
+  tab_style(style = cell_text(align = "center"), 
+            locations = list(cells_body(),
+                             cells_column_labels())) |> 
+  tab_style(style = cell_text(weight = "bold", ), 
+            locations = list(cells_row_groups(),
+                             cells_column_labels())) |> 
+  fmt_markdown() |> 
+  tab_footnote(
+    "g: glasses-mounted measurement device; c: chest-level measurement device",
+    locations = cells_stub(c("Participants", "Participant-days", "Complete days (>80% data)"))
+  ) |> 
+  tab_footnote(
+    "Median (minimum, maximum)",
+    locations = cells_stub(c("Collection dates", "Age"))
+  ) |> 
+  tab_footnote(
+    "Median (5% percentile, 95% percentile)",
+    locations = cells_stub(c("Photoperiod", "Chronotype (MCTQ-score)", 
+                             "Chronotype (MEQ-score)", "Social jetlag",
+                             "Sleep duration"))
+  ) |> 
+  tab_footnote(
+    "w: weeks, d: days, h: hours, m: minutes, s: seconds",
+    locations = cells_stub(c("Participant time", "Participant-days", "Nonwear time (%)", 
+                             "Complete days (>80% data)", "Photoperiod", "Social jetlag",
+                             "Sleep duration"))
+  ) |> 
+  tab_footnote(
+    "F: female, M: male(sex)/man(gender), W: woman, NB: non-binary",
+    locations = cells_stub(c("Sex", "Gender"))
+  ) |> 
+  tab_footnote(
+    "F: Fully employed OR Studying and employed OR Not employed but studying or in training; P: Part time employed OR Marginally employed (Minijob); N: Unemployed",
+    locations = cells_stub(c("Employment status"))
+  ) |> 
+  tab_footnote(
+    "Following the MEQ score; m: morning type; i: intermediary type; e: evening type",
+    locations = cells_stub(c("Chronotype (MEQ-based)"))
+  ) |> 
+  tab_footnote(
+    "MEQ: Morningness-Eveningness-Questionnaire (circadian preference); MCTQ: Munich Chronotype Questionnaire (midsleep on free days, sleep corrected",
+    locations = cells_stub(c("Chronotype (MEQ-score)", "Chronotype (MCTQ-score)"))
+  )
+
+tbl1
+
+gtsave(tbl1, "tables/tbl1.png", vwidth = 1200)
+```
+
+## Table2: Metric distribution
+
+### Prepare data
+
+```{r}
+load("data/H1_results.RData")
+```
+
+```{r}
+metrics <-
+metrics |> 
+  select(name, metric_type, data,  response, engine) |> 
+  filter(!is.na(response)) |>
+  mutate(scaling = recode_values(response,
+                                 "log_zero_inflated(metric)" ~ "log_zero_inflated",
+                                 default = "identity") |> 
+           replace_when(
+             engine == "glmmTMB" ~ "log_zero_inflated"
+           )) |> 
+  select(-c(response, engine))
+```
+
+### Calculate site metrics
+
+```{r}
+tbl2_data <- 
+metrics |> 
+  mutate(summary = map(data, 
+                      \(x) {
+                        x |> 
+                          summarize(
+                            .by = site,
+                            median = median(metric, na.rm = TRUE),
+                            sd = sd(metric, na.rm = TRUE),
+                            p25 = quantile(metric, na.rm = TRUE, p = 0.25),
+                            p75 = quantile(metric, na.rm = TRUE, p = 0.75),
+                            n = sum(!is.na(metric))
+                          )
+                          }
+                      ),
+         summary_overall = map(data, 
+                      \(x) {
+                        x |> 
+                          summarize(
+                            site = "Overall",
+                            median = median(metric, na.rm = TRUE),
+                            sd = sd(metric, na.rm = TRUE),
+                            p25 = quantile(metric, na.rm = TRUE, p = 0.25),
+                            p75 = quantile(metric, na.rm = TRUE, p = 0.75),
+                            n = sum(!is.na(metric))
+                          )
+                          }
+         ),
+         summary = map2(summary, summary_overall, rbind)
+  ) |> 
+  select(-summary_overall)
+```
+
+### Add plots
+
+```{r}
+tbl2_data <- 
+tbl2_data |>
+  mutate(plot = map2(data, scaling, ridges_function2),
+         type2 = metric_type
+         ) |> 
+  arrange(metric_type, name)
+```
+
+### Constructing table
+
+```{r}
+tbl2_data_formatted <- 
+tbl2_data |>
+  select(-data) |>
+  unnest(summary) |> 
+  pivot_wider(id_cols = c(name:scaling, type2), values_from = median:n, names_from = site) |> 
+  rename_with(\(y) str_remove(y, "median_")) |> 
+  group_by(metric_type) |> 
+  gt(rowname_col = "name") |> 
+  gt_multiple(c(names(melidos_cities), "Overall"), merge_desc_columns) |> 
+  cols_hide(type2) |> 
+  fmt_number(columns = !starts_with("n_"), rows = type2 %in% c("dynamics", "spectrum")) |> 
+  fmt_number(columns = !starts_with("n_"), rows = type2 %in% c("exposure history"),
+             decimals = 0) |> 
+  fmt_number(columns = !starts_with("n_"), rows = type2 %in% c("level"),
+             decimals = 1) |> 
+  fmt_duration(
+      columns = !starts_with("n_"),
+      rows = type2 == "duration",
+      input_units = "hours",
+      max_output_units = 2
+    ) |> 
+  fmt(columns = !c(starts_with("n_"), name:scaling, type2),
+      rows = type2 == "timing", 
+      fns = \(x) {
+        x |> hms::hms(hours = _) |> strptime(format = "%H:%M:%S") |> format(format = "%H:%M")
+        }
+      ) |> 
+  as.data.frame() |> 
+  select(1:Overall)
+```
+
+### Finish table
+
+```{r}
+tbl2 <- 
+tbl2_data_formatted |> 
+  mutate(metric_type = metric_type |> str_to_title(),
+         across(c(name, scaling),
+                \(x) x |> str_to_title() |>  str_replace_all("_", " "))) |> 
+  group_by(metric_type) |> 
+  gt(rowname_col = "name") |> 
+  cols_hide(type2) |> 
+  sub_values(values = "Mder", replacement = "MDER") |> 
+  tab_header("Metric descriptive summary (glasses)") |> 
+  gt_multiple(names(melidos_cities), style_tab) |> 
+  cols_move(Overall, scaling) |> 
+  tab_style(style = cell_text(weight = "bold"),
+            locations = list(
+              cells_column_labels(),
+              cells_row_groups(),
+              cells_title()
+            )) |> 
+  cols_label(
+    scaling = "Scaling"
+  ) |> 
+  tab_footnote(
+    "Median ± standard deviation (25% percentile, 75% percentile), n=observations"
+  )|> 
+  tab_footnote(
+    "Scaling refers to the distribution of the data and the scaling of the plot",
+    locations = cells_column_labels(scaling)
+  ) |> 
+  cols_add(Plot = tbl2_data$plot |> 
+             gt::ggplot_image(
+                       height = gt::px(80), 
+                       aspect_ratio = 2
+                     )) |> 
+  fmt_markdown()
+```
+
+```{r}
+tbl2
+gtsave(tbl2, "tables/tbl2.png", vwidth = 1700)
+```
+

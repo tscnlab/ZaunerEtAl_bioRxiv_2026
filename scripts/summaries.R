@@ -1,18 +1,4 @@
-
-model_summary <- function(significant, H0model, H1model) {
-  if(is.na(significant)) return()
-  switch(significant+1,
-         tidy(H0model),
-         tidy(H1model))
-}
-
-p_styling <- function(p.value, sig.level = 0.05) {
-  significant <- p.value <= 0.05
-  p.value <- p.value |> style_pvalue()
-  p.value <- 
-  if(significant) paste0("**", p.value, "**") else p.value
-  p.value |> str_replace_all("\\>", "\\\\>")
-}
+source("scripts/helpers.R")
 
 model_table <- function(name, p.value, summary, metric_type, response, family) {
   if(is.null(summary)) return()
@@ -47,9 +33,9 @@ model_table <- function(name, p.value, summary, metric_type, response, family) {
         else
           NA,
         .after = Intercept,
-        across(any_of(names(
-          melidos_countries
-        ) |> sort()), \(x) x + Intercept, .names = "{.col}_total")
+        # across(any_of(names(
+        #   melidos_countries
+        # ) |> sort()), \(x) x + Intercept, .names = "{.col}_total")
       ) |> 
       relocate(any_of(names(
         melidos_countries
@@ -162,25 +148,25 @@ inference_table <- function(data, p_adjustment, scaling = TRUE) {
       lat = "Latitude",
       Plot = "Ridgeline distribution"
     ) |> 
-    sub_missing(columns = -c(names(melidos_cities))) |>
-    gt_multiple(names(melidos_cities), merge_columns) |> 
+    sub_missing() |>
+    # gt_multiple(names(melidos_cities), merge_columns) |> 
     fmt_number(where(is.numeric)) |> 
     fmt_number(rows = str_detect(metric, "dose"), decimals = 0) |> 
     fmt_number(any_of(c(names(melidos_cities), "photoperiod", "lat"))) |> 
     fmt_duration(
       any_of(
-        c(paste0(names(melidos_cities), "_total"), "Intercept", "photoperiod", "lat", "SD Participant", "SD Residual", "SD Site")),
+        c(paste0(names(melidos_cities), "_total"), "Intercept")),
       str_detect(metric, "duration|period"),
       input_units = "hours",
       max_output_units = 2
       ) |> 
-    fmt_duration(
-      c(paste0(names(melidos_cities), "_total"), "Intercept"),
-      rows = str_detect(metric, "midpoint|timing"),
-      input_units = "hours",
-      output_units = "hours",
-      duration_style = "colon-sep"
-    ) |>
+    # fmt_duration(
+    #   c(paste0(names(melidos_cities), "_total"), "Intercept"),
+    #   rows = str_detect(metric, "midpoint|timing"),
+    #   input_units = "hours",
+    #   output_units = "hours",
+    #   duration_style = "colon-sep"
+    # ) |>
     fmt_duration(
       c(names(melidos_cities), "photoperiod", "lat", "SD Participant", "SD Residual", "SD Site"),
       rows = str_detect(metric, "midpoint|timing"),
@@ -191,133 +177,3 @@ inference_table <- function(data, p_adjustment, scaling = TRUE) {
     cols_width(Plot ~ px(200))
 }
 
-merge_columns <- function(table, column){
-  table |> 
-    cols_merge(all_of(c(column, paste0(column, "_total"))),
-               pattern = "{2}<<\n({1})>>")
-}
-
-style_tab <- function(table, column) {
-  table |> 
-    tab_style(
-      style = list(cell_text(color = melidos_colors[column])
-                   ),
-      locations = cells_column_labels(column)
-    ) |> 
-    tab_style(
-      style = list(
-                   cell_fill(color = melidos_colors[column],
-                             alpha = 0.05)),
-      locations = cells_body(column)
-    )
-}
-
-style_AICbased <- function(table, column, dif = 2){
-  dAIC <- paste0("dAIC_", column)
-  dAICsym <- sym(dAIC)
-  
-  table |> 
-    tab_style(
-      style = list(cell_text(weight = "bold")),
-      locations = cells_body(column, !!dAICsym >= dif)
-    )|> 
-    tab_style(
-      style = list(cell_text(color = "grey")),
-      locations = cells_body(column, !!dAICsym <= -dif)
-    )
-}
-
-gt_multiple <- function(table, names, fun){
-  names |> purrr::reduce(\(tab, name) tab |> fun(name), .init = table)
-}
-
-H1_table <-  function(data, p_adjustment) {
-  inference_table(data, p_adjustment) |> 
-    tab_header("Model results for Hypothesis 1",
-               subtitle = H1) |> 
-    gt_multiple(c("lat", "SD Site", "photoperiod"), style_AICbased) |> 
-    cols_hide(starts_with("dAIC_")) |>
-    tab_footnote(
-      md("These coefficients (*Latitude*, *Photoperiod*) and random effects (*SD Site*) come from two respective separate models that did not contain a fixed effect of site. If the random site or fixed latitude effect is significant, a value is presented. If AIC indicates a significant improvement over the base model (site as fixed effect), it is shown in **bold**. If the base model is significantly stronger, however, values are shown in <i style = 'color:grey'>grey</i>."),
-      locations = cells_column_labels(c(lat, photoperiod, `SD Site`))
-    ) |> 
-    tab_footnote(
-      md("*Photoperiod*: coefficient per 1-hour change in photoperiod. *Latitude*: coefficient per 10° change in latitude. *SD Site*: random effect standard deviation for site."),
-      locations = cells_column_labels(c(lat, photoperiod, `SD Site`))
-    ) |> 
-    tab_style(
-      style = cell_borders(
-        sides = "right",
-        weight = px(1),
-        color = "lightgrey"
-      ),
-      locations = cells_body(`SD Residual`)
-    ) |> 
-    tab_spanner(
-      label = md("Comparative models"),
-      columns = c("photoperiod", "lat", "SD Site")
-    )
-    
-}
-
-#function for a ridgeline plot
-ridges_function <- function(datanumber, data, value) {
-  purrr::map(datanumber, \(x) {
-    
-    response <- data$response[[x]]
-    family <- data$family[[x]]$family
-    scaling <- 
-      ifelse(family == "tweedie", family, response) |> 
-      switch(
-        "tweedie" =,
-        "log_zero_inflated(metric)" = "symlog",
-        "identity"
-      )
-    
-    data$data[[x]] %>% 
-      ggplot(aes(x={{ value }})) +
-      geom_density_ridges(aes(y=site, fill = site))+
-      scale_fill_manual(values = melidos_colors) +
-      scale_x_continuous(trans = scaling) +
-      theme_void() +
-      theme(
-        # axis.text.x = element_text(),
-        legend.position = "none",
-        plot.margin = margin(5,30,5,5)
-      ) +
-      coord_flip()
-  })
-}
-
-H1_combining_tables <- function(table, table2, AICs, variable, H1, H2){
-  if(is.null(table)) return()
-  
-  dAIC <- paste0("dAIC_", variable)
-
-  if(!is.null(table2)){
-    
-    table <- 
-      table |> 
-      mutate(
-        table2 |> 
-          select(any_of(variable)),
-        !!dAIC := AIC_dif(AICs, H1, H2)
-      )
-    
-    if(!variable %in% names(table)) {
-      table <- table |> mutate(!!variable := NA)
-    }
-    
-    variable_sym <- sym(variable)
-    
-    table <- 
-      table |> 
-      mutate(
-        across(any_of(dAIC),
-               \(x) ifelse(is.na({{ variable_sym }}), NA, x))
-      ) |> 
-      relocate(any_of(c(variable, dAIC)), .after = last_col())
-  }
-
-  table
-}
