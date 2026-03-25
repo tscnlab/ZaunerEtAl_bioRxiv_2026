@@ -17,6 +17,10 @@ H1_table <-  function(data, p_adjustment) {
       md("If the coefficient is greyed out it means it is not significant in a model base minus photoperiod."),
       locations = cells_column_labels(c(photoperiod))
     ) |> 
+    tab_footnote(
+      md("When coefficients are multiplicative (see column), then the scaling is on a log 10 base, with an offset of +0.1. Red horizontal lines indicate the median of a site."),
+      locations = cells_column_labels(c(Plot))
+    ) |> 
     tab_style(
       style = cell_borders(
         sides = "right",

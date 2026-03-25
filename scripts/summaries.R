@@ -125,10 +125,6 @@ inference_table <- function(data, p_adjustment, scaling = TRUE) {
       md("*multiplied*: coefficients are multiplicative. This comes from the fact that the models were calculated on a log scale and backtransformed in the table. The Intercept can be read as linear scale, with coefficients being multiplied with the intercept. *additive*: All values are on the linear scale and no transformation is necessary. *logit scale*: data were modelled on the logit scale. Coefficients can be added to the intercept, but have to be transformed with the logistic function."),
       locations = cells_column_labels(columns = "Coefs are")
     ) %>% 
-    tab_style(
-      style = cell_text(weight = "bold"),
-      locations = list(cells_column_labels(), cells_stub(), cells_column_spanners(), cells_row_groups())
-    ) |> 
     fmt(metric, fns = \(x) x |> str_to_title() |>  str_replace_all("_", " ")) |> 
     sub_values(values = "MDER", replacement = "MDER")
   gt_table %>% 
@@ -136,7 +132,7 @@ inference_table <- function(data, p_adjustment, scaling = TRUE) {
     text_transform(locations = cells_body(Plot),
                    fn = \(x) {
                      gt::ggplot_image(
-                       ridges_function(as.numeric(x),red_data, metric),
+                       ridges_function(as.numeric(x),red_data),
                        height = gt::px(80), 
                        aspect_ratio = 2
                      )
@@ -146,7 +142,11 @@ inference_table <- function(data, p_adjustment, scaling = TRUE) {
       p.value = "p-value",
       photoperiod = "Photoperiod",
       lat = "Latitude",
-      Plot = "Ridgeline distribution"
+      Plot = "Distribution"
+    ) |> 
+    tab_style(
+      style = cell_text(weight = "bold"),
+      locations = list(cells_column_labels(), cells_stub(), cells_column_spanners(), cells_row_groups())
     ) |> 
     sub_missing() |>
     # gt_multiple(names(melidos_cities), merge_columns) |> 
@@ -173,7 +173,11 @@ inference_table <- function(data, p_adjustment, scaling = TRUE) {
       input_units = "hours",
       max_output_units = 2
       # duration_style = "narrow"
-    ) |>
-    cols_width(Plot ~ px(200))
+    ) |> 
+    tab_style(
+      style = cell_text(align = "center"),
+      locations = list(cells_column_labels(),
+                       cells_body())
+    )
 }
 

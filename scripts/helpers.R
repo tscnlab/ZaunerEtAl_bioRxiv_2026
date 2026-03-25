@@ -55,7 +55,7 @@ p_styling <- function(p.value, sig.level = 0.05) {
 }
 
 #function for a ridgeline plot in tables
-ridges_function <- function(datanumber, data, value) {
+ridges_function <- function(datanumber, data) {
   purrr::map(datanumber, \(x) {
     
     response <- data$response[[x]]
@@ -68,24 +68,49 @@ ridges_function <- function(datanumber, data, value) {
         "identity"
       )
     
-    data$data[[x]] %>% 
-      ggplot(aes(x={{ value }})) +
-      geom_density_ridges(aes(y=site, fill = site))+
-      scale_fill_manual(values = melidos_colors) +
-      scale_x_continuous(trans = scaling) +
-      theme_void() +
-      theme(
-        # axis.text.x = element_text(),
-        legend.position = "none",
-        plot.margin = margin(5,30,5,5)
+    data <- data$data[[x]]
+    
+    if(scaling == "symlog") {
+     data <- data |> mutate(metric = log_zero_inflated(metric)) 
+    }
+      
+
+    data |> 
+      ggplot(aes(x=metric)) +
+      geom_density_ridges(aes(y=site, fill = site),
+                          linewidth = 1, colour = NA,
+                          alpha = 0.5,
+                          from = min(data$metric, na.rm =TRUE),
+                          to = max(data$metric, na.rm =TRUE)
       ) +
-      coord_flip()
+      geom_density_ridges(aes(y=site, color = site), fill = NA,
+                          alpha = 1, linewidth = 4,
+                          quantile_lines = TRUE, quantiles = 2, vline_color = "red",
+                          linetype = 1,
+                          from = min(data$metric, na.rm =TRUE),
+                          to = max(data$metric, na.rm =TRUE)
+      ) +
+      scale_fill_manual(values = melidos_colors) +
+      # {
+      #   if(scaling == "symlog") {
+      #     scale_x_continuous(labels = \(x) x |> exp_zero_inflated() |> signif(2))
+      #   }
+      # } +
+      scale_alpha_continuous(range = c(0, 1)) +
+      scale_color_manual(values = melidos_colors) +
+      guides(fill = "none", color = "none") +
+      labs(y = NULL, x = NULL) +
+      theme_ridges(font_size = 40) +
+      coord_flip(clip = "off") +
+      theme_sub_plot(margin = margin(r = 30, t = 20)) +
+      theme_sub_axis_bottom(text = element_blank())+
+      theme_sub_axis_left(text = element_text(vjust = 0))
   })
 }
 
 #second function for ridgeline plots
 ridges_function2 <- function(data, scaling) {
-  if(scaling == "log_zero_inflated") {
+  if(scaling == "log_10_zero_inflated") {
     data <- 
       data |> 
       mutate(metric = log_zero_inflated(metric))
@@ -99,8 +124,8 @@ ridges_function2 <- function(data, scaling) {
                         to = max(data$metric, na.rm =TRUE)
     ) +
     geom_density_ridges(aes(y=site, color = site), fill = NA,
-                        alpha = 1, linewidth = 1.5,
-                        quantile_lines = TRUE, quantiles = 2,
+                        alpha = 1, linewidth = 4,
+                        quantile_lines = TRUE, quantiles = 2, vline_color = "red",
                         linetype = 1,
                         from = min(data$metric, na.rm =TRUE),
                         to = max(data$metric, na.rm =TRUE)
@@ -110,18 +135,36 @@ ridges_function2 <- function(data, scaling) {
     scale_color_manual(values = melidos_colors) +
     guides(fill = "none", color = "none") +
     labs(y = NULL, x = NULL) +
-    theme_ridges() +
+    theme_ridges(font_size = 40) +
     coord_flip(clip = "off") +
-    # theme_sub_panel(margin = margin(t = 30)) +
-    theme_sub_axis(text = element_blank())
+    theme_sub_plot(margin = margin(r = 20, t = 20)) +
+    theme_sub_axis_bottom(text = element_blank())+
+    theme_sub_axis_left(text = element_text(vjust = 0))
 }
 
 merge_desc_columns <- function(table, column){
   table |> 
     cols_merge(ends_with(column),
-               pattern = "**{1}**<< ±{2}>><<<br>({3}, {4})>><<<br>n={5}>>")
+               pattern = "**{1}**<br>({4}, {5})<br>*{2} ±{3}*<br><span style = 'color:grey'>n={6}</span>")
 }
 
 change_point <- function(x){
   which(x[-1] != x[-length(x)]) + 1
+}
+
+datetime_handler <- function(x, fun = \(x) mean(x, na.rm = TRUE)) {
+  if(all(is.na(x))) return(na_dbl)
+  x_tz <- tz(x)
+  x_date <- date(x)
+  x_time <- LightLogR:::datetime_to_circular(x)
+  
+  x_date_handled <- fun(x_date)
+  x_time_handled <- 
+    fun(x_time) |> 
+    LightLogR:::circular_to_hms() |> 
+    strptime("%H:%M:%S", tz = x_tz)
+  
+  date(x_time_handled) <- x_date_handled
+  
+  x_date_handled
 }

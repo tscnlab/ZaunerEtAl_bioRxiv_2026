@@ -313,7 +313,7 @@ metrics <-
 #| warning: false
 #| label: tbl-H1
 #| tab-name: Hypothesis 1 results
-H1_tab <- H1_table(metrics, H1_fdr_n)
+H1_tab <- H1_table(metrics, H1_fdr_n) |> cols_width(Plot ~ px(200))
 H1_tab
 gtsave(H1_tab, "tables/H1.png", vwidth = 1700)
 save(metrics, file = "data/H1_results.RData")
@@ -377,6 +377,31 @@ As way of a high-level summary:
 - For both level and timing-based metrics *interindividual* differences (`SD Participant`) and *intraindividual* differences (`SD Residual`) outweigh most site-specific differences (i.e., coefficients) 
 - However, the highest site-specific differences (hightest site coefficient minus lowest site coefficient) are in the range of intraindividual differences (1 standard deviation for `SD Residual`)
 - In most cases, *intraindividual* differences (`SD Residual`) outweigh *interindividual* differences (`SD Participant`). A notable exception is the `Darkest 10h mean`, where both are similar (`SD Participant` ±63% vs. `SD Residual` ±60%)
+
+### Model summaries
+
+::: {.panel-tabset}
+
+```{r, results='asis', fig.width = 8, fig.height = 12}
+walk2(metrics$name, metrics$summary, function(name, summary) {
+  
+  # skip NULL plots
+  if (is.null(summary)) return()
+  
+  # format tab title
+  tab_title <- name |>
+    str_to_title() |>
+    str_replace_all("_", " ")
+  
+  # emit markdown for tab
+  cat("\n\n##### ", tab_title, "\n\n", sep = "")
+  
+  # print the plot
+  summary |> gt()
+})
+```
+
+:::
 
 ## Session info
 

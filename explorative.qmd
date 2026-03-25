@@ -1,0 +1,409 @@
+---
+title: "explorative"
+format: html
+---
+
+## Photoperiod
+
+```{r}
+light_glasses_processed2 |> 
+  filter(photoperiod.state == "day") |> 
+  aggregate_Datetime(unit = "1 day",
+                     numeric.handler = median,
+                     photoperiod = mean(photoperiod)) |> 
+  ggplot(aes(x=photoperiod, y = MEDI)) +
+  geom_point(aes(colour = site))+
+  geom_smooth(method = "lm") +
+  scale_color_manual(values = melidos_colors) +
+  scale_y_continuous(trans = "symlog", breaks = c(0, 10^(0:5))) +
+  theme_cowplot() +
+  labs(y = "Daily daytime median melanopic EDI (lx)") +
+  guides(color = "none")
+
+ggsave("figures/exploration/photoperiod_median.pdf", height = 4.5)
+```
+
+```{r}
+light_glasses_processed2 |> 
+  filter(photoperiod.state == "day") |> 
+  aggregate_Datetime(unit = "1 day",
+                     numeric.handler = mean,
+                     photoperiod = mean(photoperiod)) |> 
+  ggplot(aes(x=photoperiod, y = MEDI)) +
+  geom_point(aes(colour = site))+
+  geom_smooth(method = "lm") +
+  scale_color_manual(values = melidos_colors) +
+  scale_y_continuous(trans = "symlog", breaks = c(0, 10^(0:5))) +
+  theme_cowplot() +
+  labs(y = "Daily daytime mean melanopic EDI (lx)") +
+  guides(color = "none")
+
+ggsave("figures/exploration/photoperiod_mean.pdf", height = 4.5)
+```
+
+## Demographics 
+
+```{r}
+light_glasses_processed2 |> 
+  left_join(demographics, by = c("site", "Id")) |> 
+  # filter(photoperiod.state == "day") |> 
+  group_by(sex) |> 
+  aggregate_Date(
+    unit = "1 hour",
+    numeric.handler = \(x) median(x, na.rm = TRUE),
+    date.handler = \(x) as_date("2025-01-01")
+  ) |> 
+  gg_doubleplot(geom = "line",
+                aes_col = sex,
+                facetting = FALSE,
+                linewidth = 1,
+                alpha = 1)
+
+ggsave("figures/exploration/sex.pdf", height = 4.5)
+```
+
+```{r}
+light_glasses_processed2 |> 
+  left_join(demographics, by = c("site", "Id")) |> 
+  # filter(photoperiod.state == "day") |> 
+  aggregate_Datetime(unit = "1 day",
+                     numeric.handler = mean,
+                     photoperiod = mean(photoperiod)) |> 
+  ggplot(aes(x=age, y = MEDI)) +
+  geom_point(aes(colour = site))+
+  geom_smooth(method = "gam") +
+  scale_color_manual(values = melidos_colors) +
+  scale_y_continuous(trans = "symlog", breaks = c(0, 10^(0:5))) +
+  theme_cowplot() +
+  labs(y = "Daily mean melanopic EDI (lx)") +
+  guides(color = "none")
+
+ggsave("figures/exploration/age.pdf", height = 4.5)
+```
+
+## Chronotype
+
+```{r}
+light_glasses_processed2 |> 
+  left_join(chronotype, by = c("site", "Id")) |> 
+  # filter(photoperiod.state == "day") |> 
+  aggregate_Datetime(unit = "1 day",
+                     numeric.handler = mean,
+                     photoperiod = mean(photoperiod)) |> 
+  ggplot(aes(x=msf_sc, y = MEDI)) +
+  geom_point(aes(colour = site))+
+  geom_smooth(method = "gam") +
+  scale_color_manual(values = melidos_colors) +
+  scale_y_continuous(trans = "symlog", breaks = c(0, 10^(0:5))) +
+  theme_cowplot() +
+  labs(y = "Daily mean melanopic EDI (lx)",
+       x = "Chronotype (Mid-sleep free days, sleep corrected)") +
+  guides(color = "none")
+
+ggsave("figures/exploration/msf_sc.pdf", height = 4.5)
+```
+
+```{r}
+light_glasses_processed2 |> 
+  left_join(chronotype, by = c("site", "Id")) |> 
+  group_by(meq_type) |> 
+  aggregate_Date(
+    unit = "1 hour",
+    numeric.handler = \(x) median(x, na.rm = TRUE),
+    date.handler = \(x) as_date("2025-01-01")
+  ) |> 
+  gg_doubleplot(geom = "line",
+                aes_col = meq_type,
+                facetting = FALSE,
+                linewidth = 1,
+                alpha = 1) +
+  labs(color = "Circadian preference (MEQ)")
+
+ggsave("figures/exploration/meq_type.pdf", height = 4.5)
+```
+
+## Sleep
+
+```{r}
+light_glasses_processed2 |> 
+  # filter(photoperiod.state == "day") |> 
+  aggregate_Datetime(unit = "1 day",
+                     numeric.handler = mean,
+                     photoperiod = mean(photoperiod)) |> 
+  add_Date_col() |> 
+  left_join(sleep|> mutate(Date = date(wake)), by = c("site", "Id", "Date")) |> 
+  ggplot(aes(x=sleep_duration, y = MEDI)) +
+  geom_point(aes(colour = site))+
+  geom_smooth(method = "gam") +
+  scale_color_manual(values = melidos_colors) +
+  scale_y_continuous(trans = "symlog", breaks = c(0, 10^(0:5))) +
+  theme_cowplot() +
+  labs(y = "Daily mean melanopic EDI (lx)",
+       x = "Sleep duration (hrs)") +
+  guides(color = "none")
+
+ggsave("figures/exploration/sleepduration.pdf", height = 4.5)
+```
+
+```{r}
+light_glasses_processed2 |> 
+  # filter(photoperiod.state == "day") |> 
+  aggregate_Datetime(unit = "1 day",
+                     numeric.handler = mean,
+                     photoperiod = mean(photoperiod)) |> 
+  add_Date_col() |> 
+  left_join(sleep|> mutate(Date = date(wake)), by = c("site", "Id", "Date")) |> 
+  ggplot(aes(x=hms::as_hms(wake), y = MEDI)) +
+  geom_point(aes(colour = site))+
+  geom_smooth(method = "gam") +
+  scale_color_manual(values = melidos_colors) +
+  scale_y_continuous(trans = "symlog", breaks = c(0, 10^(0:5))) +
+  theme_cowplot() +
+  labs(y = "Daily mean melanopic EDI (lx)",
+       x = "Wake time") +
+  guides(color = "none")
+
+ggsave("figures/exploration/waketime.pdf", height = 4.5)
+```
+
+```{r}
+light_glasses_processed2 |> 
+  add_Date_col() |> 
+  left_join(sleep|> mutate(Date = date(wake)), by = c("site", "Id", "Date")) |> 
+  group_by(daytype2) |> 
+  aggregate_Date(
+    unit = "1 hour",
+    numeric.handler = \(x) median(x, na.rm = TRUE),
+    date.handler = \(x) as_date("2025-01-01")
+  ) |> 
+  filter_out(is.na(daytype2)) |> 
+  gg_doubleplot(geom = "line",
+                aes_col = fct_rev(daytype2),
+                facetting = FALSE,
+                linewidth = 1,
+                alpha = 1) +
+  labs(color = "Daytype")
+
+ggsave("figures/exploration/daytype.pdf", height = 4.5)
+```
+
+```{r}
+light_glasses_processed2 |> 
+  add_Date_col(as.wday = TRUE) |> 
+  group_by(weekend = as.numeric(Date) > 5) |> 
+  aggregate_Date(
+    unit = "1 hour",
+    numeric.handler = \(x) median(x, na.rm = TRUE),
+    date.handler = \(x) as_date("2025-01-01")
+  ) |> 
+  gg_doubleplot(geom = "line",
+                aes_col = weekend,
+                facetting = FALSE,
+                linewidth = 1,
+                alpha = 1) +
+  labs(color = "Weekend")
+
+ggsave("figures/exploration/weekend.pdf", height = 4.5)
+```
+
+## Exercise
+
+```{r}
+exercise <- load_data("exercisediary") |> flatten_data()
+```
+
+```{r}
+light_glasses_processed2 |> 
+  aggregate_Datetime(unit = "1 day",
+                     numeric.handler = mean,
+                     photoperiod = mean(photoperiod)) |> 
+  add_Date_col() |> 
+  left_join(exercise, by = c("site", "Id", "Date")) |> 
+  ggplot(aes(x=commute, y = MEDI)) +
+  geom_point(aes(colour = site))+
+  geom_smooth(method = "gam") +
+  scale_color_manual(values = melidos_colors) +
+  scale_y_continuous(trans = "symlog", breaks = c(0, 10^(0:5))) +
+  theme_cowplot() +
+  labs(y = "Daily mean melanopic EDI (lx)",
+       x = "Commute time (minutes)") +
+  guides(color = "none")
+
+ggsave("figures/exploration/commute.pdf", height = 4.5)
+```
+
+```{r}
+light_glasses_processed2 |> 
+  aggregate_Datetime(unit = "1 day",
+                     numeric.handler = mean,
+                     photoperiod = mean(photoperiod)) |> 
+  add_Date_col() |> 
+  left_join(exercise, by = c("site", "Id", "Date")) |> 
+  ggplot(aes(x=sedentary, y = MEDI)) +
+  geom_point(aes(colour = site))+
+  geom_smooth(method = "gam") +
+  scale_color_manual(values = melidos_colors) +
+  scale_y_continuous(trans = "symlog", breaks = c(0, 10^(0:5))) +
+  theme_cowplot() +
+  labs(y = "Daily mean melanopic EDI (lx)",
+       x = "Sedentary time (minutes)") +
+  guides(color = "none")
+
+ggsave("figures/exploration/sedentary.pdf", height = 4.5)
+```
+
+```{r}
+light_glasses_processed2 |> 
+  add_Date_col() |> 
+  left_join(exercise, by = c("site", "Id", "Date")) |> 
+  group_by(intensity) |> 
+  aggregate_Date(
+    unit = "1 hour",
+    numeric.handler = \(x) median(x, na.rm = TRUE),
+    date.handler = \(x) as_date("2025-01-01")
+  ) |> 
+  filter_out(is.na(intensity)) |> 
+  mutate(intensity = 
+           fct_relabel(intensity, \(x) str_remove_all(x, "\\s.*$"))) |> 
+  gg_doubleplot(geom = "line",
+                aes_col = intensity,
+                facetting = FALSE,
+                linewidth = 1,
+                alpha = 1) +
+  labs(color = "Intensity of activity")
+
+ggsave("figures/exploration/intensity.pdf", height = 4.5)
+```
+
+```{r}
+light_glasses_processed2 |> 
+  add_Date_col() |> 
+  left_join(exercise, by = c("site", "Id", "Date")) |> 
+  group_by(location) |> 
+  aggregate_Date(
+    unit = "1 hour",
+    numeric.handler = \(x) median(x, na.rm = TRUE),
+    date.handler = \(x) as_date("2025-01-01")
+  ) |> 
+  filter_out(is.na(location)) |> 
+  mutate(location = 
+           fct_relabel(location, \(x) str_remove_all(x, "\\s.*$"))) |> 
+  gg_doubleplot(geom = "line",
+                aes_col = location,
+                facetting = FALSE,
+                linewidth = 1,
+                alpha = 1) +
+  labs(color = "Location of activity")
+
+ggsave("figures/exploration/intensity.pdf", height = 4.5)
+```
+
+## Light source
+
+```{r}
+mHLEA <- load_data("lightexposurediary") |> flatten_data()
+```
+
+```{r}
+light_glasses_processed2 |> 
+  add_states(mHLEA) |> 
+  aggregate_Datetime(unit = "1 hour",
+                     numeric.handler = mean,
+                     photoperiod = mean(photoperiod)) |>
+  mutate(
+    lightsource_primary = 
+      lightsource_primary |> 
+      fct_collapse(
+        Electric = c("Electric light source indoors", "Electric light source outdoors"),
+        Daylight = c("Daylight outdoors (including shade)", "Daylight indoors"),
+        Screen = "Emissive display light",
+        Sleep = c("Darkness during sleep", "Light entering from outside during sleep")
+      )
+      ) |> 
+  filter_out(is.na(lightsource_primary)) |> 
+  ggplot(aes(x=lightsource_primary, y = MEDI)) +
+  geom_jitter(aes(col = site))+
+  geom_boxplot(alpha = 0.75)+
+  scale_color_manual(values = melidos_colors) +
+  scale_y_continuous(trans = "symlog", breaks = c(0, 10^(0:5)), labels = c(0, 1, 10, 100, 1000, 10000, 100000)) +
+  theme_cowplot() +
+  labs(y = "Daily mean melanopic EDI (lx)",
+       x = "Primary lightsource") +
+  guides(color = "none")
+
+ggsave("figures/exploration/lightsource.pdf", height = 4.5, width = 8)
+```
+
+```{r}
+light_glasses_processed2 |> 
+  add_states(mHLEA) |> 
+  filter_out(is.na(act_working_outdoor)) |> 
+  group_by(act_working_outdoor) |> 
+  aggregate_Date(unit = "1 hour",
+                     numeric.handler =  \(x) median(x, na.rm = TRUE),
+    date.handler = \(x) as_date("2025-01-01")) |>
+    gg_doubleplot(geom = "line",
+                aes_col = act_working_outdoor,
+                facetting = FALSE,
+                linewidth = 1,
+                alpha = 1) +
+  labs(color = "Working outdoors")
+
+ggsave("figures/exploration/activity_outdoors.pdf", height = 4.5, width = 8)
+```
+
+```{r}
+light_glasses_processed2 |> 
+  add_states(mHLEA) |> 
+  filter_out(is.na(act_road_vehicle)) |> 
+  group_by(act_road_vehicle) |> 
+  aggregate_Date(unit = "1 hour",
+                     numeric.handler =  \(x) median(x, na.rm = TRUE),
+    date.handler = \(x) as_date("2025-01-01")) |>
+    gg_doubleplot(geom = "line",
+                aes_col = act_road_vehicle,
+                facetting = FALSE,
+                linewidth = 1,
+                alpha = 1) +
+  labs(color = "In transit (vehicle)")
+
+ggsave("figures/exploration/activity_road_vehicle.pdf", height = 4.5, width = 8)
+```
+
+```{r}
+light_glasses_processed2 |> 
+  add_states(mHLEA) |> 
+  filter_out(is.na(act_free_outdoor)) |> 
+  group_by(act_free_outdoor) |> 
+  aggregate_Date(unit = "1 hour",
+                     numeric.handler =  \(x) median(x, na.rm = TRUE),
+    date.handler = \(x) as_date("2025-01-01")) |>
+  gap_handler(full.days = TRUE) |> 
+    gg_doubleplot(geom = "line",
+                aes_col = act_free_outdoor,
+                facetting = FALSE,
+                linewidth = 1,
+                alpha = 1) +
+  labs(color = "Free time outdoors")
+
+ggsave("figures/exploration/activity_free_outdoor.pdf", height = 4.5, width = 8)
+```
+
+```{r}
+light_glasses_processed2 |> 
+  add_states(mHLEA) |> 
+  filter_out(is.na(act_home)) |> 
+  group_by(act_home) |> 
+  aggregate_Date(unit = "1 hour",
+                     numeric.handler =  \(x) median(x, na.rm = TRUE),
+    date.handler = \(x) as_date("2025-01-01")) |>
+  gap_handler(full.days = TRUE) |> 
+    gg_doubleplot(geom = "line",
+                aes_col = act_home,
+                facetting = FALSE,
+                linewidth = 1,
+                alpha = 1) +
+  labs(color = "Being at home")
+
+ggsave("figures/exploration/activity_home.pdf", height = 4.5, width = 8)
+```
