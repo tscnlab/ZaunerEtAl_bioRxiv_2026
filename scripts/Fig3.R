@@ -2,13 +2,14 @@ Fig3_wrapper <- function(data){
   Fig3_plot(data$data[[1]], "identity", data$metric_type[[1]], data$name[[1]])
 }
 
-Fig3_plot <- function(data, scaling, type, metric_name) {
+Fig3_plot <- function(data, scaling, type, metric_name, prune_y = TRUE) {
   if(type == "level") {
     data <-
       data |>
       mutate(metric = log_zero_inflated(metric))
   }
   data |> 
+    site_conv_mutate() |> 
     ggplot(aes(x=metric)) +
     geom_boxplot(aes(y= site, col = site), width = 0.25,
                  position = position_nudge(y = -0.25)) +
@@ -60,12 +61,14 @@ Fig3_plot <- function(data, scaling, type, metric_name) {
     guides(fill = "none", color = "none") +
     labs(y = NULL, x = metric_name) +
     theme_ridges() +
+    coord_cartesian(clip = "off") +
     theme_sub_plot(margin = margin(r = 20, t = 20)) +
     {
-      if(!metric_name %in% c("Darkest 10h midpoint (HH:MM)" ,
-                             "Mean (lx)",
+      if((!metric_name %in% c("Darkest 10h midpoint (HH:MM)" ,
+                             "Mean (lx; from geometric mean)",
                              "Period above 250 lx mel EDI  (HH:MM)",
-                             "Duration above 1000 lx mel EDI  (HH:MM)")) {
+                             "Duration above 1000 lx mel EDI  (HH:MM)")) &
+         prune_y) {
         theme_sub_axis_left(text = element_blank())
       } else theme_sub_axis_left(text = element_text(vjust = -1))
     }

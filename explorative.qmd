@@ -7,6 +7,7 @@ format: html
 
 ```{r}
 light_glasses_processed2 |> 
+  site_conv_mutate() |> 
   filter(photoperiod.state == "day") |> 
   aggregate_Datetime(unit = "1 day",
                      numeric.handler = median,
@@ -25,6 +26,7 @@ ggsave("figures/exploration/photoperiod_median.pdf", height = 4.5)
 
 ```{r}
 light_glasses_processed2 |> 
+  site_conv_mutate() |> 
   filter(photoperiod.state == "day") |> 
   aggregate_Datetime(unit = "1 day",
                      numeric.handler = mean,
@@ -55,11 +57,17 @@ light_glasses_processed2 |>
   ) |> 
   gg_doubleplot(geom = "line",
                 aes_col = sex,
+                group = sex,
                 facetting = FALSE,
                 linewidth = 1,
-                alpha = 1)
+                y.axis.breaks = c(0, 1, 10, 100, 250, 1000),
+                alpha = 1) +
+  coord_cartesian(ylim = c(0, 1000)) +
+  theme(legend.position = "inside",
+        legend.position.inside = c(0.02,0.9)) + 
+  labs(color = "Sex")
 
-ggsave("figures/exploration/sex.pdf", height = 4.5)
+ggsave("figures/exploration/sex.pdf", height = 5, width = 5, scale = 1.25)
 ```
 
 ```{r}
@@ -106,6 +114,9 @@ ggsave("figures/exploration/msf_sc.pdf", height = 4.5)
 ```{r}
 light_glasses_processed2 |> 
   left_join(chronotype, by = c("site", "Id")) |> 
+  mutate(meq_type = 
+           meq_type |> fct_collapse(Morning = c("Definitely morning type", "Moderately morning type"),
+                                    Evening = c("Definitely evening type", "Moderately evening type"))) |> 
   group_by(meq_type) |> 
   aggregate_Date(
     unit = "1 hour",
@@ -116,10 +127,14 @@ light_glasses_processed2 |>
                 aes_col = meq_type,
                 facetting = FALSE,
                 linewidth = 1,
+                y.axis.breaks = c(0, 1, 10, 100, 250, 1000),
                 alpha = 1) +
+  coord_cartesian(ylim = c(0, 1000)) +
+  theme(legend.position = "inside",
+        legend.position.inside = c(0.02,0.9)) + 
   labs(color = "Circadian preference (MEQ)")
 
-ggsave("figures/exploration/meq_type.pdf", height = 4.5)
+ggsave("figures/exploration/meq_type.pdf", height = 5, width = 5, scale = 1.25)
 ```
 
 ## Sleep
@@ -181,10 +196,14 @@ light_glasses_processed2 |>
                 aes_col = fct_rev(daytype2),
                 facetting = FALSE,
                 linewidth = 1,
+                y.axis.breaks = c(0, 1, 10, 100, 250, 1000),
                 alpha = 1) +
-  labs(color = "Daytype")
+  coord_cartesian(ylim = c(0, 1000)) +
+  theme(legend.position = "inside",
+        legend.position.inside = c(0.02,0.9)) + 
+  labs(color = "This is")
 
-ggsave("figures/exploration/daytype.pdf", height = 4.5)
+ggsave("figures/exploration/daytype.pdf", height = 5, width = 5, scale = 1.25)
 ```
 
 ```{r}
@@ -398,12 +417,95 @@ light_glasses_processed2 |>
                      numeric.handler =  \(x) median(x, na.rm = TRUE),
     date.handler = \(x) as_date("2025-01-01")) |>
   gap_handler(full.days = TRUE) |> 
-    gg_doubleplot(geom = "line",
+  gg_doubleplot(geom = "line", 
+                group = act_home,
                 aes_col = act_home,
                 facetting = FALSE,
                 linewidth = 1,
+                y.axis.breaks = c(0, 1, 10, 100, 250, 1000),
                 alpha = 1) +
+  coord_cartesian(ylim = c(0, 1000)) +
+  theme(legend.position = "inside",
+        legend.position.inside = c(0.02,0.9)) + 
   labs(color = "Being at home")
 
-ggsave("figures/exploration/activity_home.pdf", height = 4.5, width = 8)
+ggsave("figures/exploration/activity_home.pdf", height = 5, width = 5, scale = 1.25)
+
 ```
+
+
+## Model generation
+
+```{r}
+light_glasses_processed1 |> add_Date_col() |> left_join(chronotype, by = c("site", "Id")) |> distinct(site, Id, .keep_all = TRUE) |> ungroup() |> count(meq_type) |> gt() |> cols_label(meq_type = "Circadian Preference (MEQ)")
+```
+
+
+```{r}
+data <- light_glasses_processed2 |> 
+  aggregate_Datetime(unit = "1 day",
+                     numeric.handler = \(x) mean(x, na.rm = TRUE),
+                     photoperiod = mean(photoperiod)) |> 
+  add_Date_col() |> 
+  left_join(sleep|> mutate(Date = date(wake)), by = c("site", "Id", "Date")) |> 
+  Datetime2Time() |> 
+  mutate(wake = as.numeric(wake)/60/60) |> 
+  filter_out(is.na(wake) | is.na(MEDI))
+
+data |>  ungroup() |> count(wake)
+```
+
+```{r}
+
+data |> ggplot(aes(x=MEDI)) + geom_histogram() + scale_x_continuous(trans = "symlog")
+model <- lme4::lmer(log_zero_inflated(MEDI) ~ wake + (1|site:Id), data = data)
+model <- glmmTMB::glmmTMB(MEDI ~ wake + (1|site:Id), data = data, family = glmmTMB::tweedie())
+model <- lme4::glmer(MEDI ~ wake + (1|site:Id), data = data, family = Gamma(link = "log")) #preferred model
+model |> performance::check_model()
+model |> summary()
+model0 <- lme4::glmer(MEDI ~ 1 + (1|site:Id), data = data, family = Gamma(link = "log"))
+anova(model0, model) 
+
+model |> tbl_regression(exponentiate = TRUE)
+
+```
+
+```{r}
+data <- data |> mutate(sleep_duration = as.numeric(sleep_duration),
+                       sleep_duration_squared = sleep_duration^2,
+                       Id = fct(Id))
+```
+
+```{r}
+#| fig-height: 10
+model <- lme4::glmer(MEDI ~ sleep_duration_squared + sleep_duration + (1|site:Id), data = data, family = Gamma(link = "log")) #preferred model
+model <- glmmTMB::glmmTMB(MEDI ~ sleep_duration_squared + sleep_duration + (1|site:Id), data = data, family = glmmTMB::tweedie(link = "log"))
+model <- lme4::lmer(log_zero_inflated(MEDI) ~ sleep_duration_squared + sleep_duration + (1|site:Id), data = data)
+
+model |> performance::check_model()
+
+model0 <- lme4::glmer(MEDI ~ sleep_duration + (1|site:Id), data = data, family = Gamma(link = "log")) #preferred model
+
+anova(model0, model)
+
+model |> summary()
+```
+
+```{r}
+library(mgcv)
+model <- gam(MEDI ~ s(sleep_duration, bs = "tp") + s(Id, bs = "re"), 
+             data = data, 
+             family = tw, 
+             method = "REML")
+
+model0 <- gam(MEDI ~ s(sleep_duration, bs = "tp") + s(Id, bs = "re"), 
+             data = data, 
+             family = tw, 
+             method = "REML")
+
+summary(model) 
+gam.check(model)
+visreg::visreg(model)
+model |> tbl_regression()
+```
+

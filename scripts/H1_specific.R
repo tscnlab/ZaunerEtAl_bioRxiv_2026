@@ -32,7 +32,8 @@ H1_table <-  function(data, p_adjustment) {
     tab_spanner(
       label = md("Comparative models"),
       columns = c("lat", "SD Site")
-    )
+    ) |> 
+    site_conv_gt(after = "Intercept")
   
 }
 

@@ -8,6 +8,7 @@ format:
     code-tools: true
     code-link: true
     page-layout: full
+    code-fold: true
 ---
 
 ## Preface
@@ -28,7 +29,7 @@ In this section, we load in the [preprocessed](data_preparation.qmd) and [prepar
 ```{r}
 #| message: false
 #| warning: false
-#| filename: Setup
+#| code-summary: Code cell - Setup
 library(tidyverse)
 library(melidosData)
 library(LightLogR)
@@ -38,6 +39,7 @@ library(performance)
 library(cowplot)
 library(ggridges)
 library(broom)
+library(rlang)
 library(broom.mixed)
 library(gt)
 library(performance)
@@ -50,7 +52,7 @@ source("scripts/H1_specific.R")
 
 ```{r}
 #| message: false
-#| filename: Load data
+#| code-summary: Code cell - Load data
 load("data/metrics_glasses.RData")
 metrics <- metrics_glasses
 H1 <- "Hypothesis: There is a significant difference in personal light-exposure metrics across sites, even after accounting for latitude and photoperiod."
@@ -89,7 +91,7 @@ Hypothesis 1 states:
 ### Preparation
 
 ```{r}
-#| filename: Model setup based on distribution
+#| code-summary: Code cell - Model setup based on distribution
 model_tbl <- tibble::tribble(
     ~name, ~engine, ~ response, ~family,
     "interdaily_stability", "lm", "qlogis(metric)", gaussian(),
@@ -120,7 +122,7 @@ model_tbl <- tibble::tribble(
 ```
 
 ```{r}
-#| filename: Formula setup for inference
+#| code-summary: Code cell - Formula setup for inference
 metrics <-
   metrics |> 
   mutate(H1_1 = case_when(type == "participant" ~ 
@@ -177,7 +179,7 @@ metrics |>
 
 
 ```{r}
-#| filename: Formula creation
+#| code-summary: Code cell - Formula creation
 metrics <-
   metrics |> 
   mutate(across(all_of(H1_formulas),
@@ -187,7 +189,7 @@ metrics <-
 ```
 
 ```{r}
-#| filename: Offset zero-values in mixed gamma models (not necessarily the)
+#| code-summary: Code cell - Offset zero-values in mixed gamma models
  metrics <- 
   metrics |>
   mutate(data = map2(data, engine, \(data, engine) {
@@ -203,7 +205,8 @@ metrics <-
 #### Fit models
 
 ```{r}
-#| filename: Model fit
+#| code-summary: Code cell - Model fit
+#| message: false
 metrics <-
   metrics |> 
   mutate(
@@ -216,7 +219,7 @@ metrics <-
 #### Main model diagnostics
 
 ```{r}
-#| filename: Create diagnostic plots for main model
+#| code-summary: Code cell - Create diagnostic plots for main model
 #| message: false
 metrics <-
   metrics |> 
@@ -255,7 +258,7 @@ walk2(metrics$name, metrics$H1_1_diagnostics, function(name, plot) {
 ### Model comparisons
 
 ```{r}
-#| filename: Model comparisons
+#| code-summary: Code cell - Model comparisons
 #| message: false
 metrics <- 
   metrics |> 
@@ -276,12 +279,11 @@ metrics <-
     H1_rand_p = map2(H1_rand_comp, engine, model_comp_p, n = H1_fdr_n) |> list_c(),
     H1_rand_sig = H1_rand_p <= sig.level,
     
-    AICs = pmap(list(H1_0_model, H1_1_model, H1_phot_model, H1_lat_model, H1_rand_model), model_AIC),
+    AICs = pmap(list(H1_0_model, H1_1_model, H1_phot_model, H1_lat_model, 
+                     H1_rand_model), model_AIC),
   
     summary = pmap(list(H1_1_sig, H1_0_model, H1_1_model), model_summary),
     summary_lat = pmap(list(H1_lat_sig, H1_0_model, H1_lat_model), model_summary),
-    # summary_phot = pmap(list(H1_phot_sig, H1_0_model, H1_phot_model),
-    #                     model_summary),
     summary_rand = pmap(list(H1_rand_sig, H1_0_model, H1_rand_model),
                         model_summary),
   
@@ -293,17 +295,60 @@ metrics <-
                   mutate(across(any_of("lat"), \(x) x*10))),
     table = map2(table, H1_phot_sig, \(x,y) if(is.null(x)) return() else x |>
                   mutate(dAIC_photoperiod = ifelse(y, 0, -3))),
-    # table_phot = pmap(list(name, H1_phot_p, summary_phot, metric_type,
-    #                        response, family), model_table),
     table_rand = pmap(list(name, H1_rand_p, summary_rand, metric_type, 
                            response, family),model_table),
     table = pmap(list(table, table_lat, AICs, "lat", "H1_1", "H1_lat"),
                  H1_combining_tables),
-    # table = pmap(list(table, table_phot, AICs, "photoperiod", "H1_1", "H1_phot"),
-    #              H1_combining_tables),
     table = pmap(list(table, table_rand, AICs, "SD Site", "H1_1", "H1_rand"),
                  H1_combining_tables),
     )
+```
+
+### R^2
+
+```{r}
+#| warning: false
+#| code-summary: Code cell - calculate R^2
+R2_table <- 
+  metrics |> 
+  filter_out(is.na(response)) |> 
+  mutate(
+    name = name,
+    metric_type = metric_type,
+    H1_1_r2 = pmap(list(H1_1_model, data, family), r2_helper), 
+    H1_0_r2 = pmap(list(H1_0_model, data, family), r2_helper), 
+    H1_phot_r2 = pmap(list(H1_phot_model, data, family), r2_helper), 
+    H1_lat_r2 = pmap(list(H1_lat_model, data, family), r2_helper), 
+    H1_phot_sig = H1_phot_sig,
+    H1_lat_sig = H1_lat_sig,
+    H1_1_sig = H1_1_sig,
+    .keep = "none"
+  )
+```
+
+```{r}
+#| code-summary: Code cell - choose relevant R^2
+R2_table <- 
+  R2_table |> 
+  rowwise() |> 
+  mutate(
+    name = name,
+    metric_type = metric_type,
+    marginal_r2 = ifelse(H1_1_sig, H1_1_r2$R2_marginal, H1_0_r2$R2_marginal),
+    conditional_r2 = ifelse(H1_1_sig, H1_0_r2$R2_conditional, H1_0_r2$R2_conditional),
+    site_r2 = ifelse(H1_1_sig, H1_1_r2$R2_marginal - H1_0_r2$R2_marginal, NA),
+    phot_r2 = ifelse(H1_phot_sig, H1_1_r2$R2_marginal - H1_phot_r2$R2_marginal, NA),
+    rand_r2 = ifelse(H1_1_sig, H1_1_r2$R2_conditional - H1_1_r2$R2_marginal, #
+                     H1_0_r2$R2_conditional - H1_0_r2$R2_marginal),
+    rand_r2 = ifelse(rand_r2 == 0, NA, rand_r2),
+    lat_r2 = ifelse(H1_lat_sig, H1_lat_r2$R2_marginal - H1_0_r2$R2_marginal, NA),
+    .keep = "none"
+  ) |> 
+  mutate(across(c(marginal_r2, conditional_r2), 
+                \(x) ifelse(metric_type == "dynamics", NA, x)
+                ),
+             phot_r2 = ifelse(is.na(site_r2) & !is.na(conditional_r2), marginal_r2, phot_r2)
+         )
 ```
 
 ### Results
@@ -311,6 +356,7 @@ metrics <-
 ```{r}
 #| message: false
 #| warning: false
+#| code-summary: Code cell - Table H1
 #| label: tbl-H1
 #| tab-name: Hypothesis 1 results
 H1_tab <- H1_table(metrics, H1_fdr_n) |> cols_width(Plot ~ px(200))
@@ -378,34 +424,138 @@ As way of a high-level summary:
 - However, the highest site-specific differences (hightest site coefficient minus lowest site coefficient) are in the range of intraindividual differences (1 standard deviation for `SD Residual`)
 - In most cases, *intraindividual* differences (`SD Residual`) outweigh *interindividual* differences (`SD Participant`). A notable exception is the `Darkest 10h mean`, where both are similar (`SD Participant` ±63% vs. `SD Residual` ±60%)
 
+### R2
+
+```{r}
+#| code-summary: Code cell - R^2 table
+R2_tbl <- 
+R2_table |> 
+  mutate(metric_type = str_to_title(metric_type)) |> 
+  arrange(metric_type, name) |> 
+  group_by(metric_type) |> 
+  gt(rowname_col = "name") |> 
+  cols_add(Residual = 1 - conditional_r2) |> 
+  fmt_percent(decimals = 0) |>
+  sub_missing() |> 
+  tab_header(md("**H1: Variance explained by the model parameters ($R^{2}$)**")) |> 
+  fmt(name, 
+      rows = name != "MDER",
+      fns = \(x) x |> str_to_sentence() |> str_replace_all("_", " ")) |> 
+  cols_move(rand_r2, after = lat_r2) |> 
+  cols_move(marginal_r2, after = conditional_r2) |> 
+  cols_label(
+    conditional_r2 = "Model",
+    rand_r2 = "Participants",
+    marginal_r2 = "Fixed effects",
+    site_r2 = "Site",
+    phot_r2 = "Photoperiod",
+    lat_r2 = "Latitude"
+  ) |> 
+  tab_spanner("Unique contribution", columns = c(site_r2, phot_r2, lat_r2)) |> 
+  cols_width(
+    name ~ px(230),
+    phot_r2 ~ px(100),
+    c(rand_r2, Residual) ~ px(90),
+    everything() ~ px(70)) |> 
+  grand_summary_rows(
+    columns = where(is.numeric),
+    fns = list(
+      `Grand average` ~ mean(., na.rm = TRUE)
+    ),
+        side = "top",
+    fmt = ~ fmt_percent(., decimals = 0)
+  ) |> 
+  tab_style(
+    cell_text(align = "center"),
+    list(cells_body(),
+         cells_grand_summary(),
+         cells_column_labels())
+  ) |> 
+    tab_style(
+    cell_text(weight = "bold"),
+    list(cells_column_labels(),
+         cells_row_groups(),
+         cells_grand_summary(),
+         cells_stub_grand_summary())
+  ) |> 
+  tab_footnote(
+    md("*Model*: conditional $R^2$, *Participants*: partial $R^2$ due to interindividual differences on a participant level, Fixed effects: marginal $R^2$ (all fixed effects combined, based on a model of $site + photoperiod$), *Site/Photoperiod/Latitude*: unique contribution of the given parameter relative to a model without it. *Residual*: proportion of residual variance (e.g., intraindividual differences)")
+  )
+```
+
+```{r}
+R2_tbl
+gtsave(R2_tbl, "tables/H1_R2_tbl.png")
+```
+
+- Overall model fit varies widely (≈25–62%), with highest explanatory power for level-based metrics (e.g., darkest/mean light levels) and lowest for timing metrics.
+- Fixed effects explain a modest share (≈2–24%), indicating environmental factors (site, photoperiod, latitude) contribute but are not dominant drivers.
+- Individual (participant-level) differences account for a large portion of variance (≈20–42%), often exceeding fixed-effect contributions.
+- Site effects are generally stronger than photoperiod, particularly for level metrics, but both show overlapping (shared) explanatory power.
+- Latitude contributes only marginally where included, suggesting limited additional explanatory value beyond photoperiod.
+- Residual variance remains high across most metrics (≈38–75%), indicating substantial unexplained within-individual or day-to-day variability.
+
 ### Model summaries
+
+The following tabs show the model summaries for either
+
+- $\text{Metric} \sim \text{Site} +  \text{Photoperiod} + (1|\text{Site}:\text{Participant})$
+
+or
+
+- $\text{Metric} \sim \text{Photoperiod} + (1|\text{Site}:\text{Participant})$
+
+depending on whether site is significant
 
 ::: {.panel-tabset}
 
 ```{r, results='asis', fig.width = 8, fig.height = 12}
-walk2(metrics$name, metrics$summary, function(name, summary) {
+#| warning: false
+pwalk(list(metrics$name, metrics$H1_1_model, 
+           metrics$H1_0_model, metrics$H1_1_sig, metrics$H1_1_comp
+           ), 
+      function(name, model1, model0, sig, comp) {
   
   # skip NULL plots
-  if (is.null(summary)) return()
+  if (is.null(model1)) return()
+  if(sig) summary <- model1 else summary <- model0
   
   # format tab title
   tab_title <- name |>
-    str_to_title() |>
+    str_to_sentence() |>
     str_replace_all("_", " ")
   
   # emit markdown for tab
   cat("\n\n##### ", tab_title, "\n\n", sep = "")
   
-  # print the plot
-  summary |> gt()
+  cat("\n\n", "Model summary", "\n\n", sep = "")
+  
+  tbl <- summary |>
+    tbl_regression(add_estimate_to_reference_rows = TRUE) |> as_gt()
+  
+  cat(gt::as_raw_html(tbl))
+  
+  cat("\n\n", "Model comparison", "\n\n", sep = "")
+  
+  tbl <- comp |>
+    tbl_regression(tidy_fun = broom.helpers::tidy_parameters) |> as_gt()
+  
+  cat(gt::as_raw_html(tbl))
+  
+  cat("\n\n")
 })
 ```
 
 :::
 
+## Hypothesis 2
+
+
+
 ## Session info
 
 ```{r}
+#| code-summary: Code cell - Session info
 sessionInfo()
 ```
 
