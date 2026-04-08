@@ -286,6 +286,7 @@ save(light_glasses_processed2, file = "data/preprocessed_glasses_2.RData")
       - *IV*: intradaily variability
       
 ```{r}
+#| warning: false
 metric_chest_participant <- 
   light_chest_processed2 |> 
   summarize(
@@ -428,16 +429,26 @@ metric_chest_participanthour <-
   aggregate_Datetime(
     "1 hour",
     type = "floor",
-    numeric.handler = \(x) x |> log_zero_inflated() |> mean(na.rm = TRUE) |> exp_zero_inflated()
-  )
+    numeric.handler = \(x) x |> mean(na.rm = TRUE)
+  )|>
+  add_Date_col(group.by = TRUE) |> 
+  mutate(static = all(MEDI == MEDI[1])) |> 
+  filter_out(static) |> 
+  select(-static) |> 
+  ungroup(Date)
 
 metric_glasses_participanthour <- 
   light_glasses_processed2 |> 
   aggregate_Datetime(
-    "1 hour",
+    "30 mins",
     type = "floor",
-    numeric.handler = \(x) x |> log_zero_inflated() |> mean(na.rm = TRUE) |> exp_zero_inflated()
-  )
+    numeric.handler = \(x) x |> mean(na.rm = TRUE)
+  )|>
+  add_Date_col(group.by = TRUE) |> 
+  mutate(static = all(MEDI == MEDI[1])) |> 
+  filter_out(static) |> 
+  select(-static) |> 
+  ungroup(Date)
 ```
 
 **This marks our third dataset**

@@ -39,11 +39,15 @@ library(performance)
 library(cowplot)
 library(ggridges)
 library(broom)
+library(itsadug)
+library(gratia)
+library(patchwork)
 library(rlang)
 library(broom.mixed)
 library(gt)
 library(performance)
 library(glmmTMB)
+library(gghighlight)
 library(gtsummary)
 source("scripts/fitting.R")
 source("scripts/summaries.R")
@@ -56,6 +60,7 @@ source("scripts/H1_specific.R")
 load("data/metrics_glasses.RData")
 metrics <- metrics_glasses
 H1 <- "Hypothesis: There is a significant difference in personal light-exposure metrics across sites, even after accounting for latitude and photoperiod."
+H2 <- "Hypothesis: The variance of personal light exposure patterns (hourly geometric mean of melanopic EDI) by participants within sites is greater than the variance between sites."
 sig.level <- 0.05
 
 #for chest:
@@ -511,6 +516,7 @@ depending on whether site is significant
 
 ```{r, results='asis', fig.width = 8, fig.height = 12}
 #| warning: false
+#| message: false
 pwalk(list(metrics$name, metrics$H1_1_model, 
            metrics$H1_0_model, metrics$H1_1_sig, metrics$H1_1_comp
            ), 
@@ -550,7 +556,477 @@ pwalk(list(metrics$name, metrics$H1_1_model,
 
 ## Hypothesis 2
 
+### Details
 
+Hypothesis 2 states:
+
+> The variance of personal light exposure patterns (30 minute mean of melanopic EDI) by participants within sites is greater than the variance between sites.
+
+*Type of model:* HGAM (Hierarchical GAM)
+
+*Base formula:* $\text{melanopic EDI} \sim  s(\text{Time}) + s(\text{Time}, \text{Site}) + s(\text{Time}, \text{Participant})$
+
+*Additional notes:* 
+- Site effects are modelled with the `sz` basis, that allows for the most identifiable modelling of parametric differences
+- Participant effects are modelled with the `fs` basis, which models the participant-effects as random smooths
+- melanopic EDI is scaled with `log_zero_inflated()` before model fitting. 
+
+*Specific formulas:* 
+- $\text{melanopic EDI} \sim s(\text{Time}) + s(\text{Time}, \text{Site}) + s(\text{Time}, \text{Participant})  + s(\text{Time}, \text{Photoperiod})$ (to test photoperiod effects)
+- $\text{melanopic EDI} \sim s(\text{Time}) + s(\text{Time}, \text{Participant})$ (comparison to the base formula)
+
+*False-discovery-rate correction:*
+1 (there is only one main comparison that tests the effect of site)
+
+### Preparation
+
+```{r}
+#| filename: Load prepared data
+load("data/metrics_separate_glasses.RData")
+load("data/preprocessed_glasses_2.RData")
+
+metric_participanthour <-
+  metric_glasses_participanthour |>
+  add_Time_col() |> 
+  ungroup() |> 
+  mutate(Time = as.numeric(Time)/3600 + 0.25,
+         across(c(site, Id, sleep, State.Brown, wear, photoperiod.state),
+                fct),
+         Date = factor(Date),
+         Id_date = interaction(Id, Date),
+         lzMEDI = log_zero_inflated(MEDI),
+         photoperiod = (dusk - dawn) |> as.numeric()
+  ) |> 
+  group_by(Id) |> 
+  mutate(AR.start = ifelse(row_number() == 1, TRUE, FALSE))
+
+```
+
+```{r}
+#| fig-height: 12
+#| fig-width: 12
+#| filename: Overview plot of the data (median with IQR)
+metric_participanthour |>
+  group_by(site) |> 
+  aggregate_Date(
+    numeric.handler = \(x) median(x, na.rm = TRUE),
+    p75 = quantile(MEDI, p=0.75, na.rm = TRUE),
+    p25 = quantile(MEDI, p=0.25, na.rm = TRUE)
+  ) |> 
+  site_conv_mutate() |> 
+  gg_doubleplot(geom = "blank", jco_color = FALSE, facetting = FALSE,
+                x.axis.breaks.repeat = ~Datetime_breaks(.x, by = "12 hours", shift =
+    lubridate::duration(0, "hours"))) +
+  scale_fill_manual(values = melidos_colors) +
+  scale_color_manual(values = melidos_colors) +
+  geom_ribbon(aes(ymin = p25, ymax = p75, color = site, fill = site)) +
+  geom_line() +
+  geom_hline(yintercept = 250, linetype = "dashed") +
+  facet_wrap(~site, scales = "free_x") +
+  guides(fill = "none", col = "none") +
+  theme(panel.spacing = unit(2, "lines"))
+```
+
+```{r}
+#| filename: H2 formulas
+H2_form_1 <- lzMEDI ~ s(Time, k = 12) + s(Time, site, bs = "sz", k = 12) + s(Time, Id, bs = "fs") + s(Id_date, bs = "re")
+H2_form_0 <- lzMEDI ~ s(Time, k = 12) + s(Time, Id, bs = "fs") + s(Id_date, bs = "re")
+H2_form_phot <- lzMEDI ~ s(Time, k = 12) + s(Time, site, bs = "sz", k = 12) + s(Time, photoperiod.state, bs = "sz", k=12) + s(Time, Id, bs = "fs") + s(Id_date, bs = "re")
+```
+
+### Analysis
+
+#### Base model (H2_1)
+
+```{r}
+#| filename: Main model
+H2_model_1 <- 
+  bam(H2_form_1, 
+      data = metric_participanthour, 
+      discrete = TRUE,
+      method = "fREML",
+      nthreads = 10
+      )
+
+r1 <- start_value_rho(H2_model_1, 
+                      plot=TRUE)
+
+H2_model_1 <- 
+  bam(H2_form_1, 
+      data = metric_participanthour, 
+      discrete = TRUE,
+      method = "fREML",
+      nthreads = 10,
+      rho = r1,
+      AR.start = AR.start
+      )
+
+acf_resid(H2_model_1, split_pred = "AR.start")
+
+H2_summary_1 <- summary(H2_model_1)
+H2_summary_1
+H2_model_1 |> glance()
+
+H2_model_1 |> appraise()
+```
+
+```{r}
+#| filename: Variance explained
+Xp <- predict(H2_model_1, type = "terms")
+variance <- apply(Xp, 2, var)
+cor(Xp)
+H2_R2 <- (variance/sum(variance)) |> enframe(value = "R2", name = "parameter")
+H2_R2
+```
+
+#### Null model (H2_0)
+
+```{r}
+#| filename: Null model
+H2_model_0 <- 
+  bam(H2_form_0, 
+      data = metric_participanthour, 
+      discrete = TRUE,
+      method = "fREML",
+      nthreads = 8
+      )
+
+
+r1 <- start_value_rho(H2_model_0, 
+                      plot=TRUE)
+
+H2_model_0 <- 
+  bam(H2_form_0, 
+      data = metric_participanthour, 
+      discrete = TRUE,
+      method = "fREML",
+      nthreads = 10,
+      rho = r1,
+      AR.start = AR.start
+      )
+
+acf_resid(H2_model_0, split_pred = "AR.start")
+
+H2_summary_0 <- summary(H2_model_0)
+H2_summary_0
+H2_model_0 |> glance()
+
+H2_model_0 |> appraise()
+H2_model_0 |> draw()
+```
+
+#### Photoperiod model
+
+```{r}
+#| filename: Photoperiod model
+H2_model_phot <- 
+  bam(H2_form_phot, 
+      data = metric_participanthour, 
+      discrete = TRUE,
+      method = "fREML",
+      nthreads = 10
+      )
+
+r1 <- start_value_rho(H2_model_phot, 
+                      plot=TRUE)
+
+H2_model_phot <- 
+  bam(H2_form_phot, 
+      data = metric_participanthour, 
+      discrete = TRUE,
+      method = "fREML",
+      nthreads = 10,
+      rho = r1,
+      AR.start = AR.start
+      )
+
+acf_resid(H2_model_phot, split_pred = "AR.start")
+
+H2_summary_phot <- summary(H2_model_phot)
+H2_summary_phot
+H2_model_phot |> glance()
+
+H2_model_phot |> appraise()
+H2_model_phot |> draw()
+```
+
+#### Model comparison
+
+```{r}
+H2_AICs <- AIC(H2_model_1, H2_model_0, H2_model_phot)
+H2_AICs |> as_tibble(rownames = "model") |> gt()
+```
+
+>> Since the ∆AIC of the base model against the null model is negative and lower than two (< -2), the base model is considered significantly better to explain the variance. The photoperiod model is even better and will be used henceforth.
+
+```{r}
+#| filename: Variance explained
+Xp <- predict(H2_model_phot, type = "terms")
+variance <- apply(Xp, 2, var)
+
+cor(Xp)
+H2_R2 <- (variance/sum(variance)) |> enframe(value = "partial R2", name = "parameter")
+H2_R2 |> gt() |> fmt_percent()
+```
+
+#### Model visualization
+
+```{r}
+#| filename: prepare photoperiod model H2 plot
+H2_site_data <- 
+H2_model_phot |> 
+  conditional_values(
+    condition = list(Time = seq(0.25, 23.75, by = 0.5), "site", "photoperiod.state"),
+    exclude = c("s(Time,Id)", "s(Id_date)")
+    ) |> 
+  mutate(across(c(.fitted, .lower_ci, .upper_ci),
+                exp_zero_inflated)
+  )
+
+H2_site_data <-
+metric_participanthour |> 
+  Datetime2Time() |> 
+  group_by(site, Time) |> 
+  summarize(
+    .groups = "drop_last",
+    dawn = dawn |> as.numeric() |> mean(na.rm = TRUE)/3600,
+    dusk = dusk |> as.numeric() |> mean(na.rm = TRUE)/3600
+  ) |> 
+  mutate(
+    photoperiod.state = ifelse(between(Time, dawn, dusk), "day", "night")
+  ) |> 
+  select(-c(dawn, dusk)) |> 
+  left_join(H2_site_data, by = c("site", "Time", "photoperiod.state"))
+
+H2_site_data_phot <- 
+H2_site_data |> 
+  number_states(photoperiod.state) |> 
+  filter(photoperiod.state == "night") |> 
+  group_by(site, photoperiod.state.count) |> 
+  summarize(xmin = min(Time),
+            xmax = max(Time),
+            .groups = "drop_last") |> 
+    site_conv_mutate(rev = FALSE)
+```
+
+
+```{r}
+#| filename: Visualize photoperiod model H2
+#| fig-height: 9
+#| fig-width: 10
+source("scripts/Brown_bracket.R")
+
+H2_pred <- 
+H2_site_data |> 
+  site_conv_mutate(rev = FALSE) |>
+  ggplot(aes()) +
+  map(c(1,10,250, 10^4), 
+          \(x) geom_hline(aes(yintercept = x), 
+                          col = "grey", linetype = "dashed")
+      ) +
+  geom_rect(data = H2_site_data_phot ,
+            aes(xmin = xmin, ymin = -Inf, ymax = Inf, xmax = xmax),
+            alpha = 0.25, inherit.aes = FALSE) +
+  geom_ribbon(aes(x = Time, ymin = .lower_ci, ymax = .upper_ci, fill = site), alpha = 0.5) +
+  geom_line(aes(x = Time, y = .fitted, col = site), linewidth = 0.1) +
+  geom_line(aes(x = Time, y = .fitted), linewidth = 1) +
+  scale_fill_manual(values = melidos_colors) +
+  scale_color_manual(values = melidos_colors) +
+  theme_cowplot() +
+  scale_y_continuous(trans = "symlog", breaks = c(0,1,10,100,250, 1000)) +
+  scale_x_continuous(breaks = seq(0, 24, by = 6)) +
+  coord_cartesian(xlim = c(0,24), ylim = c(0,10^4), expand = FALSE) +
+  labs(y = "Melanopic EDI (lx)", x = "Local time (hrs)", fill = "Site", col = "Site") +
+  facet_wrap(~site) +
+  # guides( y = guide_axis_stack(Brown_bracket, "axis")) +
+  gghighlight(
+    label_key = site,
+    label_params = list(x = 12, y = 4.5, force = 0, hjust = 0.25)
+  ) +
+  theme_sub_strip(background = element_blank(),
+                  text = element_blank()) +
+  theme(panel.spacing = unit(1, "lines"),
+        plot.caption = element_textbox_simple())
+  # labs(caption = Brown_caption)
+
+```
+
+```{r}
+#| filename: Visualize Individual
+#| fig-height: 5
+#| fig-width: 8.5
+P_individual <- 
+H2_model_phot |> 
+  conditional_values(
+    condition = list("Time", "Id"),
+    exclude = c("s(Time,site)", "s(Id_date)", "s(Time,photoperiod.state)")
+    ) |> 
+  mutate(across(c(.fitted, .lower_ci, .upper_ci),
+                exp_zero_inflated)
+  ) |> 
+  group_by(Id) |>
+  select(-site) |> 
+  separate_wider_delim(Id, delim = "_", names = c("site","Id")) |> 
+  site_conv_mutate() |> 
+  ggplot(aes(x = Time)) +
+  map(c(1,10,250, 10^4), 
+          \(x) geom_hline(aes(yintercept = x), col = "grey", linetype = "dashed")
+      ) +
+  # geom_ribbon(aes(ymin = .lower_ci, ymax = .upper_ci, group = Id), alpha = 0.025) +
+  geom_line(aes(y = .fitted, group = interaction(Id, site), color = site), 
+            linewidth = 1, alpha = 0.35) +
+  theme_cowplot() +
+  scale_color_manual(values = melidos_colors) +
+  scale_y_continuous(trans = "symlog", breaks = c(0,1,10,100,250, 1000)) +
+  scale_x_continuous(breaks = seq(0, 24, by = 6)) +
+  coord_cartesian(xlim = c(0,24), ylim = c(0,1.5*10^4), expand = FALSE) +
+  labs(y = "Melanopic EDI (lx)", x = "Local time (hrs)") +
+  guides( y = guide_axis_stack(Brown_bracket, "axis"), color = "none") +
+  theme(plot.caption = element_textbox_simple())
+  # labs(caption = Brown_caption)
+```
+
+```{r}
+#| filename: prepare time model
+H2_data <- 
+H2_model_phot |> 
+  conditional_values(
+    condition = list(Time = seq(0.25, 23.75, by = 0.5), "photoperiod.state"),
+    exclude = c("s(Time,site)", "s(Time,Id)", "s(Id_date)")
+    ) |> 
+  mutate(across(c(.fitted, .lower_ci, .upper_ci),
+                exp_zero_inflated)
+  )
+
+H2_data <-
+metric_participanthour |> 
+  Datetime2Time() |> 
+  group_by(Time) |> 
+  summarize(
+    .groups = "drop_last",
+    dawn = dawn |> as.numeric() |> mean(na.rm = TRUE)/3600,
+    dusk = dusk |> as.numeric() |> mean(na.rm = TRUE)/3600
+  ) |> 
+  mutate(
+    photoperiod.state = ifelse(between(Time, dawn, dusk), "day", "night")
+  ) |> 
+  select(-c(dawn, dusk)) |> 
+  left_join(H2_data, by = c("Time", "photoperiod.state"))
+
+H2_data_phot <- 
+H2_data |> 
+  number_states(photoperiod.state) |> 
+  filter(photoperiod.state == "night") |> 
+  group_by(photoperiod.state.count) |> 
+  summarize(xmin = min(Time),
+            xmax = max(Time),
+            .groups = "drop_last")
+```
+
+
+```{r}
+#| filename: Visualize Time
+#| fig-height: 5
+#| fig-width: 8.5
+P_time <- 
+H2_data |> 
+  ggplot(aes(x = Time)) +
+  map(c(1,10, 100, 250, 10^3), 
+          \(x) geom_hline(aes(yintercept = x), col = "grey", linetype = "dashed")
+      ) +
+  geom_rect(data = H2_data_phot ,
+            aes(xmin = xmin, ymin = -Inf, ymax = Inf, xmax = xmax),
+            alpha = 0.25, inherit.aes = FALSE) +
+  geom_ribbon(aes(ymin = .lower_ci, ymax = .upper_ci), alpha = 0.5) +
+  geom_line(aes(y = .fitted), 
+            linewidth = 1, alpha = 1) +
+  theme_cowplot() +
+  scale_y_continuous(trans = "symlog", breaks = c(0,1,10,100,250, 1000)) +
+  scale_x_continuous(breaks = seq(0, 24, by = 6)) +
+  coord_cartesian(xlim = c(0,24), ylim = c(0,1.5*10^3), expand = FALSE) +
+  labs(y = "Melanopic EDI (lx)", x = "Local time (hrs)") +
+  guides( y = guide_axis_stack(Brown_bracket, "axis"), color = "none") +
+  theme(plot.caption = element_textbox_simple())
+  # labs(caption = Brown_caption)
+```
+
+
+```{r}
+#| filename: Visualize model terms
+
+P_terms <-
+H2_model_phot |> 
+  smooth_estimates(select = "s(Time,site)") |> 
+  mutate(.lower_ci = .estimate -1.96*.se,
+         .upper_ci = .estimate +1.96*.se,
+         .fitted = .estimate,
+         signif = .lower_ci > 0 | .upper_ci < 0,
+         signif_id = consecutive_id(signif),
+         .by = site) |> 
+  site_conv_mutate(rev = FALSE) |>
+  ggplot(aes()) +
+  map(c(log10(c(0.1, 0.2, 0.5, 2, 5, 10))),
+      \(x) geom_hline(yintercept = x, linewidth = 0.5, col = "grey", linetype = 2)) +
+  geom_rect(data = H2_site_data_phot ,
+            aes(xmin = xmin, ymin = -Inf, ymax = Inf, xmax = xmax),
+            alpha = 0.25, inherit.aes = FALSE) +
+  geom_ribbon(aes(x = Time, ymin = .lower_ci, ymax = .upper_ci, fill = site), alpha = 0.5) +
+  geom_hline(yintercept = 0, linewidth = 1, linetype = 2) +
+  geom_line(aes(x = Time, y = .fitted), 
+            linewidth = 1) +
+  geom_line(data = \(x) filter(x, signif),
+            aes(x = Time, y = .fitted, group = signif_id), 
+            col = "red", linewidth = 1) +
+  scale_fill_manual(values = melidos_colors) +
+  # scale_color_manual(values = c(melidos_colors)) +
+  theme_cowplot() +
+  scale_y_continuous(labels = expression(10^-1, 5^-1, 2^-1, "1  ", "2  ", "5  ", "10  "), 
+                     breaks = log10(c(0.1, 0.2, 0.5, 1, 2, 5, 10)))+
+  scale_x_continuous(breaks = seq(0, 24, by = 6)) +
+  coord_cartesian(xlim = c(0,24), expand = FALSE) +
+  guides(fill = "none") +
+  labs(y = "Factor", x = "Local time (hrs)", fill = "Site") +
+  facet_wrap(~site) +
+  theme_sub_strip(background = element_blank(),
+                  text = element_blank()) +
+  theme(panel.spacing = unit(1, "lines"),
+        plot.caption = element_textbox_simple())
+
+```
+
+```{r}
+#| fig-height: 17
+#| fig-width: 13
+#| filename: Combination of partial plots H2
+
+((P_time / P_individual) | (H2_pred / P_terms)) +
+  plot_annotation(tag_levels = "A", caption = Brown_caption,
+                  theme = theme(plot.caption = element_textbox_simple())) +
+  plot_layout(widths = c(2,1.5))
+
+ggsave("figures/Fig4.pdf", height = 17, width = 13)
+
+```
+
+### Interpretation
+
+There is an overall trend of time and photoperiod (panel A). Daytime melanopic EDI light levels are < 100 lx in the morning and late afternoon, and between 100 and about 200 lx between late morning and early afternoon. During the evening, light levels are below 10 lx melanopic EDI, and generally below 1 lx at night.
+
+Individual deviations from this trend vary greatly, especially during the day (panel B)
+
+Model predictions (panel C) and deviations from the global trend (panel D) of each site shows specific differences:
+
+- Delft (NL), Tübingen (DE), and San José (CR) do not show significant deviations from the global trend. In the case of San José (CR) this is likely due to the small number of participants, as can be seen by the wide confidence interval compared to the other sites
+
+- Boras (SE), Dortmund (DE), and partially Munich (DE) show similar patterns of higher mel EDI in the hours after dawn and before dusk. The difference is about a factor 2-5 higher compared to the global trend.
+
+- Madrid (ES), Kumasi (GH), and Izmir (TR) have a significantly reduced mel EDI around dawn (factor 2-5 reduction)
+
+- Madrid (ES) and Kumasi (GH) have significantly reduced mel EDI around dusk (factor 2-5 reduction)
+
+- Izmir (TR) show significantly hightened melanopic EDI in the late evening (factor 2-5 increase)
+
+- Kumasi (GH) has significantly lower daytime illuminance both in the afternoon and after dusk (factor 2-5 reduction)
 
 ## Session info
 
