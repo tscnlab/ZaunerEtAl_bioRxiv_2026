@@ -161,7 +161,7 @@ Do sites differ in objectively measured personal light exposure? If so, does an 
 </section><section id="setup" class="level2"><h2 class="anchored" data-anchor-id="setup">Setup</h2>
 <p>In this section, we load in the <a href="data_preparation.qmd">preprocessed</a> and <a href="metric_preparation.qmd">prepared</a> data, site data, and load required packages.</p>
 <div class="cell">
-<details class="code-fold"><summary>Code cell - Setup</summary><div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://tidyverse.tidyverse.org">tidyverse</a></span><span class="op">)</span></span>
+<details open="" class="code-fold"><summary>Code cell - Setup</summary><div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://tidyverse.tidyverse.org">tidyverse</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://melidosproject.github.io/melidosData/">melidosData</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/tscnlab/LightLogR">LightLogR</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va">mgcv</span><span class="op">)</span></span>
@@ -186,7 +186,7 @@ Do sites differ in objectively measured personal light exposure? If so, does an 
 </details>
 </div>
 <div class="cell">
-<details class="code-fold"><summary>Code cell - Load data</summary><div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/load.html">load</a></span><span class="op">(</span><span class="st">"data/metrics_glasses.RData"</span><span class="op">)</span></span>
+<details open="" class="code-fold"><summary>Code cell - Load data</summary><div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/load.html">load</a></span><span class="op">(</span><span class="st">"data/metrics_glasses.RData"</span><span class="op">)</span></span>
 <span><span class="va">metrics</span> <span class="op">&lt;-</span> <span class="va">metrics_glasses</span></span>
 <span><span class="va">H1</span> <span class="op">&lt;-</span> <span class="st">"Hypothesis: There is a significant difference in personal light-exposure metrics across sites, even after accounting for latitude and photoperiod."</span></span>
 <span><span class="va">H2</span> <span class="op">&lt;-</span> <span class="st">"Hypothesis: The variance of personal light exposure patterns (hourly geometric mean of melanopic EDI) by participants within sites is greater than the variance between sites."</span></span>
@@ -211,7 +211,7 @@ Do sites differ in objectively measured personal light exposure? If so, does an 
 <p><em>False-discovery-rate correction:</em> 17 (number of metrics that are compared)</p>
 </section><section id="preparation" class="level3"><h3 class="anchored" data-anchor-id="preparation">Preparation</h3>
 <div class="cell">
-<details class="code-fold"><summary>Code cell - Model setup based on distribution</summary><div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">model_tbl</span> <span class="op">&lt;-</span> <span class="fu">tibble</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tribble.html">tribble</a></span><span class="op">(</span></span>
+<details open="" class="code-fold"><summary>Code cell - Model setup based on distribution</summary><div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">model_tbl</span> <span class="op">&lt;-</span> <span class="fu">tibble</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tribble.html">tribble</a></span><span class="op">(</span></span>
 <span>    <span class="op">~</span><span class="va">name</span>, <span class="op">~</span><span class="va">engine</span>, <span class="op">~</span> <span class="va">response</span>, <span class="op">~</span><span class="va">family</span>,</span>
 <span>    <span class="st">"interdaily_stability"</span>, <span class="st">"lm"</span>, <span class="st">"qlogis(metric)"</span>, <span class="fu"><a href="https://rdrr.io/r/stats/family.html">gaussian</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>    <span class="st">"intradaily_variability"</span>, <span class="st">"lm"</span>, <span class="st">"metric"</span>, <span class="fu"><a href="https://rdrr.io/r/stats/family.html">gaussian</a></span><span class="op">(</span><span class="op">)</span>,</span>
@@ -241,7 +241,7 @@ Do sites differ in objectively measured personal light exposure? If so, does an 
 </details>
 </div>
 <div class="cell">
-<details class="code-fold"><summary>Code cell - Formula setup for inference</summary><div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">metrics</span> <span class="op">&lt;-</span></span>
+<details open="" class="code-fold"><summary>Code cell - Formula setup for inference</summary><div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">metrics</span> <span class="op">&lt;-</span></span>
 <span>  <span class="va">metrics</span> <span class="op">|&gt;</span> </span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span><span class="op">(</span>H1_1 <span class="op">=</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/case-and-replace-when.html">case_when</a></span><span class="op">(</span><span class="va">type</span> <span class="op">==</span> <span class="st">"participant"</span> <span class="op">~</span> </span>
 <span>                                  <span class="st">"~ site + photoperiod"</span>,</span>
@@ -275,23 +275,23 @@ Do sites differ in objectively measured personal light exposure? If so, does an 
 </div>
 <div class="cell">
 <div class="cell-output-display">
-<div id="ishmgzesiq" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>#ishmgzesiq table {
+<div id="csxjjtvtsg" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#csxjjtvtsg table {
   font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-#ishmgzesiq thead, #ishmgzesiq tbody, #ishmgzesiq tfoot, #ishmgzesiq tr, #ishmgzesiq td, #ishmgzesiq th {
+#csxjjtvtsg thead, #csxjjtvtsg tbody, #csxjjtvtsg tfoot, #csxjjtvtsg tr, #csxjjtvtsg td, #csxjjtvtsg th {
   border-style: none;
 }
 
-#ishmgzesiq p {
+#csxjjtvtsg p {
   margin: 0;
   padding: 0;
 }
 
-#ishmgzesiq .gt_table {
+#csxjjtvtsg .gt_table {
   display: table;
   border-collapse: collapse;
   line-height: normal;
@@ -317,12 +317,12 @@ Do sites differ in objectively measured personal light exposure? If so, does an 
   border-left-color: #D3D3D3;
 }
 
-#ishmgzesiq .gt_caption {
+#csxjjtvtsg .gt_caption {
   padding-top: 4px;
   padding-bottom: 4px;
 }
 
-#ishmgzesiq .gt_title {
+#csxjjtvtsg .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -334,7 +334,7 @@ Do sites differ in objectively measured personal light exposure? If so, does an 
   border-bottom-width: 0;
 }
 
-#ishmgzesiq .gt_subtitle {
+#csxjjtvtsg .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -346,7 +346,7 @@ Do sites differ in objectively measured personal light exposure? If so, does an 
   border-top-width: 0;
 }
 
-#ishmgzesiq .gt_heading {
+#csxjjtvtsg .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -358,13 +358,13 @@ Do sites differ in objectively measured personal light exposure? If so, does an 
   border-right-color: #D3D3D3;
 }
 
-#ishmgzesiq .gt_bottom_border {
+#csxjjtvtsg .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#ishmgzesiq .gt_col_headings {
+#csxjjtvtsg .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -379,7 +379,7 @@ Do sites differ in objectively measured personal light exposure? If so, does an 
   border-right-color: #D3D3D3;
 }
 
-#ishmgzesiq .gt_col_heading {
+#csxjjtvtsg .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -399,7 +399,7 @@ Do sites differ in objectively measured personal light exposure? If so, does an 
   overflow-x: hidden;
 }
 
-#ishmgzesiq .gt_column_spanner_outer {
+#csxjjtvtsg .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -411,15 +411,15 @@ Do sites differ in objectively measured personal light exposure? If so, does an 
   padding-right: 4px;
 }
 
-#ishmgzesiq .gt_column_spanner_outer:first-child {
+#csxjjtvtsg .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#ishmgzesiq .gt_column_spanner_outer:last-child {
+#csxjjtvtsg .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#ishmgzesiq .gt_column_spanner {
+#csxjjtvtsg .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -431,11 +431,11 @@ Do sites differ in objectively measured personal light exposure? If so, does an 
   width: 100%;
 }
 
-#ishmgzesiq .gt_spanner_row {
+#csxjjtvtsg .gt_spanner_row {
   border-bottom-style: hidden;
 }
 
-#ishmgzesiq .gt_group_heading {
+#csxjjtvtsg .gt_group_heading {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -461,7 +461,7 @@ Do sites differ in objectively measured personal light exposure? If so, does an 
   text-align: left;
 }
 
-#ishmgzesiq .gt_empty_group_heading {
+#csxjjtvtsg .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -476,15 +476,15 @@ Do sites differ in objectively measured personal light exposure? If so, does an 
   vertical-align: middle;
 }
 
-#ishmgzesiq .gt_from_md > :first-child {
+#csxjjtvtsg .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#ishmgzesiq .gt_from_md > :last-child {
+#csxjjtvtsg .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#ishmgzesiq .gt_row {
+#csxjjtvtsg .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -503,7 +503,7 @@ Do sites differ in objectively measured personal light exposure? If so, does an 
   overflow-x: hidden;
 }
 
-#ishmgzesiq .gt_stub {
+#csxjjtvtsg .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -516,7 +516,7 @@ Do sites differ in objectively measured personal light exposure? If so, does an 
   padding-right: 5px;
 }
 
-#ishmgzesiq .gt_stub_row_group {
+#csxjjtvtsg .gt_stub_row_group {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -530,15 +530,15 @@ Do sites differ in objectively measured personal light exposure? If so, does an 
   vertical-align: top;
 }
 
-#ishmgzesiq .gt_row_group_first td {
+#csxjjtvtsg .gt_row_group_first td {
   border-top-width: 2px;
 }
 
-#ishmgzesiq .gt_row_group_first th {
+#csxjjtvtsg .gt_row_group_first th {
   border-top-width: 2px;
 }
 
-#ishmgzesiq .gt_summary_row {
+#csxjjtvtsg .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -548,16 +548,16 @@ Do sites differ in objectively measured personal light exposure? If so, does an 
   padding-right: 5px;
 }
 
-#ishmgzesiq .gt_first_summary_row {
+#csxjjtvtsg .gt_first_summary_row {
   border-top-style: solid;
   border-top-color: #D3D3D3;
 }
 
-#ishmgzesiq .gt_first_summary_row.thick {
+#csxjjtvtsg .gt_first_summary_row.thick {
   border-top-width: 2px;
 }
 
-#ishmgzesiq .gt_last_summary_row {
+#csxjjtvtsg .gt_last_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -567,7 +567,7 @@ Do sites differ in objectively measured personal light exposure? If so, does an 
   border-bottom-color: #D3D3D3;
 }
 
-#ishmgzesiq .gt_grand_summary_row {
+#csxjjtvtsg .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -577,7 +577,7 @@ Do sites differ in objectively measured personal light exposure? If so, does an 
   padding-right: 5px;
 }
 
-#ishmgzesiq .gt_first_grand_summary_row {
+#csxjjtvtsg .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -587,7 +587,7 @@ Do sites differ in objectively measured personal light exposure? If so, does an 
   border-top-color: #D3D3D3;
 }
 
-#ishmgzesiq .gt_last_grand_summary_row_top {
+#csxjjtvtsg .gt_last_grand_summary_row_top {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -597,11 +597,11 @@ Do sites differ in objectively measured personal light exposure? If so, does an 
   border-bottom-color: #D3D3D3;
 }
 
-#ishmgzesiq .gt_striped {
+#csxjjtvtsg .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#ishmgzesiq .gt_table_body {
+#csxjjtvtsg .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -610,7 +610,7 @@ Do sites differ in objectively measured personal light exposure? If so, does an 
   border-bottom-color: #D3D3D3;
 }
 
-#ishmgzesiq .gt_footnotes {
+#csxjjtvtsg .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -624,7 +624,7 @@ Do sites differ in objectively measured personal light exposure? If so, does an 
   border-right-color: #D3D3D3;
 }
 
-#ishmgzesiq .gt_footnote {
+#csxjjtvtsg .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding-top: 4px;
@@ -633,7 +633,7 @@ Do sites differ in objectively measured personal light exposure? If so, does an 
   padding-right: 5px;
 }
 
-#ishmgzesiq .gt_sourcenotes {
+#csxjjtvtsg .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -647,7 +647,7 @@ Do sites differ in objectively measured personal light exposure? If so, does an 
   border-right-color: #D3D3D3;
 }
 
-#ishmgzesiq .gt_sourcenote {
+#csxjjtvtsg .gt_sourcenote {
   font-size: 90%;
   padding-top: 4px;
   padding-bottom: 4px;
@@ -655,72 +655,72 @@ Do sites differ in objectively measured personal light exposure? If so, does an 
   padding-right: 5px;
 }
 
-#ishmgzesiq .gt_left {
+#csxjjtvtsg .gt_left {
   text-align: left;
 }
 
-#ishmgzesiq .gt_center {
+#csxjjtvtsg .gt_center {
   text-align: center;
 }
 
-#ishmgzesiq .gt_right {
+#csxjjtvtsg .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#ishmgzesiq .gt_font_normal {
+#csxjjtvtsg .gt_font_normal {
   font-weight: normal;
 }
 
-#ishmgzesiq .gt_font_bold {
+#csxjjtvtsg .gt_font_bold {
   font-weight: bold;
 }
 
-#ishmgzesiq .gt_font_italic {
+#csxjjtvtsg .gt_font_italic {
   font-style: italic;
 }
 
-#ishmgzesiq .gt_super {
+#csxjjtvtsg .gt_super {
   font-size: 65%;
 }
 
-#ishmgzesiq .gt_footnote_marks {
+#csxjjtvtsg .gt_footnote_marks {
   font-size: 75%;
   vertical-align: 0.4em;
   position: initial;
 }
 
-#ishmgzesiq .gt_asterisk {
+#csxjjtvtsg .gt_asterisk {
   font-size: 100%;
   vertical-align: 0;
 }
 
-#ishmgzesiq .gt_indent_1 {
+#csxjjtvtsg .gt_indent_1 {
   text-indent: 5px;
 }
 
-#ishmgzesiq .gt_indent_2 {
+#csxjjtvtsg .gt_indent_2 {
   text-indent: 10px;
 }
 
-#ishmgzesiq .gt_indent_3 {
+#csxjjtvtsg .gt_indent_3 {
   text-indent: 15px;
 }
 
-#ishmgzesiq .gt_indent_4 {
+#csxjjtvtsg .gt_indent_4 {
   text-indent: 20px;
 }
 
-#ishmgzesiq .gt_indent_5 {
+#csxjjtvtsg .gt_indent_5 {
   text-indent: 25px;
 }
 
-#ishmgzesiq .katex-display {
+#csxjjtvtsg .katex-display {
   display: inline-flex !important;
   margin-bottom: 0.75em !important;
 }
 
-#ishmgzesiq div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
+#csxjjtvtsg div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
   height: 0px !important;
 }
 </style>
@@ -1023,7 +1023,7 @@ Do sites differ in objectively measured personal light exposure? If so, does an 
 </div>
 </div>
 <div class="cell">
-<details class="code-fold"><summary>Code cell - Formula creation</summary><div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">metrics</span> <span class="op">&lt;-</span></span>
+<details open="" class="code-fold"><summary>Code cell - Formula creation</summary><div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">metrics</span> <span class="op">&lt;-</span></span>
 <span>  <span class="va">metrics</span> <span class="op">|&gt;</span> </span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span><span class="op">(</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/across.html">across</a></span><span class="op">(</span><span class="fu"><a href="https://tidyselect.r-lib.org/reference/all_of.html">all_of</a></span><span class="op">(</span><span class="va">H1_formulas</span><span class="op">)</span>,</span>
 <span>                \<span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="fu"><a href="https://purrr.tidyverse.org/reference/map2.html">map2</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">response</span>, \<span class="op">(</span><span class="va">y</span>,<span class="va">z</span><span class="op">)</span> <span class="fu">make_formula</span><span class="op">(</span><span class="va">z</span>, <span class="va">y</span><span class="op">)</span><span class="op">)</span></span>
@@ -1032,7 +1032,7 @@ Do sites differ in objectively measured personal light exposure? If so, does an 
 </details>
 </div>
 <div class="cell">
-<details class="code-fold"><summary>Code cell - Offset zero-values in mixed gamma models</summary><div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span> <span class="va">metrics</span> <span class="op">&lt;-</span> </span>
+<details open="" class="code-fold"><summary>Code cell - Offset zero-values in mixed gamma models</summary><div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span> <span class="va">metrics</span> <span class="op">&lt;-</span> </span>
 <span>  <span class="va">metrics</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span><span class="op">(</span>data <span class="op">=</span> <span class="fu"><a href="https://purrr.tidyverse.org/reference/map2.html">map2</a></span><span class="op">(</span><span class="va">data</span>, <span class="va">engine</span>, \<span class="op">(</span><span class="va">data</span>, <span class="va">engine</span><span class="op">)</span> <span class="op">{</span></span>
 <span>    <span class="kw">if</span><span class="op">(</span><span class="va">engine</span> <span class="op">==</span> <span class="st">"glmer"</span><span class="op">)</span> <span class="op">{</span></span>
@@ -1044,7 +1044,7 @@ Do sites differ in objectively measured personal light exposure? If so, does an 
 </section><section id="analysis" class="level3"><h3 class="anchored" data-anchor-id="analysis">Analysis</h3>
 <section id="fit-models" class="level4"><h4 class="anchored" data-anchor-id="fit-models">Fit models</h4>
 <div class="cell">
-<details class="code-fold"><summary>Code cell - Model fit</summary><div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">metrics</span> <span class="op">&lt;-</span></span>
+<details open="" class="code-fold"><summary>Code cell - Model fit</summary><div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">metrics</span> <span class="op">&lt;-</span></span>
 <span>  <span class="va">metrics</span> <span class="op">|&gt;</span> </span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span><span class="op">(</span></span>
 <span>    <span class="fu"><a href="https://dplyr.tidyverse.org/reference/across.html">across</a></span><span class="op">(</span><span class="fu"><a href="https://tidyselect.r-lib.org/reference/all_of.html">all_of</a></span><span class="op">(</span><span class="va">H1_formulas</span><span class="op">)</span>,</span>
@@ -1055,7 +1055,7 @@ Do sites differ in objectively measured personal light exposure? If so, does an 
 </div>
 </section><section id="main-model-diagnostics" class="level4"><h4 class="anchored" data-anchor-id="main-model-diagnostics">Main model diagnostics</h4>
 <div class="cell">
-<details class="code-fold"><summary>Code cell - Create diagnostic plots for main model</summary><div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">metrics</span> <span class="op">&lt;-</span></span>
+<details open="" class="code-fold"><summary>Code cell - Create diagnostic plots for main model</summary><div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">metrics</span> <span class="op">&lt;-</span></span>
 <span>  <span class="va">metrics</span> <span class="op">|&gt;</span> </span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span><span class="op">(</span></span>
 <span>    <span class="fu"><a href="https://dplyr.tidyverse.org/reference/across.html">across</a></span><span class="op">(</span><span class="fu"><a href="https://tidyselect.r-lib.org/reference/all_of.html">all_of</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html">paste0</a></span><span class="op">(</span><span class="va">H1_formulas</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span>, <span class="st">"_model"</span><span class="op">)</span><span class="op">)</span>,</span>
@@ -1141,7 +1141,7 @@ Do sites differ in objectively measured personal light exposure? If so, does an 
 </div>
 </section></section><section id="model-comparisons" class="level3"><h3 class="anchored" data-anchor-id="model-comparisons">Model comparisons</h3>
 <div class="cell">
-<details class="code-fold"><summary>Code cell - Model comparisons</summary><div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">metrics</span> <span class="op">&lt;-</span> </span>
+<details open="" class="code-fold"><summary>Code cell - Model comparisons</summary><div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">metrics</span> <span class="op">&lt;-</span> </span>
 <span>  <span class="va">metrics</span> <span class="op">|&gt;</span> </span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span><span class="op">(</span></span>
 <span>    H1_1_comp <span class="op">=</span> <span class="fu"><a href="https://purrr.tidyverse.org/reference/map2.html">map2</a></span><span class="op">(</span><span class="va">H1_0_model</span>, <span class="va">H1_1_model</span>, <span class="va">model_anova</span><span class="op">)</span>,</span>
@@ -1187,7 +1187,7 @@ Do sites differ in objectively measured personal light exposure? If so, does an 
 </div>
 </section><section id="r2" class="level3"><h3 class="anchored" data-anchor-id="r2">R^2</h3>
 <div class="cell">
-<details class="code-fold"><summary>Code cell - calculate R^2</summary><div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">R2_table</span> <span class="op">&lt;-</span> </span>
+<details open="" class="code-fold"><summary>Code cell - calculate R^2</summary><div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">R2_table</span> <span class="op">&lt;-</span> </span>
 <span>  <span class="va">metrics</span> <span class="op">|&gt;</span> </span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html">filter_out</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html">is.na</a></span><span class="op">(</span><span class="va">response</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span><span class="op">(</span></span>
@@ -1205,7 +1205,7 @@ Do sites differ in objectively measured personal light exposure? If so, does an 
 </details>
 </div>
 <div class="cell">
-<details class="code-fold"><summary>Code cell - choose relevant R^2</summary><div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">R2_table</span> <span class="op">&lt;-</span> </span>
+<details open="" class="code-fold"><summary>Code cell - choose relevant R^2</summary><div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">R2_table</span> <span class="op">&lt;-</span> </span>
 <span>  <span class="va">R2_table</span> <span class="op">|&gt;</span> </span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/rowwise.html">rowwise</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span><span class="op">(</span></span>
@@ -1230,7 +1230,7 @@ Do sites differ in objectively measured personal light exposure? If so, does an 
 </div>
 </section><section id="results" class="level3"><h3 class="anchored" data-anchor-id="results">Results</h3>
 <div class="cell" data-tab-name="Hypothesis 1 results">
-<details class="code-fold"><summary>Code cell - Table H1</summary><div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">H1_tab</span> <span class="op">&lt;-</span> <span class="fu">H1_table</span><span class="op">(</span><span class="va">metrics</span>, <span class="va">H1_fdr_n</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://gt.rstudio.com/reference/cols_width.html">cols_width</a></span><span class="op">(</span><span class="va">Plot</span> <span class="op">~</span> <span class="fu"><a href="https://gt.rstudio.com/reference/px.html">px</a></span><span class="op">(</span><span class="fl">200</span><span class="op">)</span><span class="op">)</span></span>
+<details open="" class="code-fold"><summary>Code cell - Table H1</summary><div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">H1_tab</span> <span class="op">&lt;-</span> <span class="fu">H1_table</span><span class="op">(</span><span class="va">metrics</span>, <span class="va">H1_fdr_n</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://gt.rstudio.com/reference/cols_width.html">cols_width</a></span><span class="op">(</span><span class="va">Plot</span> <span class="op">~</span> <span class="fu"><a href="https://gt.rstudio.com/reference/px.html">px</a></span><span class="op">(</span><span class="fl">200</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">H1_tab</span></span>
 <span><span class="fu"><a href="https://gt.rstudio.com/reference/gtsave.html">gtsave</a></span><span class="op">(</span><span class="va">H1_tab</span>, <span class="st">"tables/H1.png"</span>, vwidth <span class="op">=</span> <span class="fl">1700</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/save.html">save</a></span><span class="op">(</span><span class="va">metrics</span>, file <span class="op">=</span> <span class="st">"data/H1_results.RData"</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -1239,23 +1239,23 @@ Do sites differ in objectively measured personal light exposure? If so, does an 
 Table&nbsp;1
 </figcaption><div aria-describedby="tbl-H1-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <div class="cell-output-display">
-<div id="pjeiuzmbsw" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>#pjeiuzmbsw table {
+<div id="noqvutejnf" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#noqvutejnf table {
   font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-#pjeiuzmbsw thead, #pjeiuzmbsw tbody, #pjeiuzmbsw tfoot, #pjeiuzmbsw tr, #pjeiuzmbsw td, #pjeiuzmbsw th {
+#noqvutejnf thead, #noqvutejnf tbody, #noqvutejnf tfoot, #noqvutejnf tr, #noqvutejnf td, #noqvutejnf th {
   border-style: none;
 }
 
-#pjeiuzmbsw p {
+#noqvutejnf p {
   margin: 0;
   padding: 0;
 }
 
-#pjeiuzmbsw .gt_table {
+#noqvutejnf .gt_table {
   display: table;
   border-collapse: collapse;
   line-height: normal;
@@ -1281,12 +1281,12 @@ Table&nbsp;1
   border-left-color: #D3D3D3;
 }
 
-#pjeiuzmbsw .gt_caption {
+#noqvutejnf .gt_caption {
   padding-top: 4px;
   padding-bottom: 4px;
 }
 
-#pjeiuzmbsw .gt_title {
+#noqvutejnf .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -1298,7 +1298,7 @@ Table&nbsp;1
   border-bottom-width: 0;
 }
 
-#pjeiuzmbsw .gt_subtitle {
+#noqvutejnf .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -1310,7 +1310,7 @@ Table&nbsp;1
   border-top-width: 0;
 }
 
-#pjeiuzmbsw .gt_heading {
+#noqvutejnf .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -1322,13 +1322,13 @@ Table&nbsp;1
   border-right-color: #D3D3D3;
 }
 
-#pjeiuzmbsw .gt_bottom_border {
+#noqvutejnf .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#pjeiuzmbsw .gt_col_headings {
+#noqvutejnf .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -1343,7 +1343,7 @@ Table&nbsp;1
   border-right-color: #D3D3D3;
 }
 
-#pjeiuzmbsw .gt_col_heading {
+#noqvutejnf .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1363,7 +1363,7 @@ Table&nbsp;1
   overflow-x: hidden;
 }
 
-#pjeiuzmbsw .gt_column_spanner_outer {
+#noqvutejnf .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1375,15 +1375,15 @@ Table&nbsp;1
   padding-right: 4px;
 }
 
-#pjeiuzmbsw .gt_column_spanner_outer:first-child {
+#noqvutejnf .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#pjeiuzmbsw .gt_column_spanner_outer:last-child {
+#noqvutejnf .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#pjeiuzmbsw .gt_column_spanner {
+#noqvutejnf .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -1395,11 +1395,11 @@ Table&nbsp;1
   width: 100%;
 }
 
-#pjeiuzmbsw .gt_spanner_row {
+#noqvutejnf .gt_spanner_row {
   border-bottom-style: hidden;
 }
 
-#pjeiuzmbsw .gt_group_heading {
+#noqvutejnf .gt_group_heading {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1425,7 +1425,7 @@ Table&nbsp;1
   text-align: left;
 }
 
-#pjeiuzmbsw .gt_empty_group_heading {
+#noqvutejnf .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -1440,15 +1440,15 @@ Table&nbsp;1
   vertical-align: middle;
 }
 
-#pjeiuzmbsw .gt_from_md > :first-child {
+#noqvutejnf .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#pjeiuzmbsw .gt_from_md > :last-child {
+#noqvutejnf .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#pjeiuzmbsw .gt_row {
+#noqvutejnf .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1467,7 +1467,7 @@ Table&nbsp;1
   overflow-x: hidden;
 }
 
-#pjeiuzmbsw .gt_stub {
+#noqvutejnf .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1480,7 +1480,7 @@ Table&nbsp;1
   padding-right: 5px;
 }
 
-#pjeiuzmbsw .gt_stub_row_group {
+#noqvutejnf .gt_stub_row_group {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1494,15 +1494,15 @@ Table&nbsp;1
   vertical-align: top;
 }
 
-#pjeiuzmbsw .gt_row_group_first td {
+#noqvutejnf .gt_row_group_first td {
   border-top-width: 2px;
 }
 
-#pjeiuzmbsw .gt_row_group_first th {
+#noqvutejnf .gt_row_group_first th {
   border-top-width: 2px;
 }
 
-#pjeiuzmbsw .gt_summary_row {
+#noqvutejnf .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1512,16 +1512,16 @@ Table&nbsp;1
   padding-right: 5px;
 }
 
-#pjeiuzmbsw .gt_first_summary_row {
+#noqvutejnf .gt_first_summary_row {
   border-top-style: solid;
   border-top-color: #D3D3D3;
 }
 
-#pjeiuzmbsw .gt_first_summary_row.thick {
+#noqvutejnf .gt_first_summary_row.thick {
   border-top-width: 2px;
 }
 
-#pjeiuzmbsw .gt_last_summary_row {
+#noqvutejnf .gt_last_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1531,7 +1531,7 @@ Table&nbsp;1
   border-bottom-color: #D3D3D3;
 }
 
-#pjeiuzmbsw .gt_grand_summary_row {
+#noqvutejnf .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1541,7 +1541,7 @@ Table&nbsp;1
   padding-right: 5px;
 }
 
-#pjeiuzmbsw .gt_first_grand_summary_row {
+#noqvutejnf .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1551,7 +1551,7 @@ Table&nbsp;1
   border-top-color: #D3D3D3;
 }
 
-#pjeiuzmbsw .gt_last_grand_summary_row_top {
+#noqvutejnf .gt_last_grand_summary_row_top {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1561,11 +1561,11 @@ Table&nbsp;1
   border-bottom-color: #D3D3D3;
 }
 
-#pjeiuzmbsw .gt_striped {
+#noqvutejnf .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#pjeiuzmbsw .gt_table_body {
+#noqvutejnf .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -1574,7 +1574,7 @@ Table&nbsp;1
   border-bottom-color: #D3D3D3;
 }
 
-#pjeiuzmbsw .gt_footnotes {
+#noqvutejnf .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1588,7 +1588,7 @@ Table&nbsp;1
   border-right-color: #D3D3D3;
 }
 
-#pjeiuzmbsw .gt_footnote {
+#noqvutejnf .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding-top: 4px;
@@ -1597,7 +1597,7 @@ Table&nbsp;1
   padding-right: 5px;
 }
 
-#pjeiuzmbsw .gt_sourcenotes {
+#noqvutejnf .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1611,7 +1611,7 @@ Table&nbsp;1
   border-right-color: #D3D3D3;
 }
 
-#pjeiuzmbsw .gt_sourcenote {
+#noqvutejnf .gt_sourcenote {
   font-size: 90%;
   padding-top: 4px;
   padding-bottom: 4px;
@@ -1619,72 +1619,72 @@ Table&nbsp;1
   padding-right: 5px;
 }
 
-#pjeiuzmbsw .gt_left {
+#noqvutejnf .gt_left {
   text-align: left;
 }
 
-#pjeiuzmbsw .gt_center {
+#noqvutejnf .gt_center {
   text-align: center;
 }
 
-#pjeiuzmbsw .gt_right {
+#noqvutejnf .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#pjeiuzmbsw .gt_font_normal {
+#noqvutejnf .gt_font_normal {
   font-weight: normal;
 }
 
-#pjeiuzmbsw .gt_font_bold {
+#noqvutejnf .gt_font_bold {
   font-weight: bold;
 }
 
-#pjeiuzmbsw .gt_font_italic {
+#noqvutejnf .gt_font_italic {
   font-style: italic;
 }
 
-#pjeiuzmbsw .gt_super {
+#noqvutejnf .gt_super {
   font-size: 65%;
 }
 
-#pjeiuzmbsw .gt_footnote_marks {
+#noqvutejnf .gt_footnote_marks {
   font-size: 75%;
   vertical-align: 0.4em;
   position: initial;
 }
 
-#pjeiuzmbsw .gt_asterisk {
+#noqvutejnf .gt_asterisk {
   font-size: 100%;
   vertical-align: 0;
 }
 
-#pjeiuzmbsw .gt_indent_1 {
+#noqvutejnf .gt_indent_1 {
   text-indent: 5px;
 }
 
-#pjeiuzmbsw .gt_indent_2 {
+#noqvutejnf .gt_indent_2 {
   text-indent: 10px;
 }
 
-#pjeiuzmbsw .gt_indent_3 {
+#noqvutejnf .gt_indent_3 {
   text-indent: 15px;
 }
 
-#pjeiuzmbsw .gt_indent_4 {
+#noqvutejnf .gt_indent_4 {
   text-indent: 20px;
 }
 
-#pjeiuzmbsw .gt_indent_5 {
+#noqvutejnf .gt_indent_5 {
   text-indent: 25px;
 }
 
-#pjeiuzmbsw .katex-display {
+#noqvutejnf .katex-display {
   display: inline-flex !important;
   margin-bottom: 0.75em !important;
 }
 
-#pjeiuzmbsw div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
+#noqvutejnf div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
   height: 0px !important;
 }
 </style>
@@ -2212,7 +2212,7 @@ Comparative models
 <li>In most cases, <em>intraindividual</em> differences (<code>SD Residual</code>) outweigh <em>interindividual</em> differences (<code>SD Participant</code>). A notable exception is the <code>Darkest 10h mean</code>, where both are similar (<code>SD Participant</code> ±63% vs.&nbsp;<code>SD Residual</code> ±60%)</li>
 </ul></section></section><section id="r2-1" class="level3"><h3 class="anchored" data-anchor-id="r2-1">R2</h3>
 <div class="cell">
-<details class="code-fold"><summary>Code cell - R^2 table</summary><div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">R2_tbl</span> <span class="op">&lt;-</span> </span>
+<details open="" class="code-fold"><summary>Code cell - R^2 table</summary><div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">R2_tbl</span> <span class="op">&lt;-</span> </span>
 <span><span class="va">R2_table</span> <span class="op">|&gt;</span> </span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span><span class="op">(</span>metric_type <span class="op">=</span> <span class="fu"><a href="https://stringr.tidyverse.org/reference/case.html">str_to_title</a></span><span class="op">(</span><span class="va">metric_type</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/arrange.html">arrange</a></span><span class="op">(</span><span class="va">metric_type</span>, <span class="va">name</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
@@ -2268,25 +2268,25 @@ Comparative models
 </details>
 </div>
 <div class="cell">
-<details class="code-fold"><summary>Code</summary><div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">R2_tbl</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<details open="" class="code-fold"><summary>Code</summary><div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">R2_tbl</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details><div class="cell-output-display">
-<div id="vzsfzqbxmv" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>#vzsfzqbxmv table {
+<div id="jgdkjjpwoi" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#jgdkjjpwoi table {
   font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-#vzsfzqbxmv thead, #vzsfzqbxmv tbody, #vzsfzqbxmv tfoot, #vzsfzqbxmv tr, #vzsfzqbxmv td, #vzsfzqbxmv th {
+#jgdkjjpwoi thead, #jgdkjjpwoi tbody, #jgdkjjpwoi tfoot, #jgdkjjpwoi tr, #jgdkjjpwoi td, #jgdkjjpwoi th {
   border-style: none;
 }
 
-#vzsfzqbxmv p {
+#jgdkjjpwoi p {
   margin: 0;
   padding: 0;
 }
 
-#vzsfzqbxmv .gt_table {
+#jgdkjjpwoi .gt_table {
   display: table;
   border-collapse: collapse;
   line-height: normal;
@@ -2312,12 +2312,12 @@ Comparative models
   border-left-color: #D3D3D3;
 }
 
-#vzsfzqbxmv .gt_caption {
+#jgdkjjpwoi .gt_caption {
   padding-top: 4px;
   padding-bottom: 4px;
 }
 
-#vzsfzqbxmv .gt_title {
+#jgdkjjpwoi .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -2329,7 +2329,7 @@ Comparative models
   border-bottom-width: 0;
 }
 
-#vzsfzqbxmv .gt_subtitle {
+#jgdkjjpwoi .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -2341,7 +2341,7 @@ Comparative models
   border-top-width: 0;
 }
 
-#vzsfzqbxmv .gt_heading {
+#jgdkjjpwoi .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -2353,13 +2353,13 @@ Comparative models
   border-right-color: #D3D3D3;
 }
 
-#vzsfzqbxmv .gt_bottom_border {
+#jgdkjjpwoi .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#vzsfzqbxmv .gt_col_headings {
+#jgdkjjpwoi .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -2374,7 +2374,7 @@ Comparative models
   border-right-color: #D3D3D3;
 }
 
-#vzsfzqbxmv .gt_col_heading {
+#jgdkjjpwoi .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -2394,7 +2394,7 @@ Comparative models
   overflow-x: hidden;
 }
 
-#vzsfzqbxmv .gt_column_spanner_outer {
+#jgdkjjpwoi .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -2406,15 +2406,15 @@ Comparative models
   padding-right: 4px;
 }
 
-#vzsfzqbxmv .gt_column_spanner_outer:first-child {
+#jgdkjjpwoi .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#vzsfzqbxmv .gt_column_spanner_outer:last-child {
+#jgdkjjpwoi .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#vzsfzqbxmv .gt_column_spanner {
+#jgdkjjpwoi .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -2426,11 +2426,11 @@ Comparative models
   width: 100%;
 }
 
-#vzsfzqbxmv .gt_spanner_row {
+#jgdkjjpwoi .gt_spanner_row {
   border-bottom-style: hidden;
 }
 
-#vzsfzqbxmv .gt_group_heading {
+#jgdkjjpwoi .gt_group_heading {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -2456,7 +2456,7 @@ Comparative models
   text-align: left;
 }
 
-#vzsfzqbxmv .gt_empty_group_heading {
+#jgdkjjpwoi .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -2471,15 +2471,15 @@ Comparative models
   vertical-align: middle;
 }
 
-#vzsfzqbxmv .gt_from_md > :first-child {
+#jgdkjjpwoi .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#vzsfzqbxmv .gt_from_md > :last-child {
+#jgdkjjpwoi .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#vzsfzqbxmv .gt_row {
+#jgdkjjpwoi .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -2498,7 +2498,7 @@ Comparative models
   overflow-x: hidden;
 }
 
-#vzsfzqbxmv .gt_stub {
+#jgdkjjpwoi .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -2511,7 +2511,7 @@ Comparative models
   padding-right: 5px;
 }
 
-#vzsfzqbxmv .gt_stub_row_group {
+#jgdkjjpwoi .gt_stub_row_group {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -2525,15 +2525,15 @@ Comparative models
   vertical-align: top;
 }
 
-#vzsfzqbxmv .gt_row_group_first td {
+#jgdkjjpwoi .gt_row_group_first td {
   border-top-width: 2px;
 }
 
-#vzsfzqbxmv .gt_row_group_first th {
+#jgdkjjpwoi .gt_row_group_first th {
   border-top-width: 2px;
 }
 
-#vzsfzqbxmv .gt_summary_row {
+#jgdkjjpwoi .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -2543,16 +2543,16 @@ Comparative models
   padding-right: 5px;
 }
 
-#vzsfzqbxmv .gt_first_summary_row {
+#jgdkjjpwoi .gt_first_summary_row {
   border-top-style: solid;
   border-top-color: #D3D3D3;
 }
 
-#vzsfzqbxmv .gt_first_summary_row.thick {
+#jgdkjjpwoi .gt_first_summary_row.thick {
   border-top-width: 2px;
 }
 
-#vzsfzqbxmv .gt_last_summary_row {
+#jgdkjjpwoi .gt_last_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -2562,7 +2562,7 @@ Comparative models
   border-bottom-color: #D3D3D3;
 }
 
-#vzsfzqbxmv .gt_grand_summary_row {
+#jgdkjjpwoi .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -2572,7 +2572,7 @@ Comparative models
   padding-right: 5px;
 }
 
-#vzsfzqbxmv .gt_first_grand_summary_row {
+#jgdkjjpwoi .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -2582,7 +2582,7 @@ Comparative models
   border-top-color: #D3D3D3;
 }
 
-#vzsfzqbxmv .gt_last_grand_summary_row_top {
+#jgdkjjpwoi .gt_last_grand_summary_row_top {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -2592,11 +2592,11 @@ Comparative models
   border-bottom-color: #D3D3D3;
 }
 
-#vzsfzqbxmv .gt_striped {
+#jgdkjjpwoi .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#vzsfzqbxmv .gt_table_body {
+#jgdkjjpwoi .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -2605,7 +2605,7 @@ Comparative models
   border-bottom-color: #D3D3D3;
 }
 
-#vzsfzqbxmv .gt_footnotes {
+#jgdkjjpwoi .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -2619,7 +2619,7 @@ Comparative models
   border-right-color: #D3D3D3;
 }
 
-#vzsfzqbxmv .gt_footnote {
+#jgdkjjpwoi .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding-top: 4px;
@@ -2628,7 +2628,7 @@ Comparative models
   padding-right: 5px;
 }
 
-#vzsfzqbxmv .gt_sourcenotes {
+#jgdkjjpwoi .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -2642,7 +2642,7 @@ Comparative models
   border-right-color: #D3D3D3;
 }
 
-#vzsfzqbxmv .gt_sourcenote {
+#jgdkjjpwoi .gt_sourcenote {
   font-size: 90%;
   padding-top: 4px;
   padding-bottom: 4px;
@@ -2650,72 +2650,72 @@ Comparative models
   padding-right: 5px;
 }
 
-#vzsfzqbxmv .gt_left {
+#jgdkjjpwoi .gt_left {
   text-align: left;
 }
 
-#vzsfzqbxmv .gt_center {
+#jgdkjjpwoi .gt_center {
   text-align: center;
 }
 
-#vzsfzqbxmv .gt_right {
+#jgdkjjpwoi .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#vzsfzqbxmv .gt_font_normal {
+#jgdkjjpwoi .gt_font_normal {
   font-weight: normal;
 }
 
-#vzsfzqbxmv .gt_font_bold {
+#jgdkjjpwoi .gt_font_bold {
   font-weight: bold;
 }
 
-#vzsfzqbxmv .gt_font_italic {
+#jgdkjjpwoi .gt_font_italic {
   font-style: italic;
 }
 
-#vzsfzqbxmv .gt_super {
+#jgdkjjpwoi .gt_super {
   font-size: 65%;
 }
 
-#vzsfzqbxmv .gt_footnote_marks {
+#jgdkjjpwoi .gt_footnote_marks {
   font-size: 75%;
   vertical-align: 0.4em;
   position: initial;
 }
 
-#vzsfzqbxmv .gt_asterisk {
+#jgdkjjpwoi .gt_asterisk {
   font-size: 100%;
   vertical-align: 0;
 }
 
-#vzsfzqbxmv .gt_indent_1 {
+#jgdkjjpwoi .gt_indent_1 {
   text-indent: 5px;
 }
 
-#vzsfzqbxmv .gt_indent_2 {
+#jgdkjjpwoi .gt_indent_2 {
   text-indent: 10px;
 }
 
-#vzsfzqbxmv .gt_indent_3 {
+#jgdkjjpwoi .gt_indent_3 {
   text-indent: 15px;
 }
 
-#vzsfzqbxmv .gt_indent_4 {
+#jgdkjjpwoi .gt_indent_4 {
   text-indent: 20px;
 }
 
-#vzsfzqbxmv .gt_indent_5 {
+#jgdkjjpwoi .gt_indent_5 {
   text-indent: 25px;
 }
 
-#vzsfzqbxmv .katex-display {
+#jgdkjjpwoi .katex-display {
   display: inline-flex !important;
   margin-bottom: 0.75em !important;
 }
 
-#vzsfzqbxmv div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
+#jgdkjjpwoi div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
   height: 0px !important;
 }
 </style>
@@ -2947,9 +2947,9 @@ Unique contribution
 </table>
 </div>
 </div>
-<details class="code-fold"><summary>Code</summary><div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://gt.rstudio.com/reference/gtsave.html">gtsave</a></span><span class="op">(</span><span class="va">R2_tbl</span>, <span class="st">"tables/H1_R2_tbl.png"</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<details open="" class="code-fold"><summary>Code</summary><div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://gt.rstudio.com/reference/gtsave.html">gtsave</a></span><span class="op">(</span><span class="va">R2_tbl</span>, <span class="st">"tables/H1_R2_tbl.png"</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details><div class="cell-output cell-output-stderr">
-<pre><code>file:////var/folders/9p/326_k3kx43qbn_cyl1rqfhb00000gn/T//Rtmp2mwVYM/fileb3c62332ba38.html screenshot completed</code></pre>
+<pre><code>file:////var/folders/9p/326_k3kx43qbn_cyl1rqfhb00000gn/T//Rtmp45DHTl/file11be94d033050.html screenshot completed</code></pre>
 </div>
 </div>
 <ul>
@@ -2992,7 +2992,7 @@ Unique contribution
 <div class="tab-content">
 <div id="tabset-2-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-2-1-tab">
 <p>Model summary</p>
-<div id="wqqcbwnlwk" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<div id="bonuaexxif" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
 <table class="gt_table" data-quarto-disable-processing="false" data-quarto-bootstrap="false" style="-webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji'; display: table; border-collapse: collapse; line-height: normal; margin-left: auto; margin-right: auto; color: #333333; font-size: 16px; font-weight: normal; font-style: normal; background-color: #FFFFFF; width: auto; border-top-style: solid; border-top-width: 2px; border-top-color: #A8A8A8; border-right-style: none; border-right-width: 2px; border-right-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #A8A8A8; border-left-style: none; border-left-width: 2px; border-left-color: #D3D3D3;" bgcolor="#FFFFFF">
 <thead style="border-style: none;"><tr class="gt_col_headings" style="border-style: none; border-top-style: solid; border-top-width: 2px; border-top-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #D3D3D3; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3;">
 <th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="1" colspan="1" scope="col" id="label" style="border-style: none; color: #333333; background-color: #FFFFFF; font-size: 100%; font-weight: normal; text-transform: inherit; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3; vertical-align: bottom; padding-top: 5px; padding-bottom: 6px; padding-left: 5px; padding-right: 5px; overflow-x: hidden; text-align: left;" bgcolor="#FFFFFF" valign="bottom" align="left">
@@ -3030,7 +3030,7 @@ photoperiod
 </table>
 </div>
 <p>Model comparison</p>
-<div id="vfhcvxgghq" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<div id="xjmfpqwuch" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
 <table class="gt_table" data-quarto-disable-processing="false" data-quarto-bootstrap="false" style="-webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji'; display: table; border-collapse: collapse; line-height: normal; margin-left: auto; margin-right: auto; color: #333333; font-size: 16px; font-weight: normal; font-style: normal; background-color: #FFFFFF; width: auto; border-top-style: solid; border-top-width: 2px; border-top-color: #A8A8A8; border-right-style: none; border-right-width: 2px; border-right-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #A8A8A8; border-left-style: none; border-left-width: 2px; border-left-color: #D3D3D3;" bgcolor="#FFFFFF">
 <thead style="border-style: none;"><tr class="gt_col_headings" style="border-style: none; border-top-style: solid; border-top-width: 2px; border-top-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #D3D3D3; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3;">
 <th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="1" colspan="1" scope="col" id="label" style="border-style: none; color: #333333; background-color: #FFFFFF; font-size: 100%; font-weight: normal; text-transform: inherit; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3; vertical-align: bottom; padding-top: 5px; padding-bottom: 6px; padding-left: 5px; padding-right: 5px; overflow-x: hidden; text-align: left;" bgcolor="#FFFFFF" valign="bottom" align="left">
@@ -3063,7 +3063,7 @@ Model 2: qlogis(metric) ~ site + photoperiod
 </div>
 <div id="tabset-2-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-2-2-tab">
 <p>Model summary</p>
-<div id="tpwuzpnmfu" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<div id="yjajwgcoxp" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
 <table class="gt_table" data-quarto-disable-processing="false" data-quarto-bootstrap="false" style="-webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji'; display: table; border-collapse: collapse; line-height: normal; margin-left: auto; margin-right: auto; color: #333333; font-size: 16px; font-weight: normal; font-style: normal; background-color: #FFFFFF; width: auto; border-top-style: solid; border-top-width: 2px; border-top-color: #A8A8A8; border-right-style: none; border-right-width: 2px; border-right-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #A8A8A8; border-left-style: none; border-left-width: 2px; border-left-color: #D3D3D3;" bgcolor="#FFFFFF">
 <thead style="border-style: none;"><tr class="gt_col_headings" style="border-style: none; border-top-style: solid; border-top-width: 2px; border-top-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #D3D3D3; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3;">
 <th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="1" colspan="1" scope="col" id="label" style="border-style: none; color: #333333; background-color: #FFFFFF; font-size: 100%; font-weight: normal; text-transform: inherit; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3; vertical-align: bottom; padding-top: 5px; padding-bottom: 6px; padding-left: 5px; padding-right: 5px; overflow-x: hidden; text-align: left;" bgcolor="#FFFFFF" valign="bottom" align="left">
@@ -3101,7 +3101,7 @@ photoperiod
 </table>
 </div>
 <p>Model comparison</p>
-<div id="hrvctsnuvj" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<div id="qcmmihrdna" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
 <table class="gt_table" data-quarto-disable-processing="false" data-quarto-bootstrap="false" style="-webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji'; display: table; border-collapse: collapse; line-height: normal; margin-left: auto; margin-right: auto; color: #333333; font-size: 16px; font-weight: normal; font-style: normal; background-color: #FFFFFF; width: auto; border-top-style: solid; border-top-width: 2px; border-top-color: #A8A8A8; border-right-style: none; border-right-width: 2px; border-right-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #A8A8A8; border-left-style: none; border-left-width: 2px; border-left-color: #D3D3D3;" bgcolor="#FFFFFF">
 <thead style="border-style: none;"><tr class="gt_col_headings" style="border-style: none; border-top-style: solid; border-top-width: 2px; border-top-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #D3D3D3; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3;">
 <th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="1" colspan="1" scope="col" id="label" style="border-style: none; color: #333333; background-color: #FFFFFF; font-size: 100%; font-weight: normal; text-transform: inherit; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3; vertical-align: bottom; padding-top: 5px; padding-bottom: 6px; padding-left: 5px; padding-right: 5px; overflow-x: hidden; text-align: left;" bgcolor="#FFFFFF" valign="bottom" align="left">
@@ -3134,7 +3134,7 @@ Model 2: metric ~ site + photoperiod
 </div>
 <div id="tabset-2-3" class="tab-pane" role="tabpanel" aria-labelledby="tabset-2-3-tab">
 <p>Model summary</p>
-<div id="bfzfhmfgfz" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<div id="qexwipqkxh" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
 <table class="gt_table" data-quarto-disable-processing="false" data-quarto-bootstrap="false" style="-webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji'; display: table; border-collapse: collapse; line-height: normal; margin-left: auto; margin-right: auto; color: #333333; font-size: 16px; font-weight: normal; font-style: normal; background-color: #FFFFFF; width: auto; border-top-style: solid; border-top-width: 2px; border-top-color: #A8A8A8; border-right-style: none; border-right-width: 2px; border-right-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #A8A8A8; border-left-style: none; border-left-width: 2px; border-left-color: #D3D3D3;" bgcolor="#FFFFFF">
 <thead style="border-style: none;"><tr class="gt_col_headings" style="border-style: none; border-top-style: solid; border-top-width: 2px; border-top-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #D3D3D3; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3;">
 <th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="1" colspan="1" scope="col" id="label" style="border-style: none; color: #333333; background-color: #FFFFFF; font-size: 100%; font-weight: normal; text-transform: inherit; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3; vertical-align: bottom; padding-top: 5px; padding-bottom: 6px; padding-left: 5px; padding-right: 5px; overflow-x: hidden; text-align: left;" bgcolor="#FFFFFF" valign="bottom" align="left">
@@ -3278,7 +3278,7 @@ photoperiod
 </table>
 </div>
 <p>Model comparison</p>
-<div id="hgybctrgaw" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<div id="irkzdkeokt" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
 <table class="gt_table" data-quarto-disable-processing="false" data-quarto-bootstrap="false" style="-webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji'; display: table; border-collapse: collapse; line-height: normal; margin-left: auto; margin-right: auto; color: #333333; font-size: 16px; font-weight: normal; font-style: normal; background-color: #FFFFFF; width: auto; border-top-style: solid; border-top-width: 2px; border-top-color: #A8A8A8; border-right-style: none; border-right-width: 2px; border-right-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #A8A8A8; border-left-style: none; border-left-width: 2px; border-left-color: #D3D3D3;" bgcolor="#FFFFFF">
 <thead style="border-style: none;"><tr class="gt_col_headings" style="border-style: none; border-top-style: solid; border-top-width: 2px; border-top-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #D3D3D3; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3;">
 <th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="1" colspan="1" scope="col" id="label" style="border-style: none; color: #333333; background-color: #FFFFFF; font-size: 100%; font-weight: normal; text-transform: inherit; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3; vertical-align: bottom; padding-top: 5px; padding-bottom: 6px; padding-left: 5px; padding-right: 5px; overflow-x: hidden; text-align: left;" bgcolor="#FFFFFF" valign="bottom" align="left">
@@ -3311,7 +3311,7 @@ model2: log_zero_inflated(metric) ~ site + photoperiod + (1 | site:Id)
 </div>
 <div id="tabset-2-4" class="tab-pane" role="tabpanel" aria-labelledby="tabset-2-4-tab">
 <p>Model summary</p>
-<div id="lgkahgzawg" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<div id="qlesklgcia" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
 <table class="gt_table" data-quarto-disable-processing="false" data-quarto-bootstrap="false" style="-webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji'; display: table; border-collapse: collapse; line-height: normal; margin-left: auto; margin-right: auto; color: #333333; font-size: 16px; font-weight: normal; font-style: normal; background-color: #FFFFFF; width: auto; border-top-style: solid; border-top-width: 2px; border-top-color: #A8A8A8; border-right-style: none; border-right-width: 2px; border-right-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #A8A8A8; border-left-style: none; border-left-width: 2px; border-left-color: #D3D3D3;" bgcolor="#FFFFFF">
 <thead style="border-style: none;"><tr class="gt_col_headings" style="border-style: none; border-top-style: solid; border-top-width: 2px; border-top-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #D3D3D3; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3;">
 <th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="1" colspan="1" scope="col" id="label" style="border-style: none; color: #333333; background-color: #FFFFFF; font-size: 100%; font-weight: normal; text-transform: inherit; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3; vertical-align: bottom; padding-top: 5px; padding-bottom: 6px; padding-left: 5px; padding-right: 5px; overflow-x: hidden; text-align: left;" bgcolor="#FFFFFF" valign="bottom" align="left">
@@ -3455,7 +3455,7 @@ photoperiod
 </table>
 </div>
 <p>Model comparison</p>
-<div id="frziepkpwl" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<div id="fvcnfnnzgs" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
 <table class="gt_table" data-quarto-disable-processing="false" data-quarto-bootstrap="false" style="-webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji'; display: table; border-collapse: collapse; line-height: normal; margin-left: auto; margin-right: auto; color: #333333; font-size: 16px; font-weight: normal; font-style: normal; background-color: #FFFFFF; width: auto; border-top-style: solid; border-top-width: 2px; border-top-color: #A8A8A8; border-right-style: none; border-right-width: 2px; border-right-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #A8A8A8; border-left-style: none; border-left-width: 2px; border-left-color: #D3D3D3;" bgcolor="#FFFFFF">
 <thead style="border-style: none;"><tr class="gt_col_headings" style="border-style: none; border-top-style: solid; border-top-width: 2px; border-top-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #D3D3D3; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3;">
 <th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="1" colspan="1" scope="col" id="label" style="border-style: none; color: #333333; background-color: #FFFFFF; font-size: 100%; font-weight: normal; text-transform: inherit; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3; vertical-align: bottom; padding-top: 5px; padding-bottom: 6px; padding-left: 5px; padding-right: 5px; overflow-x: hidden; text-align: left;" bgcolor="#FFFFFF" valign="bottom" align="left">
@@ -3488,7 +3488,7 @@ model2: log_zero_inflated(metric) ~ site + photoperiod + (1 | site:Id)
 </div>
 <div id="tabset-2-5" class="tab-pane" role="tabpanel" aria-labelledby="tabset-2-5-tab">
 <p>Model summary</p>
-<div id="bmgwucvliw" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<div id="pyskufterm" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
 <table class="gt_table" data-quarto-disable-processing="false" data-quarto-bootstrap="false" style="-webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji'; display: table; border-collapse: collapse; line-height: normal; margin-left: auto; margin-right: auto; color: #333333; font-size: 16px; font-weight: normal; font-style: normal; background-color: #FFFFFF; width: auto; border-top-style: solid; border-top-width: 2px; border-top-color: #A8A8A8; border-right-style: none; border-right-width: 2px; border-right-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #A8A8A8; border-left-style: none; border-left-width: 2px; border-left-color: #D3D3D3;" bgcolor="#FFFFFF">
 <thead style="border-style: none;"><tr class="gt_col_headings" style="border-style: none; border-top-style: solid; border-top-width: 2px; border-top-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #D3D3D3; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3;">
 <th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="1" colspan="1" scope="col" id="label" style="border-style: none; color: #333333; background-color: #FFFFFF; font-size: 100%; font-weight: normal; text-transform: inherit; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3; vertical-align: bottom; padding-top: 5px; padding-bottom: 6px; padding-left: 5px; padding-right: 5px; overflow-x: hidden; text-align: left;" bgcolor="#FFFFFF" valign="bottom" align="left">
@@ -3632,7 +3632,7 @@ photoperiod
 </table>
 </div>
 <p>Model comparison</p>
-<div id="vhpxccscsy" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<div id="naaysrmblf" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
 <table class="gt_table" data-quarto-disable-processing="false" data-quarto-bootstrap="false" style="-webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji'; display: table; border-collapse: collapse; line-height: normal; margin-left: auto; margin-right: auto; color: #333333; font-size: 16px; font-weight: normal; font-style: normal; background-color: #FFFFFF; width: auto; border-top-style: solid; border-top-width: 2px; border-top-color: #A8A8A8; border-right-style: none; border-right-width: 2px; border-right-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #A8A8A8; border-left-style: none; border-left-width: 2px; border-left-color: #D3D3D3;" bgcolor="#FFFFFF">
 <thead style="border-style: none;"><tr class="gt_col_headings" style="border-style: none; border-top-style: solid; border-top-width: 2px; border-top-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #D3D3D3; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3;">
 <th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="1" colspan="1" scope="col" id="label" style="border-style: none; color: #333333; background-color: #FFFFFF; font-size: 100%; font-weight: normal; text-transform: inherit; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3; vertical-align: bottom; padding-top: 5px; padding-bottom: 6px; padding-left: 5px; padding-right: 5px; overflow-x: hidden; text-align: left;" bgcolor="#FFFFFF" valign="bottom" align="left">
@@ -3665,7 +3665,7 @@ model2: metric ~ site + photoperiod + (1 | site:Id)
 </div>
 <div id="tabset-2-6" class="tab-pane" role="tabpanel" aria-labelledby="tabset-2-6-tab">
 <p>Model summary</p>
-<div id="xockgzcqws" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<div id="rrvappeukv" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
 <table class="gt_table" data-quarto-disable-processing="false" data-quarto-bootstrap="false" style="-webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji'; display: table; border-collapse: collapse; line-height: normal; margin-left: auto; margin-right: auto; color: #333333; font-size: 16px; font-weight: normal; font-style: normal; background-color: #FFFFFF; width: auto; border-top-style: solid; border-top-width: 2px; border-top-color: #A8A8A8; border-right-style: none; border-right-width: 2px; border-right-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #A8A8A8; border-left-style: none; border-left-width: 2px; border-left-color: #D3D3D3;" bgcolor="#FFFFFF">
 <thead style="border-style: none;"><tr class="gt_col_headings" style="border-style: none; border-top-style: solid; border-top-width: 2px; border-top-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #D3D3D3; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3;">
 <th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="1" colspan="1" scope="col" id="label" style="border-style: none; color: #333333; background-color: #FFFFFF; font-size: 100%; font-weight: normal; text-transform: inherit; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3; vertical-align: bottom; padding-top: 5px; padding-bottom: 6px; padding-left: 5px; padding-right: 5px; overflow-x: hidden; text-align: left;" bgcolor="#FFFFFF" valign="bottom" align="left">
@@ -3809,7 +3809,7 @@ photoperiod
 </table>
 </div>
 <p>Model comparison</p>
-<div id="tzemjgftfk" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<div id="olboyysgdp" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
 <table class="gt_table" data-quarto-disable-processing="false" data-quarto-bootstrap="false" style="-webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji'; display: table; border-collapse: collapse; line-height: normal; margin-left: auto; margin-right: auto; color: #333333; font-size: 16px; font-weight: normal; font-style: normal; background-color: #FFFFFF; width: auto; border-top-style: solid; border-top-width: 2px; border-top-color: #A8A8A8; border-right-style: none; border-right-width: 2px; border-right-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #A8A8A8; border-left-style: none; border-left-width: 2px; border-left-color: #D3D3D3;" bgcolor="#FFFFFF">
 <thead style="border-style: none;"><tr class="gt_col_headings" style="border-style: none; border-top-style: solid; border-top-width: 2px; border-top-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #D3D3D3; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3;">
 <th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="1" colspan="1" scope="col" id="label" style="border-style: none; color: #333333; background-color: #FFFFFF; font-size: 100%; font-weight: normal; text-transform: inherit; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3; vertical-align: bottom; padding-top: 5px; padding-bottom: 6px; padding-left: 5px; padding-right: 5px; overflow-x: hidden; text-align: left;" bgcolor="#FFFFFF" valign="bottom" align="left">
@@ -3842,7 +3842,7 @@ model2: log_zero_inflated(metric) ~ site + photoperiod + (1 | site:Id)
 </div>
 <div id="tabset-2-7" class="tab-pane" role="tabpanel" aria-labelledby="tabset-2-7-tab">
 <p>Model summary</p>
-<div id="kpeowckigh" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<div id="gtmytfulox" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
 <table class="gt_table" data-quarto-disable-processing="false" data-quarto-bootstrap="false" style="-webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji'; display: table; border-collapse: collapse; line-height: normal; margin-left: auto; margin-right: auto; color: #333333; font-size: 16px; font-weight: normal; font-style: normal; background-color: #FFFFFF; width: auto; border-top-style: solid; border-top-width: 2px; border-top-color: #A8A8A8; border-right-style: none; border-right-width: 2px; border-right-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #A8A8A8; border-left-style: none; border-left-width: 2px; border-left-color: #D3D3D3;" bgcolor="#FFFFFF">
 <thead style="border-style: none;"><tr class="gt_col_headings" style="border-style: none; border-top-style: solid; border-top-width: 2px; border-top-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #D3D3D3; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3;">
 <th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="1" colspan="1" scope="col" id="label" style="border-style: none; color: #333333; background-color: #FFFFFF; font-size: 100%; font-weight: normal; text-transform: inherit; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3; vertical-align: bottom; padding-top: 5px; padding-bottom: 6px; padding-left: 5px; padding-right: 5px; overflow-x: hidden; text-align: left;" bgcolor="#FFFFFF" valign="bottom" align="left">
@@ -3986,7 +3986,7 @@ photoperiod
 </table>
 </div>
 <p>Model comparison</p>
-<div id="gxemriuvfh" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<div id="bfyuccetsi" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
 <table class="gt_table" data-quarto-disable-processing="false" data-quarto-bootstrap="false" style="-webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji'; display: table; border-collapse: collapse; line-height: normal; margin-left: auto; margin-right: auto; color: #333333; font-size: 16px; font-weight: normal; font-style: normal; background-color: #FFFFFF; width: auto; border-top-style: solid; border-top-width: 2px; border-top-color: #A8A8A8; border-right-style: none; border-right-width: 2px; border-right-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #A8A8A8; border-left-style: none; border-left-width: 2px; border-left-color: #D3D3D3;" bgcolor="#FFFFFF">
 <thead style="border-style: none;"><tr class="gt_col_headings" style="border-style: none; border-top-style: solid; border-top-width: 2px; border-top-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #D3D3D3; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3;">
 <th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="1" colspan="1" scope="col" id="label" style="border-style: none; color: #333333; background-color: #FFFFFF; font-size: 100%; font-weight: normal; text-transform: inherit; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3; vertical-align: bottom; padding-top: 5px; padding-bottom: 6px; padding-left: 5px; padding-right: 5px; overflow-x: hidden; text-align: left;" bgcolor="#FFFFFF" valign="bottom" align="left">
@@ -4019,7 +4019,7 @@ model2: metric ~ site + photoperiod + (1 | site:Id)
 </div>
 <div id="tabset-2-8" class="tab-pane" role="tabpanel" aria-labelledby="tabset-2-8-tab">
 <p>Model summary</p>
-<div id="lbiinwjuyp" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<div id="nhetqqcwmd" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
 <table class="gt_table" data-quarto-disable-processing="false" data-quarto-bootstrap="false" style="-webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji'; display: table; border-collapse: collapse; line-height: normal; margin-left: auto; margin-right: auto; color: #333333; font-size: 16px; font-weight: normal; font-style: normal; background-color: #FFFFFF; width: auto; border-top-style: solid; border-top-width: 2px; border-top-color: #A8A8A8; border-right-style: none; border-right-width: 2px; border-right-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #A8A8A8; border-left-style: none; border-left-width: 2px; border-left-color: #D3D3D3;" bgcolor="#FFFFFF">
 <thead style="border-style: none;"><tr class="gt_col_headings" style="border-style: none; border-top-style: solid; border-top-width: 2px; border-top-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #D3D3D3; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3;">
 <th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="1" colspan="1" scope="col" id="label" style="border-style: none; color: #333333; background-color: #FFFFFF; font-size: 100%; font-weight: normal; text-transform: inherit; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3; vertical-align: bottom; padding-top: 5px; padding-bottom: 6px; padding-left: 5px; padding-right: 5px; overflow-x: hidden; text-align: left;" bgcolor="#FFFFFF" valign="bottom" align="left">
@@ -4057,7 +4057,7 @@ photoperiod
 </table>
 </div>
 <p>Model comparison</p>
-<div id="iaasfgtxxt" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<div id="gumwgvvmrd" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
 <table class="gt_table" data-quarto-disable-processing="false" data-quarto-bootstrap="false" style="-webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji'; display: table; border-collapse: collapse; line-height: normal; margin-left: auto; margin-right: auto; color: #333333; font-size: 16px; font-weight: normal; font-style: normal; background-color: #FFFFFF; width: auto; border-top-style: solid; border-top-width: 2px; border-top-color: #A8A8A8; border-right-style: none; border-right-width: 2px; border-right-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #A8A8A8; border-left-style: none; border-left-width: 2px; border-left-color: #D3D3D3;" bgcolor="#FFFFFF">
 <thead style="border-style: none;"><tr class="gt_col_headings" style="border-style: none; border-top-style: solid; border-top-width: 2px; border-top-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #D3D3D3; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3;">
 <th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="1" colspan="1" scope="col" id="label" style="border-style: none; color: #333333; background-color: #FFFFFF; font-size: 100%; font-weight: normal; text-transform: inherit; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3; vertical-align: bottom; padding-top: 5px; padding-bottom: 6px; padding-left: 5px; padding-right: 5px; overflow-x: hidden; text-align: left;" bgcolor="#FFFFFF" valign="bottom" align="left">
@@ -4090,7 +4090,7 @@ model2: metric ~ site + photoperiod + (1 | site:Id), zi=~0, disp=~1
 </div>
 <div id="tabset-2-9" class="tab-pane" role="tabpanel" aria-labelledby="tabset-2-9-tab">
 <p>Model summary</p>
-<div id="euhzerjyec" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<div id="aazvgmetoy" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
 <table class="gt_table" data-quarto-disable-processing="false" data-quarto-bootstrap="false" style="-webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji'; display: table; border-collapse: collapse; line-height: normal; margin-left: auto; margin-right: auto; color: #333333; font-size: 16px; font-weight: normal; font-style: normal; background-color: #FFFFFF; width: auto; border-top-style: solid; border-top-width: 2px; border-top-color: #A8A8A8; border-right-style: none; border-right-width: 2px; border-right-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #A8A8A8; border-left-style: none; border-left-width: 2px; border-left-color: #D3D3D3;" bgcolor="#FFFFFF">
 <thead style="border-style: none;"><tr class="gt_col_headings" style="border-style: none; border-top-style: solid; border-top-width: 2px; border-top-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #D3D3D3; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3;">
 <th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="1" colspan="1" scope="col" id="label" style="border-style: none; color: #333333; background-color: #FFFFFF; font-size: 100%; font-weight: normal; text-transform: inherit; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3; vertical-align: bottom; padding-top: 5px; padding-bottom: 6px; padding-left: 5px; padding-right: 5px; overflow-x: hidden; text-align: left;" bgcolor="#FFFFFF" valign="bottom" align="left">
@@ -4122,7 +4122,7 @@ photoperiod
 </table>
 </div>
 <p>Model comparison</p>
-<div id="qwwqbrlwpf" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<div id="ocrrmfjgbx" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
 <table class="gt_table" data-quarto-disable-processing="false" data-quarto-bootstrap="false" style="-webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji'; display: table; border-collapse: collapse; line-height: normal; margin-left: auto; margin-right: auto; color: #333333; font-size: 16px; font-weight: normal; font-style: normal; background-color: #FFFFFF; width: auto; border-top-style: solid; border-top-width: 2px; border-top-color: #A8A8A8; border-right-style: none; border-right-width: 2px; border-right-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #A8A8A8; border-left-style: none; border-left-width: 2px; border-left-color: #D3D3D3;" bgcolor="#FFFFFF">
 <thead style="border-style: none;"><tr class="gt_col_headings" style="border-style: none; border-top-style: solid; border-top-width: 2px; border-top-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #D3D3D3; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3;">
 <th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="1" colspan="1" scope="col" id="label" style="border-style: none; color: #333333; background-color: #FFFFFF; font-size: 100%; font-weight: normal; text-transform: inherit; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3; vertical-align: bottom; padding-top: 5px; padding-bottom: 6px; padding-left: 5px; padding-right: 5px; overflow-x: hidden; text-align: left;" bgcolor="#FFFFFF" valign="bottom" align="left">
@@ -4155,7 +4155,7 @@ model2: log_zero_inflated(metric) ~ site + photoperiod + (1 | site:Id)
 </div>
 <div id="tabset-2-10" class="tab-pane" role="tabpanel" aria-labelledby="tabset-2-10-tab">
 <p>Model summary</p>
-<div id="wlgondenlj" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<div id="vpyxlfvtjy" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
 <table class="gt_table" data-quarto-disable-processing="false" data-quarto-bootstrap="false" style="-webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji'; display: table; border-collapse: collapse; line-height: normal; margin-left: auto; margin-right: auto; color: #333333; font-size: 16px; font-weight: normal; font-style: normal; background-color: #FFFFFF; width: auto; border-top-style: solid; border-top-width: 2px; border-top-color: #A8A8A8; border-right-style: none; border-right-width: 2px; border-right-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #A8A8A8; border-left-style: none; border-left-width: 2px; border-left-color: #D3D3D3;" bgcolor="#FFFFFF">
 <thead style="border-style: none;"><tr class="gt_col_headings" style="border-style: none; border-top-style: solid; border-top-width: 2px; border-top-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #D3D3D3; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3;">
 <th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="1" colspan="1" scope="col" id="label" style="border-style: none; color: #333333; background-color: #FFFFFF; font-size: 100%; font-weight: normal; text-transform: inherit; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3; vertical-align: bottom; padding-top: 5px; padding-bottom: 6px; padding-left: 5px; padding-right: 5px; overflow-x: hidden; text-align: left;" bgcolor="#FFFFFF" valign="bottom" align="left">
@@ -4299,7 +4299,7 @@ photoperiod
 </table>
 </div>
 <p>Model comparison</p>
-<div id="mnfyieeknc" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<div id="usvraujgtq" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
 <table class="gt_table" data-quarto-disable-processing="false" data-quarto-bootstrap="false" style="-webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji'; display: table; border-collapse: collapse; line-height: normal; margin-left: auto; margin-right: auto; color: #333333; font-size: 16px; font-weight: normal; font-style: normal; background-color: #FFFFFF; width: auto; border-top-style: solid; border-top-width: 2px; border-top-color: #A8A8A8; border-right-style: none; border-right-width: 2px; border-right-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #A8A8A8; border-left-style: none; border-left-width: 2px; border-left-color: #D3D3D3;" bgcolor="#FFFFFF">
 <thead style="border-style: none;"><tr class="gt_col_headings" style="border-style: none; border-top-style: solid; border-top-width: 2px; border-top-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #D3D3D3; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3;">
 <th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="1" colspan="1" scope="col" id="label" style="border-style: none; color: #333333; background-color: #FFFFFF; font-size: 100%; font-weight: normal; text-transform: inherit; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3; vertical-align: bottom; padding-top: 5px; padding-bottom: 6px; padding-left: 5px; padding-right: 5px; overflow-x: hidden; text-align: left;" bgcolor="#FFFFFF" valign="bottom" align="left">
@@ -4332,7 +4332,7 @@ model2: metric ~ site + photoperiod + (1 | site:Id)
 </div>
 <div id="tabset-2-11" class="tab-pane" role="tabpanel" aria-labelledby="tabset-2-11-tab">
 <p>Model summary</p>
-<div id="bdldflydxz" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<div id="sflfcmtane" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
 <table class="gt_table" data-quarto-disable-processing="false" data-quarto-bootstrap="false" style="-webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji'; display: table; border-collapse: collapse; line-height: normal; margin-left: auto; margin-right: auto; color: #333333; font-size: 16px; font-weight: normal; font-style: normal; background-color: #FFFFFF; width: auto; border-top-style: solid; border-top-width: 2px; border-top-color: #A8A8A8; border-right-style: none; border-right-width: 2px; border-right-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #A8A8A8; border-left-style: none; border-left-width: 2px; border-left-color: #D3D3D3;" bgcolor="#FFFFFF">
 <thead style="border-style: none;"><tr class="gt_col_headings" style="border-style: none; border-top-style: solid; border-top-width: 2px; border-top-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #D3D3D3; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3;">
 <th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="1" colspan="1" scope="col" id="label" style="border-style: none; color: #333333; background-color: #FFFFFF; font-size: 100%; font-weight: normal; text-transform: inherit; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3; vertical-align: bottom; padding-top: 5px; padding-bottom: 6px; padding-left: 5px; padding-right: 5px; overflow-x: hidden; text-align: left;" bgcolor="#FFFFFF" valign="bottom" align="left">
@@ -4364,7 +4364,7 @@ photoperiod
 </table>
 </div>
 <p>Model comparison</p>
-<div id="vgmqnlpqok" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<div id="mgludslssq" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
 <table class="gt_table" data-quarto-disable-processing="false" data-quarto-bootstrap="false" style="-webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji'; display: table; border-collapse: collapse; line-height: normal; margin-left: auto; margin-right: auto; color: #333333; font-size: 16px; font-weight: normal; font-style: normal; background-color: #FFFFFF; width: auto; border-top-style: solid; border-top-width: 2px; border-top-color: #A8A8A8; border-right-style: none; border-right-width: 2px; border-right-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #A8A8A8; border-left-style: none; border-left-width: 2px; border-left-color: #D3D3D3;" bgcolor="#FFFFFF">
 <thead style="border-style: none;"><tr class="gt_col_headings" style="border-style: none; border-top-style: solid; border-top-width: 2px; border-top-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #D3D3D3; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3;">
 <th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="1" colspan="1" scope="col" id="label" style="border-style: none; color: #333333; background-color: #FFFFFF; font-size: 100%; font-weight: normal; text-transform: inherit; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3; vertical-align: bottom; padding-top: 5px; padding-bottom: 6px; padding-left: 5px; padding-right: 5px; overflow-x: hidden; text-align: left;" bgcolor="#FFFFFF" valign="bottom" align="left">
@@ -4397,7 +4397,7 @@ model2: metric ~ site + photoperiod + (1 | site:Id)
 </div>
 <div id="tabset-2-12" class="tab-pane" role="tabpanel" aria-labelledby="tabset-2-12-tab">
 <p>Model summary</p>
-<div id="nuthiouzij" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<div id="pciposikyp" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
 <table class="gt_table" data-quarto-disable-processing="false" data-quarto-bootstrap="false" style="-webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji'; display: table; border-collapse: collapse; line-height: normal; margin-left: auto; margin-right: auto; color: #333333; font-size: 16px; font-weight: normal; font-style: normal; background-color: #FFFFFF; width: auto; border-top-style: solid; border-top-width: 2px; border-top-color: #A8A8A8; border-right-style: none; border-right-width: 2px; border-right-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #A8A8A8; border-left-style: none; border-left-width: 2px; border-left-color: #D3D3D3;" bgcolor="#FFFFFF">
 <thead style="border-style: none;"><tr class="gt_col_headings" style="border-style: none; border-top-style: solid; border-top-width: 2px; border-top-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #D3D3D3; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3;">
 <th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="1" colspan="1" scope="col" id="label" style="border-style: none; color: #333333; background-color: #FFFFFF; font-size: 100%; font-weight: normal; text-transform: inherit; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3; vertical-align: bottom; padding-top: 5px; padding-bottom: 6px; padding-left: 5px; padding-right: 5px; overflow-x: hidden; text-align: left;" bgcolor="#FFFFFF" valign="bottom" align="left">
@@ -4541,7 +4541,7 @@ photoperiod
 </table>
 </div>
 <p>Model comparison</p>
-<div id="smagpoykwl" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<div id="jrmyaiecay" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
 <table class="gt_table" data-quarto-disable-processing="false" data-quarto-bootstrap="false" style="-webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji'; display: table; border-collapse: collapse; line-height: normal; margin-left: auto; margin-right: auto; color: #333333; font-size: 16px; font-weight: normal; font-style: normal; background-color: #FFFFFF; width: auto; border-top-style: solid; border-top-width: 2px; border-top-color: #A8A8A8; border-right-style: none; border-right-width: 2px; border-right-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #A8A8A8; border-left-style: none; border-left-width: 2px; border-left-color: #D3D3D3;" bgcolor="#FFFFFF">
 <thead style="border-style: none;"><tr class="gt_col_headings" style="border-style: none; border-top-style: solid; border-top-width: 2px; border-top-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #D3D3D3; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3;">
 <th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="1" colspan="1" scope="col" id="label" style="border-style: none; color: #333333; background-color: #FFFFFF; font-size: 100%; font-weight: normal; text-transform: inherit; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3; vertical-align: bottom; padding-top: 5px; padding-bottom: 6px; padding-left: 5px; padding-right: 5px; overflow-x: hidden; text-align: left;" bgcolor="#FFFFFF" valign="bottom" align="left">
@@ -4574,7 +4574,7 @@ model2: metric ~ site + photoperiod + (1 | site:Id)
 </div>
 <div id="tabset-2-13" class="tab-pane" role="tabpanel" aria-labelledby="tabset-2-13-tab">
 <p>Model summary</p>
-<div id="qxdhqlgign" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<div id="ggqnunpujh" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
 <table class="gt_table" data-quarto-disable-processing="false" data-quarto-bootstrap="false" style="-webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji'; display: table; border-collapse: collapse; line-height: normal; margin-left: auto; margin-right: auto; color: #333333; font-size: 16px; font-weight: normal; font-style: normal; background-color: #FFFFFF; width: auto; border-top-style: solid; border-top-width: 2px; border-top-color: #A8A8A8; border-right-style: none; border-right-width: 2px; border-right-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #A8A8A8; border-left-style: none; border-left-width: 2px; border-left-color: #D3D3D3;" bgcolor="#FFFFFF">
 <thead style="border-style: none;"><tr class="gt_col_headings" style="border-style: none; border-top-style: solid; border-top-width: 2px; border-top-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #D3D3D3; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3;">
 <th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="1" colspan="1" scope="col" id="label" style="border-style: none; color: #333333; background-color: #FFFFFF; font-size: 100%; font-weight: normal; text-transform: inherit; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3; vertical-align: bottom; padding-top: 5px; padding-bottom: 6px; padding-left: 5px; padding-right: 5px; overflow-x: hidden; text-align: left;" bgcolor="#FFFFFF" valign="bottom" align="left">
@@ -4606,7 +4606,7 @@ photoperiod
 </table>
 </div>
 <p>Model comparison</p>
-<div id="dqzagadnas" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<div id="mimnjqmeec" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
 <table class="gt_table" data-quarto-disable-processing="false" data-quarto-bootstrap="false" style="-webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji'; display: table; border-collapse: collapse; line-height: normal; margin-left: auto; margin-right: auto; color: #333333; font-size: 16px; font-weight: normal; font-style: normal; background-color: #FFFFFF; width: auto; border-top-style: solid; border-top-width: 2px; border-top-color: #A8A8A8; border-right-style: none; border-right-width: 2px; border-right-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #A8A8A8; border-left-style: none; border-left-width: 2px; border-left-color: #D3D3D3;" bgcolor="#FFFFFF">
 <thead style="border-style: none;"><tr class="gt_col_headings" style="border-style: none; border-top-style: solid; border-top-width: 2px; border-top-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #D3D3D3; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3;">
 <th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="1" colspan="1" scope="col" id="label" style="border-style: none; color: #333333; background-color: #FFFFFF; font-size: 100%; font-weight: normal; text-transform: inherit; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3; vertical-align: bottom; padding-top: 5px; padding-bottom: 6px; padding-left: 5px; padding-right: 5px; overflow-x: hidden; text-align: left;" bgcolor="#FFFFFF" valign="bottom" align="left">
@@ -4639,7 +4639,7 @@ model2: log_zero_inflated(metric) ~ site + photoperiod + (1 | site:Id)
 </div>
 <div id="tabset-2-14" class="tab-pane" role="tabpanel" aria-labelledby="tabset-2-14-tab">
 <p>Model summary</p>
-<div id="mtmjydpbfh" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<div id="zqtvywzwbv" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
 <table class="gt_table" data-quarto-disable-processing="false" data-quarto-bootstrap="false" style="-webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji'; display: table; border-collapse: collapse; line-height: normal; margin-left: auto; margin-right: auto; color: #333333; font-size: 16px; font-weight: normal; font-style: normal; background-color: #FFFFFF; width: auto; border-top-style: solid; border-top-width: 2px; border-top-color: #A8A8A8; border-right-style: none; border-right-width: 2px; border-right-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #A8A8A8; border-left-style: none; border-left-width: 2px; border-left-color: #D3D3D3;" bgcolor="#FFFFFF">
 <thead style="border-style: none;"><tr class="gt_col_headings" style="border-style: none; border-top-style: solid; border-top-width: 2px; border-top-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #D3D3D3; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3;">
 <th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="1" colspan="1" scope="col" id="label" style="border-style: none; color: #333333; background-color: #FFFFFF; font-size: 100%; font-weight: normal; text-transform: inherit; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3; vertical-align: bottom; padding-top: 5px; padding-bottom: 6px; padding-left: 5px; padding-right: 5px; overflow-x: hidden; text-align: left;" bgcolor="#FFFFFF" valign="bottom" align="left">
@@ -4671,7 +4671,7 @@ photoperiod
 </table>
 </div>
 <p>Model comparison</p>
-<div id="naelrspyiq" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<div id="vuagvdracg" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
 <table class="gt_table" data-quarto-disable-processing="false" data-quarto-bootstrap="false" style="-webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji'; display: table; border-collapse: collapse; line-height: normal; margin-left: auto; margin-right: auto; color: #333333; font-size: 16px; font-weight: normal; font-style: normal; background-color: #FFFFFF; width: auto; border-top-style: solid; border-top-width: 2px; border-top-color: #A8A8A8; border-right-style: none; border-right-width: 2px; border-right-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #A8A8A8; border-left-style: none; border-left-width: 2px; border-left-color: #D3D3D3;" bgcolor="#FFFFFF">
 <thead style="border-style: none;"><tr class="gt_col_headings" style="border-style: none; border-top-style: solid; border-top-width: 2px; border-top-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #D3D3D3; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3;">
 <th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="1" colspan="1" scope="col" id="label" style="border-style: none; color: #333333; background-color: #FFFFFF; font-size: 100%; font-weight: normal; text-transform: inherit; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3; vertical-align: bottom; padding-top: 5px; padding-bottom: 6px; padding-left: 5px; padding-right: 5px; overflow-x: hidden; text-align: left;" bgcolor="#FFFFFF" valign="bottom" align="left">
@@ -4704,7 +4704,7 @@ model2: metric ~ site + photoperiod + (1 | site:Id)
 </div>
 <div id="tabset-2-15" class="tab-pane" role="tabpanel" aria-labelledby="tabset-2-15-tab">
 <p>Model summary</p>
-<div id="vmmcixxpce" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<div id="jgdfvzlpnu" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
 <table class="gt_table" data-quarto-disable-processing="false" data-quarto-bootstrap="false" style="-webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji'; display: table; border-collapse: collapse; line-height: normal; margin-left: auto; margin-right: auto; color: #333333; font-size: 16px; font-weight: normal; font-style: normal; background-color: #FFFFFF; width: auto; border-top-style: solid; border-top-width: 2px; border-top-color: #A8A8A8; border-right-style: none; border-right-width: 2px; border-right-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #A8A8A8; border-left-style: none; border-left-width: 2px; border-left-color: #D3D3D3;" bgcolor="#FFFFFF">
 <thead style="border-style: none;"><tr class="gt_col_headings" style="border-style: none; border-top-style: solid; border-top-width: 2px; border-top-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #D3D3D3; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3;">
 <th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="1" colspan="1" scope="col" id="label" style="border-style: none; color: #333333; background-color: #FFFFFF; font-size: 100%; font-weight: normal; text-transform: inherit; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3; vertical-align: bottom; padding-top: 5px; padding-bottom: 6px; padding-left: 5px; padding-right: 5px; overflow-x: hidden; text-align: left;" bgcolor="#FFFFFF" valign="bottom" align="left">
@@ -4742,7 +4742,7 @@ photoperiod
 </table>
 </div>
 <p>Model comparison</p>
-<div id="twfjbcxoel" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<div id="ihrsfcroxh" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
 <table class="gt_table" data-quarto-disable-processing="false" data-quarto-bootstrap="false" style="-webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji'; display: table; border-collapse: collapse; line-height: normal; margin-left: auto; margin-right: auto; color: #333333; font-size: 16px; font-weight: normal; font-style: normal; background-color: #FFFFFF; width: auto; border-top-style: solid; border-top-width: 2px; border-top-color: #A8A8A8; border-right-style: none; border-right-width: 2px; border-right-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #A8A8A8; border-left-style: none; border-left-width: 2px; border-left-color: #D3D3D3;" bgcolor="#FFFFFF">
 <thead style="border-style: none;"><tr class="gt_col_headings" style="border-style: none; border-top-style: solid; border-top-width: 2px; border-top-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #D3D3D3; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3;">
 <th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="1" colspan="1" scope="col" id="label" style="border-style: none; color: #333333; background-color: #FFFFFF; font-size: 100%; font-weight: normal; text-transform: inherit; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3; vertical-align: bottom; padding-top: 5px; padding-bottom: 6px; padding-left: 5px; padding-right: 5px; overflow-x: hidden; text-align: left;" bgcolor="#FFFFFF" valign="bottom" align="left">
@@ -4775,7 +4775,7 @@ model2: metric ~ site + photoperiod + (1 | site:Id), zi=~0, disp=~1
 </div>
 <div id="tabset-2-16" class="tab-pane" role="tabpanel" aria-labelledby="tabset-2-16-tab">
 <p>Model summary</p>
-<div id="bnchvaefhr" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<div id="oadrtelyxe" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
 <table class="gt_table" data-quarto-disable-processing="false" data-quarto-bootstrap="false" style="-webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji'; display: table; border-collapse: collapse; line-height: normal; margin-left: auto; margin-right: auto; color: #333333; font-size: 16px; font-weight: normal; font-style: normal; background-color: #FFFFFF; width: auto; border-top-style: solid; border-top-width: 2px; border-top-color: #A8A8A8; border-right-style: none; border-right-width: 2px; border-right-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #A8A8A8; border-left-style: none; border-left-width: 2px; border-left-color: #D3D3D3;" bgcolor="#FFFFFF">
 <thead style="border-style: none;"><tr class="gt_col_headings" style="border-style: none; border-top-style: solid; border-top-width: 2px; border-top-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #D3D3D3; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3;">
 <th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="1" colspan="1" scope="col" id="label" style="border-style: none; color: #333333; background-color: #FFFFFF; font-size: 100%; font-weight: normal; text-transform: inherit; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3; vertical-align: bottom; padding-top: 5px; padding-bottom: 6px; padding-left: 5px; padding-right: 5px; overflow-x: hidden; text-align: left;" bgcolor="#FFFFFF" valign="bottom" align="left">
@@ -4813,7 +4813,7 @@ photoperiod
 </table>
 </div>
 <p>Model comparison</p>
-<div id="rgdjzjrvcp" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<div id="rbybsjymxe" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
 <table class="gt_table" data-quarto-disable-processing="false" data-quarto-bootstrap="false" style="-webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji'; display: table; border-collapse: collapse; line-height: normal; margin-left: auto; margin-right: auto; color: #333333; font-size: 16px; font-weight: normal; font-style: normal; background-color: #FFFFFF; width: auto; border-top-style: solid; border-top-width: 2px; border-top-color: #A8A8A8; border-right-style: none; border-right-width: 2px; border-right-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #A8A8A8; border-left-style: none; border-left-width: 2px; border-left-color: #D3D3D3;" bgcolor="#FFFFFF">
 <thead style="border-style: none;"><tr class="gt_col_headings" style="border-style: none; border-top-style: solid; border-top-width: 2px; border-top-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #D3D3D3; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3;">
 <th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="1" colspan="1" scope="col" id="label" style="border-style: none; color: #333333; background-color: #FFFFFF; font-size: 100%; font-weight: normal; text-transform: inherit; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3; vertical-align: bottom; padding-top: 5px; padding-bottom: 6px; padding-left: 5px; padding-right: 5px; overflow-x: hidden; text-align: left;" bgcolor="#FFFFFF" valign="bottom" align="left">
@@ -4846,7 +4846,7 @@ model2: metric ~ site + photoperiod + (1 | site:Id), zi=~0, disp=~1
 </div>
 <div id="tabset-2-17" class="tab-pane" role="tabpanel" aria-labelledby="tabset-2-17-tab">
 <p>Model summary</p>
-<div id="regtaapvln" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<div id="yjricuhozm" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
 <table class="gt_table" data-quarto-disable-processing="false" data-quarto-bootstrap="false" style="-webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji'; display: table; border-collapse: collapse; line-height: normal; margin-left: auto; margin-right: auto; color: #333333; font-size: 16px; font-weight: normal; font-style: normal; background-color: #FFFFFF; width: auto; border-top-style: solid; border-top-width: 2px; border-top-color: #A8A8A8; border-right-style: none; border-right-width: 2px; border-right-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #A8A8A8; border-left-style: none; border-left-width: 2px; border-left-color: #D3D3D3;" bgcolor="#FFFFFF">
 <thead style="border-style: none;"><tr class="gt_col_headings" style="border-style: none; border-top-style: solid; border-top-width: 2px; border-top-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #D3D3D3; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3;">
 <th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="1" colspan="1" scope="col" id="label" style="border-style: none; color: #333333; background-color: #FFFFFF; font-size: 100%; font-weight: normal; text-transform: inherit; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3; vertical-align: bottom; padding-top: 5px; padding-bottom: 6px; padding-left: 5px; padding-right: 5px; overflow-x: hidden; text-align: left;" bgcolor="#FFFFFF" valign="bottom" align="left">
@@ -4884,7 +4884,7 @@ photoperiod
 </table>
 </div>
 <p>Model comparison</p>
-<div id="wcftljbkrn" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<div id="eamhlbxtbt" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
 <table class="gt_table" data-quarto-disable-processing="false" data-quarto-bootstrap="false" style="-webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji'; display: table; border-collapse: collapse; line-height: normal; margin-left: auto; margin-right: auto; color: #333333; font-size: 16px; font-weight: normal; font-style: normal; background-color: #FFFFFF; width: auto; border-top-style: solid; border-top-width: 2px; border-top-color: #A8A8A8; border-right-style: none; border-right-width: 2px; border-right-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #A8A8A8; border-left-style: none; border-left-width: 2px; border-left-color: #D3D3D3;" bgcolor="#FFFFFF">
 <thead style="border-style: none;"><tr class="gt_col_headings" style="border-style: none; border-top-style: solid; border-top-width: 2px; border-top-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #D3D3D3; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3;">
 <th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="1" colspan="1" scope="col" id="label" style="border-style: none; color: #333333; background-color: #FFFFFF; font-size: 100%; font-weight: normal; text-transform: inherit; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3; vertical-align: bottom; padding-top: 5px; padding-bottom: 6px; padding-left: 5px; padding-right: 5px; overflow-x: hidden; text-align: left;" bgcolor="#FFFFFF" valign="bottom" align="left">
@@ -4931,7 +4931,7 @@ model2: metric ~ site + photoperiod + (1 | site:Id), zi=~0, disp=~1
 </section><section id="preparation-1" class="level3"><h3 class="anchored" data-anchor-id="preparation-1">Preparation</h3>
 <div class="cell">
 <div class="code-with-filename">
-<details class="code-fold"><summary>Code</summary><div class="code-with-filename-file">
+<details open="" class="code-fold"><summary>Code</summary><div class="code-with-filename-file">
 <pre><strong>Load prepared data</strong></pre>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/load.html">load</a></span><span class="op">(</span><span class="st">"data/metrics_separate_glasses.RData"</span><span class="op">)</span></span>
@@ -4956,7 +4956,7 @@ model2: metric ~ site + photoperiod + (1 | site:Id), zi=~0, disp=~1
 </div>
 <div class="cell">
 <div class="code-with-filename">
-<details class="code-fold"><summary>Code</summary><div class="code-with-filename-file">
+<details open="" class="code-fold"><summary>Code</summary><div class="code-with-filename-file">
 <pre><strong>Overview plot of the data (median with IQR)</strong></pre>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">metric_participanthour</span> <span class="op">|&gt;</span></span>
@@ -4989,7 +4989,7 @@ model2: metric ~ site + photoperiod + (1 | site:Id), zi=~0, disp=~1
 </div>
 <div class="cell">
 <div class="code-with-filename">
-<details class="code-fold"><summary>Code</summary><div class="code-with-filename-file">
+<details open="" class="code-fold"><summary>Code</summary><div class="code-with-filename-file">
 <pre><strong>H2 formulas</strong></pre>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">H2_form_1</span> <span class="op">&lt;-</span> <span class="va">lzMEDI</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/pkg/mgcv/man/s.html">s</a></span><span class="op">(</span><span class="va">Time</span>, k <span class="op">=</span> <span class="fl">12</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/pkg/mgcv/man/s.html">s</a></span><span class="op">(</span><span class="va">Time</span>, <span class="va">site</span>, bs <span class="op">=</span> <span class="st">"sz"</span>, k <span class="op">=</span> <span class="fl">12</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/pkg/mgcv/man/s.html">s</a></span><span class="op">(</span><span class="va">Time</span>, <span class="va">Id</span>, bs <span class="op">=</span> <span class="st">"fs"</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/pkg/mgcv/man/s.html">s</a></span><span class="op">(</span><span class="va">Id_date</span>, bs <span class="op">=</span> <span class="st">"re"</span><span class="op">)</span></span>
@@ -5002,7 +5002,7 @@ model2: metric ~ site + photoperiod + (1 | site:Id), zi=~0, disp=~1
 <section id="base-model-h2_1" class="level4"><h4 class="anchored" data-anchor-id="base-model-h2_1">Base model (H2_1)</h4>
 <div class="cell">
 <div class="code-with-filename">
-<details class="code-fold"><summary>Code</summary><div class="code-with-filename-file">
+<details open="" class="code-fold"><summary>Code</summary><div class="code-with-filename-file">
 <pre><strong>Main model</strong></pre>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">H2_model_1</span> <span class="op">&lt;-</span> </span>
@@ -5023,7 +5023,7 @@ model2: metric ~ site + photoperiod + (1 | site:Id), zi=~0, disp=~1
 </figure>
 </div>
 </div>
-<details class="code-fold"><summary>Code</summary><div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb21"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">H2_model_1</span> <span class="op">&lt;-</span> </span>
+<details open="" class="code-fold"><summary>Code</summary><div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb21"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">H2_model_1</span> <span class="op">&lt;-</span> </span>
 <span>  <span class="fu"><a href="https://rdrr.io/pkg/mgcv/man/bam.html">bam</a></span><span class="op">(</span><span class="va">H2_form_1</span>, </span>
 <span>      data <span class="op">=</span> <span class="va">metric_participanthour</span>, </span>
 <span>      discrete <span class="op">=</span> <span class="cn">TRUE</span>,</span>
@@ -5040,7 +5040,7 @@ model2: metric ~ site + photoperiod + (1 | site:Id), zi=~0, disp=~1
 </figure>
 </div>
 </div>
-<details class="code-fold"><summary>Code</summary><div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">H2_summary_1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/summary.html">summary</a></span><span class="op">(</span><span class="va">H2_model_1</span><span class="op">)</span></span>
+<details open="" class="code-fold"><summary>Code</summary><div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">H2_summary_1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/summary.html">summary</a></span><span class="op">(</span><span class="va">H2_model_1</span><span class="op">)</span></span>
 <span><span class="va">H2_summary_1</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details><div class="cell-output cell-output-stdout">
 <pre><code>
@@ -5069,14 +5069,14 @@ Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 R-sq.(adj) =  0.767   Deviance explained = 77.4%
 fREML =  33251  Scale est. = 0.50672   n = 37603</code></pre>
 </div>
-<details class="code-fold"><summary>Code</summary><div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb24"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">H2_model_1</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://generics.r-lib.org/reference/glance.html">glance</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<details open="" class="code-fold"><summary>Code</summary><div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb24"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">H2_model_1</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://generics.r-lib.org/reference/glance.html">glance</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details><div class="cell-output cell-output-stdout">
 <pre><code># A tibble: 1 × 9
      df  logLik    AIC    BIC deviance df.residual  nobs adj.r.squared  npar
   &lt;dbl&gt;   &lt;dbl&gt;  &lt;dbl&gt;  &lt;dbl&gt;    &lt;dbl&gt;       &lt;dbl&gt; &lt;int&gt;         &lt;dbl&gt; &lt;int&gt;
 1 1173. -31318. 65000. 75086.   20059.      36430. 37603         0.767  2327</code></pre>
 </div>
-<details class="code-fold"><summary>Code</summary><div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb26"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">H2_model_1</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://gavinsimpson.github.io/gratia/reference/appraise.html">appraise</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<details open="" class="code-fold"><summary>Code</summary><div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb26"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">H2_model_1</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://gavinsimpson.github.io/gratia/reference/appraise.html">appraise</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details><div class="cell-output-display">
 <div>
 <figure class="figure"><p><img src="RQ1_files/figure-html/unnamed-chunk-20-3.png" class="img-fluid figure-img" width="672"></p>
@@ -5086,7 +5086,7 @@ fREML =  33251  Scale est. = 0.50672   n = 37603</code></pre>
 </div>
 <div class="cell">
 <div class="code-with-filename">
-<details class="code-fold"><summary>Code</summary><div class="code-with-filename-file">
+<details open="" class="code-fold"><summary>Code</summary><div class="code-with-filename-file">
 <pre><strong>Variance explained</strong></pre>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb27"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">Xp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/predict.html">predict</a></span><span class="op">(</span><span class="va">H2_model_1</span>, type <span class="op">=</span> <span class="st">"terms"</span><span class="op">)</span></span>
@@ -5101,7 +5101,7 @@ s(Time,site) 3.414920e-02 1.000000e+00 0.019659500 3.124536e-05
 s(Time,Id)   3.809311e-03 1.965950e-02 1.000000000 1.432294e-01
 s(Id_date)   4.374669e-05 3.124536e-05 0.143229435 1.000000e+00</code></pre>
 </div>
-<details class="code-fold"><summary>Code</summary><div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb29"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">H2_R2</span> <span class="op">&lt;-</span> <span class="op">(</span><span class="va">variance</span><span class="op">/</span><span class="fu"><a href="https://rdrr.io/r/base/sum.html">sum</a></span><span class="op">(</span><span class="va">variance</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://tibble.tidyverse.org/reference/enframe.html">enframe</a></span><span class="op">(</span>value <span class="op">=</span> <span class="st">"R2"</span>, name <span class="op">=</span> <span class="st">"parameter"</span><span class="op">)</span></span>
+<details open="" class="code-fold"><summary>Code</summary><div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb29"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">H2_R2</span> <span class="op">&lt;-</span> <span class="op">(</span><span class="va">variance</span><span class="op">/</span><span class="fu"><a href="https://rdrr.io/r/base/sum.html">sum</a></span><span class="op">(</span><span class="va">variance</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://tibble.tidyverse.org/reference/enframe.html">enframe</a></span><span class="op">(</span>value <span class="op">=</span> <span class="st">"R2"</span>, name <span class="op">=</span> <span class="st">"parameter"</span><span class="op">)</span></span>
 <span><span class="va">H2_R2</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details><div class="cell-output cell-output-stdout">
 <pre><code># A tibble: 4 × 2
@@ -5116,7 +5116,7 @@ s(Id_date)   4.374669e-05 3.124536e-05 0.143229435 1.000000e+00</code></pre>
 </section><section id="null-model-h2_0" class="level4"><h4 class="anchored" data-anchor-id="null-model-h2_0">Null model (H2_0)</h4>
 <div class="cell">
 <div class="code-with-filename">
-<details class="code-fold"><summary>Code</summary><div class="code-with-filename-file">
+<details open="" class="code-fold"><summary>Code</summary><div class="code-with-filename-file">
 <pre><strong>Null model</strong></pre>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb31"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">H2_model_0</span> <span class="op">&lt;-</span> </span>
@@ -5132,7 +5132,7 @@ s(Id_date)   4.374669e-05 3.124536e-05 0.143229435 1.000000e+00</code></pre>
 <pre><code>Warning in gam.side(sm, X, tol = .Machine$double.eps^0.5): model has repeated
 1-d smooths of same variable.</code></pre>
 </div>
-<details class="code-fold"><summary>Code</summary><div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb33"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">r1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/itsadug/man/start_value_rho.html">start_value_rho</a></span><span class="op">(</span><span class="va">H2_model_0</span>, </span>
+<details open="" class="code-fold"><summary>Code</summary><div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb33"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">r1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/itsadug/man/start_value_rho.html">start_value_rho</a></span><span class="op">(</span><span class="va">H2_model_0</span>, </span>
 <span>                      plot<span class="op">=</span><span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details><div class="cell-output-display">
 <div>
@@ -5140,7 +5140,7 @@ s(Id_date)   4.374669e-05 3.124536e-05 0.143229435 1.000000e+00</code></pre>
 </figure>
 </div>
 </div>
-<details class="code-fold"><summary>Code</summary><div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb34"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">H2_model_0</span> <span class="op">&lt;-</span> </span>
+<details open="" class="code-fold"><summary>Code</summary><div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb34"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">H2_model_0</span> <span class="op">&lt;-</span> </span>
 <span>  <span class="fu"><a href="https://rdrr.io/pkg/mgcv/man/bam.html">bam</a></span><span class="op">(</span><span class="va">H2_form_0</span>, </span>
 <span>      data <span class="op">=</span> <span class="va">metric_participanthour</span>, </span>
 <span>      discrete <span class="op">=</span> <span class="cn">TRUE</span>,</span>
@@ -5153,14 +5153,14 @@ s(Id_date)   4.374669e-05 3.124536e-05 0.143229435 1.000000e+00</code></pre>
 <pre><code>Warning in gam.side(sm, X, tol = .Machine$double.eps^0.5): model has repeated
 1-d smooths of same variable.</code></pre>
 </div>
-<details class="code-fold"><summary>Code</summary><div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb36"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/itsadug/man/acf_resid.html">acf_resid</a></span><span class="op">(</span><span class="va">H2_model_0</span>, split_pred <span class="op">=</span> <span class="st">"AR.start"</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<details open="" class="code-fold"><summary>Code</summary><div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb36"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/itsadug/man/acf_resid.html">acf_resid</a></span><span class="op">(</span><span class="va">H2_model_0</span>, split_pred <span class="op">=</span> <span class="st">"AR.start"</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details><div class="cell-output-display">
 <div>
 <figure class="figure"><p><img src="RQ1_files/figure-html/unnamed-chunk-22-2.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
 </div>
-<details class="code-fold"><summary>Code</summary><div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb37"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">H2_summary_0</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/summary.html">summary</a></span><span class="op">(</span><span class="va">H2_model_0</span><span class="op">)</span></span>
+<details open="" class="code-fold"><summary>Code</summary><div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb37"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">H2_summary_0</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/summary.html">summary</a></span><span class="op">(</span><span class="va">H2_model_0</span><span class="op">)</span></span>
 <span><span class="va">H2_summary_0</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details><div class="cell-output cell-output-stdout">
 <pre><code>
@@ -5188,21 +5188,21 @@ Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 R-sq.(adj) =  0.768   Deviance explained = 77.5%
 fREML =  33343  Scale est. = 0.5066    n = 37603</code></pre>
 </div>
-<details class="code-fold"><summary>Code</summary><div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb39"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">H2_model_0</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://generics.r-lib.org/reference/glance.html">glance</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<details open="" class="code-fold"><summary>Code</summary><div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb39"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">H2_model_0</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://generics.r-lib.org/reference/glance.html">glance</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details><div class="cell-output cell-output-stdout">
 <pre><code># A tibble: 1 × 9
      df  logLik    AIC    BIC deviance df.residual  nobs adj.r.squared  npar
   &lt;dbl&gt;   &lt;dbl&gt;  &lt;dbl&gt;  &lt;dbl&gt;    &lt;dbl&gt;       &lt;dbl&gt; &lt;int&gt;         &lt;dbl&gt; &lt;int&gt;
 1 1233. -31283. 65040. 75595.   19961.      36370. 37603         0.768  2231</code></pre>
 </div>
-<details class="code-fold"><summary>Code</summary><div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb41"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">H2_model_0</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://gavinsimpson.github.io/gratia/reference/appraise.html">appraise</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<details open="" class="code-fold"><summary>Code</summary><div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb41"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">H2_model_0</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://gavinsimpson.github.io/gratia/reference/appraise.html">appraise</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details><div class="cell-output-display">
 <div>
 <figure class="figure"><p><img src="RQ1_files/figure-html/unnamed-chunk-22-3.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
 </div>
-<details class="code-fold"><summary>Code</summary><div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb42"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">H2_model_0</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://gavinsimpson.github.io/gratia/reference/draw.html">draw</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<details open="" class="code-fold"><summary>Code</summary><div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb42"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">H2_model_0</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://gavinsimpson.github.io/gratia/reference/draw.html">draw</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details><div class="cell-output-display">
 <div>
 <figure class="figure"><p><img src="RQ1_files/figure-html/unnamed-chunk-22-4.png" class="img-fluid figure-img" width="672"></p>
@@ -5213,7 +5213,7 @@ fREML =  33343  Scale est. = 0.5066    n = 37603</code></pre>
 </section><section id="photoperiod-model" class="level4"><h4 class="anchored" data-anchor-id="photoperiod-model">Photoperiod model</h4>
 <div class="cell">
 <div class="code-with-filename">
-<details class="code-fold"><summary>Code</summary><div class="code-with-filename-file">
+<details open="" class="code-fold"><summary>Code</summary><div class="code-with-filename-file">
 <pre><strong>Photoperiod model</strong></pre>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb43"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">H2_model_phot</span> <span class="op">&lt;-</span> </span>
@@ -5234,7 +5234,7 @@ fREML =  33343  Scale est. = 0.5066    n = 37603</code></pre>
 </figure>
 </div>
 </div>
-<details class="code-fold"><summary>Code</summary><div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb44"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">H2_model_phot</span> <span class="op">&lt;-</span> </span>
+<details open="" class="code-fold"><summary>Code</summary><div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb44"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">H2_model_phot</span> <span class="op">&lt;-</span> </span>
 <span>  <span class="fu"><a href="https://rdrr.io/pkg/mgcv/man/bam.html">bam</a></span><span class="op">(</span><span class="va">H2_form_phot</span>, </span>
 <span>      data <span class="op">=</span> <span class="va">metric_participanthour</span>, </span>
 <span>      discrete <span class="op">=</span> <span class="cn">TRUE</span>,</span>
@@ -5251,7 +5251,7 @@ fREML =  33343  Scale est. = 0.5066    n = 37603</code></pre>
 </figure>
 </div>
 </div>
-<details class="code-fold"><summary>Code</summary><div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb45"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">H2_summary_phot</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/summary.html">summary</a></span><span class="op">(</span><span class="va">H2_model_phot</span><span class="op">)</span></span>
+<details open="" class="code-fold"><summary>Code</summary><div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb45"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">H2_summary_phot</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/summary.html">summary</a></span><span class="op">(</span><span class="va">H2_model_phot</span><span class="op">)</span></span>
 <span><span class="va">H2_summary_phot</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details><div class="cell-output cell-output-stdout">
 <pre><code>
@@ -5282,21 +5282,21 @@ Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 R-sq.(adj) =  0.767   Deviance explained = 77.5%
 fREML =  33229  Scale est. = 0.50527   n = 37603</code></pre>
 </div>
-<details class="code-fold"><summary>Code</summary><div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb47"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">H2_model_phot</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://generics.r-lib.org/reference/glance.html">glance</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<details open="" class="code-fold"><summary>Code</summary><div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb47"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">H2_model_phot</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://generics.r-lib.org/reference/glance.html">glance</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details><div class="cell-output cell-output-stdout">
 <pre><code># A tibble: 1 × 9
      df  logLik    AIC    BIC deviance df.residual  nobs adj.r.squared  npar
   &lt;dbl&gt;   &lt;dbl&gt;  &lt;dbl&gt;  &lt;dbl&gt;    &lt;dbl&gt;       &lt;dbl&gt; &lt;int&gt;         &lt;dbl&gt; &lt;int&gt;
 1 1176. -31291. 64952. 75069.   20014.      36427. 37603         0.767  2339</code></pre>
 </div>
-<details class="code-fold"><summary>Code</summary><div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb49"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">H2_model_phot</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://gavinsimpson.github.io/gratia/reference/appraise.html">appraise</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<details open="" class="code-fold"><summary>Code</summary><div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb49"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">H2_model_phot</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://gavinsimpson.github.io/gratia/reference/appraise.html">appraise</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details><div class="cell-output-display">
 <div>
 <figure class="figure"><p><img src="RQ1_files/figure-html/unnamed-chunk-23-3.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
 </div>
-<details class="code-fold"><summary>Code</summary><div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb50"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">H2_model_phot</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://gavinsimpson.github.io/gratia/reference/draw.html">draw</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<details open="" class="code-fold"><summary>Code</summary><div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb50"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">H2_model_phot</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://gavinsimpson.github.io/gratia/reference/draw.html">draw</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details><div class="cell-output-display">
 <div>
 <figure class="figure"><p><img src="RQ1_files/figure-html/unnamed-chunk-23-4.png" class="img-fluid figure-img" width="672"></p>
@@ -5306,26 +5306,26 @@ fREML =  33229  Scale est. = 0.50527   n = 37603</code></pre>
 </div>
 </section><section id="model-comparison" class="level4"><h4 class="anchored" data-anchor-id="model-comparison">Model comparison</h4>
 <div class="cell">
-<details class="code-fold"><summary>Code</summary><div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb51"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">H2_AICs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/AIC.html">AIC</a></span><span class="op">(</span><span class="va">H2_model_1</span>, <span class="va">H2_model_0</span>, <span class="va">H2_model_phot</span><span class="op">)</span></span>
+<details open="" class="code-fold"><summary>Code</summary><div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb51"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">H2_AICs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/AIC.html">AIC</a></span><span class="op">(</span><span class="va">H2_model_1</span>, <span class="va">H2_model_0</span>, <span class="va">H2_model_phot</span><span class="op">)</span></span>
 <span><span class="va">H2_AICs</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://tibble.tidyverse.org/reference/as_tibble.html">as_tibble</a></span><span class="op">(</span>rownames <span class="op">=</span> <span class="st">"model"</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://gt.rstudio.com/reference/gt.html">gt</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details><div class="cell-output-display">
-<div id="uqwdtbddes" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>#uqwdtbddes table {
+<div id="hdyfntshiy" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#hdyfntshiy table {
   font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-#uqwdtbddes thead, #uqwdtbddes tbody, #uqwdtbddes tfoot, #uqwdtbddes tr, #uqwdtbddes td, #uqwdtbddes th {
+#hdyfntshiy thead, #hdyfntshiy tbody, #hdyfntshiy tfoot, #hdyfntshiy tr, #hdyfntshiy td, #hdyfntshiy th {
   border-style: none;
 }
 
-#uqwdtbddes p {
+#hdyfntshiy p {
   margin: 0;
   padding: 0;
 }
 
-#uqwdtbddes .gt_table {
+#hdyfntshiy .gt_table {
   display: table;
   border-collapse: collapse;
   line-height: normal;
@@ -5351,12 +5351,12 @@ fREML =  33229  Scale est. = 0.50527   n = 37603</code></pre>
   border-left-color: #D3D3D3;
 }
 
-#uqwdtbddes .gt_caption {
+#hdyfntshiy .gt_caption {
   padding-top: 4px;
   padding-bottom: 4px;
 }
 
-#uqwdtbddes .gt_title {
+#hdyfntshiy .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -5368,7 +5368,7 @@ fREML =  33229  Scale est. = 0.50527   n = 37603</code></pre>
   border-bottom-width: 0;
 }
 
-#uqwdtbddes .gt_subtitle {
+#hdyfntshiy .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -5380,7 +5380,7 @@ fREML =  33229  Scale est. = 0.50527   n = 37603</code></pre>
   border-top-width: 0;
 }
 
-#uqwdtbddes .gt_heading {
+#hdyfntshiy .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -5392,13 +5392,13 @@ fREML =  33229  Scale est. = 0.50527   n = 37603</code></pre>
   border-right-color: #D3D3D3;
 }
 
-#uqwdtbddes .gt_bottom_border {
+#hdyfntshiy .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#uqwdtbddes .gt_col_headings {
+#hdyfntshiy .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -5413,7 +5413,7 @@ fREML =  33229  Scale est. = 0.50527   n = 37603</code></pre>
   border-right-color: #D3D3D3;
 }
 
-#uqwdtbddes .gt_col_heading {
+#hdyfntshiy .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -5433,7 +5433,7 @@ fREML =  33229  Scale est. = 0.50527   n = 37603</code></pre>
   overflow-x: hidden;
 }
 
-#uqwdtbddes .gt_column_spanner_outer {
+#hdyfntshiy .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -5445,15 +5445,15 @@ fREML =  33229  Scale est. = 0.50527   n = 37603</code></pre>
   padding-right: 4px;
 }
 
-#uqwdtbddes .gt_column_spanner_outer:first-child {
+#hdyfntshiy .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#uqwdtbddes .gt_column_spanner_outer:last-child {
+#hdyfntshiy .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#uqwdtbddes .gt_column_spanner {
+#hdyfntshiy .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -5465,11 +5465,11 @@ fREML =  33229  Scale est. = 0.50527   n = 37603</code></pre>
   width: 100%;
 }
 
-#uqwdtbddes .gt_spanner_row {
+#hdyfntshiy .gt_spanner_row {
   border-bottom-style: hidden;
 }
 
-#uqwdtbddes .gt_group_heading {
+#hdyfntshiy .gt_group_heading {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -5495,7 +5495,7 @@ fREML =  33229  Scale est. = 0.50527   n = 37603</code></pre>
   text-align: left;
 }
 
-#uqwdtbddes .gt_empty_group_heading {
+#hdyfntshiy .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -5510,15 +5510,15 @@ fREML =  33229  Scale est. = 0.50527   n = 37603</code></pre>
   vertical-align: middle;
 }
 
-#uqwdtbddes .gt_from_md > :first-child {
+#hdyfntshiy .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#uqwdtbddes .gt_from_md > :last-child {
+#hdyfntshiy .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#uqwdtbddes .gt_row {
+#hdyfntshiy .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -5537,7 +5537,7 @@ fREML =  33229  Scale est. = 0.50527   n = 37603</code></pre>
   overflow-x: hidden;
 }
 
-#uqwdtbddes .gt_stub {
+#hdyfntshiy .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -5550,7 +5550,7 @@ fREML =  33229  Scale est. = 0.50527   n = 37603</code></pre>
   padding-right: 5px;
 }
 
-#uqwdtbddes .gt_stub_row_group {
+#hdyfntshiy .gt_stub_row_group {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -5564,15 +5564,15 @@ fREML =  33229  Scale est. = 0.50527   n = 37603</code></pre>
   vertical-align: top;
 }
 
-#uqwdtbddes .gt_row_group_first td {
+#hdyfntshiy .gt_row_group_first td {
   border-top-width: 2px;
 }
 
-#uqwdtbddes .gt_row_group_first th {
+#hdyfntshiy .gt_row_group_first th {
   border-top-width: 2px;
 }
 
-#uqwdtbddes .gt_summary_row {
+#hdyfntshiy .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -5582,16 +5582,16 @@ fREML =  33229  Scale est. = 0.50527   n = 37603</code></pre>
   padding-right: 5px;
 }
 
-#uqwdtbddes .gt_first_summary_row {
+#hdyfntshiy .gt_first_summary_row {
   border-top-style: solid;
   border-top-color: #D3D3D3;
 }
 
-#uqwdtbddes .gt_first_summary_row.thick {
+#hdyfntshiy .gt_first_summary_row.thick {
   border-top-width: 2px;
 }
 
-#uqwdtbddes .gt_last_summary_row {
+#hdyfntshiy .gt_last_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -5601,7 +5601,7 @@ fREML =  33229  Scale est. = 0.50527   n = 37603</code></pre>
   border-bottom-color: #D3D3D3;
 }
 
-#uqwdtbddes .gt_grand_summary_row {
+#hdyfntshiy .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -5611,7 +5611,7 @@ fREML =  33229  Scale est. = 0.50527   n = 37603</code></pre>
   padding-right: 5px;
 }
 
-#uqwdtbddes .gt_first_grand_summary_row {
+#hdyfntshiy .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -5621,7 +5621,7 @@ fREML =  33229  Scale est. = 0.50527   n = 37603</code></pre>
   border-top-color: #D3D3D3;
 }
 
-#uqwdtbddes .gt_last_grand_summary_row_top {
+#hdyfntshiy .gt_last_grand_summary_row_top {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -5631,11 +5631,11 @@ fREML =  33229  Scale est. = 0.50527   n = 37603</code></pre>
   border-bottom-color: #D3D3D3;
 }
 
-#uqwdtbddes .gt_striped {
+#hdyfntshiy .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#uqwdtbddes .gt_table_body {
+#hdyfntshiy .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -5644,7 +5644,7 @@ fREML =  33229  Scale est. = 0.50527   n = 37603</code></pre>
   border-bottom-color: #D3D3D3;
 }
 
-#uqwdtbddes .gt_footnotes {
+#hdyfntshiy .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -5658,7 +5658,7 @@ fREML =  33229  Scale est. = 0.50527   n = 37603</code></pre>
   border-right-color: #D3D3D3;
 }
 
-#uqwdtbddes .gt_footnote {
+#hdyfntshiy .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding-top: 4px;
@@ -5667,7 +5667,7 @@ fREML =  33229  Scale est. = 0.50527   n = 37603</code></pre>
   padding-right: 5px;
 }
 
-#uqwdtbddes .gt_sourcenotes {
+#hdyfntshiy .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -5681,7 +5681,7 @@ fREML =  33229  Scale est. = 0.50527   n = 37603</code></pre>
   border-right-color: #D3D3D3;
 }
 
-#uqwdtbddes .gt_sourcenote {
+#hdyfntshiy .gt_sourcenote {
   font-size: 90%;
   padding-top: 4px;
   padding-bottom: 4px;
@@ -5689,72 +5689,72 @@ fREML =  33229  Scale est. = 0.50527   n = 37603</code></pre>
   padding-right: 5px;
 }
 
-#uqwdtbddes .gt_left {
+#hdyfntshiy .gt_left {
   text-align: left;
 }
 
-#uqwdtbddes .gt_center {
+#hdyfntshiy .gt_center {
   text-align: center;
 }
 
-#uqwdtbddes .gt_right {
+#hdyfntshiy .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#uqwdtbddes .gt_font_normal {
+#hdyfntshiy .gt_font_normal {
   font-weight: normal;
 }
 
-#uqwdtbddes .gt_font_bold {
+#hdyfntshiy .gt_font_bold {
   font-weight: bold;
 }
 
-#uqwdtbddes .gt_font_italic {
+#hdyfntshiy .gt_font_italic {
   font-style: italic;
 }
 
-#uqwdtbddes .gt_super {
+#hdyfntshiy .gt_super {
   font-size: 65%;
 }
 
-#uqwdtbddes .gt_footnote_marks {
+#hdyfntshiy .gt_footnote_marks {
   font-size: 75%;
   vertical-align: 0.4em;
   position: initial;
 }
 
-#uqwdtbddes .gt_asterisk {
+#hdyfntshiy .gt_asterisk {
   font-size: 100%;
   vertical-align: 0;
 }
 
-#uqwdtbddes .gt_indent_1 {
+#hdyfntshiy .gt_indent_1 {
   text-indent: 5px;
 }
 
-#uqwdtbddes .gt_indent_2 {
+#hdyfntshiy .gt_indent_2 {
   text-indent: 10px;
 }
 
-#uqwdtbddes .gt_indent_3 {
+#hdyfntshiy .gt_indent_3 {
   text-indent: 15px;
 }
 
-#uqwdtbddes .gt_indent_4 {
+#hdyfntshiy .gt_indent_4 {
   text-indent: 20px;
 }
 
-#uqwdtbddes .gt_indent_5 {
+#hdyfntshiy .gt_indent_5 {
   text-indent: 25px;
 }
 
-#uqwdtbddes .katex-display {
+#hdyfntshiy .katex-display {
   display: inline-flex !important;
   margin-bottom: 0.75em !important;
 }
 
-#uqwdtbddes div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
+#hdyfntshiy div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
   height: 0px !important;
 }
 </style>
@@ -5792,7 +5792,7 @@ fREML =  33229  Scale est. = 0.50527   n = 37603</code></pre>
 </blockquote>
 <div class="cell">
 <div class="code-with-filename">
-<details class="code-fold"><summary>Code</summary><div class="code-with-filename-file">
+<details open="" class="code-fold"><summary>Code</summary><div class="code-with-filename-file">
 <pre><strong>Variance explained</strong></pre>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb52"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">Xp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/predict.html">predict</a></span><span class="op">(</span><span class="va">H2_model_phot</span>, type <span class="op">=</span> <span class="st">"terms"</span><span class="op">)</span></span>
@@ -5815,26 +5815,26 @@ s(Time,photoperiod.state) 0.020739525  1.913428e-03
 s(Time,Id)                1.000000000  1.441526e-01
 s(Id_date)                0.144152613  1.000000e+00</code></pre>
 </div>
-<details class="code-fold"><summary>Code</summary><div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb54"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">H2_R2</span> <span class="op">&lt;-</span> <span class="op">(</span><span class="va">variance</span><span class="op">/</span><span class="fu"><a href="https://rdrr.io/r/base/sum.html">sum</a></span><span class="op">(</span><span class="va">variance</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://tibble.tidyverse.org/reference/enframe.html">enframe</a></span><span class="op">(</span>value <span class="op">=</span> <span class="st">"partial R2"</span>, name <span class="op">=</span> <span class="st">"parameter"</span><span class="op">)</span></span>
+<details open="" class="code-fold"><summary>Code</summary><div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb54"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">H2_R2</span> <span class="op">&lt;-</span> <span class="op">(</span><span class="va">variance</span><span class="op">/</span><span class="fu"><a href="https://rdrr.io/r/base/sum.html">sum</a></span><span class="op">(</span><span class="va">variance</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://tibble.tidyverse.org/reference/enframe.html">enframe</a></span><span class="op">(</span>value <span class="op">=</span> <span class="st">"partial R2"</span>, name <span class="op">=</span> <span class="st">"parameter"</span><span class="op">)</span></span>
 <span><span class="va">H2_R2</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://gt.rstudio.com/reference/gt.html">gt</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://gt.rstudio.com/reference/fmt_percent.html">fmt_percent</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details><div class="cell-output-display">
-<div id="pnrqoxbhtk" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>#pnrqoxbhtk table {
+<div id="ukhdcggauo" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#ukhdcggauo table {
   font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-#pnrqoxbhtk thead, #pnrqoxbhtk tbody, #pnrqoxbhtk tfoot, #pnrqoxbhtk tr, #pnrqoxbhtk td, #pnrqoxbhtk th {
+#ukhdcggauo thead, #ukhdcggauo tbody, #ukhdcggauo tfoot, #ukhdcggauo tr, #ukhdcggauo td, #ukhdcggauo th {
   border-style: none;
 }
 
-#pnrqoxbhtk p {
+#ukhdcggauo p {
   margin: 0;
   padding: 0;
 }
 
-#pnrqoxbhtk .gt_table {
+#ukhdcggauo .gt_table {
   display: table;
   border-collapse: collapse;
   line-height: normal;
@@ -5860,12 +5860,12 @@ s(Id_date)                0.144152613  1.000000e+00</code></pre>
   border-left-color: #D3D3D3;
 }
 
-#pnrqoxbhtk .gt_caption {
+#ukhdcggauo .gt_caption {
   padding-top: 4px;
   padding-bottom: 4px;
 }
 
-#pnrqoxbhtk .gt_title {
+#ukhdcggauo .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -5877,7 +5877,7 @@ s(Id_date)                0.144152613  1.000000e+00</code></pre>
   border-bottom-width: 0;
 }
 
-#pnrqoxbhtk .gt_subtitle {
+#ukhdcggauo .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -5889,7 +5889,7 @@ s(Id_date)                0.144152613  1.000000e+00</code></pre>
   border-top-width: 0;
 }
 
-#pnrqoxbhtk .gt_heading {
+#ukhdcggauo .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -5901,13 +5901,13 @@ s(Id_date)                0.144152613  1.000000e+00</code></pre>
   border-right-color: #D3D3D3;
 }
 
-#pnrqoxbhtk .gt_bottom_border {
+#ukhdcggauo .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#pnrqoxbhtk .gt_col_headings {
+#ukhdcggauo .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -5922,7 +5922,7 @@ s(Id_date)                0.144152613  1.000000e+00</code></pre>
   border-right-color: #D3D3D3;
 }
 
-#pnrqoxbhtk .gt_col_heading {
+#ukhdcggauo .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -5942,7 +5942,7 @@ s(Id_date)                0.144152613  1.000000e+00</code></pre>
   overflow-x: hidden;
 }
 
-#pnrqoxbhtk .gt_column_spanner_outer {
+#ukhdcggauo .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -5954,15 +5954,15 @@ s(Id_date)                0.144152613  1.000000e+00</code></pre>
   padding-right: 4px;
 }
 
-#pnrqoxbhtk .gt_column_spanner_outer:first-child {
+#ukhdcggauo .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#pnrqoxbhtk .gt_column_spanner_outer:last-child {
+#ukhdcggauo .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#pnrqoxbhtk .gt_column_spanner {
+#ukhdcggauo .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -5974,11 +5974,11 @@ s(Id_date)                0.144152613  1.000000e+00</code></pre>
   width: 100%;
 }
 
-#pnrqoxbhtk .gt_spanner_row {
+#ukhdcggauo .gt_spanner_row {
   border-bottom-style: hidden;
 }
 
-#pnrqoxbhtk .gt_group_heading {
+#ukhdcggauo .gt_group_heading {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -6004,7 +6004,7 @@ s(Id_date)                0.144152613  1.000000e+00</code></pre>
   text-align: left;
 }
 
-#pnrqoxbhtk .gt_empty_group_heading {
+#ukhdcggauo .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -6019,15 +6019,15 @@ s(Id_date)                0.144152613  1.000000e+00</code></pre>
   vertical-align: middle;
 }
 
-#pnrqoxbhtk .gt_from_md > :first-child {
+#ukhdcggauo .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#pnrqoxbhtk .gt_from_md > :last-child {
+#ukhdcggauo .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#pnrqoxbhtk .gt_row {
+#ukhdcggauo .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -6046,7 +6046,7 @@ s(Id_date)                0.144152613  1.000000e+00</code></pre>
   overflow-x: hidden;
 }
 
-#pnrqoxbhtk .gt_stub {
+#ukhdcggauo .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -6059,7 +6059,7 @@ s(Id_date)                0.144152613  1.000000e+00</code></pre>
   padding-right: 5px;
 }
 
-#pnrqoxbhtk .gt_stub_row_group {
+#ukhdcggauo .gt_stub_row_group {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -6073,15 +6073,15 @@ s(Id_date)                0.144152613  1.000000e+00</code></pre>
   vertical-align: top;
 }
 
-#pnrqoxbhtk .gt_row_group_first td {
+#ukhdcggauo .gt_row_group_first td {
   border-top-width: 2px;
 }
 
-#pnrqoxbhtk .gt_row_group_first th {
+#ukhdcggauo .gt_row_group_first th {
   border-top-width: 2px;
 }
 
-#pnrqoxbhtk .gt_summary_row {
+#ukhdcggauo .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -6091,16 +6091,16 @@ s(Id_date)                0.144152613  1.000000e+00</code></pre>
   padding-right: 5px;
 }
 
-#pnrqoxbhtk .gt_first_summary_row {
+#ukhdcggauo .gt_first_summary_row {
   border-top-style: solid;
   border-top-color: #D3D3D3;
 }
 
-#pnrqoxbhtk .gt_first_summary_row.thick {
+#ukhdcggauo .gt_first_summary_row.thick {
   border-top-width: 2px;
 }
 
-#pnrqoxbhtk .gt_last_summary_row {
+#ukhdcggauo .gt_last_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -6110,7 +6110,7 @@ s(Id_date)                0.144152613  1.000000e+00</code></pre>
   border-bottom-color: #D3D3D3;
 }
 
-#pnrqoxbhtk .gt_grand_summary_row {
+#ukhdcggauo .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -6120,7 +6120,7 @@ s(Id_date)                0.144152613  1.000000e+00</code></pre>
   padding-right: 5px;
 }
 
-#pnrqoxbhtk .gt_first_grand_summary_row {
+#ukhdcggauo .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -6130,7 +6130,7 @@ s(Id_date)                0.144152613  1.000000e+00</code></pre>
   border-top-color: #D3D3D3;
 }
 
-#pnrqoxbhtk .gt_last_grand_summary_row_top {
+#ukhdcggauo .gt_last_grand_summary_row_top {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -6140,11 +6140,11 @@ s(Id_date)                0.144152613  1.000000e+00</code></pre>
   border-bottom-color: #D3D3D3;
 }
 
-#pnrqoxbhtk .gt_striped {
+#ukhdcggauo .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#pnrqoxbhtk .gt_table_body {
+#ukhdcggauo .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -6153,7 +6153,7 @@ s(Id_date)                0.144152613  1.000000e+00</code></pre>
   border-bottom-color: #D3D3D3;
 }
 
-#pnrqoxbhtk .gt_footnotes {
+#ukhdcggauo .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -6167,7 +6167,7 @@ s(Id_date)                0.144152613  1.000000e+00</code></pre>
   border-right-color: #D3D3D3;
 }
 
-#pnrqoxbhtk .gt_footnote {
+#ukhdcggauo .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding-top: 4px;
@@ -6176,7 +6176,7 @@ s(Id_date)                0.144152613  1.000000e+00</code></pre>
   padding-right: 5px;
 }
 
-#pnrqoxbhtk .gt_sourcenotes {
+#ukhdcggauo .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -6190,7 +6190,7 @@ s(Id_date)                0.144152613  1.000000e+00</code></pre>
   border-right-color: #D3D3D3;
 }
 
-#pnrqoxbhtk .gt_sourcenote {
+#ukhdcggauo .gt_sourcenote {
   font-size: 90%;
   padding-top: 4px;
   padding-bottom: 4px;
@@ -6198,72 +6198,72 @@ s(Id_date)                0.144152613  1.000000e+00</code></pre>
   padding-right: 5px;
 }
 
-#pnrqoxbhtk .gt_left {
+#ukhdcggauo .gt_left {
   text-align: left;
 }
 
-#pnrqoxbhtk .gt_center {
+#ukhdcggauo .gt_center {
   text-align: center;
 }
 
-#pnrqoxbhtk .gt_right {
+#ukhdcggauo .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#pnrqoxbhtk .gt_font_normal {
+#ukhdcggauo .gt_font_normal {
   font-weight: normal;
 }
 
-#pnrqoxbhtk .gt_font_bold {
+#ukhdcggauo .gt_font_bold {
   font-weight: bold;
 }
 
-#pnrqoxbhtk .gt_font_italic {
+#ukhdcggauo .gt_font_italic {
   font-style: italic;
 }
 
-#pnrqoxbhtk .gt_super {
+#ukhdcggauo .gt_super {
   font-size: 65%;
 }
 
-#pnrqoxbhtk .gt_footnote_marks {
+#ukhdcggauo .gt_footnote_marks {
   font-size: 75%;
   vertical-align: 0.4em;
   position: initial;
 }
 
-#pnrqoxbhtk .gt_asterisk {
+#ukhdcggauo .gt_asterisk {
   font-size: 100%;
   vertical-align: 0;
 }
 
-#pnrqoxbhtk .gt_indent_1 {
+#ukhdcggauo .gt_indent_1 {
   text-indent: 5px;
 }
 
-#pnrqoxbhtk .gt_indent_2 {
+#ukhdcggauo .gt_indent_2 {
   text-indent: 10px;
 }
 
-#pnrqoxbhtk .gt_indent_3 {
+#ukhdcggauo .gt_indent_3 {
   text-indent: 15px;
 }
 
-#pnrqoxbhtk .gt_indent_4 {
+#ukhdcggauo .gt_indent_4 {
   text-indent: 20px;
 }
 
-#pnrqoxbhtk .gt_indent_5 {
+#ukhdcggauo .gt_indent_5 {
   text-indent: 25px;
 }
 
-#pnrqoxbhtk .katex-display {
+#ukhdcggauo .katex-display {
   display: inline-flex !important;
   margin-bottom: 0.75em !important;
 }
 
-#pnrqoxbhtk div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
+#ukhdcggauo div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
   height: 0px !important;
 }
 </style>
@@ -6301,7 +6301,7 @@ s(Id_date)                0.144152613  1.000000e+00</code></pre>
 </section><section id="model-visualization" class="level4"><h4 class="anchored" data-anchor-id="model-visualization">Model visualization</h4>
 <div class="cell">
 <div class="code-with-filename">
-<details class="code-fold"><summary>Code</summary><div class="code-with-filename-file">
+<details open="" class="code-fold"><summary>Code</summary><div class="code-with-filename-file">
 <pre><strong>prepare photoperiod model H2 plot</strong></pre>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb55"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">H2_site_data</span> <span class="op">&lt;-</span> </span>
@@ -6343,7 +6343,7 @@ s(Id_date)                0.144152613  1.000000e+00</code></pre>
 </div>
 <div class="cell">
 <div class="code-with-filename">
-<details class="code-fold"><summary>Code</summary><div class="code-with-filename-file">
+<details open="" class="code-fold"><summary>Code</summary><div class="code-with-filename-file">
 <pre><strong>Visualize photoperiod model H2</strong></pre>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb56"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/source.html">source</a></span><span class="op">(</span><span class="st">"scripts/Brown_bracket.R"</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -6355,7 +6355,7 @@ s(Id_date)                0.144152613  1.000000e+00</code></pre>
 <div class="cell-output cell-output-stderr">
 <pre><code>Loading required package: ggtext</code></pre>
 </div>
-<details class="code-fold"><summary>Code</summary><div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb59"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">H2_pred</span> <span class="op">&lt;-</span> </span>
+<details open="" class="code-fold"><summary>Code</summary><div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb59"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">H2_pred</span> <span class="op">&lt;-</span> </span>
 <span><span class="va">H2_site_data</span> <span class="op">|&gt;</span> </span>
 <span>  <span class="fu">site_conv_mutate</span><span class="op">(</span>rev <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html">ggplot</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html">aes</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
@@ -6391,7 +6391,7 @@ s(Id_date)                0.144152613  1.000000e+00</code></pre>
 </div>
 <div class="cell">
 <div class="code-with-filename">
-<details class="code-fold"><summary>Code</summary><div class="code-with-filename-file">
+<details open="" class="code-fold"><summary>Code</summary><div class="code-with-filename-file">
 <pre><strong>Visualize Individual</strong></pre>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb60"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">P_individual</span> <span class="op">&lt;-</span> </span>
@@ -6428,7 +6428,7 @@ s(Id_date)                0.144152613  1.000000e+00</code></pre>
 </div>
 <div class="cell">
 <div class="code-with-filename">
-<details class="code-fold"><summary>Code</summary><div class="code-with-filename-file">
+<details open="" class="code-fold"><summary>Code</summary><div class="code-with-filename-file">
 <pre><strong>prepare time model</strong></pre>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb61"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">H2_data</span> <span class="op">&lt;-</span> </span>
@@ -6469,7 +6469,7 @@ s(Id_date)                0.144152613  1.000000e+00</code></pre>
 </div>
 <div class="cell">
 <div class="code-with-filename">
-<details class="code-fold"><summary>Code</summary><div class="code-with-filename-file">
+<details open="" class="code-fold"><summary>Code</summary><div class="code-with-filename-file">
 <pre><strong>Visualize Time</strong></pre>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb62"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">P_time</span> <span class="op">&lt;-</span> </span>
@@ -6497,7 +6497,7 @@ s(Id_date)                0.144152613  1.000000e+00</code></pre>
 </div>
 <div class="cell">
 <div class="code-with-filename">
-<details class="code-fold"><summary>Code</summary><div class="code-with-filename-file">
+<details open="" class="code-fold"><summary>Code</summary><div class="code-with-filename-file">
 <pre><strong>Visualize model terms</strong></pre>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb63"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">P_terms</span> <span class="op">&lt;-</span></span>
@@ -6542,13 +6542,13 @@ s(Id_date)                0.144152613  1.000000e+00</code></pre>
 </div>
 <div class="cell">
 <div class="code-with-filename">
-<details class="code-fold"><summary>Code</summary><div class="code-with-filename-file">
+<details open="" class="code-fold"><summary>Code</summary><div class="code-with-filename-file">
 <pre><strong>Combination of partial plots H2</strong></pre>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb64"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="op">(</span><span class="op">(</span><span class="va">P_time</span> <span class="op">/</span> <span class="va">P_individual</span><span class="op">)</span> <span class="op">|</span> <span class="op">(</span><span class="va">H2_pred</span> <span class="op">/</span> <span class="va">P_terms</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://patchwork.data-imaginist.com/reference/plot_annotation.html">plot_annotation</a></span><span class="op">(</span>tag_levels <span class="op">=</span> <span class="st">"A"</span>, caption <span class="op">=</span> <span class="va">Brown_caption</span>,</span>
 <span>                  theme <span class="op">=</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html">theme</a></span><span class="op">(</span>plot.caption <span class="op">=</span> <span class="fu">element_textbox_simple</span><span class="op">(</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://patchwork.data-imaginist.com/reference/plot_layout.html">plot_layout</a></span><span class="op">(</span>widths <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">2</span>,<span class="fl">1.5</span><span class="op">)</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span>  <span class="fu"><a href="https://patchwork.data-imaginist.com/reference/plot_layout.html">plot_layout</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 </div>
 <div class="cell-output-display">
@@ -6557,7 +6557,7 @@ s(Id_date)                0.144152613  1.000000e+00</code></pre>
 </figure>
 </div>
 </div>
-<details class="code-fold"><summary>Code</summary><div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb65"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggsave.html">ggsave</a></span><span class="op">(</span><span class="st">"figures/Fig4.pdf"</span>, height <span class="op">=</span> <span class="fl">17</span>, width <span class="op">=</span> <span class="fl">13</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<details open="" class="code-fold"><summary>Code</summary><div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb65"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggsave.html">ggsave</a></span><span class="op">(</span><span class="st">"figures/Fig4.pdf"</span>, height <span class="op">=</span> <span class="fl">17</span>, width <span class="op">=</span> <span class="fl">13</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 </div>
 </section></section><section id="interpretation-1" class="level3"><h3 class="anchored" data-anchor-id="interpretation-1">Interpretation</h3>
@@ -6573,7 +6573,7 @@ s(Id_date)                0.144152613  1.000000e+00</code></pre>
 <li><p>Kumasi (GH) has significantly lower daytime illuminance both in the afternoon and after dusk (factor 2-5 reduction)</p></li>
 </ul></section></section><section id="session-info" class="level2"><h2 class="anchored" data-anchor-id="session-info">Session info</h2>
 <div class="cell">
-<details class="code-fold"><summary>Code cell - Session info</summary><div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb66"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/sessionInfo.html">sessionInfo</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<details open="" class="code-fold"><summary>Code cell - Session info</summary><div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb66"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/sessionInfo.html">sessionInfo</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details><div class="cell-output cell-output-stdout">
 <pre><code>R version 4.5.0 (2025-04-11)
 Platform: aarch64-apple-darwin20
@@ -7105,7 +7105,7 @@ loaded via a namespace (and not attached):
 <span id="cb68-8"><a href="#cb68-8" aria-hidden="true" tabindex="-1"></a><span class="co">    code-tools: true</span></span>
 <span id="cb68-9"><a href="#cb68-9" aria-hidden="true" tabindex="-1"></a><span class="co">    code-link: true</span></span>
 <span id="cb68-10"><a href="#cb68-10" aria-hidden="true" tabindex="-1"></a><span class="co">    page-layout: full</span></span>
-<span id="cb68-11"><a href="#cb68-11" aria-hidden="true" tabindex="-1"></a><span class="co">    code-fold: true</span></span>
+<span id="cb68-11"><a href="#cb68-11" aria-hidden="true" tabindex="-1"></a><span class="co">    code-fold: show</span></span>
 <span id="cb68-12"><a href="#cb68-12" aria-hidden="true" tabindex="-1"></a><span class="co">---</span></span>
 <span id="cb68-13"><a href="#cb68-13" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb68-14"><a href="#cb68-14" aria-hidden="true" tabindex="-1"></a><span class="fu">## Preface</span></span>
@@ -8099,7 +8099,7 @@ loaded via a namespace (and not attached):
 <span id="cb68-1064"><a href="#cb68-1064" aria-hidden="true" tabindex="-1"></a>((P_time <span class="sc">/</span> P_individual) <span class="sc">|</span> (H2_pred <span class="sc">/</span> P_terms)) <span class="sc">+</span></span>
 <span id="cb68-1065"><a href="#cb68-1065" aria-hidden="true" tabindex="-1"></a>  <span class="fu">plot_annotation</span>(<span class="at">tag_levels =</span> <span class="st">"A"</span>, <span class="at">caption =</span> Brown_caption,</span>
 <span id="cb68-1066"><a href="#cb68-1066" aria-hidden="true" tabindex="-1"></a>                  <span class="at">theme =</span> <span class="fu">theme</span>(<span class="at">plot.caption =</span> <span class="fu">element_textbox_simple</span>())) <span class="sc">+</span></span>
-<span id="cb68-1067"><a href="#cb68-1067" aria-hidden="true" tabindex="-1"></a>  <span class="fu">plot_layout</span>(<span class="at">widths =</span> <span class="fu">c</span>(<span class="dv">2</span>,<span class="fl">1.5</span>))</span>
+<span id="cb68-1067"><a href="#cb68-1067" aria-hidden="true" tabindex="-1"></a>  <span class="fu">plot_layout</span>()</span>
 <span id="cb68-1068"><a href="#cb68-1068" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb68-1069"><a href="#cb68-1069" aria-hidden="true" tabindex="-1"></a><span class="fu">ggsave</span>(<span class="st">"figures/Fig4.pdf"</span>, <span class="at">height =</span> <span class="dv">17</span>, <span class="at">width =</span> <span class="dv">13</span>)</span>
 <span id="cb68-1070"><a href="#cb68-1070" aria-hidden="true" tabindex="-1"></a></span>

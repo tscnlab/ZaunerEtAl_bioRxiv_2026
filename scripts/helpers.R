@@ -192,9 +192,13 @@ site_conversion <- function(x){
     )
 }
 
-site_conv_mutate <- function(data, site = site, rev = TRUE){
+site_conv_mutate <- function(data, site = site, rev = TRUE, other.levels = NULL){
   
   if(rev) melidos_order <- rev(melidos_order)
+  
+  if(!is.null(other.levels)) {
+    melidos_order <- c(other.levels, melidos_order)
+  }
   
   factor_conv <- function(x) {
       if(!inherits(x, "factor")) {
@@ -238,8 +242,8 @@ r2_helper <- function(model, ...) {
          r2_nakagawa_helper(model, ...))
 }
   
-r2_nakagawa_helper <- function(model, data, family, random_formula = "(1 | site:Id)") {
-  null_formula <- as.formula(paste("metric ~ 1 +", random_formula))
+r2_nakagawa_helper <- function(model, data, family, response, random_formula = "(1 | site:Id)") {
+  null_formula <- as.formula(paste(response, " ~ 1 +", random_formula))
   
   null_model <- tryCatch(
     glmmTMB::glmmTMB(
@@ -263,4 +267,12 @@ r2_nakagawa_helper <- function(model, data, family, random_formula = "(1 | site:
   )
   
   out
+}
+
+test_term <- function(model, term, do.anova = FALSE){
+  reduced <- update(model, paste(". ~ . -", term))
+  if(do.anova) {
+    anova(reduced, model)$`Pr(>Chisq)`[2]
+  } else reduced
+  
 }

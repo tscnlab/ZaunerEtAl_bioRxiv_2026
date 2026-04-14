@@ -8,7 +8,7 @@ format:
     code-tools: true
     code-link: true
     page-layout: full
-    code-fold: true
+    code-fold: show
 ---
 
 ## Preface
@@ -320,10 +320,10 @@ R2_table <-
   mutate(
     name = name,
     metric_type = metric_type,
-    H1_1_r2 = pmap(list(H1_1_model, data, family), r2_helper), 
-    H1_0_r2 = pmap(list(H1_0_model, data, family), r2_helper), 
-    H1_phot_r2 = pmap(list(H1_phot_model, data, family), r2_helper), 
-    H1_lat_r2 = pmap(list(H1_lat_model, data, family), r2_helper), 
+    H1_1_r2 = pmap(list(H1_1_model, data, family, response), r2_helper), 
+    H1_0_r2 = pmap(list(H1_0_model, data, family, response), r2_helper), 
+    H1_phot_r2 = pmap(list(H1_phot_model, data, family, response), r2_helper), 
+    H1_lat_r2 = pmap(list(H1_lat_model, data, family, response), r2_helper), 
     H1_phot_sig = H1_phot_sig,
     H1_lat_sig = H1_lat_sig,
     H1_1_sig = H1_1_sig,
@@ -1002,7 +1002,7 @@ H2_model_phot |>
 ((P_time / P_individual) | (H2_pred / P_terms)) +
   plot_annotation(tag_levels = "A", caption = Brown_caption,
                   theme = theme(plot.caption = element_textbox_simple())) +
-  plot_layout(widths = c(2,1.5))
+  plot_layout()
 
 ggsave("figures/Fig4.pdf", height = 17, width = 13)
 

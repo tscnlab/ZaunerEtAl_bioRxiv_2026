@@ -1321,3 +1321,38 @@ walk2(Fig3_data$plot,
 sessionInfo()
 ```
 
+## Figure latitude x photoperiod
+
+```{r}
+span_phot <- tibble(Datetime = as.POSIXct(ymd("2025-01-01"), tz = "UTC") + ddays(0:364))
+
+phot_potential <- 
+0:60 |> 
+  map(
+   \(x) span_phot |> 
+        extract_photoperiod(c(x,0)) |> 
+        group_by(lat) |> 
+        summarize(min = min(photoperiod, na.rm = TRUE), 
+                  max = max(photoperiod, na.rm = TRUE))
+) |> list_rbind()
+
+metrics$data[[3]] |> 
+  site_conv_mutate(rev = FALSE) |> 
+  ggplot(aes(x = lat)) + 
+  geom_ribbon(data = phot_potential, aes(ymin = min, ymax = max), alpha = 0.25) + 
+  geom_jitter(aes(col = site, y = photoperiod), width = 0.5, height = 0, alpha = 0.5) + 
+  annotate("text", y = 16, x = 15, label = "possible photoperiods", color = "darkgrey") +
+  annotate("curve", y = 15.5, x = 15.5,
+           xend = 20, yend = 14.3,
+           curvature = 0.2,
+           arrow = arrow(type = "closed",
+                         length = unit(0.2, "cm")),
+           color = "grey") +
+  theme_cowplot() + 
+  scale_color_manual(values = melidos_colors) +
+  labs(color = "Site", y = "Photoperiod (hr)", x = "Latitude (°)",
+       caption = "A jitter of width 0.5 was applied to points.\nPhotoperiod is defined as the timespan of daily sun elevation above -6°")
+
+ggsave("figures/photoperiod_potential.pdf", width = 9)
+```
+
