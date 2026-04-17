@@ -1,0 +1,475 @@
+---
+title: "Personal light exposure: Data preparation"
+subtitle: "Individual, behavioural, and environmental determinants of personal light exposure in daily life: a multi-country wearable and experience-sampling study"
+format: 
+  html:
+    code-tools: true
+    code-link: true
+---
+
+## Preface
+
+This supplement documents the import and preprocessing of personal light exposure data for the MeLiDos field study analysis. The goal is to derive at three sets of data:
+
+1. An unaggregated set of light exposure data, both for the eye-level and chest-level wearing position where
+  - Values > 120 000 lx are removed (set to `NA`)
+  - non-wear periods, that are not also sleep periods, are removed
+2. A further processed set (from 1.) where
+  - hours with less than 50% data availability are removed
+  - days with less than 80% data availability (after the previous step) are removed
+3. A further processed set (from 2.) where personal light exposure metrics are calculated
+  a. per participant:
+  - dynamics-based:
+      - *IS*: interdaily stability
+      - *IV*: intradaily variability
+  b. per participant-day:
+  - level-based:
+      - `Mean`: geometric mean of melanopic EDI (lx)
+      - `M10mean`: geometric mean of melanopic EDI during 10 brightest hours of the day (lx)
+      - `L5mean`: geometric mean of melanopic EDI during 5 darkest hours of the day (lx)
+  - duration-based:  
+      - `TAT1000`: time above 1000 lx melanopic EDI (minutes)
+      - `TAT250`: time above 250 lx melanopic EDI (during wake) (hours)
+      - `TBT10`: time below 10 lx melanopic EDI (during evening, i.e. 3 hours before sleep) (hours)
+      - `TBT1`: time below 1 lx melanopic EDI (during sleep) (hours)
+      - `PAT250`: longest period above 250lx melanopic EDI (minutes)
+  - timing-based:
+      - `FLIT250`: first time above 250 lx melanopic EDI (HH:MM)
+      - `LLIT250`: last time above 250 lx melanopic EDI (HH:MM)
+      - `M10`: midpoint of brightest 10 hours (HH:MM)
+      - `L5`: midpoint of darkest 5 hours (HH:MM)
+  - exposure-history-based:
+      - `Dose`: melanopic EDI dose (lx·h)
+  - spectrum-based:  
+      - `MDER`: melanopic daylight efficacy ratio
+  c. per participant-hour:
+  - level-based:
+      - `Mean`:  geometric mean of melanopic EDI (lx)
+
+## Setup
+
+```{r}
+#| message: false
+#| warning: false
+library(tidyverse)
+library(LightLogR)
+library(melidosData)
+library(cowplot)
+```
+
+## Importing data
+
+### Light
+
+In the first step, we import the unaggregated light eposure data for the glasses and the chest. These will be loaded from the [GitHub project page](https://github.com/MeLiDosProject). These data have been imported already, trimmed by trial dates, checked for irregular data and gaps. All of them run on a `10 second` interval.
+
+```{r}
+#| message: false
+light_glasses <- load_data("light_glasses")
+light_chest <- load_data("light_chest")
+```
+
+### Sleep
+
+The sleep data comes from a morning sleep diary. They contain both sleep and wake times.
+
+```{r}
+#| message: false
+sleepdiary <- load_data("sleepdiaries")
+```
+
+```{r}
+# sleepdiary <- sleepdiary |> flatten_data()
+# trial_times <- load_data("trial_times") |> flatten_data()
+```
+
+```{r}
+sleep_tester <- function(sleepdiary, trial_times, filter) {
+  trial_times <- trial_times |> filter(site == filter) |> drop_na(start, end)
+  
+  sleepdiary |> 
+  group_by(Id) |> 
+  filter(site == filter) |> 
+  ggplot(aes(y = Id)) +
+  geom_linerange(aes(xmin = sleepprep, xmax = wake),
+                 col = "red", linewidth = 2) +
+  geom_point(data = trial_times, aes(x = start), col = "green3", size = 4) +
+  geom_point(data = trial_times, aes(x = end), col = "green3", size = 4) +
+  facet_wrap(~Id, ncol = 1, scales = "free") +
+  scale_x_datetime(date_breaks = "24 hours",
+                   date_labels = "%H:%M %D",
+                   limits = LightLogR::Datetime_limits,
+                   )+
+  labs(y = NULL) +
+  # theme_cowplot() +
+  theme_sub_strip(background = element_blank(),
+                  text = element_blank()) +
+  coord_cartesian(clip = "off")
+}
+```
+
+```{r}
+#| fig-height: 10
+# sleep_tester(sleepdiary, trial_times, "KNUST")
+```
+
+### Wear log
+
+The non-wear data comes from an app-based wear log that participants filled in whenever they removed or put on the device(s). 
+
+```{r}
+#| message: false
+wearlog <- load_data("wearlog")
+# wearlog <- wearlog |> flatten_data()
+```
+
+```{r}
+wearlog_tester <- function(wearlog, trial_times, filter) {
+  trial_times <- trial_times |> filter(site == filter) |> drop_na(start, end)
+  wearlog |> 
+  group_by(Id) |> 
+  filter(site == filter) |> 
+  ggplot(aes(y = Id)) +
+  geom_linerange(aes(xmin = start, xmax = end, colour = state), linewidth = 2) +
+  geom_point(data = trial_times, aes(x = start), col = "green3", size = 4) +
+  geom_point(data = trial_times, aes(x = end), col = "green3", size = 4) +
+  facet_wrap(~Id, ncol = 1, scales = "free") +
+  scale_x_datetime(date_breaks = "24 hours",
+                   date_labels = "%H:%M %D",
+                   limits = LightLogR::Datetime_limits,
+                   )+
+  labs(y = NULL) +
+  # theme_cowplot() +
+  theme_sub_strip(background = element_blank(),
+                  text = element_blank()) +
+  coord_cartesian(clip = "off")
+}
+
+```
+
+```{r}
+#| fig-height: 10
+# wearlog_tester(wearlog, trial_times, "KNUST")
+```
+
+### Combine light exposure data with log and diary data
+
+For the sleepdiary, a selection of sleep and wake times will be added. For the wearlog, the start and end times of a removal, as well as the type (`state`) of removal will be used.
+
+### Preparation
+
+```{r}
+#| message: false
+
+sleepdiary_adj <-
+  sleepdiary |>
+  map(\(x) x |>
+        select(Id, sleepprep, wake) |>
+        group_by(Id) |>
+        pivot_longer(-Id, names_to = "sleep", values_to = "Datetime") |>
+        sc2interval(Statechange.colname = sleep, starting.state = "wake") |>
+        sleep_int2Brown(sleep.state = "sleepprep", Brown.day = "wake", 
+                        Brown.evening = "pre-sleep", Brown.night = "sleep") |>
+        mutate(sleep = case_when(is.na(sleep) & State.Brown == "pre-sleep" ~ "wake",
+                                 .default = sleep))
+  )
+
+wearlog_adj <-
+  wearlog |>  
+    map(\(x) x |> select(Id, start, end, wear = state))
+```
+
+### Combination
+
+```{r}
+light_chest_expanded <- 
+light_chest |> 
+  imap(\(x, idx) x |>
+    select(Id, Datetime, MEDI, LIGHT, is.implicit) |>
+    add_states(sleepdiary_adj[[idx]], start = Interval, end = Interval) |>
+    add_states(wearlog_adj[[idx]]) |> 
+    aggregate_Datetime("1 min", type = "floor")
+  )
+
+light_glasses_expanded <- 
+light_glasses |> 
+  imap(\(x, idx) x |> 
+    select(Id, Datetime, MEDI, LIGHT, is.implicit) |> 
+    add_states(sleepdiary_adj[[idx]], start = Interval, end = Interval) |> 
+    add_states(wearlog_adj[[idx]]) |> 
+    aggregate_Datetime("1 min", type = "floor")
+  )
+```
+
+## Preprocessing step 1
+
+In this step, we will remove non-wear instances that are neither marked as sleep, nor fall into a sleep window (sleepdiary). We will also add photoperiod, and remove instances ≥ 1.2*10^5 lx melanopic EDI.
+
+```{r}
+light_chest_expanded <- 
+light_chest_expanded |> 
+  imap(\(x, idx) x |> 
+    mutate(MEDI = replace_when(MEDI, 
+                               wear == "off" & (State.Brown != "sleep" | is.na(State.Brown)) ~ NA,
+                               MEDI >= 120000 ~ NA
+                               )) |> 
+      add_photoperiod(melidos_coordinates[[idx]])
+  )
+
+light_glasses_expanded <- 
+light_glasses_expanded |> 
+  imap(\(x, idx) x |> 
+    mutate(MEDI = replace_when(MEDI, 
+                               wear == "off" & (State.Brown != "sleep" | is.na(State.Brown)) ~ NA,
+                               MEDI >= 120000 ~ NA
+                               )) |> 
+      add_photoperiod(melidos_coordinates[[idx]])
+  )
+
+light_chest_processed1 <- 
+  structure(light_chest_expanded, class = "melidos_data") |> flatten_data() |> group_by(site, Id)
+
+light_glasses_processed1 <- 
+  structure(light_glasses_expanded, class = "melidos_data") |> flatten_data() |> group_by(site, Id)
+```
+
+**This marks our first dataset**
+
+```{r}
+save(light_chest_processed1, file = "data/preprocessed_chest_1.RData")
+save(light_glasses_processed1, file = "data/preprocessed_glasses_1.RData")
+```
+
+## Preprocessing step 2
+
+Here we further process the data:
+  - hours with less than 50% data availability are removed
+  - days with less than 80% data availability (after the previous step) are removed
+
+```{r}
+light_chest_processed2 <- 
+  light_chest_processed1 |> 
+  cut_Datetime(unit = "1 hour", group_by = TRUE, type = "floor") |> 
+  remove_partial_data(MEDI, threshold.missing = 0.5) |> 
+  ungroup(Datetime.rounded) |> 
+  select(-Datetime.rounded) |> 
+  add_Date_col(group.by = TRUE) |> 
+  gap_handler(full.days = TRUE) |> 
+  remove_partial_data(MEDI, threshold.missing = 0.2) |> 
+  ungroup(Date)
+
+light_glasses_processed2 <- 
+  light_glasses_processed1 |> 
+  cut_Datetime(unit = "1 hour", group_by = TRUE, type = "floor") |> 
+  remove_partial_data(MEDI, threshold.missing = 0.5) |> 
+  ungroup(Datetime.rounded) |> 
+  select(-Datetime.rounded) |> 
+  add_Date_col(group.by = TRUE) |> 
+  gap_handler(full.days = TRUE) |> 
+  remove_partial_data(MEDI, threshold.missing = 0.2) |> 
+  ungroup(Date)
+```
+
+**This marks our second dataset**
+
+```{r}
+save(light_chest_processed2, file = "data/preprocessed_chest_2.RData")
+save(light_glasses_processed2, file = "data/preprocessed_glasses_2.RData")
+```
+
+## Preprocessing step 3
+
+### Per participant metric
+
+  - dynamics-based:
+      - *IS*: interdaily stability
+      - *IV*: intradaily variability
+      
+```{r}
+#| warning: false
+metric_chest_participant <- 
+  light_chest_processed2 |> 
+  summarize(
+    interdaily_stability(MEDI, Datetime, na.rm = TRUE, as.df = TRUE),
+    intradaily_variability(MEDI, Datetime, na.rm = TRUE, as.df = TRUE),
+  )
+
+metric_glasses_participant <- 
+  light_glasses_processed2 |> 
+  summarize(
+    interdaily_stability(MEDI, Datetime, na.rm = TRUE, as.df = TRUE),
+    intradaily_variability(MEDI, Datetime, na.rm = TRUE, as.df = TRUE),
+  )
+```
+
+### Per participant-day metric
+
+  - level-based:
+      - `Mean`: geometric mean of melanopic EDI (lx)
+      - `M10mean`: geometric mean of melanopic EDI during 10 brightest hours of the day (lx)
+      - `L5mean`: geometric mean of melanopic EDI during 5 darkest hours of the day (lx)
+  - duration-based:  
+      - `TAT1000`: time above 1000 lx melanopic EDI (minutes)
+      - `TAT250`: time above 250 lx melanopic EDI (during wake) (hours)
+      - `TBT10`: time below 10 lx melanopic EDI (during evening, i.e. 3 hours before sleep) (hours)
+      - `TBT1`: time below 1 lx melanopic EDI (during sleep) (hours)
+      - `PAT250`: longest period above 250lx melanopic EDI (minutes)
+  - timing-based:
+      - `FLIT250`: first time above 250 lx melanopic EDI (HH:MM)
+      - `LLIT250`: last time above 250 lx melanopic EDI (HH:MM)
+      - `M10`: midpoint of brightest 10 hours (HH:MM)
+      - `L10`: midpoint of darkest 10 hours (HH:MM)
+  - exposure-history-based:
+      - `Dose`: melanopic EDI dose (lx·h)
+  - spectrum-based:  
+      - `MDER`: melanopic daylight efficacy ratio
+
+```{r}
+metric_chest_participantday <-
+  light_chest_processed2 |> 
+  group_by(Date, .add = TRUE) |> 
+  summarize(
+    Mean = MEDI |> log_zero_inflated() |> mean(na.rm = TRUE) |> exp_zero_inflated(),
+    bright_dark_period(log_zero_inflated(MEDI), Datetime, "brightest", "10 hours", na.rm = TRUE, as.df = TRUE),
+    bright_dark_period(log_zero_inflated(MEDI), Datetime, "darkest", "10 hours", loop = TRUE, na.rm = TRUE, as.df = TRUE),
+    duration_above_threshold(MEDI, Datetime, "above", 1000, na.rm = TRUE, as.df = TRUE),
+    duration_above_threshold(MEDI, Datetime, "above", 250, na.rm = TRUE, as.df = TRUE),
+    period_above_threshold(MEDI, Datetime, "above", 250, na.rm = TRUE, as.df = TRUE),
+    timing_above_threshold(MEDI, Datetime, "above", 250, na.rm = TRUE, as.df = TRUE),
+    dose(MEDI, Datetime, na.rm = TRUE, as.df = TRUE),
+    MDER = mean(MEDI / LIGHT, na.rm = TRUE),
+    .groups = "drop_last"
+  ) |> 
+  mutate(MDER = ifelse(abs(MDER) == Inf, NA, MDER),
+         across(c(brightest_10h_mean, darkest_10h_mean), exp_zero_inflated)
+  )
+
+metric_glasses_participantday <-
+  light_glasses_processed2 |> 
+  group_by(Date, .add = TRUE) |> 
+  summarize(
+    Mean = MEDI |> log_zero_inflated() |> mean(na.rm = TRUE) |> exp_zero_inflated(),
+    bright_dark_period(log_zero_inflated(MEDI), Datetime, "brightest", "10 hours", na.rm = TRUE, as.df = TRUE),
+    bright_dark_period(log_zero_inflated(MEDI), Datetime, "darkest", "10 hours", loop = TRUE, na.rm = TRUE, as.df = TRUE),
+    duration_above_threshold(MEDI, Datetime, "above", 1000, na.rm = TRUE, as.df = TRUE),
+    duration_above_threshold(MEDI, Datetime, "above", 250, na.rm = TRUE, as.df = TRUE),
+    period_above_threshold(MEDI, Datetime, "above", 250, na.rm = TRUE, as.df = TRUE),
+    timing_above_threshold(MEDI, Datetime, "above", 250, na.rm = TRUE, as.df = TRUE),
+    dose(MEDI, Datetime, na.rm = TRUE, as.df = TRUE),
+    MDER = mean(MEDI / LIGHT, na.rm = TRUE),
+    .groups = "drop_last"
+  ) |> 
+  mutate(MDER = ifelse(abs(MDER) == Inf, NA, MDER),
+         across(c(brightest_10h_mean, darkest_10h_mean), exp_zero_inflated)
+  )
+```
+
+
+```{r}
+metric_chest_participantday2 <- 
+  light_chest_processed2 |> 
+  group_by(Date, State.Brown, .add = TRUE) |> 
+  summarize(
+    duration_above_threshold(MEDI, Datetime, "above", 250, na.rm = TRUE, as.df = TRUE),
+    duration_above_threshold(MEDI, Datetime, "below", 10, na.rm = TRUE, as.df = TRUE),
+    duration_above_threshold(MEDI, Datetime, "below", 1, na.rm = TRUE, as.df = TRUE),
+    .groups = "drop_last"
+  ) |> 
+  pivot_longer(-c(site:State.Brown), names_to = "metric") |> 
+  filter_out(
+    !(State.Brown == "wake" & metric == "duration_above_250"),
+    !(State.Brown == "pre-sleep" & metric == "duration_below_10"),
+    !(State.Brown == "sleep" & metric == "duration_below_1"),
+    ) |>
+  drop_na(State.Brown) |> 
+  unite(metric, metric, State.Brown) |> 
+  pivot_wider(id_cols = c(site, Id, Date), values_from = value, names_from = metric)
+
+metric_glasses_participantday2 <- 
+  light_glasses_processed2 |> 
+  group_by(Date, State.Brown, .add = TRUE) |> 
+  summarize(
+    duration_above_threshold(MEDI, Datetime, "above", 250, na.rm = TRUE, as.df = TRUE),
+    duration_above_threshold(MEDI, Datetime, "below", 10, na.rm = TRUE, as.df = TRUE),
+    duration_above_threshold(MEDI, Datetime, "below", 1, na.rm = TRUE, as.df = TRUE),
+    .groups = "drop_last"
+  ) |> 
+  pivot_longer(-c(site:State.Brown), names_to = "metric") |> 
+  filter_out(
+    !(State.Brown == "wake" & metric == "duration_above_250"),
+    !(State.Brown == "pre-sleep" & metric == "duration_below_10"),
+    !(State.Brown == "sleep" & metric == "duration_below_1"),
+    ) |>
+  drop_na(State.Brown) |> 
+  unite(metric, metric, State.Brown) |> 
+  pivot_wider(id_cols = c(site, Id, Date), values_from = value, names_from = metric)
+
+```
+
+```{r}
+metric_chest_participantday <-
+  metric_chest_participantday |> 
+  left_join(metric_chest_participantday2, 
+            by = c("site", "Id", "Date"))
+
+metric_glasses_participantday <-
+  metric_glasses_participantday |> 
+  left_join(metric_glasses_participantday2, 
+            by = c("site", "Id", "Date"))
+```
+
+### Per participant-hour metric
+
+  - level-based:
+      - `Mean`:  geometric mean of melanopic EDI (lx)
+
+```{r}
+metric_chest_participanthour <- 
+  light_chest_processed2 |> 
+  aggregate_Datetime(
+    "1 hour",
+    type = "floor",
+    numeric.handler = \(x) x |> mean(na.rm = TRUE),
+    geo.MEDI = MEDI |> log_zero_inflated() |> mean(na.rm = TRUE) |> exp_zero_inflated()
+  )|>
+  add_Date_col(group.by = TRUE) |> 
+  mutate(static = all(MEDI == MEDI[1])) |> 
+  filter_out(static) |> 
+  select(-static) |> 
+  ungroup(Date)
+
+metric_glasses_participanthour <- 
+  light_glasses_processed2 |> 
+  aggregate_Datetime(
+    "30 mins",
+    type = "floor",
+    numeric.handler = \(x) x |> mean(na.rm = TRUE),
+    geo.MEDI = MEDI |> log_zero_inflated() |> mean(na.rm = TRUE) |> exp_zero_inflated()
+  )|>
+  add_Date_col(group.by = TRUE) |> 
+  mutate(static = all(MEDI == MEDI[1])) |> 
+  filter_out(static) |> 
+  select(-static) |> 
+  ungroup(Date)
+```
+
+**This marks our third dataset**
+
+```{r}
+save(metric_chest_participanthour, 
+     metric_chest_participant, 
+     metric_chest_participantday, 
+     file = "data/metrics_separate_chest.RData")
+save(metric_glasses_participanthour, 
+     metric_glasses_participant, 
+     metric_glasses_participantday, 
+     file = "data/metrics_separate_glasses.RData")
+```
+
+
+## Session info
+
+```{r}
+sessionInfo()
+```
+
