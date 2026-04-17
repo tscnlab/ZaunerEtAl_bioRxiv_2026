@@ -1,0 +1,1553 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.37">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<meta name="dcterms.date" content="2026-04-17">
+<title>Personal light exposure: Metric preparation</title>
+<style>
+      /* Default styles provided by pandoc.
+      ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+      */
+      code{white-space: pre-wrap;}
+      span.smallcaps{font-variant: small-caps;}
+      div.columns{display: flex; gap: min(4vw, 1.5em);}
+      div.column{flex: auto; overflow-x: auto;}
+      div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+      ul.task-list{list-style: none;}
+      ul.task-list li input[type="checkbox"] {
+        width: 0.8em;
+        margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+        vertical-align: middle;
+      }
+      /* CSS for syntax highlighting */
+      html { -webkit-text-size-adjust: 100%; }
+      pre > code.sourceCode { white-space: pre; position: relative; }
+      pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+      pre > code.sourceCode > span:empty { height: 1.2em; }
+      .sourceCode { overflow: visible; }
+      code.sourceCode > span { color: inherit; text-decoration: inherit; }
+      div.sourceCode { margin: 1em 0; }
+      pre.sourceCode { margin: 0; }
+      @media screen {
+      div.sourceCode { overflow: auto; }
+      }
+      @media print {
+      pre > code.sourceCode { white-space: pre-wrap; }
+      pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+      }
+      pre.numberSource code
+        { counter-reset: source-line 0; }
+      pre.numberSource code > span
+        { position: relative; left: -4em; counter-increment: source-line; }
+      pre.numberSource code > span > a:first-child::before
+        { content: counter(source-line);
+          position: relative; left: -1em; text-align: right; vertical-align: baseline;
+          border: none; display: inline-block;
+          -webkit-touch-callout: none; -webkit-user-select: none;
+          -khtml-user-select: none; -moz-user-select: none;
+          -ms-user-select: none; user-select: none;
+          padding: 0 4px; width: 4em;
+        }
+      pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+      div.sourceCode
+        {   }
+      @media screen {
+      pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+      }
+    </style>
+<style>
+      body.hypothesis-enabled #quarto-embed-header {
+        padding-right: 36px;
+      }
+
+      #quarto-embed-header {
+        height: 3em;
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: solid 1px;
+      }
+
+      #quarto-embed-header h6 {
+        font-size: 1.1em;
+        padding-top: 0.6em;
+        margin-left: 1em;
+        margin-right: 1em;
+        font-weight: 400;
+      }
+
+      #quarto-embed-header a.quarto-back-link,
+      #quarto-embed-header a.quarto-download-embed {
+        font-size: 0.8em;
+        margin-top: 1em;
+        margin-bottom: 1em;
+        margin-left: 1em;
+        margin-right: 1em;
+      }
+
+      .quarto-back-container {
+        padding-left: 0.5em;
+        display: flex;
+      }
+
+      .headroom {
+          will-change: transform;
+          transition: transform 200ms linear;
+      }
+
+      .headroom--pinned {
+          transform: translateY(0%);
+      }
+
+      .headroom--unpinned {
+          transform: translateY(-100%);
+      }      
+    </style>
+<script>
+    window.document.addEventListener("DOMContentLoaded", function () {
+
+      var header = window.document.querySelector("#quarto-embed-header");
+      const titleBannerEl = window.document.querySelector("body > #title-block-header");
+      if (titleBannerEl) {
+        titleBannerEl.style.paddingTop = header.clientHeight + "px";
+      }
+      const contentEl = window.document.getElementById('quarto-content');
+      for (const child of contentEl.children) {
+        child.style.paddingTop = header.clientHeight + "px";
+        child.style.marginTop = "1em";
+      }
+
+      // Use the article root if the `back` call doesn't work. This isn't perfect
+      // but should typically work
+      window.quartoBackToArticle = () => {
+        var currentUrl = window.location.href;
+        window.history.back();
+        setTimeout(() => {
+            // if location was not changed in 100 ms, then there is no history back
+            if(currentUrl === window.location.href){              
+                // redirect to site root
+                window.location.href = "index.html";
+            }
+        }, 100);
+      }
+
+      const headroom = new window.Headroom(header, {
+        tolerance: 5,
+        onPin: function () {
+        },
+        onUnpin: function () {
+        },
+      });
+      headroom.init();
+    });
+    </script>
+<script src="site_libs/manuscript-notebook/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-7f8f88aac4f3542376d5c11b86a4c14d.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-8ffd5f67044e5306d9846f29df41dda5.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script src="site_libs/quarto-contrib/glightbox/glightbox.min.js"></script>
+<link href="site_libs/quarto-contrib/glightbox/glightbox.min.css" rel="stylesheet">
+<link href="site_libs/quarto-contrib/glightbox/lightbox.css" rel="stylesheet"><script async="" src="https://hypothes.is/embed.js"></script><script>
+  window.document.addEventListener("DOMContentLoaded", function (_event) {
+    document.body.classList.add('hypothesis-enabled');
+  });
+</script><link rel="stylesheet" href="styles.css">
+</head>
+<body class="quarto-notebook quarto-light">
+    <div id="quarto-embed-header" class="headroom fixed-top bg-primary">
+      
+      <a onclick="window.quartoBackToArticle(); return false;" class="btn btn-primary quarto-back-link" href=""><i class="bi bi-caret-left"></i> Back to Article</a>
+      <h6>
+<i class="bi bi-journal-code"></i> Personal light exposure: Metric preparation</h6>
+
+            <a href="./metric_preparation.qmd" class="btn btn-primary quarto-download-embed" download="metric_preparation.qmd">Download Source</a>
+          </div>
+
+     <header id="title-block-header" class="quarto-title-block default toc-left page-columns page-full"><div class="quarto-title-banner page-columns page-full">
+    <div class="quarto-title column-body">
+      <div class="quarto-title-block"><div><h1 class="title">Personal light exposure: Metric preparation</h1><button type="button" class="btn code-tools-button" id="quarto-code-tools-source"><i class="bi"></i> Code</button></div></div>
+            <p class="subtitle lead">Individual, behavioural, and environmental determinants of personal light exposure in daily life: a multi-country wearable and experience-sampling study</p>
+          </div>
+
+    
+    <div class="quarto-title-meta-container">
+      <div class="quarto-title-meta-column-start">
+        
+        <div class="quarto-title-meta">
+
+                
+                <div>
+            <div class="quarto-title-meta-heading">Last modified:</div>
+            <div class="quarto-title-meta-contents">
+              <p class="date">April 17, 2026</p>
+            </div>
+          </div>
+          
+                
+              </div>
+      </div>
+      <div class="quarto-title-meta-column-end quarto-other-formats-target">
+      </div>
+    </div>
+
+
+
+    <div class="quarto-other-links-text-target">
+    </div>  </div>
+</header><div id="quarto-content" class="page-columns page-rows-contents page-layout-article toc-left">
+<div id="quarto-sidebar-toc-left" class="sidebar toc-left">
+  <nav id="TOC" role="doc-toc" class="toc-active" data-toc-expanded="2"><h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+<li>
+<a href="#preface" id="toc-preface" class="nav-link active" data-scroll-target="#preface">Preface</a>
+  <ul class="collapse">
+<li><a href="#how-metrics-must-be-interpreted" id="toc-how-metrics-must-be-interpreted" class="nav-link" data-scroll-target="#how-metrics-must-be-interpreted">How metrics must be interpreted</a></li>
+  </ul>
+</li>
+  <li><a href="#setup" id="toc-setup" class="nav-link" data-scroll-target="#setup">Setup</a></li>
+  <li>
+<a href="#preparation" id="toc-preparation" class="nav-link" data-scroll-target="#preparation">Preparation</a>
+  <ul class="collapse">
+<li><a href="#context" id="toc-context" class="nav-link" data-scroll-target="#context">Context</a></li>
+  <li><a href="#metrics" id="toc-metrics" class="nav-link" data-scroll-target="#metrics">Metrics</a></li>
+  <li><a href="#distributional-characteristics" id="toc-distributional-characteristics" class="nav-link" data-scroll-target="#distributional-characteristics">Distributional characteristics</a></li>
+  <li><a href="#export-data" id="toc-export-data" class="nav-link" data-scroll-target="#export-data">Export data</a></li>
+  </ul>
+</li>
+  </ul></nav>
+</div>
+<div id="quarto-margin-sidebar" class="sidebar margin-sidebar zindex-bottom">
+</div>
+<main class="content quarto-banner-title-block" id="quarto-document-content"><section id="preface" class="level2"><h2 class="anchored" data-anchor-id="preface">Preface</h2>
+<p>This script works off <a href="./data_preparation-preview.html">the data preprocessing</a>, to produce one dataframe containing all metrics in numeric form, ready for analysis.</p>
+<section id="how-metrics-must-be-interpreted" class="level3"><h3 class="anchored" data-anchor-id="how-metrics-must-be-interpreted">How metrics must be interpreted</h3>
+<ul>
+<li>Timing and duration-based metrics are converted to decimal-hours.</li>
+<li>In the case of timing they mean decimal-hours from midnight.</li>
+<li>The <code>darkest_10h</code> are centered on midnight, i.e., values before midnight are negative.</li>
+<li>
+<code>mean</code> value metrics used a geometric mean (with <code>log_zero_inflated()</code>).</li>
+</ul>
+<p>For a single, unnested dataframe of metrics execute:</p>
+<pre><code>metrics_glasses |&gt; unnest(data)</code></pre>
+</section></section><section id="setup" class="level2"><h2 class="anchored" data-anchor-id="setup">Setup</h2>
+<div class="cell-container"><div class="cell-decorator"><pre>In [1]:</pre></div><div class="cell">
+<div class="code-with-filename">
+<div class="code-with-filename-file">
+<pre><strong>Setup</strong></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1"></a><span class="fu">library</span>(tidyverse)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: package 'ggplot2' was built under R version 4.5.2</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: package 'tibble' was built under R version 4.5.2</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: package 'tidyr' was built under R version 4.5.2</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: package 'readr' was built under R version 4.5.2</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: package 'purrr' was built under R version 4.5.2</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: package 'dplyr' was built under R version 4.5.2</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: package 'lubridate' was built under R version 4.5.2</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>── Attaching core tidyverse packages ──────────────────────── tidyverse 2.0.0 ──
+✔ dplyr     1.2.1     ✔ readr     2.2.0
+✔ forcats   1.0.1     ✔ stringr   1.6.0
+✔ ggplot2   4.0.2     ✔ tibble    3.3.1
+✔ lubridate 1.9.5     ✔ tidyr     1.3.2
+✔ purrr     1.2.2     
+── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
+✖ dplyr::filter() masks stats::filter()
+✖ dplyr::lag()    masks stats::lag()
+ℹ Use the conflicted package (&lt;http://conflicted.r-lib.org/&gt;) to force all conflicts to become errors</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1"></a><span class="fu">library</span>(melidosData)</span>
+<span id="cb11-2"><a href="#cb11-2"></a><span class="fu">library</span>(LightLogR)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: package 'LightLogR' was built under R version 4.5.2</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb13"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1"></a><span class="fu">library</span>(mgcv)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Loading required package: nlme
+
+Attaching package: 'nlme'
+
+The following object is masked from 'package:dplyr':
+
+    collapse
+
+This is mgcv 1.9-4. For overview type '?mgcv'.</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb15"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1"></a><span class="fu">library</span>(readxl)</span>
+<span id="cb15-2"><a href="#cb15-2"></a><span class="fu">library</span>(lme4)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: package 'lme4' was built under R version 4.5.2</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Loading required package: Matrix
+
+Attaching package: 'Matrix'
+
+The following objects are masked from 'package:tidyr':
+
+    expand, pack, unpack
+
+
+Attaching package: 'lme4'
+
+The following object is masked from 'package:nlme':
+
+    lmList</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb18"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1"></a><span class="fu">library</span>(performance)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: package 'performance' was built under R version 4.5.2</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb20"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1"></a><span class="fu">library</span>(cowplot)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>
+Attaching package: 'cowplot'
+
+The following object is masked from 'package:lubridate':
+
+    stamp</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb22"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1"></a><span class="fu">library</span>(ggridges)</span>
+<span id="cb22-2"><a href="#cb22-2"></a><span class="fu">library</span>(downlit)</span>
+<span id="cb22-3"><a href="#cb22-3"></a><span class="fu">library</span>(xml2)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: package 'xml2' was built under R version 4.5.2</code></pre>
+</div>
+</div></div>
+<div class="cell-container"><div class="cell-decorator"><pre>In [2]:</pre></div><div class="cell">
+<div class="code-with-filename">
+<div class="code-with-filename-file">
+<pre><strong>Load data</strong></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb24"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1"></a><span class="fu">load</span>(<span class="st">"data/metrics_separate_glasses.RData"</span>)</span>
+<span id="cb24-2"><a href="#cb24-2"></a><span class="fu">load</span>(<span class="st">"data/metrics_separate_chest.RData"</span>)</span>
+<span id="cb24-3"><a href="#cb24-3"></a><span class="fu">load</span>(<span class="st">"data/preprocessed_glasses_2.RData"</span>)</span>
+<span id="cb24-4"><a href="#cb24-4"></a><span class="fu">load</span>(<span class="st">"data/preprocessed_chest_2.RData"</span>)</span>
+<span id="cb24-5"><a href="#cb24-5"></a>demographics <span class="ot">&lt;-</span> <span class="fu">load_data</span>(<span class="st">"demographics"</span>) <span class="sc">|&gt;</span> <span class="fu">flatten_data</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</div></div>
+</section><section id="preparation" class="level2"><h2 class="anchored" data-anchor-id="preparation">Preparation</h2>
+<section id="context" class="level3"><h3 class="anchored" data-anchor-id="context">Context</h3>
+<div class="cell-container"><div class="cell-decorator"><pre>In [3]:</pre></div><div class="cell">
+<div class="code-with-filename">
+<div class="code-with-filename-file">
+<pre><strong>Prepare photoperiods</strong></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb25"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1"></a>photoperiod_daily <span class="ot">&lt;-</span> </span>
+<span id="cb25-2"><a href="#cb25-2"></a>light_glasses_processed2 <span class="sc">|&gt;</span> </span>
+<span id="cb25-3"><a href="#cb25-3"></a>  <span class="fu">group_by</span>(site, Id, Date) <span class="sc">|&gt;</span> </span>
+<span id="cb25-4"><a href="#cb25-4"></a>  <span class="fu">summarize</span>(<span class="at">photoperiod =</span> <span class="fu">mean</span>(photoperiod, <span class="at">na.rm =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span> <span class="fu">as.numeric</span>(),</span>
+<span id="cb25-5"><a href="#cb25-5"></a>            <span class="at">.groups =</span> <span class="st">"drop_last"</span>)</span>
+<span id="cb25-6"><a href="#cb25-6"></a></span>
+<span id="cb25-7"><a href="#cb25-7"></a>photoperiod_participant <span class="ot">&lt;-</span> </span>
+<span id="cb25-8"><a href="#cb25-8"></a>light_glasses_processed2 <span class="sc">|&gt;</span> </span>
+<span id="cb25-9"><a href="#cb25-9"></a>  <span class="fu">group_by</span>(site, Id) <span class="sc">|&gt;</span> </span>
+<span id="cb25-10"><a href="#cb25-10"></a>  <span class="fu">summarize</span>(<span class="at">photoperiod =</span> <span class="fu">mean</span>(photoperiod, <span class="at">na.rm =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span> <span class="fu">as.numeric</span>(),</span>
+<span id="cb25-11"><a href="#cb25-11"></a>            <span class="at">.groups =</span> <span class="st">"drop_last"</span>)</span>
+<span id="cb25-12"><a href="#cb25-12"></a></span>
+<span id="cb25-13"><a href="#cb25-13"></a>photoperiod_daily_chest <span class="ot">&lt;-</span> </span>
+<span id="cb25-14"><a href="#cb25-14"></a>light_chest_processed2 <span class="sc">|&gt;</span> </span>
+<span id="cb25-15"><a href="#cb25-15"></a>  <span class="fu">group_by</span>(site, Id, Date) <span class="sc">|&gt;</span> </span>
+<span id="cb25-16"><a href="#cb25-16"></a>  <span class="fu">summarize</span>(<span class="at">photoperiod =</span> <span class="fu">mean</span>(photoperiod, <span class="at">na.rm =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span> <span class="fu">as.numeric</span>(),</span>
+<span id="cb25-17"><a href="#cb25-17"></a>            <span class="at">.groups =</span> <span class="st">"drop_last"</span>)</span>
+<span id="cb25-18"><a href="#cb25-18"></a></span>
+<span id="cb25-19"><a href="#cb25-19"></a>photoperiod_participant_chest <span class="ot">&lt;-</span> </span>
+<span id="cb25-20"><a href="#cb25-20"></a>light_chest_processed2 <span class="sc">|&gt;</span> </span>
+<span id="cb25-21"><a href="#cb25-21"></a>  <span class="fu">group_by</span>(site, Id) <span class="sc">|&gt;</span> </span>
+<span id="cb25-22"><a href="#cb25-22"></a>  <span class="fu">summarize</span>(<span class="at">photoperiod =</span> <span class="fu">mean</span>(photoperiod, <span class="at">na.rm =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span> <span class="fu">as.numeric</span>(),</span>
+<span id="cb25-23"><a href="#cb25-23"></a>            <span class="at">.groups =</span> <span class="st">"drop_last"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</div></div>
+<div class="cell-container"><div class="cell-decorator"><pre>In [4]:</pre></div><div class="cell">
+<div class="code-with-filename">
+<div class="code-with-filename-file">
+<pre><strong>Prepare contextual info</strong></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb26"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1"></a>demographics <span class="ot">&lt;-</span> </span>
+<span id="cb26-2"><a href="#cb26-2"></a>  demographics <span class="sc">|&gt;</span> </span>
+<span id="cb26-3"><a href="#cb26-3"></a>  <span class="fu">select</span>(site, Id, age, sex, gender, employment_status)</span>
+<span id="cb26-4"><a href="#cb26-4"></a></span>
+<span id="cb26-5"><a href="#cb26-5"></a>context <span class="ot">&lt;-</span> </span>
+<span id="cb26-6"><a href="#cb26-6"></a>  <span class="fu">tibble</span>(<span class="at">site =</span> <span class="fu">names</span>(melidos_cities),</span>
+<span id="cb26-7"><a href="#cb26-7"></a>         <span class="at">country =</span> <span class="fu">unname</span>(melidos_countries),</span>
+<span id="cb26-8"><a href="#cb26-8"></a>         <span class="at">tz =</span> <span class="fu">unname</span>(melidos_tzs),</span>
+<span id="cb26-9"><a href="#cb26-9"></a>         <span class="at">city =</span> <span class="fu">unname</span>(melidos_cities),</span>
+<span id="cb26-10"><a href="#cb26-10"></a>         ) <span class="sc">|&gt;</span> </span>
+<span id="cb26-11"><a href="#cb26-11"></a>  <span class="fu">left_join</span>(</span>
+<span id="cb26-12"><a href="#cb26-12"></a>    melidos_coordinates <span class="sc">|&gt;</span> <span class="fu">map</span>(enframe) <span class="sc">|&gt;</span> <span class="fu">list_rbind</span>(<span class="at">names_to =</span> <span class="st">"site"</span>) <span class="sc">|&gt;</span> <span class="fu">pivot_wider</span>() <span class="sc">|&gt;</span> <span class="fu">rename</span>(<span class="at">lat =</span> <span class="st">`</span><span class="at">1</span><span class="st">`</span>, <span class="at">lon =</span> <span class="st">`</span><span class="at">2</span><span class="st">`</span>),</span>
+<span id="cb26-13"><a href="#cb26-13"></a>    <span class="at">by =</span> <span class="st">"site"</span></span>
+<span id="cb26-14"><a href="#cb26-14"></a>  )</span>
+<span id="cb26-15"><a href="#cb26-15"></a></span>
+<span id="cb26-16"><a href="#cb26-16"></a>demographics <span class="ot">&lt;-</span> </span>
+<span id="cb26-17"><a href="#cb26-17"></a>  demographics <span class="sc">|&gt;</span> </span>
+<span id="cb26-18"><a href="#cb26-18"></a>  <span class="fu">left_join</span>(context, <span class="at">by =</span> <span class="fu">join_by</span>(<span class="st">"site"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</div></div>
+</section><section id="metrics" class="level3"><h3 class="anchored" data-anchor-id="metrics">Metrics</h3>
+<p>In this section, we will combine all the metrics into one data-frame</p>
+<div class="cell-container"><div class="cell-decorator"><pre>In [5]:</pre></div><div class="cell">
+<div class="code-with-filename">
+<div class="code-with-filename-file">
+<pre><strong>Prepare participant metrics</strong></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb27"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1"></a>metrics_glasses <span class="ot">&lt;-</span> </span>
+<span id="cb27-2"><a href="#cb27-2"></a>metric_glasses_participant <span class="sc">|&gt;</span> </span>
+<span id="cb27-3"><a href="#cb27-3"></a>  <span class="fu">left_join</span>(demographics, <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"site"</span>, <span class="st">"Id"</span>)) <span class="sc">|&gt;</span> </span>
+<span id="cb27-4"><a href="#cb27-4"></a>  <span class="fu">left_join</span>(photoperiod_participant, <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"site"</span>, <span class="st">"Id"</span>)) <span class="sc">|&gt;</span> </span>
+<span id="cb27-5"><a href="#cb27-5"></a>  <span class="fu">pivot_longer</span>(<span class="fu">c</span>(interdaily_stability, intradaily_variability), <span class="at">names_to =</span> <span class="st">"name"</span>, <span class="at">values_to =</span> <span class="st">"metric"</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb27-6"><a href="#cb27-6"></a>  <span class="fu">ungroup</span>() <span class="sc">|&gt;</span> </span>
+<span id="cb27-7"><a href="#cb27-7"></a>  <span class="fu">nest</span>(<span class="at">.by =</span> name) <span class="sc">|&gt;</span> </span>
+<span id="cb27-8"><a href="#cb27-8"></a>  <span class="fu">mutate</span>(<span class="at">type =</span> <span class="st">"participant"</span>)</span>
+<span id="cb27-9"><a href="#cb27-9"></a></span>
+<span id="cb27-10"><a href="#cb27-10"></a>metrics_chest <span class="ot">&lt;-</span> </span>
+<span id="cb27-11"><a href="#cb27-11"></a>metric_chest_participant <span class="sc">|&gt;</span> </span>
+<span id="cb27-12"><a href="#cb27-12"></a>  <span class="fu">left_join</span>(demographics, <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"site"</span>, <span class="st">"Id"</span>)) <span class="sc">|&gt;</span> </span>
+<span id="cb27-13"><a href="#cb27-13"></a>  <span class="fu">left_join</span>(photoperiod_participant_chest, <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"site"</span>, <span class="st">"Id"</span>)) <span class="sc">|&gt;</span> </span>
+<span id="cb27-14"><a href="#cb27-14"></a>  <span class="fu">pivot_longer</span>(<span class="fu">c</span>(interdaily_stability, intradaily_variability), <span class="at">names_to =</span> <span class="st">"name"</span>, <span class="at">values_to =</span> <span class="st">"metric"</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb27-15"><a href="#cb27-15"></a>  <span class="fu">ungroup</span>() <span class="sc">|&gt;</span> </span>
+<span id="cb27-16"><a href="#cb27-16"></a>  <span class="fu">nest</span>(<span class="at">.by =</span> name) <span class="sc">|&gt;</span> </span>
+<span id="cb27-17"><a href="#cb27-17"></a>  <span class="fu">mutate</span>(<span class="at">type =</span> <span class="st">"participant"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</div></div>
+<div class="cell-container"><div class="cell-decorator"><pre>In [6]:</pre></div><div class="cell">
+<div class="code-with-filename">
+<div class="code-with-filename-file">
+<pre><strong>Prepare participant-day metrics</strong></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb28"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1"></a>metrics_glasses <span class="ot">&lt;-</span></span>
+<span id="cb28-2"><a href="#cb28-2"></a>  <span class="fu">rbind</span>(</span>
+<span id="cb28-3"><a href="#cb28-3"></a>    metrics_glasses,</span>
+<span id="cb28-4"><a href="#cb28-4"></a>    metric_glasses_participantday <span class="sc">|&gt;</span></span>
+<span id="cb28-5"><a href="#cb28-5"></a>      <span class="co">#converting datetimes to times</span></span>
+<span id="cb28-6"><a href="#cb28-6"></a>      <span class="fu">Datetime2Time</span>() <span class="sc">|&gt;</span></span>
+<span id="cb28-7"><a href="#cb28-7"></a>      <span class="fu">mutate</span>(</span>
+<span id="cb28-8"><a href="#cb28-8"></a>        <span class="co">#converting times and durations to decimal hours</span></span>
+<span id="cb28-9"><a href="#cb28-9"></a>        <span class="fu">across</span>(<span class="fu">c</span>(<span class="fu">where</span>(hms<span class="sc">::</span>is_hms), <span class="fu">where</span>(is.duration)), </span>
+<span id="cb28-10"><a href="#cb28-10"></a>               \(x) <span class="fu">as.numeric</span>(x) <span class="sc">/</span> <span class="dv">60</span> <span class="sc">/</span> <span class="dv">60</span>),</span>
+<span id="cb28-11"><a href="#cb28-11"></a>        <span class="co">#centering nighttime variables on midnight</span></span>
+<span id="cb28-12"><a href="#cb28-12"></a>        <span class="fu">across</span>(</span>
+<span id="cb28-13"><a href="#cb28-13"></a>          <span class="fu">c</span>(darkest_10h_offset, darkest_10h_onset, darkest_10h_midpoint),</span>
+<span id="cb28-14"><a href="#cb28-14"></a>          \(x) <span class="fu">ifelse</span>(x <span class="sc">&gt;</span> <span class="dv">12</span>, x <span class="sc">-</span> <span class="dv">24</span>, x)</span>
+<span id="cb28-15"><a href="#cb28-15"></a>        )</span>
+<span id="cb28-16"><a href="#cb28-16"></a>      ) <span class="sc">|&gt;</span></span>
+<span id="cb28-17"><a href="#cb28-17"></a>      <span class="fu">left_join</span>(demographics, <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"site"</span>, <span class="st">"Id"</span>)) <span class="sc">|&gt;</span> </span>
+<span id="cb28-18"><a href="#cb28-18"></a>      <span class="fu">left_join</span>(photoperiod_daily, <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"site"</span>, <span class="st">"Id"</span>, <span class="st">"Date"</span>)) <span class="sc">|&gt;</span> </span>
+<span id="cb28-19"><a href="#cb28-19"></a>      <span class="fu">pivot_longer</span>(<span class="fu">c</span>(Mean<span class="sc">:</span>duration_above_250_wake), <span class="at">names_to =</span> <span class="st">"name"</span>, <span class="at">values_to =</span> <span class="st">"metric"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb28-20"><a href="#cb28-20"></a>      <span class="fu">ungroup</span>() <span class="sc">|&gt;</span></span>
+<span id="cb28-21"><a href="#cb28-21"></a>      <span class="fu">nest</span>(<span class="at">.by =</span> name) <span class="sc">|&gt;</span> </span>
+<span id="cb28-22"><a href="#cb28-22"></a>      <span class="fu">mutate</span>(<span class="at">type =</span> <span class="st">"participant-day"</span>)</span>
+<span id="cb28-23"><a href="#cb28-23"></a>  )</span>
+<span id="cb28-24"><a href="#cb28-24"></a></span>
+<span id="cb28-25"><a href="#cb28-25"></a>metrics_chest <span class="ot">&lt;-</span></span>
+<span id="cb28-26"><a href="#cb28-26"></a>  <span class="fu">rbind</span>(</span>
+<span id="cb28-27"><a href="#cb28-27"></a>    metrics_chest,</span>
+<span id="cb28-28"><a href="#cb28-28"></a>    metric_chest_participantday <span class="sc">|&gt;</span></span>
+<span id="cb28-29"><a href="#cb28-29"></a>      <span class="co">#converting datetimes to times</span></span>
+<span id="cb28-30"><a href="#cb28-30"></a>      <span class="fu">Datetime2Time</span>() <span class="sc">|&gt;</span></span>
+<span id="cb28-31"><a href="#cb28-31"></a>      <span class="fu">mutate</span>(</span>
+<span id="cb28-32"><a href="#cb28-32"></a>        <span class="co">#converting times and durations to decimal hours</span></span>
+<span id="cb28-33"><a href="#cb28-33"></a>        <span class="fu">across</span>(<span class="fu">c</span>(<span class="fu">where</span>(hms<span class="sc">::</span>is_hms), <span class="fu">where</span>(is.duration)), </span>
+<span id="cb28-34"><a href="#cb28-34"></a>               \(x) <span class="fu">as.numeric</span>(x) <span class="sc">/</span> <span class="dv">60</span> <span class="sc">/</span> <span class="dv">60</span>),</span>
+<span id="cb28-35"><a href="#cb28-35"></a>        <span class="co">#centering nighttime variables on midnight</span></span>
+<span id="cb28-36"><a href="#cb28-36"></a>        <span class="fu">across</span>(</span>
+<span id="cb28-37"><a href="#cb28-37"></a>          <span class="fu">c</span>(darkest_10h_offset, darkest_10h_onset, darkest_10h_midpoint),</span>
+<span id="cb28-38"><a href="#cb28-38"></a>          \(x) <span class="fu">ifelse</span>(x <span class="sc">&gt;</span> <span class="dv">12</span>, x <span class="sc">-</span> <span class="dv">24</span>, x)</span>
+<span id="cb28-39"><a href="#cb28-39"></a>        )</span>
+<span id="cb28-40"><a href="#cb28-40"></a>      ) <span class="sc">|&gt;</span></span>
+<span id="cb28-41"><a href="#cb28-41"></a>      <span class="fu">left_join</span>(demographics, <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"site"</span>, <span class="st">"Id"</span>)) <span class="sc">|&gt;</span> </span>
+<span id="cb28-42"><a href="#cb28-42"></a>      <span class="fu">left_join</span>(photoperiod_daily_chest, <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"site"</span>, <span class="st">"Id"</span>, <span class="st">"Date"</span>)) <span class="sc">|&gt;</span> </span>
+<span id="cb28-43"><a href="#cb28-43"></a>      <span class="fu">pivot_longer</span>(<span class="fu">c</span>(Mean<span class="sc">:</span>duration_above_250_wake), <span class="at">names_to =</span> <span class="st">"name"</span>, <span class="at">values_to =</span> <span class="st">"metric"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb28-44"><a href="#cb28-44"></a>      <span class="fu">ungroup</span>() <span class="sc">|&gt;</span></span>
+<span id="cb28-45"><a href="#cb28-45"></a>      <span class="fu">nest</span>(<span class="at">.by =</span> name) <span class="sc">|&gt;</span> </span>
+<span id="cb28-46"><a href="#cb28-46"></a>      <span class="fu">mutate</span>(<span class="at">type =</span> <span class="st">"participant-day"</span>)</span>
+<span id="cb28-47"><a href="#cb28-47"></a>  )</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</div></div>
+<div class="cell-container"><div class="cell-decorator"><pre>In [7]:</pre></div><div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb29"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1"></a>types <span class="ot">&lt;-</span> <span class="fu">read_excel</span>(<span class="st">"data/metric_types.xlsx"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div></div>
+<div class="cell-container"><div class="cell-decorator"><pre>In [8]:</pre></div><div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb30"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1"></a>metrics_glasses <span class="ot">&lt;-</span></span>
+<span id="cb30-2"><a href="#cb30-2"></a>  metrics_glasses <span class="sc">|&gt;</span> </span>
+<span id="cb30-3"><a href="#cb30-3"></a>  <span class="fu">unnest</span>(data) <span class="sc">|&gt;</span> </span>
+<span id="cb30-4"><a href="#cb30-4"></a>  <span class="fu">mutate</span>(<span class="fu">across</span>(<span class="fu">c</span>(site, Id, country, city, Date), factor)) <span class="sc">|&gt;</span> </span>
+<span id="cb30-5"><a href="#cb30-5"></a>  <span class="fu">nest</span>(<span class="at">data =</span> <span class="sc">-</span><span class="fu">c</span>(name, type)) <span class="sc">|&gt;</span> </span>
+<span id="cb30-6"><a href="#cb30-6"></a>  <span class="fu">left_join</span>(types, <span class="at">by =</span> <span class="st">"name"</span>)</span>
+<span id="cb30-7"><a href="#cb30-7"></a></span>
+<span id="cb30-8"><a href="#cb30-8"></a>metrics_chest <span class="ot">&lt;-</span></span>
+<span id="cb30-9"><a href="#cb30-9"></a>  metrics_chest <span class="sc">|&gt;</span> </span>
+<span id="cb30-10"><a href="#cb30-10"></a>  <span class="fu">unnest</span>(data) <span class="sc">|&gt;</span> </span>
+<span id="cb30-11"><a href="#cb30-11"></a>  <span class="fu">mutate</span>(<span class="fu">across</span>(<span class="fu">c</span>(site, Id, country, city, Date), factor)) <span class="sc">|&gt;</span> </span>
+<span id="cb30-12"><a href="#cb30-12"></a>  <span class="fu">nest</span>(<span class="at">data =</span> <span class="sc">-</span><span class="fu">c</span>(name, type)) <span class="sc">|&gt;</span> </span>
+<span id="cb30-13"><a href="#cb30-13"></a>  <span class="fu">left_join</span>(types, <span class="at">by =</span> <span class="st">"name"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div></div>
+</section><section id="distributional-characteristics" class="level3"><h3 class="anchored" data-anchor-id="distributional-characteristics">Distributional characteristics</h3>
+<div class="cell-container"><div class="cell-decorator"><pre>In [9]:</pre></div><div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb31"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1"></a>metrics_glasses <span class="sc">|&gt;</span> </span>
+<span id="cb31-2"><a href="#cb31-2"></a>  <span class="fu">unnest</span>(data) <span class="sc">|&gt;</span> </span>
+<span id="cb31-3"><a href="#cb31-3"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x=</span>metric)) <span class="sc">+</span></span>
+<span id="cb31-4"><a href="#cb31-4"></a>  <span class="fu">geom_density_ridges</span>(<span class="fu">aes</span>(<span class="at">y=</span>site, <span class="at">fill =</span> site))<span class="sc">+</span></span>
+<span id="cb31-5"><a href="#cb31-5"></a>  <span class="fu">facet_wrap</span>(<span class="sc">~</span> name, <span class="at">scales =</span> <span class="st">"free"</span>) <span class="sc">+</span></span>
+<span id="cb31-6"><a href="#cb31-6"></a>  <span class="fu">scale_fill_manual</span>(<span class="at">values =</span> melidos_colors) <span class="sc">+</span></span>
+<span id="cb31-7"><a href="#cb31-7"></a>  <span class="fu">theme_cowplot</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Picking joint bandwidth of 52.4</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Picking joint bandwidth of 0.552
+Picking joint bandwidth of 0.552
+Picking joint bandwidth of 0.552</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Picking joint bandwidth of 0.0695</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Picking joint bandwidth of 0.5</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Picking joint bandwidth of 0.487</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Picking joint bandwidth of 0.501</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Picking joint bandwidth of 2750</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Picking joint bandwidth of 0.386</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Picking joint bandwidth of 0.846</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Picking joint bandwidth of 0.824</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Picking joint bandwidth of 0.608</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Picking joint bandwidth of 0.382</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Picking joint bandwidth of 0.676</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Picking joint bandwidth of 0.0425</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Picking joint bandwidth of 0.179</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Picking joint bandwidth of 0.769</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Picking joint bandwidth of 0.0374</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Picking joint bandwidth of 1.74</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Picking joint bandwidth of 0.578</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Picking joint bandwidth of 0.253</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Removed 293 rows containing non-finite outside the scale range
+(`stat_density_ridges()`).</code></pre>
+</div>
+<div class="cell-output-display">
+<div class="">
+<figure class="figure"><p class=""><a href="metric_preparation_files/figure-html/unnamed-chunk-9-1.png" class="lightbox" data-gallery="quarto-lightbox-gallery-1"><img src="metric_preparation_files/figure-html/unnamed-chunk-9-1.png" class="img-fluid figure-img" width="1728"></a></p>
+</figure>
+</div>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb53"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb53-1"><a href="#cb53-1"></a><span class="fu">ggsave</span>(<span class="st">"figures/exploration/metric_distribution_glasses.pdf"</span>, <span class="at">width =</span> <span class="dv">18</span>, <span class="at">height =</span> <span class="dv">15</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Picking joint bandwidth of 52.4</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Picking joint bandwidth of 0.552
+Picking joint bandwidth of 0.552
+Picking joint bandwidth of 0.552</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Picking joint bandwidth of 0.0695</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Picking joint bandwidth of 0.5</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Picking joint bandwidth of 0.487</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Picking joint bandwidth of 0.501</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Picking joint bandwidth of 2750</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Picking joint bandwidth of 0.386</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Picking joint bandwidth of 0.846</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Picking joint bandwidth of 0.824</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Picking joint bandwidth of 0.608</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Picking joint bandwidth of 0.382</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Picking joint bandwidth of 0.676</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Picking joint bandwidth of 0.0425</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Picking joint bandwidth of 0.179</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Picking joint bandwidth of 0.769</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Picking joint bandwidth of 0.0374</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Picking joint bandwidth of 1.74</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Picking joint bandwidth of 0.578</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Picking joint bandwidth of 0.253</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Removed 293 rows containing non-finite outside the scale range
+(`stat_density_ridges()`).</code></pre>
+</div>
+</div></div>
+<div class="cell-container"><div class="cell-decorator"><pre>In [10]:</pre></div><div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb75"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb75-1"><a href="#cb75-1"></a>metrics_chest <span class="sc">|&gt;</span> </span>
+<span id="cb75-2"><a href="#cb75-2"></a>  <span class="fu">unnest</span>(data) <span class="sc">|&gt;</span> </span>
+<span id="cb75-3"><a href="#cb75-3"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x=</span>metric)) <span class="sc">+</span></span>
+<span id="cb75-4"><a href="#cb75-4"></a>  <span class="fu">geom_density_ridges</span>(<span class="fu">aes</span>(<span class="at">y=</span>site, <span class="at">fill =</span> site))<span class="sc">+</span></span>
+<span id="cb75-5"><a href="#cb75-5"></a>  <span class="fu">facet_wrap</span>(<span class="sc">~</span> name, <span class="at">scales =</span> <span class="st">"free"</span>) <span class="sc">+</span></span>
+<span id="cb75-6"><a href="#cb75-6"></a>  <span class="fu">scale_fill_manual</span>(<span class="at">values =</span> melidos_colors) <span class="sc">+</span></span>
+<span id="cb75-7"><a href="#cb75-7"></a>  <span class="fu">theme_cowplot</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Picking joint bandwidth of 50.7</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Picking joint bandwidth of 0.572
+Picking joint bandwidth of 0.572
+Picking joint bandwidth of 0.572</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Picking joint bandwidth of 0.051</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Picking joint bandwidth of 0.494</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Picking joint bandwidth of 0.519</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Picking joint bandwidth of 0.495</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Picking joint bandwidth of 3530</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Picking joint bandwidth of 0.42</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Picking joint bandwidth of 0.788</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Picking joint bandwidth of 0.743</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Picking joint bandwidth of 0.606</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Picking joint bandwidth of 0.354</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Picking joint bandwidth of 0.693</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Picking joint bandwidth of 0.0388</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Picking joint bandwidth of 0.198</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Picking joint bandwidth of 0.642</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Picking joint bandwidth of 0.0408</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Picking joint bandwidth of 1.61</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Picking joint bandwidth of 0.551</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Picking joint bandwidth of 0.23</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Removed 365 rows containing non-finite outside the scale range
+(`stat_density_ridges()`).</code></pre>
+</div>
+<div class="cell-output-display">
+<div class="">
+<figure class="figure"><p class=""><a href="metric_preparation_files/figure-html/unnamed-chunk-10-1.png" class="lightbox" data-gallery="quarto-lightbox-gallery-2"><img src="metric_preparation_files/figure-html/unnamed-chunk-10-1.png" class="img-fluid figure-img" width="1728"></a></p>
+</figure>
+</div>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb97"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb97-1"><a href="#cb97-1"></a><span class="fu">ggsave</span>(<span class="st">"figures/exploration/metric_distribution_chest.pdf"</span>, <span class="at">width =</span> <span class="dv">18</span>, <span class="at">height =</span> <span class="dv">15</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Picking joint bandwidth of 50.7</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Picking joint bandwidth of 0.572
+Picking joint bandwidth of 0.572
+Picking joint bandwidth of 0.572</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Picking joint bandwidth of 0.051</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Picking joint bandwidth of 0.494</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Picking joint bandwidth of 0.519</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Picking joint bandwidth of 0.495</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Picking joint bandwidth of 3530</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Picking joint bandwidth of 0.42</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Picking joint bandwidth of 0.788</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Picking joint bandwidth of 0.743</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Picking joint bandwidth of 0.606</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Picking joint bandwidth of 0.354</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Picking joint bandwidth of 0.693</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Picking joint bandwidth of 0.0388</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Picking joint bandwidth of 0.198</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Picking joint bandwidth of 0.642</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Picking joint bandwidth of 0.0408</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Picking joint bandwidth of 1.61</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Picking joint bandwidth of 0.551</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Picking joint bandwidth of 0.23</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Removed 365 rows containing non-finite outside the scale range
+(`stat_density_ridges()`).</code></pre>
+</div>
+</div></div>
+</section><section id="export-data" class="level3"><h3 class="anchored" data-anchor-id="export-data">Export data</h3>
+<div class="cell-container"><div class="cell-decorator"><pre>In [11]:</pre></div><div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb119"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb119-1"><a href="#cb119-1"></a><span class="fu">save</span>(metrics_glasses, <span class="at">file =</span> <span class="st">"data/metrics_glasses.RData"</span>)</span>
+<span id="cb119-2"><a href="#cb119-2"></a><span class="fu">save</span>(metrics_chest, <span class="at">file =</span> <span class="st">"data/metrics_chest.RData"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div></div>
+<!-- -->
+
+</section></section></main><!-- /main column --><script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+    const viewSource = window.document.getElementById('quarto-view-source') ||
+                       window.document.getElementById('quarto-code-tools-source');
+    if (viewSource) {
+      const sourceUrl = viewSource.getAttribute("data-quarto-source-url");
+      viewSource.addEventListener("click", function(e) {
+        if (sourceUrl) {
+          // rstudio viewer pane
+          if (/\bcapabilities=\b/.test(window.location)) {
+            window.open(sourceUrl);
+          } else {
+            window.location.href = sourceUrl;
+          }
+        } else {
+          const modal = new bootstrap.Modal(document.getElementById('quarto-embedded-source-code-modal'));
+          modal.show();
+        }
+        return false;
+      });
+    }
+    function toggleCodeHandler(show) {
+      return function(e) {
+        const detailsSrc = window.document.querySelectorAll(".cell > details > .sourceCode");
+        for (let i=0; i<detailsSrc.length; i++) {
+          const details = detailsSrc[i].parentElement;
+          if (show) {
+            details.open = true;
+          } else {
+            details.removeAttribute("open");
+          }
+        }
+        const cellCodeDivs = window.document.querySelectorAll(".cell > .sourceCode");
+        const fromCls = show ? "hidden" : "unhidden";
+        const toCls = show ? "unhidden" : "hidden";
+        for (let i=0; i<cellCodeDivs.length; i++) {
+          const codeDiv = cellCodeDivs[i];
+          if (codeDiv.classList.contains(fromCls)) {
+            codeDiv.classList.remove(fromCls);
+            codeDiv.classList.add(toCls);
+          } 
+        }
+        return false;
+      }
+    }
+    const hideAllCode = window.document.getElementById("quarto-hide-all-code");
+    if (hideAllCode) {
+      hideAllCode.addEventListener("click", toggleCodeHandler(false));
+    }
+    const showAllCode = window.document.getElementById("quarto-show-all-code");
+    if (showAllCode) {
+      showAllCode.addEventListener("click", toggleCodeHandler(true));
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp("https:\/\/tscnlab\.github\.io\/ZaunerEtAl_NatHumBehav_2026");
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+            // target, if specified
+            link.setAttribute("target", "_blank");
+            if (link.getAttribute("rel") === null) {
+              link.setAttribute("rel", "noopener");
+            }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script><div class="modal fade" id="quarto-embedded-source-code-modal" tabindex="-1" aria-labelledby="quarto-embedded-source-code-modal-label" aria-hidden="true"><div class="modal-dialog modal-dialog-scrollable"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="quarto-embedded-source-code-modal-label">Source Code</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb120" data-shortcodes="false"><pre class="sourceCode numberSource markdown number-lines code-with-copy"><code class="sourceCode markdown"><span id="cb120-1"><a href="#cb120-1"></a><span class="co">---</span></span>
+<span id="cb120-2"><a href="#cb120-2"></a><span class="an">title:</span><span class="co"> "Personal light exposure: Metric preparation"</span></span>
+<span id="cb120-3"><a href="#cb120-3"></a><span class="an">subtitle:</span><span class="co"> "Individual, behavioural, and environmental determinants of personal light exposure in daily life: a multi-country wearable and experience-sampling study"</span></span>
+<span id="cb120-4"><a href="#cb120-4"></a><span class="an">format:</span><span class="co"> </span></span>
+<span id="cb120-5"><a href="#cb120-5"></a><span class="co">  html:</span></span>
+<span id="cb120-6"><a href="#cb120-6"></a><span class="co">    code-tools: true</span></span>
+<span id="cb120-7"><a href="#cb120-7"></a><span class="co">    code-link: true</span></span>
+<span id="cb120-8"><a href="#cb120-8"></a><span class="co">---</span></span>
+<span id="cb120-9"><a href="#cb120-9"></a></span>
+<span id="cb120-10"><a href="#cb120-10"></a><span class="fu">## Preface</span></span>
+<span id="cb120-11"><a href="#cb120-11"></a></span>
+<span id="cb120-12"><a href="#cb120-12"></a>This script works off <span class="co">[</span><span class="ot">the data preprocessing</span><span class="co">](data_preparation.qmd)</span>, to produce one dataframe containing all metrics in numeric form, ready for analysis.</span>
+<span id="cb120-13"><a href="#cb120-13"></a></span>
+<span id="cb120-14"><a href="#cb120-14"></a><span class="fu">### How metrics must be interpreted</span></span>
+<span id="cb120-15"><a href="#cb120-15"></a></span>
+<span id="cb120-16"><a href="#cb120-16"></a><span class="ss">- </span>Timing and duration-based metrics are converted to decimal-hours. </span>
+<span id="cb120-17"><a href="#cb120-17"></a><span class="ss">- </span>In the case of timing they mean decimal-hours from midnight. </span>
+<span id="cb120-18"><a href="#cb120-18"></a><span class="ss">- </span>The <span class="in">`darkest_10h`</span> are centered on midnight, i.e., values before midnight are negative.</span>
+<span id="cb120-19"><a href="#cb120-19"></a><span class="ss">- </span><span class="in">`mean`</span> value metrics used a geometric mean (with <span class="in">`log_zero_inflated()`</span>).</span>
+<span id="cb120-20"><a href="#cb120-20"></a></span>
+<span id="cb120-21"><a href="#cb120-21"></a>For a single, unnested dataframe of metrics execute:</span>
+<span id="cb120-22"><a href="#cb120-22"></a></span>
+<span id="cb120-23"><a href="#cb120-23"></a><span class="in">```</span></span>
+<span id="cb120-24"><a href="#cb120-24"></a><span class="in">metrics_glasses |&gt; unnest(data)</span></span>
+<span id="cb120-25"><a href="#cb120-25"></a><span class="in">```</span></span>
+<span id="cb120-26"><a href="#cb120-26"></a></span>
+<span id="cb120-27"><a href="#cb120-27"></a><span class="fu">## Setup</span></span>
+<span id="cb120-28"><a href="#cb120-28"></a></span>
+<span id="cb120-31"><a href="#cb120-31"></a><span class="in">```{r}</span></span>
+<span id="cb120-32"><a href="#cb120-32"></a><span class="co">#| message: false</span></span>
+<span id="cb120-33"><a href="#cb120-33"></a><span class="co">#| warning: false</span></span>
+<span id="cb120-34"><a href="#cb120-34"></a><span class="co">#| filename: Setup</span></span>
+<span id="cb120-35"><a href="#cb120-35"></a><span class="fu">library</span>(tidyverse)</span>
+<span id="cb120-36"><a href="#cb120-36"></a><span class="fu">library</span>(melidosData)</span>
+<span id="cb120-37"><a href="#cb120-37"></a><span class="fu">library</span>(LightLogR)</span>
+<span id="cb120-38"><a href="#cb120-38"></a><span class="fu">library</span>(mgcv)</span>
+<span id="cb120-39"><a href="#cb120-39"></a><span class="fu">library</span>(readxl)</span>
+<span id="cb120-40"><a href="#cb120-40"></a><span class="fu">library</span>(lme4)</span>
+<span id="cb120-41"><a href="#cb120-41"></a><span class="fu">library</span>(performance)</span>
+<span id="cb120-42"><a href="#cb120-42"></a><span class="fu">library</span>(cowplot)</span>
+<span id="cb120-43"><a href="#cb120-43"></a><span class="fu">library</span>(ggridges)</span>
+<span id="cb120-44"><a href="#cb120-44"></a><span class="fu">library</span>(downlit)</span>
+<span id="cb120-45"><a href="#cb120-45"></a><span class="fu">library</span>(xml2)</span>
+<span id="cb120-46"><a href="#cb120-46"></a><span class="in">```</span></span>
+<span id="cb120-47"><a href="#cb120-47"></a></span>
+<span id="cb120-48"><a href="#cb120-48"></a></span>
+<span id="cb120-51"><a href="#cb120-51"></a><span class="in">```{r}</span></span>
+<span id="cb120-52"><a href="#cb120-52"></a><span class="co">#| message: false</span></span>
+<span id="cb120-53"><a href="#cb120-53"></a><span class="co">#| filename: Load data</span></span>
+<span id="cb120-54"><a href="#cb120-54"></a><span class="fu">load</span>(<span class="st">"data/metrics_separate_glasses.RData"</span>)</span>
+<span id="cb120-55"><a href="#cb120-55"></a><span class="fu">load</span>(<span class="st">"data/metrics_separate_chest.RData"</span>)</span>
+<span id="cb120-56"><a href="#cb120-56"></a><span class="fu">load</span>(<span class="st">"data/preprocessed_glasses_2.RData"</span>)</span>
+<span id="cb120-57"><a href="#cb120-57"></a><span class="fu">load</span>(<span class="st">"data/preprocessed_chest_2.RData"</span>)</span>
+<span id="cb120-58"><a href="#cb120-58"></a>demographics <span class="ot">&lt;-</span> <span class="fu">load_data</span>(<span class="st">"demographics"</span>) <span class="sc">|&gt;</span> <span class="fu">flatten_data</span>()</span>
+<span id="cb120-59"><a href="#cb120-59"></a><span class="in">```</span></span>
+<span id="cb120-60"><a href="#cb120-60"></a></span>
+<span id="cb120-61"><a href="#cb120-61"></a><span class="fu">## Preparation</span></span>
+<span id="cb120-62"><a href="#cb120-62"></a></span>
+<span id="cb120-63"><a href="#cb120-63"></a><span class="fu">### Context</span></span>
+<span id="cb120-64"><a href="#cb120-64"></a></span>
+<span id="cb120-67"><a href="#cb120-67"></a><span class="in">```{r}</span></span>
+<span id="cb120-68"><a href="#cb120-68"></a><span class="co">#| filename: Prepare photoperiods</span></span>
+<span id="cb120-69"><a href="#cb120-69"></a>photoperiod_daily <span class="ot">&lt;-</span> </span>
+<span id="cb120-70"><a href="#cb120-70"></a>light_glasses_processed2 <span class="sc">|&gt;</span> </span>
+<span id="cb120-71"><a href="#cb120-71"></a>  <span class="fu">group_by</span>(site, Id, Date) <span class="sc">|&gt;</span> </span>
+<span id="cb120-72"><a href="#cb120-72"></a>  <span class="fu">summarize</span>(<span class="at">photoperiod =</span> <span class="fu">mean</span>(photoperiod, <span class="at">na.rm =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span> <span class="fu">as.numeric</span>(),</span>
+<span id="cb120-73"><a href="#cb120-73"></a>            <span class="at">.groups =</span> <span class="st">"drop_last"</span>)</span>
+<span id="cb120-74"><a href="#cb120-74"></a></span>
+<span id="cb120-75"><a href="#cb120-75"></a>photoperiod_participant <span class="ot">&lt;-</span> </span>
+<span id="cb120-76"><a href="#cb120-76"></a>light_glasses_processed2 <span class="sc">|&gt;</span> </span>
+<span id="cb120-77"><a href="#cb120-77"></a>  <span class="fu">group_by</span>(site, Id) <span class="sc">|&gt;</span> </span>
+<span id="cb120-78"><a href="#cb120-78"></a>  <span class="fu">summarize</span>(<span class="at">photoperiod =</span> <span class="fu">mean</span>(photoperiod, <span class="at">na.rm =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span> <span class="fu">as.numeric</span>(),</span>
+<span id="cb120-79"><a href="#cb120-79"></a>            <span class="at">.groups =</span> <span class="st">"drop_last"</span>)</span>
+<span id="cb120-80"><a href="#cb120-80"></a></span>
+<span id="cb120-81"><a href="#cb120-81"></a>photoperiod_daily_chest <span class="ot">&lt;-</span> </span>
+<span id="cb120-82"><a href="#cb120-82"></a>light_chest_processed2 <span class="sc">|&gt;</span> </span>
+<span id="cb120-83"><a href="#cb120-83"></a>  <span class="fu">group_by</span>(site, Id, Date) <span class="sc">|&gt;</span> </span>
+<span id="cb120-84"><a href="#cb120-84"></a>  <span class="fu">summarize</span>(<span class="at">photoperiod =</span> <span class="fu">mean</span>(photoperiod, <span class="at">na.rm =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span> <span class="fu">as.numeric</span>(),</span>
+<span id="cb120-85"><a href="#cb120-85"></a>            <span class="at">.groups =</span> <span class="st">"drop_last"</span>)</span>
+<span id="cb120-86"><a href="#cb120-86"></a></span>
+<span id="cb120-87"><a href="#cb120-87"></a>photoperiod_participant_chest <span class="ot">&lt;-</span> </span>
+<span id="cb120-88"><a href="#cb120-88"></a>light_chest_processed2 <span class="sc">|&gt;</span> </span>
+<span id="cb120-89"><a href="#cb120-89"></a>  <span class="fu">group_by</span>(site, Id) <span class="sc">|&gt;</span> </span>
+<span id="cb120-90"><a href="#cb120-90"></a>  <span class="fu">summarize</span>(<span class="at">photoperiod =</span> <span class="fu">mean</span>(photoperiod, <span class="at">na.rm =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span> <span class="fu">as.numeric</span>(),</span>
+<span id="cb120-91"><a href="#cb120-91"></a>            <span class="at">.groups =</span> <span class="st">"drop_last"</span>)</span>
+<span id="cb120-92"><a href="#cb120-92"></a><span class="in">```</span></span>
+<span id="cb120-93"><a href="#cb120-93"></a></span>
+<span id="cb120-96"><a href="#cb120-96"></a><span class="in">```{r}</span></span>
+<span id="cb120-97"><a href="#cb120-97"></a><span class="co">#| filename: Prepare contextual info</span></span>
+<span id="cb120-98"><a href="#cb120-98"></a>demographics <span class="ot">&lt;-</span> </span>
+<span id="cb120-99"><a href="#cb120-99"></a>  demographics <span class="sc">|&gt;</span> </span>
+<span id="cb120-100"><a href="#cb120-100"></a>  <span class="fu">select</span>(site, Id, age, sex, gender, employment_status)</span>
+<span id="cb120-101"><a href="#cb120-101"></a></span>
+<span id="cb120-102"><a href="#cb120-102"></a>context <span class="ot">&lt;-</span> </span>
+<span id="cb120-103"><a href="#cb120-103"></a>  <span class="fu">tibble</span>(<span class="at">site =</span> <span class="fu">names</span>(melidos_cities),</span>
+<span id="cb120-104"><a href="#cb120-104"></a>         <span class="at">country =</span> <span class="fu">unname</span>(melidos_countries),</span>
+<span id="cb120-105"><a href="#cb120-105"></a>         <span class="at">tz =</span> <span class="fu">unname</span>(melidos_tzs),</span>
+<span id="cb120-106"><a href="#cb120-106"></a>         <span class="at">city =</span> <span class="fu">unname</span>(melidos_cities),</span>
+<span id="cb120-107"><a href="#cb120-107"></a>         ) <span class="sc">|&gt;</span> </span>
+<span id="cb120-108"><a href="#cb120-108"></a>  <span class="fu">left_join</span>(</span>
+<span id="cb120-109"><a href="#cb120-109"></a>    melidos_coordinates <span class="sc">|&gt;</span> <span class="fu">map</span>(enframe) <span class="sc">|&gt;</span> <span class="fu">list_rbind</span>(<span class="at">names_to =</span> <span class="st">"site"</span>) <span class="sc">|&gt;</span> <span class="fu">pivot_wider</span>() <span class="sc">|&gt;</span> <span class="fu">rename</span>(<span class="at">lat =</span> <span class="st">`</span><span class="at">1</span><span class="st">`</span>, <span class="at">lon =</span> <span class="st">`</span><span class="at">2</span><span class="st">`</span>),</span>
+<span id="cb120-110"><a href="#cb120-110"></a>    <span class="at">by =</span> <span class="st">"site"</span></span>
+<span id="cb120-111"><a href="#cb120-111"></a>  )</span>
+<span id="cb120-112"><a href="#cb120-112"></a></span>
+<span id="cb120-113"><a href="#cb120-113"></a>demographics <span class="ot">&lt;-</span> </span>
+<span id="cb120-114"><a href="#cb120-114"></a>  demographics <span class="sc">|&gt;</span> </span>
+<span id="cb120-115"><a href="#cb120-115"></a>  <span class="fu">left_join</span>(context, <span class="at">by =</span> <span class="fu">join_by</span>(<span class="st">"site"</span>))</span>
+<span id="cb120-116"><a href="#cb120-116"></a></span>
+<span id="cb120-117"><a href="#cb120-117"></a><span class="in">```</span></span>
+<span id="cb120-118"><a href="#cb120-118"></a></span>
+<span id="cb120-119"><a href="#cb120-119"></a><span class="fu">### Metrics</span></span>
+<span id="cb120-120"><a href="#cb120-120"></a></span>
+<span id="cb120-121"><a href="#cb120-121"></a>In this section, we will combine all the metrics into one data-frame</span>
+<span id="cb120-122"><a href="#cb120-122"></a></span>
+<span id="cb120-125"><a href="#cb120-125"></a><span class="in">```{r}</span></span>
+<span id="cb120-126"><a href="#cb120-126"></a><span class="co">#| filename: Prepare participant metrics</span></span>
+<span id="cb120-127"><a href="#cb120-127"></a>metrics_glasses <span class="ot">&lt;-</span> </span>
+<span id="cb120-128"><a href="#cb120-128"></a>metric_glasses_participant <span class="sc">|&gt;</span> </span>
+<span id="cb120-129"><a href="#cb120-129"></a>  <span class="fu">left_join</span>(demographics, <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"site"</span>, <span class="st">"Id"</span>)) <span class="sc">|&gt;</span> </span>
+<span id="cb120-130"><a href="#cb120-130"></a>  <span class="fu">left_join</span>(photoperiod_participant, <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"site"</span>, <span class="st">"Id"</span>)) <span class="sc">|&gt;</span> </span>
+<span id="cb120-131"><a href="#cb120-131"></a>  <span class="fu">pivot_longer</span>(<span class="fu">c</span>(interdaily_stability, intradaily_variability), <span class="at">names_to =</span> <span class="st">"name"</span>, <span class="at">values_to =</span> <span class="st">"metric"</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb120-132"><a href="#cb120-132"></a>  <span class="fu">ungroup</span>() <span class="sc">|&gt;</span> </span>
+<span id="cb120-133"><a href="#cb120-133"></a>  <span class="fu">nest</span>(<span class="at">.by =</span> name) <span class="sc">|&gt;</span> </span>
+<span id="cb120-134"><a href="#cb120-134"></a>  <span class="fu">mutate</span>(<span class="at">type =</span> <span class="st">"participant"</span>)</span>
+<span id="cb120-135"><a href="#cb120-135"></a></span>
+<span id="cb120-136"><a href="#cb120-136"></a>metrics_chest <span class="ot">&lt;-</span> </span>
+<span id="cb120-137"><a href="#cb120-137"></a>metric_chest_participant <span class="sc">|&gt;</span> </span>
+<span id="cb120-138"><a href="#cb120-138"></a>  <span class="fu">left_join</span>(demographics, <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"site"</span>, <span class="st">"Id"</span>)) <span class="sc">|&gt;</span> </span>
+<span id="cb120-139"><a href="#cb120-139"></a>  <span class="fu">left_join</span>(photoperiod_participant_chest, <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"site"</span>, <span class="st">"Id"</span>)) <span class="sc">|&gt;</span> </span>
+<span id="cb120-140"><a href="#cb120-140"></a>  <span class="fu">pivot_longer</span>(<span class="fu">c</span>(interdaily_stability, intradaily_variability), <span class="at">names_to =</span> <span class="st">"name"</span>, <span class="at">values_to =</span> <span class="st">"metric"</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb120-141"><a href="#cb120-141"></a>  <span class="fu">ungroup</span>() <span class="sc">|&gt;</span> </span>
+<span id="cb120-142"><a href="#cb120-142"></a>  <span class="fu">nest</span>(<span class="at">.by =</span> name) <span class="sc">|&gt;</span> </span>
+<span id="cb120-143"><a href="#cb120-143"></a>  <span class="fu">mutate</span>(<span class="at">type =</span> <span class="st">"participant"</span>)</span>
+<span id="cb120-144"><a href="#cb120-144"></a><span class="in">```</span></span>
+<span id="cb120-145"><a href="#cb120-145"></a></span>
+<span id="cb120-148"><a href="#cb120-148"></a><span class="in">```{r}</span></span>
+<span id="cb120-149"><a href="#cb120-149"></a><span class="co">#| filename: Prepare participant-day metrics</span></span>
+<span id="cb120-150"><a href="#cb120-150"></a>metrics_glasses <span class="ot">&lt;-</span></span>
+<span id="cb120-151"><a href="#cb120-151"></a>  <span class="fu">rbind</span>(</span>
+<span id="cb120-152"><a href="#cb120-152"></a>    metrics_glasses,</span>
+<span id="cb120-153"><a href="#cb120-153"></a>    metric_glasses_participantday <span class="sc">|&gt;</span></span>
+<span id="cb120-154"><a href="#cb120-154"></a>      <span class="co">#converting datetimes to times</span></span>
+<span id="cb120-155"><a href="#cb120-155"></a>      <span class="fu">Datetime2Time</span>() <span class="sc">|&gt;</span></span>
+<span id="cb120-156"><a href="#cb120-156"></a>      <span class="fu">mutate</span>(</span>
+<span id="cb120-157"><a href="#cb120-157"></a>        <span class="co">#converting times and durations to decimal hours</span></span>
+<span id="cb120-158"><a href="#cb120-158"></a>        <span class="fu">across</span>(<span class="fu">c</span>(<span class="fu">where</span>(hms<span class="sc">::</span>is_hms), <span class="fu">where</span>(is.duration)), </span>
+<span id="cb120-159"><a href="#cb120-159"></a>               \(x) <span class="fu">as.numeric</span>(x) <span class="sc">/</span> <span class="dv">60</span> <span class="sc">/</span> <span class="dv">60</span>),</span>
+<span id="cb120-160"><a href="#cb120-160"></a>        <span class="co">#centering nighttime variables on midnight</span></span>
+<span id="cb120-161"><a href="#cb120-161"></a>        <span class="fu">across</span>(</span>
+<span id="cb120-162"><a href="#cb120-162"></a>          <span class="fu">c</span>(darkest_10h_offset, darkest_10h_onset, darkest_10h_midpoint),</span>
+<span id="cb120-163"><a href="#cb120-163"></a>          \(x) <span class="fu">ifelse</span>(x <span class="sc">&gt;</span> <span class="dv">12</span>, x <span class="sc">-</span> <span class="dv">24</span>, x)</span>
+<span id="cb120-164"><a href="#cb120-164"></a>        )</span>
+<span id="cb120-165"><a href="#cb120-165"></a>      ) <span class="sc">|&gt;</span></span>
+<span id="cb120-166"><a href="#cb120-166"></a>      <span class="fu">left_join</span>(demographics, <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"site"</span>, <span class="st">"Id"</span>)) <span class="sc">|&gt;</span> </span>
+<span id="cb120-167"><a href="#cb120-167"></a>      <span class="fu">left_join</span>(photoperiod_daily, <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"site"</span>, <span class="st">"Id"</span>, <span class="st">"Date"</span>)) <span class="sc">|&gt;</span> </span>
+<span id="cb120-168"><a href="#cb120-168"></a>      <span class="fu">pivot_longer</span>(<span class="fu">c</span>(Mean<span class="sc">:</span>duration_above_250_wake), <span class="at">names_to =</span> <span class="st">"name"</span>, <span class="at">values_to =</span> <span class="st">"metric"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb120-169"><a href="#cb120-169"></a>      <span class="fu">ungroup</span>() <span class="sc">|&gt;</span></span>
+<span id="cb120-170"><a href="#cb120-170"></a>      <span class="fu">nest</span>(<span class="at">.by =</span> name) <span class="sc">|&gt;</span> </span>
+<span id="cb120-171"><a href="#cb120-171"></a>      <span class="fu">mutate</span>(<span class="at">type =</span> <span class="st">"participant-day"</span>)</span>
+<span id="cb120-172"><a href="#cb120-172"></a>  )</span>
+<span id="cb120-173"><a href="#cb120-173"></a></span>
+<span id="cb120-174"><a href="#cb120-174"></a>metrics_chest <span class="ot">&lt;-</span></span>
+<span id="cb120-175"><a href="#cb120-175"></a>  <span class="fu">rbind</span>(</span>
+<span id="cb120-176"><a href="#cb120-176"></a>    metrics_chest,</span>
+<span id="cb120-177"><a href="#cb120-177"></a>    metric_chest_participantday <span class="sc">|&gt;</span></span>
+<span id="cb120-178"><a href="#cb120-178"></a>      <span class="co">#converting datetimes to times</span></span>
+<span id="cb120-179"><a href="#cb120-179"></a>      <span class="fu">Datetime2Time</span>() <span class="sc">|&gt;</span></span>
+<span id="cb120-180"><a href="#cb120-180"></a>      <span class="fu">mutate</span>(</span>
+<span id="cb120-181"><a href="#cb120-181"></a>        <span class="co">#converting times and durations to decimal hours</span></span>
+<span id="cb120-182"><a href="#cb120-182"></a>        <span class="fu">across</span>(<span class="fu">c</span>(<span class="fu">where</span>(hms<span class="sc">::</span>is_hms), <span class="fu">where</span>(is.duration)), </span>
+<span id="cb120-183"><a href="#cb120-183"></a>               \(x) <span class="fu">as.numeric</span>(x) <span class="sc">/</span> <span class="dv">60</span> <span class="sc">/</span> <span class="dv">60</span>),</span>
+<span id="cb120-184"><a href="#cb120-184"></a>        <span class="co">#centering nighttime variables on midnight</span></span>
+<span id="cb120-185"><a href="#cb120-185"></a>        <span class="fu">across</span>(</span>
+<span id="cb120-186"><a href="#cb120-186"></a>          <span class="fu">c</span>(darkest_10h_offset, darkest_10h_onset, darkest_10h_midpoint),</span>
+<span id="cb120-187"><a href="#cb120-187"></a>          \(x) <span class="fu">ifelse</span>(x <span class="sc">&gt;</span> <span class="dv">12</span>, x <span class="sc">-</span> <span class="dv">24</span>, x)</span>
+<span id="cb120-188"><a href="#cb120-188"></a>        )</span>
+<span id="cb120-189"><a href="#cb120-189"></a>      ) <span class="sc">|&gt;</span></span>
+<span id="cb120-190"><a href="#cb120-190"></a>      <span class="fu">left_join</span>(demographics, <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"site"</span>, <span class="st">"Id"</span>)) <span class="sc">|&gt;</span> </span>
+<span id="cb120-191"><a href="#cb120-191"></a>      <span class="fu">left_join</span>(photoperiod_daily_chest, <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"site"</span>, <span class="st">"Id"</span>, <span class="st">"Date"</span>)) <span class="sc">|&gt;</span> </span>
+<span id="cb120-192"><a href="#cb120-192"></a>      <span class="fu">pivot_longer</span>(<span class="fu">c</span>(Mean<span class="sc">:</span>duration_above_250_wake), <span class="at">names_to =</span> <span class="st">"name"</span>, <span class="at">values_to =</span> <span class="st">"metric"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb120-193"><a href="#cb120-193"></a>      <span class="fu">ungroup</span>() <span class="sc">|&gt;</span></span>
+<span id="cb120-194"><a href="#cb120-194"></a>      <span class="fu">nest</span>(<span class="at">.by =</span> name) <span class="sc">|&gt;</span> </span>
+<span id="cb120-195"><a href="#cb120-195"></a>      <span class="fu">mutate</span>(<span class="at">type =</span> <span class="st">"participant-day"</span>)</span>
+<span id="cb120-196"><a href="#cb120-196"></a>  )</span>
+<span id="cb120-197"><a href="#cb120-197"></a><span class="in">```</span></span>
+<span id="cb120-198"><a href="#cb120-198"></a></span>
+<span id="cb120-201"><a href="#cb120-201"></a><span class="in">```{r}</span></span>
+<span id="cb120-202"><a href="#cb120-202"></a>types <span class="ot">&lt;-</span> <span class="fu">read_excel</span>(<span class="st">"data/metric_types.xlsx"</span>)</span>
+<span id="cb120-203"><a href="#cb120-203"></a><span class="in">```</span></span>
+<span id="cb120-204"><a href="#cb120-204"></a></span>
+<span id="cb120-205"><a href="#cb120-205"></a></span>
+<span id="cb120-208"><a href="#cb120-208"></a><span class="in">```{r}</span></span>
+<span id="cb120-209"><a href="#cb120-209"></a>metrics_glasses <span class="ot">&lt;-</span></span>
+<span id="cb120-210"><a href="#cb120-210"></a>  metrics_glasses <span class="sc">|&gt;</span> </span>
+<span id="cb120-211"><a href="#cb120-211"></a>  <span class="fu">unnest</span>(data) <span class="sc">|&gt;</span> </span>
+<span id="cb120-212"><a href="#cb120-212"></a>  <span class="fu">mutate</span>(<span class="fu">across</span>(<span class="fu">c</span>(site, Id, country, city, Date), factor)) <span class="sc">|&gt;</span> </span>
+<span id="cb120-213"><a href="#cb120-213"></a>  <span class="fu">nest</span>(<span class="at">data =</span> <span class="sc">-</span><span class="fu">c</span>(name, type)) <span class="sc">|&gt;</span> </span>
+<span id="cb120-214"><a href="#cb120-214"></a>  <span class="fu">left_join</span>(types, <span class="at">by =</span> <span class="st">"name"</span>)</span>
+<span id="cb120-215"><a href="#cb120-215"></a></span>
+<span id="cb120-216"><a href="#cb120-216"></a>metrics_chest <span class="ot">&lt;-</span></span>
+<span id="cb120-217"><a href="#cb120-217"></a>  metrics_chest <span class="sc">|&gt;</span> </span>
+<span id="cb120-218"><a href="#cb120-218"></a>  <span class="fu">unnest</span>(data) <span class="sc">|&gt;</span> </span>
+<span id="cb120-219"><a href="#cb120-219"></a>  <span class="fu">mutate</span>(<span class="fu">across</span>(<span class="fu">c</span>(site, Id, country, city, Date), factor)) <span class="sc">|&gt;</span> </span>
+<span id="cb120-220"><a href="#cb120-220"></a>  <span class="fu">nest</span>(<span class="at">data =</span> <span class="sc">-</span><span class="fu">c</span>(name, type)) <span class="sc">|&gt;</span> </span>
+<span id="cb120-221"><a href="#cb120-221"></a>  <span class="fu">left_join</span>(types, <span class="at">by =</span> <span class="st">"name"</span>)</span>
+<span id="cb120-222"><a href="#cb120-222"></a><span class="in">```</span></span>
+<span id="cb120-223"><a href="#cb120-223"></a></span>
+<span id="cb120-224"><a href="#cb120-224"></a></span>
+<span id="cb120-225"><a href="#cb120-225"></a><span class="fu">### Distributional characteristics</span></span>
+<span id="cb120-226"><a href="#cb120-226"></a></span>
+<span id="cb120-229"><a href="#cb120-229"></a><span class="in">```{r}</span></span>
+<span id="cb120-230"><a href="#cb120-230"></a><span class="co">#| fig-width: 18</span></span>
+<span id="cb120-231"><a href="#cb120-231"></a><span class="co">#| fig-height: 15</span></span>
+<span id="cb120-232"><a href="#cb120-232"></a><span class="co">#| message: false</span></span>
+<span id="cb120-233"><a href="#cb120-233"></a>metrics_glasses <span class="sc">|&gt;</span> </span>
+<span id="cb120-234"><a href="#cb120-234"></a>  <span class="fu">unnest</span>(data) <span class="sc">|&gt;</span> </span>
+<span id="cb120-235"><a href="#cb120-235"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x=</span>metric)) <span class="sc">+</span></span>
+<span id="cb120-236"><a href="#cb120-236"></a>  <span class="fu">geom_density_ridges</span>(<span class="fu">aes</span>(<span class="at">y=</span>site, <span class="at">fill =</span> site))<span class="sc">+</span></span>
+<span id="cb120-237"><a href="#cb120-237"></a>  <span class="fu">facet_wrap</span>(<span class="sc">~</span> name, <span class="at">scales =</span> <span class="st">"free"</span>) <span class="sc">+</span></span>
+<span id="cb120-238"><a href="#cb120-238"></a>  <span class="fu">scale_fill_manual</span>(<span class="at">values =</span> melidos_colors) <span class="sc">+</span></span>
+<span id="cb120-239"><a href="#cb120-239"></a>  <span class="fu">theme_cowplot</span>()</span>
+<span id="cb120-240"><a href="#cb120-240"></a></span>
+<span id="cb120-241"><a href="#cb120-241"></a><span class="fu">ggsave</span>(<span class="st">"figures/exploration/metric_distribution_glasses.pdf"</span>, <span class="at">width =</span> <span class="dv">18</span>, <span class="at">height =</span> <span class="dv">15</span>)</span>
+<span id="cb120-242"><a href="#cb120-242"></a><span class="in">```</span></span>
+<span id="cb120-243"><a href="#cb120-243"></a></span>
+<span id="cb120-246"><a href="#cb120-246"></a><span class="in">```{r}</span></span>
+<span id="cb120-247"><a href="#cb120-247"></a><span class="co">#| fig-width: 18</span></span>
+<span id="cb120-248"><a href="#cb120-248"></a><span class="co">#| fig-height: 15</span></span>
+<span id="cb120-249"><a href="#cb120-249"></a><span class="co">#| message: false</span></span>
+<span id="cb120-250"><a href="#cb120-250"></a>metrics_chest <span class="sc">|&gt;</span> </span>
+<span id="cb120-251"><a href="#cb120-251"></a>  <span class="fu">unnest</span>(data) <span class="sc">|&gt;</span> </span>
+<span id="cb120-252"><a href="#cb120-252"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x=</span>metric)) <span class="sc">+</span></span>
+<span id="cb120-253"><a href="#cb120-253"></a>  <span class="fu">geom_density_ridges</span>(<span class="fu">aes</span>(<span class="at">y=</span>site, <span class="at">fill =</span> site))<span class="sc">+</span></span>
+<span id="cb120-254"><a href="#cb120-254"></a>  <span class="fu">facet_wrap</span>(<span class="sc">~</span> name, <span class="at">scales =</span> <span class="st">"free"</span>) <span class="sc">+</span></span>
+<span id="cb120-255"><a href="#cb120-255"></a>  <span class="fu">scale_fill_manual</span>(<span class="at">values =</span> melidos_colors) <span class="sc">+</span></span>
+<span id="cb120-256"><a href="#cb120-256"></a>  <span class="fu">theme_cowplot</span>()</span>
+<span id="cb120-257"><a href="#cb120-257"></a></span>
+<span id="cb120-258"><a href="#cb120-258"></a><span class="fu">ggsave</span>(<span class="st">"figures/exploration/metric_distribution_chest.pdf"</span>, <span class="at">width =</span> <span class="dv">18</span>, <span class="at">height =</span> <span class="dv">15</span>)</span>
+<span id="cb120-259"><a href="#cb120-259"></a><span class="in">```</span></span>
+<span id="cb120-260"><a href="#cb120-260"></a></span>
+<span id="cb120-261"><a href="#cb120-261"></a><span class="fu">### Export data</span></span>
+<span id="cb120-262"><a href="#cb120-262"></a></span>
+<span id="cb120-265"><a href="#cb120-265"></a><span class="in">```{r}</span></span>
+<span id="cb120-266"><a href="#cb120-266"></a><span class="fu">save</span>(metrics_glasses, <span class="at">file =</span> <span class="st">"data/metrics_glasses.RData"</span>)</span>
+<span id="cb120-267"><a href="#cb120-267"></a><span class="fu">save</span>(metrics_chest, <span class="at">file =</span> <span class="st">"data/metrics_chest.RData"</span>)</span>
+<span id="cb120-268"><a href="#cb120-268"></a><span class="in">```</span></span>
+</code></pre></div><button title="Copy to Clipboard" class="code-copy-button" data-in-quarto-modal=""><i class="bi"></i></button></div>
+</div></div></div></div></div>
+</div> <!-- /content -->  <script>var lightboxQuarto = GLightbox({"closeEffect":"zoom","descPosition":"bottom","loop":false,"openEffect":"zoom","selector":".lightbox"});
+(function() {
+  let previousOnload = window.onload;
+  window.onload = () => {
+    if (previousOnload) {
+      previousOnload();
+    }
+    lightboxQuarto.on('slide_before_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      const href = trigger.getAttribute('href');
+      if (href !== null) {
+        const imgEl = window.document.querySelector(`a[href="${href}"] img`);
+        if (imgEl !== null) {
+          const srcAttr = imgEl.getAttribute("src");
+          if (srcAttr && srcAttr.startsWith("data:")) {
+            slideConfig.href = srcAttr;
+          }
+        }
+      } 
+    });
+  
+    lightboxQuarto.on('slide_after_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(slideNode);
+      }
+    });
+  
+  };
+  
+})();
+          </script>
+
+
+</body></html>
