@@ -7,9 +7,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 <meta name="author" content="Johannes Zauner">
-<meta name="dcterms.date" content="2026-04-17">
+<meta name="dcterms.date" content="2026-04-26">
 
-<title>Manuscript</title>
+<title>Manuscript overview</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -48,12 +48,12 @@ ul.task-list li input[type="checkbox"] {
 
 
 <link rel="stylesheet" href="styles.css">
-<meta name="citation_title" content="Manuscript">
+<meta name="citation_title" content="Manuscript overview">
 <meta name="citation_author" content="Johannes Zauner">
-<meta name="citation_publication_date" content="2026-04-17">
-<meta name="citation_cover_date" content="2026-04-17">
+<meta name="citation_publication_date" content="2026-04-26">
+<meta name="citation_cover_date" content="2026-04-26">
 <meta name="citation_year" content="2026">
-<meta name="citation_online_date" content="2026-04-17">
+<meta name="citation_online_date" content="2026-04-26">
 <meta name="citation_fulltext_html_url" content="https://tscnlab.github.io/ZaunerEtAl_NatHumBehav_2026/index.html">
 <meta name="citation_language" content="en">
 </head>
@@ -63,7 +63,7 @@ ul.task-list li input[type="checkbox"] {
 <header id="title-block-header" class="quarto-title-block default toc-left page-columns page-full">
   <div class="quarto-title-banner page-columns page-full">
     <div class="quarto-title column-body">
-      <h1 class="title">Manuscript</h1>
+      <h1 class="title">Manuscript overview</h1>
             <p class="subtitle lead">Individual, behavioural, and environmental determinants of personal light exposure in daily life: a multi-country wearable and experience-sampling study</p>
           </div>
 
@@ -83,7 +83,7 @@ ul.task-list li input[type="checkbox"] {
                 <div>
             <div class="quarto-title-meta-heading">Last modified:</div>
             <div class="quarto-title-meta-contents">
-              <p class="date">April 17, 2026</p>
+              <p class="date">April 26, 2026</p>
             </div>
           </div>
           
@@ -104,7 +104,15 @@ ul.task-list li input[type="checkbox"] {
     <h2 id="toc-title">Table of contents</h2>
    
   <ul>
-  <li><a href="#this-page-will-shortly-host-the-manuscript" id="toc-this-page-will-shortly-host-the-manuscript" class="nav-link active" data-scroll-target="#this-page-will-shortly-host-the-manuscript">This page will shortly host the manuscript</a></li>
+  <li><a href="#purpose-of-this-page" id="toc-purpose-of-this-page" class="nav-link active" data-scroll-target="#purpose-of-this-page">Purpose of this page</a></li>
+  <li><a href="#project-roadmap" id="toc-project-roadmap" class="nav-link" data-scroll-target="#project-roadmap">Project roadmap</a></li>
+  <li><a href="#research-questions-and-hypotheses" id="toc-research-questions-and-hypotheses" class="nav-link" data-scroll-target="#research-questions-and-hypotheses">Research questions and hypotheses</a>
+  <ul class="collapse">
+  <li><a href="#rq1-site-level-and-environmental-differences" id="toc-rq1-site-level-and-environmental-differences" class="nav-link" data-scroll-target="#rq1-site-level-and-environmental-differences">RQ1: Site-level and environmental differences</a></li>
+  <li><a href="#rq2-behaviour-and-environment" id="toc-rq2-behaviour-and-environment" class="nav-link" data-scroll-target="#rq2-behaviour-and-environment">RQ2: Behaviour and environment</a></li>
+  <li><a href="#rq3-individual-differences" id="toc-rq3-individual-differences" class="nav-link" data-scroll-target="#rq3-individual-differences">RQ3: Individual differences</a></li>
+  </ul></li>
+  <li><a href="#quick-links-to-all-subpages" id="toc-quick-links-to-all-subpages" class="nav-link" data-scroll-target="#quick-links-to-all-subpages">Quick links to all subpages</a></li>
   </ul>
 <div class="quarto-alternate-notebooks"><h2>Notebooks</h2><ul><li><a href="descriptives-preview.html"><i class="bi bi-journal-code"></i>Descriptives</a></li><li><a href="deviations-preview.html"><i class="bi bi-journal-code"></i>Deviations</a></li><li><a href="LICENSE-preview.html"><i class="bi bi-journal-code"></i>LICENSE.md</a></li><li><a href="data_preparation-preview.html"><i class="bi bi-journal-code"></i>Personal light exposure: Data preparation</a></li><li><a href="metric_preparation-preview.html"><i class="bi bi-journal-code"></i>Personal light exposure: Metric preparation</a></li><li><a href="RQ1-preview.html"><i class="bi bi-journal-code"></i>Research Question 1</a></li><li><a href="RQ2-preview.html"><i class="bi bi-journal-code"></i>Research Question 2</a></li><li><a href="RQ3-preview.html"><i class="bi bi-journal-code"></i>Research Question 3</a></li></ul></div></nav>
 </div>
@@ -117,8 +125,90 @@ ul.task-list li input[type="checkbox"] {
   
 
 
-<section id="this-page-will-shortly-host-the-manuscript" class="level2">
-<h2 class="anchored" data-anchor-id="this-page-will-shortly-host-the-manuscript">This page will shortly host the manuscript</h2>
+<section id="purpose-of-this-page" class="level2">
+<h2 class="anchored" data-anchor-id="purpose-of-this-page">Purpose of this page</h2>
+<p>This landing page summarizes the full analysis workflow and links to all subpages in this Quarto project.</p>
+</section>
+<section id="project-roadmap" class="level2">
+<h2 class="anchored" data-anchor-id="project-roadmap">Project roadmap</h2>
+<ol type="1">
+<li><strong>Data preparation</strong> (<a href="./data_preparation-preview.html">Data preparation</a>)
+<ul>
+<li>Import raw wearable light data (glasses/chest), sleep diaries, and wear logs.</li>
+<li>Merge streams and apply quality filters (e.g., non-wear handling and implausible high-light removal).</li>
+<li>Produce cleaned time series for downstream analysis.</li>
+</ul></li>
+<li><strong>Metric preparation</strong> (<a href="./metric_preparation-preview.html">Metric preparation</a>)
+<ul>
+<li>Derive participant and participant-day metrics across level, duration, timing, exposure-history, and dynamics domains.</li>
+<li>Join contextual covariates (e.g., photoperiod, demographics, site context).</li>
+<li>Create analysis-ready metric tables.</li>
+</ul></li>
+<li><strong>Descriptive summaries</strong> (<a href="Descriptives.qmd">Descriptive summaries</a>)
+<ul>
+<li>Characterize sites, participants, and observation coverage.</li>
+<li>Provide descriptive figures/tables for light exposure and sample composition.</li>
+</ul></li>
+<li><strong>Confirmatory analyses</strong>
+<ul>
+<li><a href="./RQ1-preview.html">RQ1: Environmental effects</a></li>
+<li><a href="./RQ2-preview.html">RQ2: Behavioural and micro-environment effects</a></li>
+<li><a href="./RQ3-preview.html">RQ3: Individual-difference effects</a></li>
+</ul></li>
+<li><strong>Transparency and governance</strong>
+<ul>
+<li><a href="Deviations.qmd">Preregistration deviations</a></li>
+<li><a href="./LICENSE-preview.html">License</a></li>
+</ul></li>
+</ol>
+</section>
+<section id="research-questions-and-hypotheses" class="level2">
+<h2 class="anchored" data-anchor-id="research-questions-and-hypotheses">Research questions and hypotheses</h2>
+<section id="rq1-site-level-and-environmental-differences" class="level3">
+<h3 class="anchored" data-anchor-id="rq1-site-level-and-environmental-differences">RQ1: Site-level and environmental differences</h3>
+<p><strong>Research question:</strong> Do sites differ in objectively measured personal light exposure? If so, does an individual’s behaviour and micro-environment have a stronger effect than site?</p>
+<ul>
+<li><strong>H1:</strong> There is a significant difference in personal light-exposure metrics across sites, even after accounting for latitude and photoperiod.</li>
+<li><strong>H2:</strong> The variance of personal light exposure patterns (hourly geometric mean of melanopic EDI) by participants within sites is greater than the variance between sites.</li>
+</ul>
+<p>See full analysis: <a href="./RQ1-preview.html">RQ1 page</a>.</p>
+</section>
+<section id="rq2-behaviour-and-environment" class="level3">
+<h3 class="anchored" data-anchor-id="rq2-behaviour-and-environment">RQ2: Behaviour and environment</h3>
+<p><strong>Research question:</strong> Is there a relationship between personal light exposure and participants’ behaviour and environment?</p>
+<ul>
+<li><strong>H3:</strong> There is a significant relationship between hourly self-reported light exposure categories and hourly geometric mean of melanopic EDI.</li>
+<li><strong>H4:</strong> There is a significant relationship between hourly self-reported activities and hourly geometric mean of melanopic EDI.</li>
+<li><strong>H5:</strong> There is a significant relationship between LEBA-factors and pre-selected personal light exposure metrics.</li>
+<li><strong>H6:</strong> There is a significant relationship between the day type, daily exercise, and sleep with personal light exposure metrics.</li>
+<li><strong>H7:</strong> There is a ceiling effect of (absolute) latitude and photoperiod with level, duration, and exposure-history-based metrics.</li>
+</ul>
+<p>See full analysis: <a href="./RQ2-preview.html">RQ2 page</a>.</p>
+</section>
+<section id="rq3-individual-differences" class="level3">
+<h3 class="anchored" data-anchor-id="rq3-individual-differences">RQ3: Individual differences</h3>
+<p><strong>Research question:</strong> Is personal light exposure related to participant characteristics?</p>
+<ul>
+<li><strong>H8:</strong> Duration, exposure-history, and level-based metrics of personal light exposure are significantly associated with personal light sensitivity (VLSQ-8).</li>
+<li><strong>H9:</strong> Timing-based metrics of personal light exposure are significantly associated with chronotype.</li>
+<li><strong>H10:</strong> Personal light exposure metrics depend on age and sex.</li>
+<li><strong>H11:</strong> Personal light exposure patterns depend on sex.</li>
+</ul>
+<p>See full analysis: <a href="./RQ3-preview.html">RQ3 page</a>.</p>
+</section>
+</section>
+<section id="quick-links-to-all-subpages" class="level2">
+<h2 class="anchored" data-anchor-id="quick-links-to-all-subpages">Quick links to all subpages</h2>
+<ul>
+<li><a href="./data_preparation-preview.html">Data preparation</a></li>
+<li><a href="./metric_preparation-preview.html">Metric preparation</a></li>
+<li><a href="Descriptives.qmd">Descriptive summaries</a></li>
+<li><a href="./RQ1-preview.html">RQ1: Environmental effects</a></li>
+<li><a href="./RQ2-preview.html">RQ2: Behavioural effects</a></li>
+<li><a href="./RQ3-preview.html">RQ3: Individual effects</a></li>
+<li><a href="Deviations.qmd">Preregistration deviations</a></li>
+<li><a href="./LICENSE-preview.html">License</a></li>
+</ul>
 </section>
 
 </main>
