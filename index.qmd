@@ -1,8 +1,80 @@
 ---
-title: "Manuscript"
+title: "Manuscript overview"
 author: "Johannes Zauner"
 subtitle: "Individual, behavioural, and environmental determinants of personal light exposure in daily life: a multi-country wearable and experience-sampling study"
 format: html
 ---
 
-## This page will shortly host the manuscript
+## Purpose of this page
+
+This landing page summarizes the full analysis workflow and links to all subpages in this Quarto project.
+
+## Project roadmap
+
+1. **Data preparation** ([Data preparation](data_preparation.qmd))
+   - Import raw wearable light data (glasses/chest), sleep diaries, and wear logs.
+   - Merge streams and apply quality filters (e.g., non-wear handling and implausible high-light removal).
+   - Produce cleaned time series for downstream analysis.
+
+2. **Metric preparation** ([Metric preparation](metric_preparation.qmd))
+   - Derive participant and participant-day metrics across level, duration, timing, exposure-history, and dynamics domains.
+   - Join contextual covariates (e.g., photoperiod, demographics, site context).
+   - Create analysis-ready metric tables.
+
+3. **Descriptive summaries** ([Descriptive summaries](Descriptives.qmd))
+   - Characterize sites, participants, and observation coverage.
+   - Provide descriptive figures/tables for light exposure and sample composition.
+
+4. **Confirmatory analyses**
+   - [RQ1: Environmental effects](RQ1.qmd)
+   - [RQ2: Behavioural and micro-environment effects](RQ2.qmd)
+   - [RQ3: Individual-difference effects](RQ3.qmd)
+
+5. **Transparency and governance**
+   - [Preregistration deviations](Deviations.qmd)
+   - [License](LICENSE.md)
+
+## Research questions and hypotheses
+
+### RQ1: Site-level and environmental differences
+
+**Research question:** Do sites differ in objectively measured personal light exposure? If so, does an individual’s behaviour and micro-environment have a stronger effect than site?
+
+- **H1:** There is a significant difference in personal light-exposure metrics across sites, even after accounting for latitude and photoperiod.
+- **H2:** The variance of personal light exposure patterns (hourly geometric mean of melanopic EDI) by participants within sites is greater than the variance between sites.
+
+See full analysis: [RQ1 page](RQ1.qmd).
+
+### RQ2: Behaviour and environment
+
+**Research question:** Is there a relationship between personal light exposure and participants’ behaviour and environment?
+
+- **H3:** There is a significant relationship between hourly self-reported light exposure categories and hourly geometric mean of melanopic EDI.
+- **H4:** There is a significant relationship between hourly self-reported activities and hourly geometric mean of melanopic EDI.
+- **H5:** There is a significant relationship between LEBA-factors and pre-selected personal light exposure metrics.
+- **H6:** There is a significant relationship between the day type, daily exercise, and sleep with personal light exposure metrics.
+- **H7:** There is a ceiling effect of (absolute) latitude and photoperiod with level, duration, and exposure-history-based metrics.
+
+See full analysis: [RQ2 page](RQ2.qmd).
+
+### RQ3: Individual differences
+
+**Research question:** Is personal light exposure related to participant characteristics?
+
+- **H8:** Duration, exposure-history, and level-based metrics of personal light exposure are significantly associated with personal light sensitivity (VLSQ-8).
+- **H9:** Timing-based metrics of personal light exposure are significantly associated with chronotype.
+- **H10:** Personal light exposure metrics depend on age and sex.
+- **H11:** Personal light exposure patterns depend on sex.
+
+See full analysis: [RQ3 page](RQ3.qmd).
+
+## Quick links to all subpages
+
+- [Data preparation](data_preparation.qmd)
+- [Metric preparation](metric_preparation.qmd)
+- [Descriptive summaries](Descriptives.qmd)
+- [RQ1: Environmental effects](RQ1.qmd)
+- [RQ2: Behavioural effects](RQ2.qmd)
+- [RQ3: Individual effects](RQ3.qmd)
+- [Preregistration deviations](Deviations.qmd)
+- [License](LICENSE.md)
