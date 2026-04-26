@@ -427,7 +427,7 @@ metric_glasses_participantday <-
 metric_chest_participanthour <- 
   light_chest_processed2 |> 
   aggregate_Datetime(
-    "1 hour",
+    "30 mins",
     type = "floor",
     numeric.handler = \(x) x |> mean(na.rm = TRUE),
     geo.MEDI = MEDI |> log_zero_inflated() |> mean(na.rm = TRUE) |> exp_zero_inflated()
