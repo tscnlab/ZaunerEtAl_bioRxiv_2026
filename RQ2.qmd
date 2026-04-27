@@ -582,9 +582,16 @@ activity_data <-
            fct_collapse(outdoor = c("free_outdoor", "working_outdoor", "road_open")) |> 
            fct_recode(NULL = "other") |> 
            fct_relevel("home")
-         ) |> 
+         )
+```
+
+```{r}
+activity_data |> count(activity, sort = TRUE) |> mutate(pct = n / sum(n)) |> gt() |> fmt_percent(pct, decimals = 0)
+activity_data <- 
+  activity_data |> 
   drop_na(activity)
 ```
+
 
 ### Analysis
 
