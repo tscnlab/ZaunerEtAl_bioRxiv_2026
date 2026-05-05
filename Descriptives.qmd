@@ -658,12 +658,77 @@ tbl1_transposed |>
   ) |> 
   site_conv_gt(rev = FALSE)
 
-tbl1
-
 gtsave(tbl1, "tables/tbl1.png", vwidth = 1200)
 ```
 
-### Reduced table
+
+### Reduced table A
+
+```{r}
+tbl1_red <- 
+tbl1_transposed |> 
+  filter_out(
+    description %in% 
+      c("Chronotype (MEQ-score)", "Gender", "Collection dates", 
+        "Weekday / weekend", "Workday / free", "Social jetlag", "Sleep duration")
+    ) |> 
+    group_by(type) |> 
+  gt(rowname_col = "description") |> 
+  # cols_move(Overall, 1) |> 
+  sub_missing() |> 
+  gt_multiple(names(melidos_cities), style_tab) |> 
+  tab_style(style = cell_text(align = "center"), 
+            locations = list(cells_body(),
+                             cells_column_labels())) |> 
+  tab_style(style = cell_text(weight = "bold", ), 
+            locations = list(cells_row_groups(),
+                             cells_column_labels())) |> 
+  fmt_markdown() |> 
+  tab_footnote(
+    "g: glasses-mounted measurement device; c: chest-level measurement device",
+    locations = cells_stub(c("Participants", "Participant-days", "Complete days (>80% data)"))
+  ) |> 
+  tab_footnote(
+    "Median (minimum, maximum)",
+    locations = cells_stub(any_of(c("Collection dates", "Age")))
+  ) |> 
+  tab_footnote(
+    "Median (5% percentile, 95% percentile)",
+    locations = cells_stub(any_of(c("Photoperiod", "Chronotype (MCTQ-score)", 
+                             "Chronotype (MEQ-score)", "Social jetlag",
+                             "Sleep duration")))
+  ) |> 
+  tab_footnote(
+    "w: weeks, d: days, h: hours, m: minutes, s: seconds",
+    locations = cells_stub(any_of(c("Participant time", "Participant-days", "Nonwear time (%)", 
+                             "Complete days (>80% data)", "Photoperiod", "Social jetlag",
+                             "Sleep duration")))
+  ) |> 
+  tab_footnote(
+    "F: female, M: male(sex)",
+    locations = cells_stub(any_of(c("Sex", "Gender")))
+  ) |> 
+  tab_footnote(
+    "F: Fully employed OR Studying and employed OR Not employed but studying or in training; P: Part time employed OR Marginally employed (Minijob); N: Unemployed",
+    locations = cells_stub(c("Employment status"))
+  ) |> 
+  tab_footnote(
+    "Following the MEQ score; m: morning type; i: intermediary type; e: evening type",
+    locations = cells_stub(c("Chronotype (MEQ-based)"))
+  ) |> 
+  tab_footnote(
+    "MEQ: Morningness-Eveningness-Questionnaire (circadian preference); MCTQ: Munich Chronotype Questionnaire (midsleep on free days, sleep corrected",
+    locations = cells_stub(any_of(c("Chronotype (MEQ-score)", "Chronotype (MCTQ-score)")))
+  ) |> 
+  site_conv_gt(rev = FALSE)
+
+tbl1_red
+
+gtsave(tbl1_red, "tables/tbl1_red.png", vwidth = 1200)
+```
+
+
+### Reduced table B
 
 ```{r}
 demographics |> 

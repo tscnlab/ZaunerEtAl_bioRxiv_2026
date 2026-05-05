@@ -309,6 +309,19 @@ metrics <-
     )
 ```
 
+#### Adjusted csum-coding for R1
+
+```{r}
+#| code-summary: Code cell - adjust model parameters for sum-coding of site
+metrics <- 
+  metrics |> 
+  mutate(
+    site_coefs = map2(H1_1_model, H1_1_sig, sum_coding),
+    table = map2(table, site_coefs, merge_results)
+  )
+```
+
+
 ### R^2
 
 ```{r}
@@ -364,9 +377,15 @@ R2_table <-
 #| code-summary: Code cell - Table H1
 #| label: tbl-H1
 #| tab-name: Hypothesis 1 results
-H1_tab <- H1_table(metrics, H1_fdr_n) |> cols_width(Plot ~ px(200))
-H1_tab
-gtsave(H1_tab, "tables/H1.png", vwidth = 1700)
+H1_tab <- 
+  H1_table(metrics, H1_fdr_n)|> 
+  cols_width(
+    stub() ~ px(232),
+    photoperiod ~ px(120),
+    everything() ~ px(95)
+  )
+H1_tab 
+gtsave(H1_tab, "tables/H1.png", vwidth = 2000)
 save(metrics, file = "data/H1_results.RData")
 ```
 

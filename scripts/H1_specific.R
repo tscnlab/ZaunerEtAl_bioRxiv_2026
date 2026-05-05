@@ -17,10 +17,10 @@ H1_table <-  function(data, p_adjustment) {
       md("If the coefficient is greyed out it means it is not significant in a model base minus photoperiod."),
       locations = cells_column_labels(c(photoperiod))
     ) |> 
-    tab_footnote(
-      md("When coefficients are multiplicative (see column), then the scaling is on a log 10 base, with an offset of +0.1. Red horizontal lines indicate the median of a site."),
-      locations = cells_column_labels(c(Plot))
-    ) |> 
+    # tab_footnote(
+    #   md("When coefficients are multiplicative (see column), then the scaling is on a log base. Red horizontal lines indicate the median of a site."),
+    #   locations = cells_column_labels(c(Plot))
+    # ) |> 
     tab_style(
       style = cell_borders(
         sides = "right",
@@ -68,4 +68,35 @@ H1_combining_tables <- function(table, table2, AICs, variable, H1, H2){
   }
   
   table
+}
+
+sum_coding <- function(model, signif = TRUE) {
+  if(is.na(signif)) return(NULL)
+  if(!signif) return(NULL)
+  site_coefs <- 
+  model |> 
+    emmeans(~ site) |> 
+    contrast() |> 
+    as_tibble() |> 
+    mutate(contrast = str_remove_all(contrast, " effect"),
+           signif = p.value > sig.level) |> 
+    select(c(contrast, estimate, signif)) |> 
+    pivot_wider(names_from = contrast, values_from = c(estimate, signif)
+    ) |> 
+    rename_with(\(x) str_remove(x, "estimate_"))
+  
+  intercept_coef <- 
+    model |> 
+    emmeans(~ 1, weights = "equal") |> 
+    as_tibble() |> 
+    pull(emmean)
+  
+  site_coefs |> 
+    add_column(Intercept = intercept_coef)
+}
+
+merge_results <- function(results, patch) {
+  if(is.null(patch)) return(results)
+  results[names(patch)] <- patch
+  results
 }

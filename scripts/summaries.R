@@ -57,12 +57,12 @@ inference_table <- function(data, p_adjustment, scaling = TRUE) {
     list_rbind() |>
     relocate(`SD Residual`, .after = `SD Participant`) |> 
     mutate(metric_type = metric_type |> str_to_title())
-  
+
   if (scaling) {
     scaling_names <-
       gt_table |>  ungroup() |> select(where(is.numeric)) |> names()
     
-    dAIC_names <- gt_table |> ungroup() |> select(starts_with("dAIC_")) |> names()
+    dAIC_names <- gt_table |> ungroup() |> select(starts_with(c("dAIC_", "signif"))) |> names()
     scaling_names <- setdiff(scaling_names, dAIC_names)
     
     gt_table <-
@@ -94,7 +94,7 @@ inference_table <- function(data, p_adjustment, scaling = TRUE) {
         .after = family
       )
   }
-  
+  # browser()
   gt_table <- 
     gt_table |> 
     group_by(metric_type) |> 
@@ -102,7 +102,7 @@ inference_table <- function(data, p_adjustment, scaling = TRUE) {
     cols_hide(c(response, family)) |> 
     fmt_markdown(columns = "p.value", md_engine = "commonmark") %>% 
     tab_footnote(
-      "Models with a tweedie error distribution do not return a residual standard deviation, as a dispersion parameter is estimated instead during modeling.",
+      "Models with a tweedie error distribution do not contain a residual standard deviation, as a dispersion parameter is estimated instead during modeling.",
       locations = cells_column_labels(columns = "SD Residual")
     ) |> 
     tab_footnote(
@@ -114,35 +114,35 @@ inference_table <- function(data, p_adjustment, scaling = TRUE) {
       locations = cells_row_groups("Dynamics")
     ) %>% 
     tab_spanner(
-      label = md("Site intercept (±coefficients)"),
+      label = md("Site coefficients"),
       columns = c(all_of(names(melidos_cities) |> sort()), ends_with("_total"))
     ) %>% 
     tab_footnote(
-      paste("Sites have only entries if the (adjusted) p-value is significant, otherwise the results for the null-model are shown. Entries show the site intercept, with the site-specific coefficient below in brackets (relative to the reference level)."),
+      paste("Sites have only entries if the (adjusted) p-value is significant, otherwise the results for the null-model are shown. Entries show the site-specific coefficient (relative to the overall mean level). Grey entries indicate a non-significant difference from the Overall mean."),
       locations = cells_column_spanners(starts_with("Site "))
     ) %>% 
     tab_footnote(
       md("*multiplied*: coefficients are multiplicative. This comes from the fact that the models were calculated on a log scale and backtransformed in the table. The Intercept can be read as linear scale, with coefficients being multiplied with the intercept. *additive*: All values are on the linear scale and no transformation is necessary. *logit scale*: data were modelled on the logit scale. Coefficients can be added to the intercept, but have to be transformed with the logistic function."),
       locations = cells_column_labels(columns = "Coefs are")
     ) %>% 
-    fmt(metric, fns = \(x) x |> str_to_title() |>  str_replace_all("_", " ")) |> 
+    fmt(metric, fns = \(x) x |> str_to_sentence() |>  str_replace_all("_", " ")) |> 
     sub_values(values = "MDER", replacement = "MDER")
   gt_table %>% 
-    cols_add(Plot = 1:nrow(data |> drop_na(table))) %>% 
-    text_transform(locations = cells_body(Plot),
-                   fn = \(x) {
-                     gt::ggplot_image(
-                       ridges_function(as.numeric(x),red_data),
-                       height = gt::px(80), 
-                       aspect_ratio = 2
-                     )
-                   }) %>% 
+    # cols_add(Plot = 1:nrow(data |> drop_na(table))) %>% 
+    # text_transform(locations = cells_body(Plot),
+                   # fn = \(x) {
+                     # gt::ggplot_image(
+                       # ridges_function(as.numeric(x),red_data),
+                       # height = gt::px(80), 
+                       # aspect_ratio = 2
+                     # )
+                   # }) %>% 
     gt_multiple(names(melidos_cities), style_tab) |> 
     cols_label(
       p.value = "p-value",
       photoperiod = "Photoperiod",
       lat = "Latitude",
-      Plot = "Distribution"
+      # Plot = "Distribution"
     ) |> 
     tab_style(
       style = cell_text(weight = "bold"),
@@ -153,6 +153,11 @@ inference_table <- function(data, p_adjustment, scaling = TRUE) {
     fmt_number(where(is.numeric)) |> 
     fmt_number(rows = str_detect(metric, "dose"), decimals = 0) |> 
     fmt_number(any_of(c(names(melidos_cities), "photoperiod", "lat"))) |> 
+    fmt_number(
+      c(starts_with("SD"), any_of(c(names(melidos_cities), "photoperiod", "lat"))),
+      str_detect(`Coefs are`, "multiplied"),
+      pattern = "{x}×"
+      ) |> 
     fmt_duration(
       any_of(
         c(paste0(names(melidos_cities), "_total"), "Intercept")),
@@ -160,13 +165,16 @@ inference_table <- function(data, p_adjustment, scaling = TRUE) {
       input_units = "hours",
       max_output_units = 2
       ) |> 
-    # fmt_duration(
-    #   c(paste0(names(melidos_cities), "_total"), "Intercept"),
-    #   rows = str_detect(metric, "midpoint|timing"),
-    #   input_units = "hours",
-    #   output_units = "hours",
-    #   duration_style = "colon-sep"
-    # ) |>
+    fmt(
+      columns = "Intercept",
+      rows = str_detect(metric, "midpoint|timing"),
+      fns = function(x) {
+        total_min <- round(x * 60)
+        h <- total_min %/% 60
+        m <- total_min %% 60
+        sprintf("%02d:%02d", h, m)
+      }
+    ) |> 
     fmt_duration(
       c(names(melidos_cities), "photoperiod", "lat", "SD Participant", "SD Residual", "SD Site"),
       rows = str_detect(metric, "midpoint|timing"),
@@ -178,6 +186,21 @@ inference_table <- function(data, p_adjustment, scaling = TRUE) {
       style = cell_text(align = "center"),
       locations = list(cells_column_labels(),
                        cells_body())
-    )
+    ) |> 
+    gt_multiple(
+      names(melidos_cities),
+      grey_p.) |> 
+    cols_hide(starts_with("signif_"))
 }
 
+grey_p. <- function(table, name){
+    table |> 
+      tab_style(
+        style = cell_text(color = "grey"),
+        locations = 
+          cells_body(
+            rows = !!rlang::sym(paste0("signif_", name)),
+            columns = name
+          )
+      )
+}

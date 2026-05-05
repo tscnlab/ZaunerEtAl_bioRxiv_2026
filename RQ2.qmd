@@ -172,7 +172,11 @@ hourly_data |>
 ```
 
 ```{r}
-hourly_data |> ungroup() |> count(lightsource_primary)
+hourly_data |> 
+  ungroup() |> 
+  count(lightsource_primary) |> 
+  mutate(pct = (n / sum(n))) |> 
+  gt() |> fmt_percent(pct, decimals = 0)
 ```
 
 We will remove any subgroup that has less than 0.1 % of the total datapoints, i.e., 20 observations within a site, and then 1% less than overall, i.e., 200 observations. We will also drop "Light entering from outside during sleep", as it is very unevenly populated and dropped site levels will lead to issues later.
@@ -276,21 +280,21 @@ H3_tab_reference <-
   H3_model_1 |>
   emmeans(~ lightsource_primary, type = "response",
           at = list(lightsource_primary = "Electric light source indoors")) |> 
-  as.tibble() |> 
+  as_tibble() |> 
   rename(estimate = response)
 
 H3_tab_light <- 
   H3_model_1 |> 
   emmeans(~ lightsource_primary, type = "response") |> 
   contrast(method = "trt.vs.ctrl") |> 
-  as.tibble() |> 
+  as_tibble() |> 
   rename(estimate = ratio)
 
 H3_tab_interaction <-
   H3_model_1 |> 
   emmeans(~ site | lightsource_primary, type = "response") |> 
   contrast() |> 
-  as.tibble() |> 
+  as_tibble() |> 
   rename(estimate = ratio)
 
 H3_tab_fix <-
@@ -346,17 +350,6 @@ H3_tab_fix |>
   site_conv_mutate(rev = FALSE, other.levels = "Overall") |> 
   arrange(site) |> 
   gt() |> 
-  fmt(starts_with("estimate"), 
-      fns = \(x) 
-      {x <- x |> gt::vec_fmt_number()
-      str_c("×", x)}
-      ) |> 
-  fmt(columns = 2, 
-      rows = site == "Overall",
-      fns = \(x) 
-      {x <- x |> gt::vec_fmt_number()
-      str_c(x, "lx")}
-      ) |> 
   cols_label_with(fn = \(x) str_remove(x, "estimate_") |> str_remove("lightsource_primary")) |> 
   tab_spanner(
     md(
@@ -367,18 +360,36 @@ H3_tab_fix |>
       ), 
     columns = -site) |> 
   cols_hide((contains(c("p.value", "signif", "SE_")))) |> 
-  sub_missing() |> 
-  gt_multiple(
-    names(H3_tab_fix) |> 
-      subset(str_detect(names(H3_tab_fix), "estimate_")) |> 
-      str_remove("estimate_"),
-    bold_p.) |> 
+  sub_missing(missing_text = "") |> 
   tab_style_body(
     style = cell_borders(weight = px(2)),
     rows = 1,
     columns = 2,
     fn = \(x) TRUE
   ) |> 
+  gt::rows_add(site = NA, .after = 1) |> 
+  tab_style(
+    style = list(css(`padding-top` = "0px",
+            `padding-bottom` = "0px"),
+            cell_fill("lightgrey")
+            ),
+locations = cells_body(rows = 2)) |>
+  fmt(starts_with("estimate"), 
+      fns = \(x) 
+      {x <- x |> gt::vec_fmt_number()
+      str_c(x, "×")}
+      ) |> 
+  fmt(columns = 2, 
+      rows = site == "Overall",
+      fns = \(x) 
+      {x <- x |> gt::vec_fmt_number()
+      str_c(x, "lx")}
+      ) |> 
+  gt_multiple(
+    names(H3_tab_fix) |> 
+      subset(str_detect(names(H3_tab_fix), "estimate_")) |> 
+      str_remove("estimate_"),
+    bold_p.) |> 
   gt_multiple(
     melidos_colors |> names(),
     style_rows
@@ -431,8 +442,7 @@ H3_tab_fix |>
   tab_footnote(
     md("Values shown in **bold** are significant at $p<0.05$. False-discovery-rate adjustment for n=4 in primary lightsource and n=9 in site")
   ) |> 
-  cols_width(everything() ~ px(150))
-
+  cols_width(everything() ~ px(150)) 
 ```
 
 ```{r}
@@ -747,17 +757,6 @@ H4_tab_fix |>
   site_conv_mutate(rev = FALSE, other.levels = "Overall") |> 
   arrange(site) |> 
   gt() |> 
-  fmt(starts_with("estimate"), 
-      fns = \(x) 
-      {x <- x |> gt::vec_fmt_number()
-      str_c("×", x)}
-      ) |> 
-  fmt(columns = 2, 
-      rows = site == "Overall",
-      fns = \(x) 
-      {x <- x |> gt::vec_fmt_number()
-      str_c(x, "lx")}
-      ) |> 
   cols_label_with(fn = \(x) str_remove(x, "estimate_") |> str_remove("\\(activity\\)")) |> 
   tab_spanner(
     md(
@@ -768,18 +767,36 @@ H4_tab_fix |>
       ), 
     columns = -site) |> 
   cols_hide((contains(c("p.value", "signif", "SE_")))) |> 
-  sub_missing() |> 
-  gt_multiple(
-    names(H4_tab_fix) |> 
-      subset(str_detect(names(H4_tab_fix), "estimate_")) |> 
-      str_remove("estimate_"),
-    bold_p.) |> 
+  sub_missing(missing_text = "") |> 
   tab_style_body(
     style = cell_borders(weight = px(2)),
     rows = 1,
     columns = 2,
     fn = \(x) TRUE
   ) |> 
+  gt::rows_add(site = NA, .after = 1) |> 
+  tab_style(
+    style = list(css(`padding-top` = "0px",
+            `padding-bottom` = "0px"),
+            cell_fill("lightgrey")
+            ),
+locations = cells_body(rows = 2)) |> 
+  gt_multiple(
+    names(H4_tab_fix) |> 
+      subset(str_detect(names(H4_tab_fix), "estimate_")) |> 
+      str_remove("estimate_"),
+    bold_p.) |> 
+  fmt(starts_with("estimate"), 
+      fns = \(x) 
+      {x <- x |> gt::vec_fmt_number()
+      str_c(x, "×")}
+      ) |> 
+  fmt(columns = 2, 
+      rows = site == "Overall",
+      fns = \(x) 
+      {x <- x |> gt::vec_fmt_number()
+      str_c(x, "lx")}
+      ) |> 
   gt_multiple(
     melidos_colors |> names(),
     style_rows
@@ -1435,17 +1452,6 @@ H6_tab_fix |>
   site_conv_mutate(rev = FALSE, other.levels = "Overall") |> 
   arrange(site) |> 
   gt() |> 
-  fmt(starts_with("estimate"), 
-      fns = \(x) 
-      {x <- x |> gt::vec_fmt_number()
-      str_c("×", x)}
-      ) |> 
-  fmt(columns = 2:3, 
-      rows = site == "Overall",
-      fns = \(x) 
-      {x <- x |> gt::vec_fmt_number()
-      str_c(x, " lx")}
-      ) |> 
   cols_label_with(
     fn = 
       \(x) str_remove(x, "estimate_") |> 
@@ -1472,7 +1478,14 @@ H6_tab_fix |>
     columns = contains("exercise_"))|> 
       cols_hide((contains(c("p.value_", "signif_")))) |>
       cols_hide((starts_with(c("SE_")))) |>
-  # sub_missing() |> 
+  sub_missing(missing_text = "") |>
+  gt::rows_add(site = NA, .after = 1) |> 
+  tab_style(
+    style = list(css(`padding-top` = "0px",
+            `padding-bottom` = "0px"),
+            cell_fill("lightgrey")
+            ),
+locations = cells_body(rows = 2)) |> 
   gt_multiple(
     names(H6_tab_fix) |> 
       subset(str_detect(names(H6_tab_fix), "estimate_")) |> 
@@ -1484,6 +1497,17 @@ H6_tab_fix |>
     columns = 2:3,
     fn = \(x) TRUE
   ) |> 
+    fmt(starts_with("estimate"), 
+      fns = \(x) 
+      {x <- x |> gt::vec_fmt_number()
+      str_c(x, "×")}
+      ) |> 
+  fmt(columns = 2:3, 
+      rows = site == "Overall",
+      fns = \(x) 
+      {x <- x |> gt::vec_fmt_number()
+      str_c(x, " lx")}
+      ) |> 
   gt_multiple(
     melidos_colors |> names(),
     style_rows
