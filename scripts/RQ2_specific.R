@@ -66,3 +66,69 @@ gam_deriv_plot <- function(model, name) {
   
   term_plot + deriv_plot + plot_annotation(title = paste0("Metric: ", name))
 }
+
+difference_sz <- function(model, data, x, fac, lev1, lev2,
+                          sz_term,
+                          exclude = NULL,
+                          unconditional = FALSE,
+                          level = 0.95) {
+  
+  data1 <- data
+  data2 <- data
+  
+  fac_levels <- levels(model.frame(model)[[fac]])
+  
+  data1[[fac]] <- factor(rep(lev1, nrow(data1)), levels = fac_levels)
+  
+  data2[[fac]] <- factor(rep(lev2, nrow(data2)), levels = fac_levels)
+  
+  X1 <- predict(
+    
+    model, 
+    newdata = data1,
+    type = "lpmatrix",
+    exclude = exclude,
+    newdata.guaranteed = TRUE
+  )
+  
+  X2 <- predict(
+    model, 
+    newdata = data2,
+    type = "lpmatrix",
+    exclude = exclude,
+    newdata.guaranteed = TRUE
+  )
+  
+  Xd <- X1 - X2
+  
+  ## keep only the sz smooth columns
+  sm_labels <- vapply(model$smooth, `[[`, character(1), "label")
+  i <- match(sz_term, sm_labels)
+  
+  if (is.na(i)) {
+    stop(
+      "Smooth not found. Available smooth labels are:\n",
+      paste(sm_labels, collapse = "\n")
+    )
+  }
+  
+  keep <- model$smooth[[i]]$first.para:model$smooth[[i]]$last.para
+  Xd[, setdiff(seq_len(ncol(Xd)), keep)] <- 0
+  
+  beta <- coef(model)
+  V <- vcov(model, unconditional = unconditional)
+  
+  fit <- drop(Xd %*% beta)
+  se <- sqrt(rowSums((Xd %*% V) * Xd))
+  
+  crit <- qnorm(1 - (1 - level) / 2)
+  
+  tibble(
+    {{ x }} := data[[x]],
+    comparison = paste0(lev1, "_", lev2),
+    diff = fit,
+    se = se,
+    lower = fit - crit * se,
+    upper = fit + crit * se
+  )
+}

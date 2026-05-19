@@ -15,7 +15,7 @@ format:
 
 This document contains the analysis for Research Question 3, as defined in the [preregistration](	https://aspredicted.org/te3zw2.pdf).
 
-> **Research Question 1**: \
+> **Research Question 3**: \
 Is personal light exposure related to participant characteristics?
 > 
 > *H8*: Duration, exposure-history, and level-based metrics of personal light exposure are significantly associated with personal light sensitivity (VLSQ-8)
@@ -59,7 +59,7 @@ library(gghighlight)
 library(gtsummary)
 source("scripts/fitting.R")
 source("scripts/summaries.R")
-# source("scripts/RQ3d_specific.R")
+source("scripts/RQ2_specific.R")
 ```
 
 ```{r}
@@ -907,8 +907,8 @@ metric_participanthour |>
 
 ```{r}
 #| filename: H11 formulas
-H11_form_1 <- lzMEDI ~ s(Time, k = 12) + s(Time, sex, bs = "sz", k = 12) + s(Time, site, bs = "sz", k = 12) + s(Time, Id, bs = "fs") + s(Id_date, bs = "re")
-H11_form_0 <- lzMEDI ~ s(Time, k = 12) + s(Time, site, bs = "sz", k = 12) + s(Time, Id, bs = "fs") + s(Id_date, bs = "re")
+H11_form_1 <- lzMEDI ~ s(Time, k = 12) + s(Time, photoperiod.state, bs = "sz", k=12) + s(Time, sex, bs = "sz", k = 12) + s(Time, site, bs = "sz", k = 12) + s(Time, Id, bs = "fs") + s(Id_date, bs = "re")
+H11_form_0 <- lzMEDI ~ s(Time, k = 12) + s(Time, photoperiod.state, bs = "sz", k=12) + s(Time, site, bs = "sz", k = 12) + s(Time, Id, bs = "fs") + s(Id_date, bs = "re")
 ```
 
 ### Analysis
@@ -1003,95 +1003,147 @@ H11_AICs |> as_tibble(rownames = "model") |> gt()
 #### Model visualization
 
 ```{r}
-#| filename: prepare photoperiod model H2 plot
-H11_sex_data <- 
+#| filename: prepare lightsource model H11 plot
+H11_data <- 
 H11_model_1 |> 
   conditional_values(
-    condition = list(Time = seq(0.25, 23.75, by = 0.5), "sex"),
-    exclude = c("s(Time,site)", "s(Time,Id)", "s(Id_date)")
+    condition = list(Time = seq(0.25, 23.75, by = 0.5), "sex", "photoperiod.state"),
+    exclude = c("s(Time,Id)", "s(Id_date)", "s(Time,site)")
     ) |> 
   mutate(across(c(.fitted, .lower_ci, .upper_ci),
                 exp_zero_inflated)
   )
 
+H11_data <-
+metric_participanthour |> 
+  Datetime2Time() |> 
+  group_by(sex, Time) |> 
+  summarize(
+    .groups = "drop_last",
+    dawn = dawn |> as.numeric() |> mean(na.rm = TRUE)/3600,
+    dusk = dusk |> as.numeric() |> mean(na.rm = TRUE)/3600,
+    n = n()
+  ) |> 
+  mutate(
+    photoperiod.state = ifelse(between(Time, dawn, dusk), "day", "night")
+  ) |> 
+  select(-c(dawn, dusk)) |> 
+  left_join(H11_data, by = c("sex", "Time", "photoperiod.state"))
+
+H11_data_phot <- 
+H11_data |> 
+  number_states(photoperiod.state) |> 
+  filter(photoperiod.state == "night") |> 
+  group_by(sex, photoperiod.state.count) |> 
+  summarize(xmin = min(Time),
+            xmax = max(Time),
+            .groups = "drop_last") |> 
+  mutate(across(c(xmin, xmax), \(x) replace_values(x,
+                                                   0.5 ~ 0,
+                                                   23.5 ~ 24)))
 ```
 
 ```{r}
-#| filename: Visualize sex model H11
-#| fig-height: 6
-#| fig-width: 10
+#| filename: Visualize lightsource model H11
+#| fig-height: 5
+#| fig-width: 14
 source("scripts/Brown_bracket.R")
 
 H11_pred <-
-H11_sex_data |> 
+H11_data |> 
   ggplot(aes()) +
   map(c(1,10,250, 10^4), 
           \(x) geom_hline(aes(yintercept = x), 
                           col = "grey", linetype = "dashed")
       ) +
-  geom_ribbon(aes(x = Time, ymin = .lower_ci, ymax = .upper_ci, fill = sex), alpha = 0.5) +
-  geom_line(aes(x = Time, y = .fitted, col = sex), linewidth = 0.1) +
-  geom_line(aes(x = Time, y = .fitted), linewidth = 1) +
+  geom_rect(data = H11_data_phot |> filter(sex == "Female"),
+            aes(xmin = xmin, ymin = -Inf, ymax = Inf, xmax = xmax),
+            alpha = 0.25, inherit.aes = FALSE) +
+  geom_ribbon(aes(x = Time, ymin = .lower_ci, 
+                  ymax = .upper_ci, fill = sex), alpha = 0.5) +
+  
+  geom_line(aes(x = Time, y = .fitted, 
+                col = sex), linewidth = 1) +
+  # scale_fill_manual(values = act_colors) +
+  # scale_color_manual(values = act_colors) +
   theme_cowplot() +
   scale_y_continuous(trans = "symlog", breaks = c(0,1,10,100,250, 1000)) +
   scale_x_continuous(breaks = seq(0, 24, by = 6)) +
   coord_cartesian(xlim = c(0,24), ylim = c(0,10^4), expand = FALSE) +
   labs(y = "Melanopic EDI (lx)", x = "Local time (hrs)", fill = "Sex", col = "Sex") +
-  facet_wrap(~sex) +
-  # guides( y = guide_axis_stack(Brown_bracket, "axis")) +
-  gghighlight(
-    label_key = sex,
-    label_params = list(x = 12, y = 4, force = 0, hjust = 0.25)
-  ) +
-  theme_sub_strip(background = element_blank(),
-                  text = element_blank()) +
-  theme(panel.spacing = unit(1, "lines"),
-        plot.caption = element_textbox_simple())
-  # labs(caption = Brown_caption)
-
-```
-
-```{r}
-#| filename: Visualize model terms
-H11_P_terms <-
-H11_model_1 |> 
-  smooth_estimates(select = "s(Time,sex)") |> 
-  mutate(.lower_ci = .estimate -1.96*.se,
-         .upper_ci = .estimate +1.96*.se,
-         .fitted = .estimate,
-         signif = .lower_ci > 0 | .upper_ci < 0,
-         signif_id = consecutive_id(signif),
-         .by = sex) |> 
-  ggplot(aes()) +
-  map(c(log10(c(0.1, 0.2, 0.5, 2, 5, 10))),
-      \(x) geom_hline(yintercept = x, linewidth = 0.5, col = "grey", linetype = 2)) +
-  geom_ribbon(aes(x = Time, ymin = .lower_ci, ymax = .upper_ci, fill = sex), alpha = 0.5) +
-  geom_hline(yintercept = 0, linewidth = 1, linetype = 2) +
-  geom_line(aes(x = Time, y = .fitted), 
-            linewidth = 1) +
-  geom_line(data = \(x) filter(x, signif),
-            aes(x = Time, y = .fitted, group = signif_id), 
-            col = "red", linewidth = 1) +
-  # scale_color_manual(values = c(melidos_colors)) +
-  theme_cowplot() +
-  scale_y_continuous(labels = expression(10^-1, 5^-1, 2^-1, "1  ", "2  ", "5  ", "10  "), 
-                     breaks = log10(c(0.1, 0.2, 0.5, 1, 2, 5, 10)))+
-  scale_x_continuous(breaks = seq(0, 24, by = 6)) +
-  coord_cartesian(xlim = c(0,24), expand = FALSE) +
-  # guides(fill = "none") +
-  labs(y = "Factor", x = "Local time (hrs)", fill = "Sex") +
-  facet_wrap(~sex) +
+  # facet_wrap(~sex, nrow = 1) +
+  guides( y = guide_axis_stack(Brown_bracket, "axis")) +
+  # gghighlight(
+    # label_key = sex,
+    # label_params = list(x = 12, y = 4.5, force = 0, hjust = 0.5)
+  # ) +
+  # geom_text(aes(label = paste0("|", n, "|"), x = Time, y = 7000), size = rel(1.5)) +
   theme_sub_strip(background = element_blank(),
                   text = element_blank()) +
   theme(panel.spacing = unit(1, "lines"),
         plot.caption = element_textbox_simple(),
-        legend.position = "bottom")
-
+        legend.position = "inside",
+        legend.position.inside = c(0.45, 0.15)
+        )
+  # labs(caption = Brown_caption)
+H11_pred
 ```
 
 ```{r}
-H11_P_terms
-ggsave("figures/Fig8.pdf")
+df <- H11_model_1$model |> distinct(Time, .keep_all = TRUE)
+H11_termplot <- 
+difference_sz(H11_model_1, 
+              df, 
+              "Time", "sex", "Female", "Male",
+              "s(Time,sex)",
+              exclude = c("s(Time,site)", "s(Time,Id)", "s(Id_date)"),
+              unconditional = FALSE,
+              level = 0.95
+  ) |> 
+    mutate(
+         signif = lower > 0 | upper < 0,
+         signif_id = consecutive_id(signif)) |> 
+  ggplot(aes()) +
+  map(c(log10(c(0.1, 0.2, 0.5, 2, 5, 10))),
+      \(x) geom_hline(yintercept = x, linewidth = 0.5, col = "grey", linetype = 2)) +
+  geom_rect(data = H11_data_phot |> filter(sex == "Female"),
+            aes(xmin = xmin, ymin = -Inf, ymax = Inf, xmax = xmax),
+            alpha = 0.25, inherit.aes = FALSE) +
+  geom_ribbon(aes(x = Time, ymin = lower, ymax = upper), alpha = 0.5) +
+  geom_hline(yintercept = 0, linewidth = 1, linetype = 2) +
+  geom_line(aes(x = Time, y = diff), 
+            linewidth = 1) +
+  geom_line(data = \(x) filter(x, signif),
+            aes(x = Time, y = diff, group = signif_id), 
+            col = "red", linewidth = 1) +
+    theme_cowplot() +
+  scale_y_continuous(labels = expression(10^-1, 5^-1, 2^-1, "1  ", "2  ", "5  ", "10  "), 
+                     breaks = log10(c(0.1, 0.2, 0.5, 1, 2, 5, 10)))+
+  scale_x_continuous(breaks = seq(0, 24, by = 6)) +
+  coord_cartesian(xlim = c(0,24), expand = FALSE) +
+  guides(fill = "none") +
+  labs(y = "Rel. difference Female to Male", x = "Local time (hrs)") +
+  theme_sub_strip(background = element_blank(),
+                  text = element_blank()) +
+  theme(panel.spacing = unit(1, "lines"),
+        plot.caption = element_textbox_simple())
+```
+
+```{r}
+#| fig-height: 8
+#| fig-width: 8
+#| filename: Combination of partial plots H11
+
+H11_pred / H11_termplot +
+  plot_annotation(tag_levels = "A", 
+                  caption = paste(Brown_caption, 
+                                  "Panel B: Significant deviations of work from free days are shown in red", sep = "<br>"),
+                  theme = 
+                    theme(plot.caption = element_textbox_simple(size = rel(1))
+                          )
+                  )
+
+ggsave("figures/Fig13.pdf", height = 8, width = 7.3)
 ```
 
 ### Interpretation

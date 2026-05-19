@@ -15,7 +15,7 @@ format:
 
 This document contains the analysis for Research Question 2, as defined in the [preregistration](	https://aspredicted.org/te3zw2.pdf).
 
-> **Research Question 1**: \
+> **Research Question 2**: \
 Is there a relationship between personal light exposure and participants’ behaviour and environment?
 > 
 > *H3*: There is a significant relationship between hourly self-reported light exposure categories and hourly geometric mean of melanopic EDI.
@@ -24,7 +24,7 @@ Is there a relationship between personal light exposure and participants’ beha
 > 
 > *H5*: There is a significant relationship between LEBA-factors and pre-selected personal light exposure metrics.
 > 
-> *H6*: There is a significant relationship between the day type, daily exercise, and sleep with personal light exposure metrics
+> *H6*: There is a significant relationship between day type, daily exercise, sleep, and the hourly geometric mean of light exposure.
 > 
 > *H7*: There is a ceiling effect of (absolute) latitude and photoperiod with level, duration, and exposure-history-based metrics
 
@@ -172,7 +172,11 @@ hourly_data |>
 ```
 
 ```{r}
-hourly_data |> ungroup() |> count(lightsource_primary)
+hourly_data |> 
+  ungroup() |> 
+  count(lightsource_primary) |> 
+  mutate(pct = (n / sum(n))) |> 
+  gt() |> fmt_percent(pct, decimals = 0)
 ```
 
 We will remove any subgroup that has less than 0.1 % of the total datapoints, i.e., 20 observations within a site, and then 1% less than overall, i.e., 200 observations. We will also drop "Light entering from outside during sleep", as it is very unevenly populated and dropped site levels will lead to issues later.
@@ -276,21 +280,21 @@ H3_tab_reference <-
   H3_model_1 |>
   emmeans(~ lightsource_primary, type = "response",
           at = list(lightsource_primary = "Electric light source indoors")) |> 
-  as.tibble() |> 
+  as_tibble() |> 
   rename(estimate = response)
 
 H3_tab_light <- 
   H3_model_1 |> 
   emmeans(~ lightsource_primary, type = "response") |> 
   contrast(method = "trt.vs.ctrl") |> 
-  as.tibble() |> 
+  as_tibble() |> 
   rename(estimate = ratio)
 
 H3_tab_interaction <-
   H3_model_1 |> 
   emmeans(~ site | lightsource_primary, type = "response") |> 
   contrast() |> 
-  as.tibble() |> 
+  as_tibble() |> 
   rename(estimate = ratio)
 
 H3_tab_fix <-
@@ -346,17 +350,6 @@ H3_tab_fix |>
   site_conv_mutate(rev = FALSE, other.levels = "Overall") |> 
   arrange(site) |> 
   gt() |> 
-  fmt(starts_with("estimate"), 
-      fns = \(x) 
-      {x <- x |> gt::vec_fmt_number()
-      str_c("×", x)}
-      ) |> 
-  fmt(columns = 2, 
-      rows = site == "Overall",
-      fns = \(x) 
-      {x <- x |> gt::vec_fmt_number()
-      str_c(x, "lx")}
-      ) |> 
   cols_label_with(fn = \(x) str_remove(x, "estimate_") |> str_remove("lightsource_primary")) |> 
   tab_spanner(
     md(
@@ -367,18 +360,36 @@ H3_tab_fix |>
       ), 
     columns = -site) |> 
   cols_hide((contains(c("p.value", "signif", "SE_")))) |> 
-  sub_missing() |> 
-  gt_multiple(
-    names(H3_tab_fix) |> 
-      subset(str_detect(names(H3_tab_fix), "estimate_")) |> 
-      str_remove("estimate_"),
-    bold_p.) |> 
+  sub_missing(missing_text = "") |> 
   tab_style_body(
     style = cell_borders(weight = px(2)),
     rows = 1,
     columns = 2,
     fn = \(x) TRUE
   ) |> 
+  gt::rows_add(site = NA, .after = 1) |> 
+  tab_style(
+    style = list(css(`padding-top` = "0px",
+            `padding-bottom` = "0px"),
+            cell_fill("lightgrey")
+            ),
+locations = cells_body(rows = 2)) |>
+  fmt(starts_with("estimate"), 
+      fns = \(x) 
+      {x <- x |> gt::vec_fmt_number()
+      str_c(x, "×")}
+      ) |> 
+  fmt(columns = 2, 
+      rows = site == "Overall",
+      fns = \(x) 
+      {x <- x |> gt::vec_fmt_number()
+      str_c(x, "lx")}
+      ) |> 
+  gt_multiple(
+    names(H3_tab_fix) |> 
+      subset(str_detect(names(H3_tab_fix), "estimate_")) |> 
+      str_remove("estimate_"),
+    bold_p.) |> 
   gt_multiple(
     melidos_colors |> names(),
     style_rows
@@ -431,8 +442,7 @@ H3_tab_fix |>
   tab_footnote(
     md("Values shown in **bold** are significant at $p<0.05$. False-discovery-rate adjustment for n=4 in primary lightsource and n=9 in site")
   ) |> 
-  cols_width(everything() ~ px(150))
-
+  cols_width(everything() ~ px(150)) 
 ```
 
 ```{r}
@@ -508,6 +518,288 @@ hourly_data2 |>
 - `Darkness during sleep` translates to about 2% of light levels compared to `indoor electric light` (~1.5 lx). Values are similar across sites, with three notable exceptions: Munich, Germany has over 6 times the level compared to other sites (6.61), while Spain and Ghana have considerably lower values (0.55 and 0.15, respectively).
 - Overall, the effect of self-reported primary lightsource is astounding - 71% of variance can be explained simply through those categories. While site and interindividual differences are significant, they contribute considerably less (5% and 7%, respectively).
 
+### Exploration: GAM of lightsource x time
+
+In this exploratory analysis, we study the nonlinear effect of time on the type of primary lightsource, based on the final model from RQ1:
+
+```{r}
+#| filename: Prepare GAM data
+GAM_data <- 
+  hourly_data2 |>
+  add_Time_col() |> 
+  drop_na(lightsource_primary) |> 
+  ungroup() |> 
+  mutate(Time = as.numeric(Time)/3600 + 0.5,
+         across(c(site, Id, sleep, State.Brown, wear, photoperiod.state,
+                  lightsource_primary, Date),
+                factor),
+         Id_date = interaction(Id, Date),
+         lzMEDI = log_zero_inflated(MEDI),
+         photoperiod = (dusk - dawn) |> as.numeric()
+  ) |> 
+  group_by(Id) |> 
+  mutate(AR.start = ifelse(row_number() == 1, TRUE, FALSE))
+
+H3_form_gam <- lzMEDI ~ s(Time, k = 12) + s(Time, lightsource_primary, bs = "sz", k = 12) + s(Time, site, bs = "sz", k = 12) + s(Time, photoperiod.state, bs = "sz", k=12) + s(Time, Id, bs = "fs") + s(Id_date, bs = "re")
+H2_form_gam <- lzMEDI ~ s(Time, k = 12) + s(Time, site, bs = "sz", k = 12) + s(Time, photoperiod.state, bs = "sz", k=12) + s(Time, Id, bs = "fs") + s(Id_date, bs = "re")
+```
+
+```{r}
+#| filename: Main model
+H3_model_gam <- 
+  bam(H3_form_gam, 
+      data = GAM_data, 
+      discrete = TRUE,
+      method = "fREML",
+      nthreads = 10
+      )
+
+r1 <- start_value_rho(H3_model_gam, 
+                      plot=TRUE)
+H3_model_gam <- 
+  bam(H3_form_gam, 
+      data = GAM_data, 
+      discrete = TRUE,
+      method = "fREML",
+      nthreads = 10,
+      rho = r1,
+      AR.start = AR.start
+      )
+
+acf_resid(H3_model_gam, split_pred = "AR.start")
+
+H3_summary_gam <- summary(H3_model_gam)
+H3_summary_gam
+H3_model_gam |> glance()
+
+H3_model_gam |> appraise()
+```
+
+```{r}
+#| filename: Variance explained
+Xp <- predict(H3_model_gam, type = "terms")
+variance <- apply(Xp, 2, var)
+cor(Xp)
+H3_R2 <- (variance/sum(variance)) |> enframe(value = "R2", name = "parameter")
+H3_R2
+```
+
+```{r}
+#| filename: Null model
+H2_model_gam <- 
+  bam(H2_form_gam, 
+      data = GAM_data, 
+      discrete = TRUE,
+      method = "fREML",
+      nthreads = 10
+      )
+
+r1 <- start_value_rho(H2_model_gam, 
+                      plot=TRUE)
+H2_model_gam <- 
+  bam(H2_form_gam, 
+      data = GAM_data, 
+      discrete = TRUE,
+      method = "fREML",
+      nthreads = 10,
+      rho = r1,
+      AR.start = AR.start
+      )
+
+acf_resid(H2_model_gam, split_pred = "AR.start")
+
+```
+
+```{r}
+AIC(H3_model_gam, H2_model_gam)
+```
+
+```{r}
+H3_model_gam |> draw(select = "s(Time,lightsource_primary)")
+H3_model_gam |> draw(select = "s(Time)")
+```
+
+####Visualization
+
+```{r}
+#| filename: prepare lightsource model H3 plot
+H3_ls_data <- 
+H3_model_gam |> 
+  conditional_values(
+    condition = list(Time = seq(0.5, 23.5, by = 1), "lightsource_primary", "photoperiod.state"),
+    exclude = c("s(Time,Id)", "s(Id_date)", "s(Time,site)")
+    ) |> 
+  mutate(across(c(.fitted, .lower_ci, .upper_ci),
+                exp_zero_inflated)
+  )
+
+H3_ls_data <-
+GAM_data |> 
+  Datetime2Time() |> 
+  group_by(lightsource_primary, Time) |> 
+  summarize(
+    .groups = "drop_last",
+    dawn = dawn |> as.numeric() |> mean(na.rm = TRUE)/3600,
+    dusk = dusk |> as.numeric() |> mean(na.rm = TRUE)/3600,
+    n = n()
+  ) |> 
+  mutate(
+    photoperiod.state = ifelse(between(Time, dawn, dusk), "day", "night")
+  ) |> 
+  select(-c(dawn, dusk)) |> 
+  left_join(H3_ls_data, by = c("lightsource_primary", "Time", "photoperiod.state"))
+
+H3_ls_data_phot <- 
+H3_ls_data |> 
+  number_states(photoperiod.state) |> 
+  filter(photoperiod.state == "night") |> 
+  group_by(lightsource_primary, photoperiod.state.count) |> 
+  summarize(xmin = min(Time),
+            xmax = max(Time),
+            .groups = "drop_last") |> 
+  mutate(across(c(xmin, xmax), \(x) replace_values(x,
+                                                   0.5 ~ 0,
+                                                   23.5 ~ 24)))
+```
+
+```{r}
+#| filename: Visualize lightsource model H3
+#| fig-height: 5
+#| fig-width: 14
+source("scripts/Brown_bracket.R")
+
+ls_colors <- 
+  c(
+    `Darkness during sleep` = "#1B1F3B",  # deep navy
+    `Daylight indoors` = "#E6C229",       # warm yellow
+    `Daylight outdoors (including shade)` = "#4DAF4A", # medium leaf green
+    `Electric light source indoors` = "#D55E00", # amber/orange
+    `Emissive display light` = "#3B5BDB" # medium purple
+  )
+
+H3_pred <- 
+H3_ls_data |> 
+  ggplot(aes()) +
+  map(c(1,10,250, 10^4), 
+          \(x) geom_hline(aes(yintercept = x), 
+                          col = "grey", linetype = "dashed")
+      ) +
+  geom_rect(data = H3_ls_data_phot ,
+            aes(xmin = xmin, ymin = -Inf, ymax = Inf, xmax = xmax),
+            alpha = 0.25, inherit.aes = FALSE) +
+  geom_ribbon(aes(x = Time, ymin = .lower_ci, 
+                  ymax = .upper_ci, fill = lightsource_primary), alpha = 0.5) +
+  geom_line(aes(x = Time, y = .fitted, 
+                col = lightsource_primary), linewidth = 0.1) +
+  geom_line(aes(x = Time, y = .fitted), linewidth = 1) +
+  scale_fill_manual(values = ls_colors) +
+  scale_color_manual(values = ls_colors) +
+  theme_cowplot() +
+  scale_y_continuous(trans = "symlog", breaks = c(0,1,10,100,250, 1000)) +
+  scale_x_continuous(breaks = seq(0, 24, by = 6)) +
+  coord_cartesian(xlim = c(0,24), ylim = c(0,10^4), expand = FALSE) +
+  labs(y = "Melanopic EDI (lx)", x = "Local time (hrs)", fill = "Primary lightsource", col = "Primary lightsource") +
+  facet_wrap(~lightsource_primary, nrow = 1) +
+  guides( y = guide_axis_stack(Brown_bracket, "axis")) +
+  gghighlight(
+    label_key = lightsource_primary,
+    label_params = list(x = 12, y = 4.5, force = 0, hjust = 0.5)
+  ) +
+  theme_sub_strip(background = element_blank(),
+                  text = element_blank()) +
+  theme(panel.spacing = unit(1, "lines"),
+        plot.caption = element_textbox_simple())
+  # labs(caption = Brown_caption)
+H3_pred
+```
+
+```{r}
+#| filename: Visualize model terms
+Term_data <- 
+  H3_ls_data |> select(Time, lightsource_primary) |> 
+  left_join(
+    H3_model_gam |> 
+  smooth_estimates(select = "s(Time,lightsource_primary)", n=24),
+  by = c("Time", "lightsource_primary")
+  ) |> 
+  ungroup() |> 
+  complete(Time, lightsource_primary) |> 
+  mutate(.lower_ci = .estimate -1.96*.se,
+         .upper_ci = .estimate +1.96*.se,
+         .fitted = .estimate,
+         signif = .lower_ci > 0 | .upper_ci < 0,
+         signif_id = consecutive_id(signif),
+         .by = lightsource_primary)
+
+P_terms <-
+Term_data |> 
+  ggplot(aes()) +
+  map(c(log10(c(0.1, 0.2, 0.5, 2, 5, 10))),
+      \(x) geom_hline(yintercept = x, linewidth = 0.5, col = "grey", linetype = 2)) +
+  geom_rect(data = H3_ls_data_phot ,
+            aes(xmin = xmin, ymin = -Inf, ymax = Inf, xmax = xmax),
+            alpha = 0.25, inherit.aes = FALSE) +
+  geom_ribbon(aes(x = Time, ymin = .lower_ci, 
+                  ymax = .upper_ci, fill = lightsource_primary), 
+              alpha = 0.5) +
+  geom_hline(yintercept = 0, linewidth = 1, linetype = 2) +
+  geom_line(aes(x = Time, y = .fitted), 
+            linewidth = 1) +
+  geom_line(data = \(x) filter(x, signif),
+            aes(x = Time, y = .fitted, group = signif_id), 
+            col = "red", linewidth = 1) +
+  scale_fill_manual(values = ls_colors) +
+  # scale_color_manual(values = c(melidos_colors)) +
+  theme_cowplot() +
+  scale_y_continuous(labels = expression(10^-1, 5^-1, 2^-1, "1  ", "2  ", "5  ", "10  "), 
+                     breaks = log10(c(0.1, 0.2, 0.5, 1, 2, 5, 10)))+
+  scale_x_continuous(breaks = seq(0, 24, by = 6)) +
+  coord_cartesian(xlim = c(0,24), expand = FALSE) +
+  guides(fill = "none") +
+  labs(y = "Factor", x = "Local time (hrs)", fill = "Primary lightsource") +
+  facet_wrap(~lightsource_primary, nrow = 1) +
+  theme_sub_strip(background = element_blank(),
+                  text = element_blank()) +
+  theme(panel.spacing = unit(1, "lines"),
+        plot.caption = element_textbox_simple())
+P_terms
+```
+
+```{r}
+n_plot_H3 <-
+H3_ls_data |> 
+  ungroup() |> 
+  ggplot(aes(x=Time)) + 
+  geom_col(aes(y=n, fill = lightsource_primary)) + 
+  facet_wrap(~lightsource_primary, nrow = 1) +
+  theme_cowplot() +
+  scale_fill_manual(values = ls_colors) +
+  theme_sub_strip(background = element_blank(),
+                  text = element_blank()) +
+  theme(panel.spacing = unit(1, "lines"),
+        plot.caption = element_textbox_simple()) +
+  guides(fill = "none") +
+  # scale_y_continuous(trans = "symlog", breaks = c(0, 1, 10, 100, 500)) +
+  scale_x_continuous(breaks = seq(0, 24, by = 6))
+```
+
+
+```{r}
+#| fig-height: 10
+#| fig-width: 15
+#| filename: Combination of partial plots H3
+
+(H3_pred / P_terms / n_plot_H3) + plot_layout(heights = c(2,2,1)) +
+  plot_annotation(tag_levels = "A", 
+                  caption = paste(Brown_caption, 
+                                  "Panel B: Significant deviations from the average are shown in red", sep = "<br>"),
+                  theme = 
+                    theme(plot.caption = element_textbox_simple(size = rel(1.5))
+                          )
+                  )
+
+ggsave("figures/Fig9.pdf", height = 10, width = 15)
+```
 
 ## Hypothesis 4
 
@@ -542,12 +834,14 @@ Hypothesis 4 states:
 ### Preparation
 
 ```{r}
+#| filename: Prepare activity data
 activity_data <- 
 hourly_data2 |> 
   ungroup() |> 
   select(site, Id, geo.MEDI, starts_with("act_"), Datetime, lightsource_primary) |> 
   pivot_longer(cols = starts_with("act_"), names_to = "activity", names_prefix = "act_", values_to = "value") |> 
-  filter(value, !is.na(geo.MEDI)) |> 
+  filter(value, !is.na(geo.MEDI)) |>
+  distinct(.keep_all = TRUE, site, Id, Datetime, activity) |>
   select(-value)
 ```
 
@@ -747,17 +1041,6 @@ H4_tab_fix |>
   site_conv_mutate(rev = FALSE, other.levels = "Overall") |> 
   arrange(site) |> 
   gt() |> 
-  fmt(starts_with("estimate"), 
-      fns = \(x) 
-      {x <- x |> gt::vec_fmt_number()
-      str_c("×", x)}
-      ) |> 
-  fmt(columns = 2, 
-      rows = site == "Overall",
-      fns = \(x) 
-      {x <- x |> gt::vec_fmt_number()
-      str_c(x, "lx")}
-      ) |> 
   cols_label_with(fn = \(x) str_remove(x, "estimate_") |> str_remove("\\(activity\\)")) |> 
   tab_spanner(
     md(
@@ -768,18 +1051,36 @@ H4_tab_fix |>
       ), 
     columns = -site) |> 
   cols_hide((contains(c("p.value", "signif", "SE_")))) |> 
-  sub_missing() |> 
-  gt_multiple(
-    names(H4_tab_fix) |> 
-      subset(str_detect(names(H4_tab_fix), "estimate_")) |> 
-      str_remove("estimate_"),
-    bold_p.) |> 
+  sub_missing(missing_text = "") |> 
   tab_style_body(
     style = cell_borders(weight = px(2)),
     rows = 1,
     columns = 2,
     fn = \(x) TRUE
   ) |> 
+  gt::rows_add(site = NA, .after = 1) |> 
+  tab_style(
+    style = list(css(`padding-top` = "0px",
+            `padding-bottom` = "0px"),
+            cell_fill("lightgrey")
+            ),
+locations = cells_body(rows = 2)) |> 
+  gt_multiple(
+    names(H4_tab_fix) |> 
+      subset(str_detect(names(H4_tab_fix), "estimate_")) |> 
+      str_remove("estimate_"),
+    bold_p.) |> 
+  fmt(starts_with("estimate"), 
+      fns = \(x) 
+      {x <- x |> gt::vec_fmt_number()
+      str_c(x, "×")}
+      ) |> 
+  fmt(columns = 2, 
+      rows = site == "Overall",
+      fns = \(x) 
+      {x <- x |> gt::vec_fmt_number()
+      str_c(x, "lx")}
+      ) |> 
   gt_multiple(
     melidos_colors |> names(),
     style_rows
@@ -926,6 +1227,311 @@ activity_data |>
 
 As can be seen by the cross-table, the two variables are strongly correlated. However, some differentiating potential lies e.g., in the home and working indoor activity, that provides a very even split between electric light indoors, daylight indoors, and emissive display light. Similarly, daylight outdoors can be split between outdoor and on the road activities.
 
+### Exploration: GAM of activity x time
+
+In this exploratory analysis, we study the nonlinear effect of time on the type of activity, based on the final model from RQ1:
+
+```{r}
+#| filename: Prepare GAM data
+GAM_data <- 
+  hourly_data2 |> 
+  ungroup() |> 
+  select(site, Id, Datetime, MEDI, photoperiod.state, Date, dawn, dusk, starts_with("act_")) |> 
+  pivot_longer(cols = starts_with("act_"), names_to = "activity", names_prefix = "act_", values_to = "value") |> 
+  add_Time_col() |> 
+  mutate(activity = 
+           fct(activity) |> 
+           fct_collapse(outdoor = c("free_outdoor", "working_outdoor", "road_open")) |>
+           fct_recode(NULL = "other") |> 
+           fct_relevel("home")
+         ) |> 
+  drop_na(activity) |> 
+  filter(value) |> 
+  distinct(.keep_all = TRUE, site, Id, Datetime, activity) |> 
+  ungroup() |> 
+  mutate(Time = as.numeric(Time)/3600 + 0.5,
+         across(c(site, Id, photoperiod.state,
+                  activity, Date),
+                factor),
+         Id_date = interaction(Id, Date),
+         lzMEDI = log_zero_inflated(MEDI),
+         photoperiod = (dusk - dawn) |> as.numeric()
+  ) |> 
+  group_by(Id) |> 
+  mutate(AR.start = ifelse(row_number() == 1, TRUE, FALSE))
+
+H4_form_gam <- lzMEDI ~ s(Time, k = 12) + s(Time, activity, bs = "sz", k = 12) + s(Time, site, bs = "sz", k = 12) + s(Time, photoperiod.state, bs = "sz", k=12) + s(Time, Id, bs = "fs") + s(Id_date, bs = "re")
+```
+
+```{r}
+#| filename: Main model
+H4_model_gam <- 
+  bam(H4_form_gam, 
+      data = GAM_data, 
+      discrete = TRUE,
+      method = "fREML",
+      nthreads = 10
+      )
+
+r1 <- start_value_rho(H4_model_gam, 
+                      plot=TRUE)
+H4_model_gam <- 
+  bam(H4_form_gam, 
+      data = GAM_data, 
+      discrete = TRUE,
+      method = "fREML",
+      nthreads = 10,
+      rho = r1,
+      AR.start = AR.start
+      )
+
+acf_resid(H4_model_gam, split_pred = "AR.start")
+
+H4_summary_gam <- summary(H4_model_gam)
+H4_summary_gam
+H4_model_gam |> glance()
+
+H4_model_gam |> appraise()
+```
+
+```{r}
+#| filename: Variance explained
+Xp <- predict(H4_model_gam, type = "terms")
+variance <- apply(Xp, 2, var)
+cor(Xp)
+H4_R2 <- (variance/sum(variance)) |> enframe(value = "R2", name = "parameter")
+H4_R2
+```
+
+```{r}
+#| filename: Null model
+H2_model_gam <- 
+  bam(H2_form_gam, 
+      data = GAM_data, 
+      discrete = TRUE,
+      method = "fREML",
+      nthreads = 10
+      )
+
+r1 <- start_value_rho(H2_model_gam, 
+                      plot=TRUE)
+H2_model_gam <- 
+  bam(H2_form_gam, 
+      data = GAM_data, 
+      discrete = TRUE,
+      method = "fREML",
+      nthreads = 10,
+      rho = r1,
+      AR.start = AR.start
+      )
+
+acf_resid(H2_model_gam, split_pred = "AR.start")
+
+```
+
+```{r}
+AIC(H4_model_gam, H2_model_gam)
+```
+
+```{r}
+H4_model_gam |> draw(select = "s(Time,activity)")
+H4_model_gam |> draw(select = "s(Time)")
+```
+
+####Visualization
+
+```{r}
+#| filename: prepare lightsource model H4 plot
+H4_act_data <- 
+H4_model_gam |> 
+  conditional_values(
+    condition = list(Time = seq(0.5, 23.5, by = 1), "activity", "photoperiod.state"),
+    exclude = c("s(Time,Id)", "s(Id_date)", "s(Time,site)")
+    ) |> 
+  mutate(across(c(.fitted, .lower_ci, .upper_ci),
+                exp_zero_inflated)
+  )
+
+H4_act_data <-
+GAM_data |> 
+  Datetime2Time() |> 
+  group_by(activity, Time) |> 
+  summarize(
+    .groups = "drop_last",
+    dawn = dawn |> as.numeric() |> mean(na.rm = TRUE)/3600,
+    dusk = dusk |> as.numeric() |> mean(na.rm = TRUE)/3600,
+    n = n()
+  ) |> 
+  mutate(
+    photoperiod.state = ifelse(between(Time, dawn, dusk), "day", "night")
+  ) |> 
+  select(-c(dawn, dusk)) |> 
+  left_join(H4_act_data, by = c("activity", "Time", "photoperiod.state"))
+
+H4_act_data_phot <- 
+H4_act_data |> 
+  number_states(photoperiod.state) |> 
+  filter(photoperiod.state == "night") |> 
+  group_by(activity, photoperiod.state.count) |> 
+  summarize(xmin = min(Time),
+            xmax = max(Time),
+            .groups = "drop_last") |> 
+  mutate(across(c(xmin, xmax), \(x) replace_values(x,
+                                                   0.5 ~ 0,
+                                                   23.5 ~ 24)))
+```
+
+```{r}
+#| filename: Visualize lightsource model H4
+#| fig-height: 5
+#| fig-width: 14
+
+act_labels <- 
+  tibble(
+    level = c("home", "working_indoor", "outdoor", "road_vehicle", "sleep"),
+    label = c("At home", "Working indoors", "Outdoors", "In a vehicle", "Sleeping")
+  )
+
+act_colors <- 
+  c(
+    `Working indoors` = "#6C757D", # slate gray
+    `At home` = "#C97B84",         # muted rose
+    `In a vehicle` = "#8C6D31",    # brown/bronze
+    Outdoors = "#4F8A5B",          # muted forest green
+    Sleeping = "#1B1F3B"           # dusty indigo
+  )
+
+H4_pred <- 
+H4_act_data |> 
+  mutate(activity = factor(activity, levels = act_labels$level, labels = act_labels$label)) |> 
+  ggplot(aes()) +
+  map(c(1,10,250, 10^4), 
+          \(x) geom_hline(aes(yintercept = x), 
+                          col = "grey", linetype = "dashed")
+      ) +
+  geom_rect(data = H4_act_data_phot |> 
+  mutate(activity = factor(activity, levels = act_labels$level, labels = act_labels$label)) ,
+            aes(xmin = xmin, ymin = -Inf, ymax = Inf, xmax = xmax),
+            alpha = 0.25, inherit.aes = FALSE) +
+  geom_ribbon(aes(x = Time, ymin = .lower_ci, 
+                  ymax = .upper_ci, fill = activity), alpha = 0.5) +
+  
+  geom_line(aes(x = Time, y = .fitted, 
+                col = activity), linewidth = 0.1) +
+  geom_line(aes(x = Time, y = .fitted), linewidth = 1) +
+  scale_fill_manual(values = act_colors) +
+  scale_color_manual(values = act_colors) +
+  theme_cowplot() +
+  scale_y_continuous(trans = "symlog", breaks = c(0,1,10,100,250, 1000)) +
+  scale_x_continuous(breaks = seq(0, 24, by = 6)) +
+  coord_cartesian(xlim = c(0,24), ylim = c(0,10^4), expand = FALSE) +
+  labs(y = "Melanopic EDI (lx)", x = "Local time (hrs)", fill = "Primary lightsource", col = "Primary lightsource") +
+  facet_wrap(~activity, nrow = 1) +
+  guides( y = guide_axis_stack(Brown_bracket, "axis")) +
+  gghighlight(
+    label_key = activity,
+    label_params = list(x = 12, y = 4.5, force = 0, hjust = 0.5)
+  ) +
+  # geom_text(aes(label = paste0("|", n, "|"), x = Time, y = 7000), size = rel(1.5)) +
+  theme_sub_strip(background = element_blank(),
+                  text = element_blank()) +
+  theme(panel.spacing = unit(1, "lines"),
+        plot.caption = element_textbox_simple())
+  # labs(caption = Brown_caption)
+H4_pred
+```
+
+```{r}
+#| filename: Visualize model terms
+Term_data <- 
+  H4_act_data |> select(Time, activity) |> 
+  left_join(
+    H4_model_gam |> 
+  smooth_estimates(select = "s(Time,activity)", n=24),
+  by = c("Time", "activity")
+  ) |> 
+  ungroup() |> 
+  complete(Time, activity) |> 
+  mutate(.lower_ci = .estimate -1.96*.se,
+         .upper_ci = .estimate +1.96*.se,
+         .fitted = .estimate,
+         signif = .lower_ci > 0 | .upper_ci < 0,
+         signif_id = consecutive_id(signif),
+         .by = activity) |> 
+    mutate(activity = factor(activity, levels = act_labels$level, labels = act_labels$label))
+
+P_terms <-
+Term_data |> 
+  ggplot(aes()) +
+  map(c(log10(c(0.1, 0.2, 0.5, 2, 5, 10))),
+      \(x) geom_hline(yintercept = x, linewidth = 0.5, col = "grey", linetype = 2)) +
+  geom_rect(data = H4_act_data_phot |>   
+              mutate(activity = factor(activity, levels = act_labels$level, labels = act_labels$label)),
+            aes(xmin = xmin, ymin = -Inf, ymax = Inf, xmax = xmax),
+            alpha = 0.25, inherit.aes = FALSE) +
+  geom_ribbon(aes(x = Time, ymin = .lower_ci, 
+                  ymax = .upper_ci, fill = activity), 
+              alpha = 0.5) +
+  geom_hline(yintercept = 0, linewidth = 1, linetype = 2) +
+  geom_line(aes(x = Time, y = .fitted), 
+            linewidth = 1) +
+  geom_line(data = \(x) filter(x, signif),
+            aes(x = Time, y = .fitted, group = signif_id), 
+            col = "red", linewidth = 1) +
+  scale_fill_manual(values = act_colors) +
+  # scale_color_manual(values = c(melidos_colors)) +
+  theme_cowplot() +
+  scale_y_continuous(labels = expression(10^-1, 5^-1, 2^-1, "1  ", "2  ", "5  ", "10  "), 
+                     breaks = log10(c(0.1, 0.2, 0.5, 1, 2, 5, 10)))+
+  scale_x_continuous(breaks = seq(0, 24, by = 6)) +
+  coord_cartesian(xlim = c(0,24), expand = FALSE) +
+  guides(fill = "none") +
+  labs(y = "Factor", x = "Local time (hrs)", fill = "Primary lightsource") +
+  facet_wrap(~activity, nrow = 1) +
+  theme_sub_strip(background = element_blank(),
+                  text = element_blank()) +
+  theme(panel.spacing = unit(1, "lines"),
+        plot.caption = element_textbox_simple())
+P_terms
+```
+
+```{r}
+n_plot_H4 <-
+GAM_data |> 
+  ungroup() |> 
+  count(Time, activity) |> 
+      mutate(activity = factor(activity, levels = act_labels$level, labels = act_labels$label)) |> 
+  ggplot(aes(x=Time)) + 
+  geom_col(aes(y=n, fill = activity)) + 
+  facet_wrap(~activity, nrow = 1) +
+  theme_cowplot() +
+  scale_fill_manual(values = act_colors) +
+  theme_sub_strip(background = element_blank(),
+                  text = element_blank()) +
+  theme(panel.spacing = unit(1, "lines"),
+        plot.caption = element_textbox_simple()) +
+  guides(fill = "none") +
+  # scale_y_continuous(trans = "symlog", breaks = c(0, 1, 10, 100, 500)) +
+  scale_x_continuous(breaks = seq(0, 24, by = 6))
+```
+
+
+```{r}
+#| fig-height: 10
+#| fig-width: 15
+#| filename: Combination of partial plots H4
+
+H4_pred / P_terms / n_plot_H4 + plot_layout(heights = c(2,2,1)) +
+  plot_annotation(tag_levels = "A", 
+                  caption = paste(Brown_caption, 
+                                  "Panel B: Significant deviations from the average are shown in red", sep = "<br>"),
+                  theme = 
+                    theme(plot.caption = element_textbox_simple(size = rel(1.5))
+                          )
+                  )
+
+ggsave("figures/Fig10.pdf", height = 10, width = 15)
+```
 
 ## Hypothesis 5
 
@@ -933,21 +1539,9 @@ Hypothesis 5 states:
 
 > There is a significant relationship between LEBA-factors and pre-selected personal light exposure metrics.
 
-*Type of model:* Correlation matrix + LMM
+*Type of model:* Correlation matrix + LM
 
-*Base formula:* $\text{mel EDI} \sim \text{mH-LEA}*\text{Site} + (1|\text{Site}:\text{Participant})$
-
-*Notes:*
-- site as a random effect with random slopes for mH-LEA was unstable. Thus, site will be used as an interaction
-- mH-LEA data was used to collect the `primary_lightsource`, which is the variable used in the model
-- The confirmatory test looks at the base model compared to the Null model for mH-LEA, the other comparisons are exploratory
-- Site was sum-coded, so as to calculate an average effect of site
-- Error family is Tweedie
-
-*Specific formulas:* 
-- $\text{mel EDI} \sim \text{Site} + (1|\text{Site}:\text{Participant})$ (Null-model, mH-LEA)
-- $\text{mel EDI} \sim \text{mH-LEA} + \text{Site} + (1|\text{Site}:\text{Participant})$ (Null-model interaction)
-- $\text{mel EDI} \sim \text{mH-LEA} + (1|\text{Site}:\text{Participant})$ (Null-model, Site)
+*Base formula:* $\text{LEBA factor} \sim \text{Site})$
 
 *False-discovery-rate correction:*
 - 4 leba factors x 17 metrics: n = 68
@@ -1435,17 +2029,6 @@ H6_tab_fix |>
   site_conv_mutate(rev = FALSE, other.levels = "Overall") |> 
   arrange(site) |> 
   gt() |> 
-  fmt(starts_with("estimate"), 
-      fns = \(x) 
-      {x <- x |> gt::vec_fmt_number()
-      str_c("×", x)}
-      ) |> 
-  fmt(columns = 2:3, 
-      rows = site == "Overall",
-      fns = \(x) 
-      {x <- x |> gt::vec_fmt_number()
-      str_c(x, " lx")}
-      ) |> 
   cols_label_with(
     fn = 
       \(x) str_remove(x, "estimate_") |> 
@@ -1472,7 +2055,14 @@ H6_tab_fix |>
     columns = contains("exercise_"))|> 
       cols_hide((contains(c("p.value_", "signif_")))) |>
       cols_hide((starts_with(c("SE_")))) |>
-  # sub_missing() |> 
+  sub_missing(missing_text = "") |>
+  gt::rows_add(site = NA, .after = 1) |> 
+  tab_style(
+    style = list(css(`padding-top` = "0px",
+            `padding-bottom` = "0px"),
+            cell_fill("lightgrey")
+            ),
+locations = cells_body(rows = 2)) |> 
   gt_multiple(
     names(H6_tab_fix) |> 
       subset(str_detect(names(H6_tab_fix), "estimate_")) |> 
@@ -1484,6 +2074,17 @@ H6_tab_fix |>
     columns = 2:3,
     fn = \(x) TRUE
   ) |> 
+    fmt(starts_with("estimate"), 
+      fns = \(x) 
+      {x <- x |> gt::vec_fmt_number()
+      str_c(x, "×")}
+      ) |> 
+  fmt(columns = 2:3, 
+      rows = site == "Overall",
+      fns = \(x) 
+      {x <- x |> gt::vec_fmt_number()
+      str_c(x, " lx")}
+      ) |> 
   gt_multiple(
     melidos_colors |> names(),
     style_rows
@@ -1626,6 +2227,400 @@ H6_model_1_weekend |>
 ```
 
 The quick test shows that daytype is the better predictor compared to weekend (∆AIC), and that the results are broadly the same.
+
+### Exploration: GAM of activity x time
+
+In this exploratory analysis, we study the nonlinear effect of time on the type of activity, based on the final model from RQ1:
+
+```{r}
+#| filename: Prepare GAM data
+GAM_data <- 
+  H6_data |> 
+  ungroup() |> 
+  select(site, Id, Datetime, MEDI, photoperiod.state, Date, dawn, dusk, exercise, daytype) |> 
+  add_Time_col() |> 
+  drop_na(exercise, daytype) |> 
+  ungroup() |> 
+  mutate(Time = as.numeric(Time)/3600 + 0.5,
+         across(c(site, Id, photoperiod.state,
+                  Date),
+                factor),
+         Id_date = interaction(Id, Date),
+         lzMEDI = log_zero_inflated(MEDI),
+         photoperiod = (dusk - dawn) |> as.numeric()
+  ) |> 
+  group_by(Id) |> 
+  mutate(AR.start = ifelse(row_number() == 1, TRUE, FALSE))
+
+H6_form_gam <- lzMEDI ~ s(Time, k = 12) + s(Time, daytype, bs = "sz", k = 12) + s(Time, exercise, bs = "sz", k = 12) + s(Time, site, bs = "sz", k = 12) + s(Time, photoperiod.state, bs = "sz", k=12) + s(Time, Id, bs = "fs") + s(Id_date, bs = "re")
+```
+
+```{r}
+#| filename: Main model
+H6_model_gam <- 
+  bam(H6_form_gam, 
+      data = GAM_data, 
+      discrete = TRUE,
+      method = "fREML",
+      nthreads = 10
+      )
+
+r1 <- start_value_rho(H6_model_gam, 
+                      plot=TRUE)
+H6_model_gam <- 
+  bam(H6_form_gam, 
+      data = GAM_data, 
+      discrete = TRUE,
+      method = "fREML",
+      nthreads = 10,
+      rho = r1,
+      AR.start = AR.start
+      )
+
+acf_resid(H6_model_gam, split_pred = "AR.start")
+
+H6_summary_gam <- summary(H6_model_gam)
+H6_summary_gam
+H6_model_gam |> glance()
+
+H6_model_gam |> appraise()
+```
+
+```{r}
+#| filename: Variance explained
+Xp <- predict(H6_model_gam, type = "terms")
+variance <- apply(Xp, 2, var)
+cor(Xp)
+H6_R2 <- (variance/sum(variance)) |> enframe(value = "R2", name = "parameter")
+H6_R2
+```
+
+
+```{r}
+H6_model_gam |> draw(select = "s(Time,daytype)")
+H6_model_gam |> draw(select = "s(Time)")
+H6_model_gam |> draw(select = "s(Time,exercise)")
+```
+
+####Visualization for exercise
+
+```{r}
+#| filename: prepare lightsource model H6 plot
+H6_ex_data <- 
+H6_model_gam |> 
+  conditional_values(
+    condition = list(Time = seq(0.5, 23.5, by = 1), "exercise", "photoperiod.state"),
+    exclude = c("s(Time,Id)", "s(Id_date)", "s(Time,site)", "s(Time,daytype)")
+    ) |> 
+  mutate(across(c(.fitted, .lower_ci, .upper_ci),
+                exp_zero_inflated)
+  )
+
+H6_ex_data <-
+GAM_data |> 
+  Datetime2Time() |> 
+  group_by(exercise, Time) |> 
+  summarize(
+    .groups = "drop_last",
+    dawn = dawn |> as.numeric() |> mean(na.rm = TRUE)/3600,
+    dusk = dusk |> as.numeric() |> mean(na.rm = TRUE)/3600,
+    n = n()
+  ) |> 
+  mutate(
+    photoperiod.state = ifelse(between(Time, dawn, dusk), "day", "night")
+  ) |> 
+  select(-c(dawn, dusk)) |> 
+  left_join(H6_ex_data, by = c("exercise", "Time", "photoperiod.state"))
+
+H6_ex_data_phot <- 
+H6_ex_data |> 
+  number_states(photoperiod.state) |> 
+  filter(photoperiod.state == "night") |> 
+  group_by(exercise, photoperiod.state.count) |> 
+  summarize(xmin = min(Time),
+            xmax = max(Time),
+            .groups = "drop_last") |> 
+  mutate(across(c(xmin, xmax), \(x) replace_values(x,
+                                                   0.5 ~ 0,
+                                                   23.5 ~ 24)))
+```
+
+```{r}
+#| filename: Visualize lightsource model H6
+#| fig-height: 5
+#| fig-width: 14
+
+H6_pred <- 
+H6_ex_data |> 
+  ggplot(aes()) +
+  map(c(1,10,250, 10^4), 
+          \(x) geom_hline(aes(yintercept = x), 
+                          col = "grey", linetype = "dashed")
+      ) +
+  geom_rect(data = H6_ex_data_phot,
+            aes(xmin = xmin, ymin = -Inf, ymax = Inf, xmax = xmax),
+            alpha = 0.25, inherit.aes = FALSE) +
+  geom_ribbon(aes(x = Time, ymin = .lower_ci, 
+                  ymax = .upper_ci, fill = exercise), alpha = 0.5) +
+  
+  geom_line(aes(x = Time, y = .fitted, 
+                col = exercise), linewidth = 0.1) +
+  geom_line(aes(x = Time, y = .fitted), linewidth = 1) +
+  # scale_fill_manual(values = act_colors) +
+  # scale_color_manual(values = act_colors) +
+  theme_cowplot() +
+  scale_y_continuous(trans = "symlog", breaks = c(0,1,10,100,250, 1000)) +
+  scale_x_continuous(breaks = seq(0, 24, by = 6)) +
+  coord_cartesian(xlim = c(0,24), ylim = c(0,10^4), expand = FALSE) +
+  labs(y = "Melanopic EDI (lx)", x = "Local time (hrs)", fill = "Exercise", col = "Exercise") +
+  facet_wrap(~exercise, nrow = 1) +
+  guides( y = guide_axis_stack(Brown_bracket, "axis")) +
+  gghighlight(
+    label_key = exercise,
+    label_params = list(x = 12, y = 4.5, force = 0, hjust = 0.5)
+  ) +
+  # geom_text(aes(label = paste0("|", n, "|"), x = Time, y = 7000), size = rel(1.5)) +
+  theme_sub_strip(background = element_blank(),
+                  text = element_blank()) +
+  theme(panel.spacing = unit(1, "lines"),
+        plot.caption = element_textbox_simple())
+  # labs(caption = Brown_caption)
+H6_pred
+```
+
+```{r}
+#| filename: Visualize model terms
+Term_data <- 
+  H6_ex_data |> select(Time, exercise) |> 
+  left_join(
+    H6_model_gam |> 
+  smooth_estimates(select = "s(Time,exercise)", n=24),
+  by = c("Time", "exercise")
+  ) |> 
+  ungroup() |> 
+  complete(Time, exercise) |> 
+  mutate(.lower_ci = .estimate -1.96*.se,
+         .upper_ci = .estimate +1.96*.se,
+         .fitted = .estimate,
+         signif = .lower_ci > 0 | .upper_ci < 0,
+         signif_id = consecutive_id(signif),
+         .by = exercise)
+
+P_terms <-
+Term_data |> 
+  ggplot(aes()) +
+  map(c(log10(c(0.1, 0.2, 0.5, 2, 5, 10))),
+      \(x) geom_hline(yintercept = x, linewidth = 0.5, col = "grey", linetype = 2)) +
+  geom_rect(data = H6_ex_data_phot,
+            aes(xmin = xmin, ymin = -Inf, ymax = Inf, xmax = xmax),
+            alpha = 0.25, inherit.aes = FALSE) +
+  geom_ribbon(aes(x = Time, ymin = .lower_ci, 
+                  ymax = .upper_ci, fill = exercise), 
+              alpha = 0.5) +
+  geom_hline(yintercept = 0, linewidth = 1, linetype = 2) +
+  geom_line(aes(x = Time, y = .fitted), 
+            linewidth = 1) +
+  geom_line(data = \(x) filter(x, signif),
+            aes(x = Time, y = .fitted, group = signif_id), 
+            col = "red", linewidth = 1) +
+  # scale_fill_manual(values = act_colors) +
+  # scale_color_manual(values = c(melidos_colors)) +
+  theme_cowplot() +
+  scale_y_continuous(labels = expression(10^-1, 5^-1, 2^-1, "1  ", "2  ", "5  ", "10  "), 
+                     breaks = log10(c(0.1, 0.2, 0.5, 1, 2, 5, 10)))+
+  scale_x_continuous(breaks = seq(0, 24, by = 6)) +
+  coord_cartesian(xlim = c(0,24), expand = FALSE) +
+  guides(fill = "none") +
+  labs(y = "Factor", x = "Local time (hrs)", fill = "Exercise") +
+  facet_wrap(~exercise, nrow = 1) +
+  theme_sub_strip(background = element_blank(),
+                  text = element_blank()) +
+  theme(panel.spacing = unit(1, "lines"),
+        plot.caption = element_textbox_simple())
+P_terms
+```
+
+```{r}
+n_plot_H6 <-
+GAM_data |> 
+  ungroup() |> 
+  count(Time, exercise) |>  
+  ggplot(aes(x=Time)) + 
+  geom_col(aes(y=n, fill = exercise)) + 
+  facet_wrap(~exercise, nrow = 1) +
+  theme_cowplot() +
+  scale_fill_manual(values = act_colors) +
+  theme_sub_strip(background = element_blank(),
+                  text = element_blank()) +
+  theme(panel.spacing = unit(1, "lines"),
+        plot.caption = element_textbox_simple()) +
+  guides(fill = "none") +
+  # scale_y_continuous(trans = "symlog", breaks = c(0, 1, 10, 100, 500)) +
+  scale_x_continuous(breaks = seq(0, 24, by = 6))
+```
+
+
+```{r}
+#| fig-height: 10
+#| fig-width: 15
+#| filename: Combination of partial plots H6
+
+H6_pred / P_terms / n_plot_H6 + plot_layout(heights = c(2,2,1)) +
+  plot_annotation(tag_levels = "A", 
+                  caption = paste(Brown_caption, 
+                                  "Panel B: Significant deviations from the average are shown in red", sep = "<br>"),
+                  theme = 
+                    theme(plot.caption = element_textbox_simple(size = rel(1.5))
+                          )
+                  )
+
+ggsave("figures/Fig11.pdf", height = 10, width = 15)
+```
+
+#### Visualization for daytype
+
+```{r}
+#| filename: prepare lightsource model H6 plot
+H6_dt_data <- 
+H6_model_gam |> 
+  conditional_values(
+    condition = list(Time = seq(0.5, 23.5, by = 1), "daytype", "photoperiod.state"),
+    exclude = c("s(Time,Id)", "s(Id_date)", "s(Time,site)", "s(Time,exercise)")
+    ) |> 
+  mutate(across(c(.fitted, .lower_ci, .upper_ci),
+                exp_zero_inflated)
+  )
+
+H6_dt_data <-
+GAM_data |> 
+  Datetime2Time() |> 
+  group_by(daytype, Time) |> 
+  summarize(
+    .groups = "drop_last",
+    dawn = dawn |> as.numeric() |> mean(na.rm = TRUE)/3600,
+    dusk = dusk |> as.numeric() |> mean(na.rm = TRUE)/3600,
+    n = n()
+  ) |> 
+  mutate(
+    photoperiod.state = ifelse(between(Time, dawn, dusk), "day", "night")
+  ) |> 
+  select(-c(dawn, dusk)) |> 
+  left_join(H6_dt_data, by = c("daytype", "Time", "photoperiod.state"))
+
+H6_dt_data_phot <- 
+H6_dt_data |> 
+  number_states(photoperiod.state) |> 
+  filter(photoperiod.state == "night") |> 
+  group_by(daytype, photoperiod.state.count) |> 
+  summarize(xmin = min(Time),
+            xmax = max(Time),
+            .groups = "drop_last") |> 
+  mutate(across(c(xmin, xmax), \(x) replace_values(x,
+                                                   0.5 ~ 0,
+                                                   23.5 ~ 24)))
+```
+
+```{r}
+#| filename: Visualize lightsource model H6
+#| fig-height: 5
+#| fig-width: 14
+
+H6_dt_pred <-
+H6_dt_data |> 
+  ggplot(aes()) +
+  map(c(1,10,250, 10^4), 
+          \(x) geom_hline(aes(yintercept = x), 
+                          col = "grey", linetype = "dashed")
+      ) +
+  geom_rect(data = H6_dt_data_phot |> filter(daytype == "a free day"),
+            aes(xmin = xmin, ymin = -Inf, ymax = Inf, xmax = xmax),
+            alpha = 0.25, inherit.aes = FALSE) +
+  geom_ribbon(aes(x = Time, ymin = .lower_ci, 
+                  ymax = .upper_ci, fill = daytype), alpha = 0.5) +
+  geom_line(aes(x = Time, y = .fitted, 
+                col = daytype), linewidth = 1) +
+  # scale_fill_manual(values = act_colors) +
+  # scale_color_manual(values = act_colors) +
+  theme_cowplot() +
+  scale_y_continuous(trans = "symlog", breaks = c(0,1,10,100,250, 1000)) +
+  scale_x_continuous(breaks = seq(0, 24, by = 6)) +
+  coord_cartesian(xlim = c(0,24), ylim = c(0,10^4), expand = FALSE) +
+  labs(y = "Melanopic EDI (lx)", x = "Local time (hrs)", fill = "Daytype", col = "Daytype") +
+  # facet_wrap(~daytype, nrow = 1) +
+  guides( y = guide_axis_stack(Brown_bracket, "axis")) +
+  # gghighlight(
+    # label_key = daytype,
+    # label_params = list(x = 12, y = 4.5, force = 0, hjust = 0.5)
+  # ) +
+  # geom_text(aes(label = paste0("|", n, "|"), x = Time, y = 7000), size = rel(1.5)) +
+  theme_sub_strip(background = element_blank(),
+                  text = element_blank()) +
+  theme(panel.spacing = unit(1, "lines"),
+        plot.caption = element_textbox_simple(),
+        legend.position = "inside",
+        legend.position.inside = c(0.45, 0.15)
+        )
+  # labs(caption = Brown_caption)
+H6_dt_pred
+```
+
+```{r}
+df <- H6_model_gam$model |> distinct(Time, .keep_all = TRUE)
+H6_termplot <- 
+difference_sz(H6_model_gam, 
+              df, 
+              "Time", "daytype", "a work day", "a free day",
+              "s(Time,daytype)",
+              exclude = c("s(Time,site)", "s(Time,Id)", "s(Id_date)", "s(Time,exercise"),
+              unconditional = FALSE,
+              level = 0.95
+  ) |> 
+    mutate(
+         signif = lower > 0 | upper < 0,
+         signif_id = consecutive_id(signif)) |> 
+  ggplot(aes()) +
+  map(c(log10(c(0.1, 0.2, 0.5, 2, 5, 10))),
+      \(x) geom_hline(yintercept = x, linewidth = 0.5, col = "grey", linetype = 2)) +
+  geom_rect(data = H6_dt_data_phot |> filter(daytype == "a free day"),
+            aes(xmin = xmin, ymin = -Inf, ymax = Inf, xmax = xmax),
+            alpha = 0.25, inherit.aes = FALSE) +
+  geom_ribbon(aes(x = Time, ymin = lower, ymax = upper), alpha = 0.5) +
+  geom_hline(yintercept = 0, linewidth = 1, linetype = 2) +
+  geom_line(aes(x = Time, y = diff), 
+            linewidth = 1) +
+  geom_line(data = \(x) filter(x, signif),
+            aes(x = Time, y = diff, group = signif_id), 
+            col = "red", linewidth = 1) +
+    theme_cowplot() +
+  scale_y_continuous(labels = expression(10^-1, 5^-1, 2^-1, "1  ", "2  ", "5  ", "10  "), 
+                     breaks = log10(c(0.1, 0.2, 0.5, 1, 2, 5, 10)))+
+  scale_x_continuous(breaks = seq(0, 24, by = 6)) +
+  coord_cartesian(xlim = c(0,24), expand = FALSE) +
+  guides(fill = "none") +
+  labs(y = "Rel. difference work to free day", x = "Local time (hrs)") +
+  theme_sub_strip(background = element_blank(),
+                  text = element_blank()) +
+  theme(panel.spacing = unit(1, "lines"),
+        plot.caption = element_textbox_simple())
+```
+
+```{r}
+#| fig-height: 8
+#| fig-width: 8
+#| filename: Combination of partial plots H6
+
+H6_dt_pred / H6_termplot +
+  plot_annotation(tag_levels = "A", 
+                  caption = paste(Brown_caption, 
+                                  "Panel B: Significant deviations of work from free days are shown in red", sep = "<br>"),
+                  theme = 
+                    theme(plot.caption = element_textbox_simple(size = rel(1))
+                          )
+                  )
+
+ggsave("figures/Fig12.pdf", height = 8, width = 7.3)
+```
+
 
 ## Hypothesis 7
 

@@ -1,0 +1,1405 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.37">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="dcterms.date" content="2026-05-19">
+<meta name="keywords" content="wearable, light logging, personal light exposure, experience sampling, circadian">
+
+<title>Individual, behavioural, and environmental determinants of personal light exposure in daily life</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+/* CSS for citations */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+}
+.hanging-indent div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}</style>
+
+
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-7f8f88aac4f3542376d5c11b86a4c14d.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-a8d00ebb8d4a4b081dc9c25e65c3e3a6.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script src="site_libs/quarto-contrib/glightbox/glightbox.min.js"></script>
+<link href="site_libs/quarto-contrib/glightbox/glightbox.min.css" rel="stylesheet">
+<link href="site_libs/quarto-contrib/glightbox/lightbox.css" rel="stylesheet">
+<script async="" src="https://hypothes.is/embed.js"></script>
+<script>
+  window.document.addEventListener("DOMContentLoaded", function (_event) {
+    document.body.classList.add('hypothesis-enabled');
+  });
+</script>
+
+
+<link rel="stylesheet" href="styles.css">
+<meta name="citation_title" content="Individual, behavioural, and environmental determinants of personal light exposure in daily life">
+<meta name="citation_abstract" content="The abstract serves both as a general introduction to the topic and as a brief, non-technical summary of the main results and their implications. Authors are advised to check the author instructions for the journal they are submitting to for word limits and if structural elements like subheadings, citations, or equations are permitted.
+">
+<meta name="citation_keywords" content="wearable,light logging,personal light exposure,experience sampling,circadian">
+<meta name="citation_author" content="Johannes Zauner">
+<meta name="citation_author" content="Altug Didikoglu">
+<meta name="citation_author" content="Sam Aerts">
+<meta name="citation_author" content="Gabriel Kwaku Agbeshie">
+<meta name="citation_author" content="Kwadwo Owusu Akuffo">
+<meta name="citation_author" content="Sena Gulsum Akgun">
+<meta name="citation_author" content="Sema Nur Aydin">
+<meta name="citation_author" content="David Baeza Moyano">
+<meta name="citation_author" content="Daan Boesten">
+<meta name="citation_author" content="John Bolte">
+<meta name="citation_author" content="Kai Broszio">
+<meta name="citation_author" content="Guadalupe Cantarero García">
+<meta name="citation_author" content="Roberto Alonso González Lezcano">
+<meta name="citation_author" content="Carolina Guidolin">
+<meta name="citation_author" content="Sarina Hilden">
+<meta name="citation_author" content="Nico Hogervorst">
+<meta name="citation_author" content="Astrid Jansen">
+<meta name="citation_author" content="Zeynep Kayar">
+<meta name="citation_author" content="Stefan Källberg">
+<meta name="citation_author" content="Suyoun Lee">
+<meta name="citation_author" content="Sofía Melero Tur">
+<meta name="citation_author" content="Maria Nilsson Tengelin">
+<meta name="citation_author" content="María Concepción Pérez Gutiérrez">
+<meta name="citation_author" content="Andrea Sancho-Salas">
+<meta name="citation_author" content="Ingemar Svensson">
+<meta name="citation_author" content="Helga von-Breymann">
+<meta name="citation_author" content="Manuel Spitschan">
+<meta name="citation_publication_date" content="2026-05-19">
+<meta name="citation_cover_date" content="2026-05-19">
+<meta name="citation_year" content="2026">
+<meta name="citation_online_date" content="2026-05-19">
+<meta name="citation_fulltext_html_url" content="https://tscnlab.github.io/ZaunerEtAl_NatHumBehav_2026/index.html">
+<meta name="citation_language" content="en">
+<meta name="citation_reference" content="citation_title=The comprehensive TeX Archive Network (CTAN);,citation_author=George D. Greenwade;,citation_publication_date=1993;,citation_cover_date=1993;,citation_year=1993;,citation_issue=3;,citation_volume=14;,citation_journal_title=TUGBoat;">
+<meta name="citation_reference" content="citation_title=The TeXbook;,citation_author=Donald Ervin Knuth;,citation_author=Duane Bibby;,citation_publication_date=1984;,citation_cover_date=1984;,citation_year=1984;,citation_volume=3;">
+</head>
+
+<body class="quarto-light">
+
+<header id="title-block-header" class="quarto-title-block default page-columns page-full">
+  <div class="quarto-title-banner page-columns page-full">
+    <div class="quarto-title column-body">
+      <div class="quarto-title-block"><div><h1 class="title">Individual, behavioural, and environmental determinants of personal light exposure in daily life</h1><button type="button" class="btn code-tools-button" id="quarto-code-tools-source"><i class="bi"></i> Code</button></div></div>
+            <p class="subtitle lead">A multi-country wearable and experience-sampling study</p>
+          </div>
+
+    
+    <div class="quarto-title-meta-container">
+      <div class="quarto-title-meta-column-start">
+            <div class="quarto-title-meta-author">
+          <div class="quarto-title-meta-heading">Authors</div>
+          <div class="quarto-title-meta-heading">Affiliations</div>
+          
+                <div class="quarto-title-meta-contents">
+            <p class="author">Johannes Zauner <a href="mailto:johannes.zauner@tum.de" class="quarto-title-author-email"><i class="bi bi-envelope"></i></a> <a href="https://orcid.org/https://orcid.org/0000-0003-2171-4566" class="quarto-title-author-orcid"> <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAA2ZpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuMC1jMDYwIDYxLjEzNDc3NywgMjAxMC8wMi8xMi0xNzozMjowMCAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wTU09Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9tbS8iIHhtbG5zOnN0UmVmPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvc1R5cGUvUmVzb3VyY2VSZWYjIiB4bWxuczp4bXA9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC8iIHhtcE1NOk9yaWdpbmFsRG9jdW1lbnRJRD0ieG1wLmRpZDo1N0NEMjA4MDI1MjA2ODExOTk0QzkzNTEzRjZEQTg1NyIgeG1wTU06RG9jdW1lbnRJRD0ieG1wLmRpZDozM0NDOEJGNEZGNTcxMUUxODdBOEVCODg2RjdCQ0QwOSIgeG1wTU06SW5zdGFuY2VJRD0ieG1wLmlpZDozM0NDOEJGM0ZGNTcxMUUxODdBOEVCODg2RjdCQ0QwOSIgeG1wOkNyZWF0b3JUb29sPSJBZG9iZSBQaG90b3Nob3AgQ1M1IE1hY2ludG9zaCI+IDx4bXBNTTpEZXJpdmVkRnJvbSBzdFJlZjppbnN0YW5jZUlEPSJ4bXAuaWlkOkZDN0YxMTc0MDcyMDY4MTE5NUZFRDc5MUM2MUUwNEREIiBzdFJlZjpkb2N1bWVudElEPSJ4bXAuZGlkOjU3Q0QyMDgwMjUyMDY4MTE5OTRDOTM1MTNGNkRBODU3Ii8+IDwvcmRmOkRlc2NyaXB0aW9uPiA8L3JkZjpSREY+IDwveDp4bXBtZXRhPiA8P3hwYWNrZXQgZW5kPSJyIj8+84NovQAAAR1JREFUeNpiZEADy85ZJgCpeCB2QJM6AMQLo4yOL0AWZETSqACk1gOxAQN+cAGIA4EGPQBxmJA0nwdpjjQ8xqArmczw5tMHXAaALDgP1QMxAGqzAAPxQACqh4ER6uf5MBlkm0X4EGayMfMw/Pr7Bd2gRBZogMFBrv01hisv5jLsv9nLAPIOMnjy8RDDyYctyAbFM2EJbRQw+aAWw/LzVgx7b+cwCHKqMhjJFCBLOzAR6+lXX84xnHjYyqAo5IUizkRCwIENQQckGSDGY4TVgAPEaraQr2a4/24bSuoExcJCfAEJihXkWDj3ZAKy9EJGaEo8T0QSxkjSwORsCAuDQCD+QILmD1A9kECEZgxDaEZhICIzGcIyEyOl2RkgwAAhkmC+eAm0TAAAAABJRU5ErkJggg=="></a></p>
+          </div>
+                <div class="quarto-title-meta-contents">
+                    <p class="affiliation">
+                        Technical University of Munich
+                      </p>
+                  </div>
+                      <div class="quarto-title-meta-contents">
+            <p class="author">Altug Didikoglu <a href="https://orcid.org/https://orcid.org/0000-0002-5582-6956" class="quarto-title-author-orcid"> <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAA2ZpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuMC1jMDYwIDYxLjEzNDc3NywgMjAxMC8wMi8xMi0xNzozMjowMCAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wTU09Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9tbS8iIHhtbG5zOnN0UmVmPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvc1R5cGUvUmVzb3VyY2VSZWYjIiB4bWxuczp4bXA9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC8iIHhtcE1NOk9yaWdpbmFsRG9jdW1lbnRJRD0ieG1wLmRpZDo1N0NEMjA4MDI1MjA2ODExOTk0QzkzNTEzRjZEQTg1NyIgeG1wTU06RG9jdW1lbnRJRD0ieG1wLmRpZDozM0NDOEJGNEZGNTcxMUUxODdBOEVCODg2RjdCQ0QwOSIgeG1wTU06SW5zdGFuY2VJRD0ieG1wLmlpZDozM0NDOEJGM0ZGNTcxMUUxODdBOEVCODg2RjdCQ0QwOSIgeG1wOkNyZWF0b3JUb29sPSJBZG9iZSBQaG90b3Nob3AgQ1M1IE1hY2ludG9zaCI+IDx4bXBNTTpEZXJpdmVkRnJvbSBzdFJlZjppbnN0YW5jZUlEPSJ4bXAuaWlkOkZDN0YxMTc0MDcyMDY4MTE5NUZFRDc5MUM2MUUwNEREIiBzdFJlZjpkb2N1bWVudElEPSJ4bXAuZGlkOjU3Q0QyMDgwMjUyMDY4MTE5OTRDOTM1MTNGNkRBODU3Ii8+IDwvcmRmOkRlc2NyaXB0aW9uPiA8L3JkZjpSREY+IDwveDp4bXBtZXRhPiA8P3hwYWNrZXQgZW5kPSJyIj8+84NovQAAAR1JREFUeNpiZEADy85ZJgCpeCB2QJM6AMQLo4yOL0AWZETSqACk1gOxAQN+cAGIA4EGPQBxmJA0nwdpjjQ8xqArmczw5tMHXAaALDgP1QMxAGqzAAPxQACqh4ER6uf5MBlkm0X4EGayMfMw/Pr7Bd2gRBZogMFBrv01hisv5jLsv9nLAPIOMnjy8RDDyYctyAbFM2EJbRQw+aAWw/LzVgx7b+cwCHKqMhjJFCBLOzAR6+lXX84xnHjYyqAo5IUizkRCwIENQQckGSDGY4TVgAPEaraQr2a4/24bSuoExcJCfAEJihXkWDj3ZAKy9EJGaEo8T0QSxkjSwORsCAuDQCD+QILmD1A9kECEZgxDaEZhICIzGcIyEyOl2RkgwAAhkmC+eAm0TAAAAABJRU5ErkJggg=="></a></p>
+          </div>
+                <div class="quarto-title-meta-contents">
+                    <p class="affiliation">
+                        Izmir Institute of Technology, Izmir, Türkiye
+                      </p>
+                  </div>
+                      <div class="quarto-title-meta-contents">
+            <p class="author">Sam Aerts </p>
+          </div>
+                <div class="quarto-title-meta-contents">
+                    <p class="affiliation">
+                        The Hague University of Applied Sciences
+                      </p>
+                  </div>
+                      <div class="quarto-title-meta-contents">
+            <p class="author">Gabriel Kwaku Agbeshie <a href="https://orcid.org/https://orcid.org/0009-0009-6135-7111" class="quarto-title-author-orcid"> <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAA2ZpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuMC1jMDYwIDYxLjEzNDc3NywgMjAxMC8wMi8xMi0xNzozMjowMCAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wTU09Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9tbS8iIHhtbG5zOnN0UmVmPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvc1R5cGUvUmVzb3VyY2VSZWYjIiB4bWxuczp4bXA9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC8iIHhtcE1NOk9yaWdpbmFsRG9jdW1lbnRJRD0ieG1wLmRpZDo1N0NEMjA4MDI1MjA2ODExOTk0QzkzNTEzRjZEQTg1NyIgeG1wTU06RG9jdW1lbnRJRD0ieG1wLmRpZDozM0NDOEJGNEZGNTcxMUUxODdBOEVCODg2RjdCQ0QwOSIgeG1wTU06SW5zdGFuY2VJRD0ieG1wLmlpZDozM0NDOEJGM0ZGNTcxMUUxODdBOEVCODg2RjdCQ0QwOSIgeG1wOkNyZWF0b3JUb29sPSJBZG9iZSBQaG90b3Nob3AgQ1M1IE1hY2ludG9zaCI+IDx4bXBNTTpEZXJpdmVkRnJvbSBzdFJlZjppbnN0YW5jZUlEPSJ4bXAuaWlkOkZDN0YxMTc0MDcyMDY4MTE5NUZFRDc5MUM2MUUwNEREIiBzdFJlZjpkb2N1bWVudElEPSJ4bXAuZGlkOjU3Q0QyMDgwMjUyMDY4MTE5OTRDOTM1MTNGNkRBODU3Ii8+IDwvcmRmOkRlc2NyaXB0aW9uPiA8L3JkZjpSREY+IDwveDp4bXBtZXRhPiA8P3hwYWNrZXQgZW5kPSJyIj8+84NovQAAAR1JREFUeNpiZEADy85ZJgCpeCB2QJM6AMQLo4yOL0AWZETSqACk1gOxAQN+cAGIA4EGPQBxmJA0nwdpjjQ8xqArmczw5tMHXAaALDgP1QMxAGqzAAPxQACqh4ER6uf5MBlkm0X4EGayMfMw/Pr7Bd2gRBZogMFBrv01hisv5jLsv9nLAPIOMnjy8RDDyYctyAbFM2EJbRQw+aAWw/LzVgx7b+cwCHKqMhjJFCBLOzAR6+lXX84xnHjYyqAo5IUizkRCwIENQQckGSDGY4TVgAPEaraQr2a4/24bSuoExcJCfAEJihXkWDj3ZAKy9EJGaEo8T0QSxkjSwORsCAuDQCD+QILmD1A9kECEZgxDaEZhICIzGcIyEyOl2RkgwAAhkmC+eAm0TAAAAABJRU5ErkJggg=="></a></p>
+          </div>
+                <div class="quarto-title-meta-contents">
+                    <p class="affiliation">
+                        Kwame Nkrumah University of Science and Technology (KNUST)
+                      </p>
+                  </div>
+                      <div class="quarto-title-meta-contents">
+            <p class="author">Kwadwo Owusu Akuffo <a href="https://orcid.org/https://orcid.org/0000-0001-6683-249X" class="quarto-title-author-orcid"> <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAA2ZpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuMC1jMDYwIDYxLjEzNDc3NywgMjAxMC8wMi8xMi0xNzozMjowMCAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wTU09Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9tbS8iIHhtbG5zOnN0UmVmPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvc1R5cGUvUmVzb3VyY2VSZWYjIiB4bWxuczp4bXA9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC8iIHhtcE1NOk9yaWdpbmFsRG9jdW1lbnRJRD0ieG1wLmRpZDo1N0NEMjA4MDI1MjA2ODExOTk0QzkzNTEzRjZEQTg1NyIgeG1wTU06RG9jdW1lbnRJRD0ieG1wLmRpZDozM0NDOEJGNEZGNTcxMUUxODdBOEVCODg2RjdCQ0QwOSIgeG1wTU06SW5zdGFuY2VJRD0ieG1wLmlpZDozM0NDOEJGM0ZGNTcxMUUxODdBOEVCODg2RjdCQ0QwOSIgeG1wOkNyZWF0b3JUb29sPSJBZG9iZSBQaG90b3Nob3AgQ1M1IE1hY2ludG9zaCI+IDx4bXBNTTpEZXJpdmVkRnJvbSBzdFJlZjppbnN0YW5jZUlEPSJ4bXAuaWlkOkZDN0YxMTc0MDcyMDY4MTE5NUZFRDc5MUM2MUUwNEREIiBzdFJlZjpkb2N1bWVudElEPSJ4bXAuZGlkOjU3Q0QyMDgwMjUyMDY4MTE5OTRDOTM1MTNGNkRBODU3Ii8+IDwvcmRmOkRlc2NyaXB0aW9uPiA8L3JkZjpSREY+IDwveDp4bXBtZXRhPiA8P3hwYWNrZXQgZW5kPSJyIj8+84NovQAAAR1JREFUeNpiZEADy85ZJgCpeCB2QJM6AMQLo4yOL0AWZETSqACk1gOxAQN+cAGIA4EGPQBxmJA0nwdpjjQ8xqArmczw5tMHXAaALDgP1QMxAGqzAAPxQACqh4ER6uf5MBlkm0X4EGayMfMw/Pr7Bd2gRBZogMFBrv01hisv5jLsv9nLAPIOMnjy8RDDyYctyAbFM2EJbRQw+aAWw/LzVgx7b+cwCHKqMhjJFCBLOzAR6+lXX84xnHjYyqAo5IUizkRCwIENQQckGSDGY4TVgAPEaraQr2a4/24bSuoExcJCfAEJihXkWDj3ZAKy9EJGaEo8T0QSxkjSwORsCAuDQCD+QILmD1A9kECEZgxDaEZhICIzGcIyEyOl2RkgwAAhkmC+eAm0TAAAAABJRU5ErkJggg=="></a></p>
+          </div>
+                <div class="quarto-title-meta-contents">
+                    <p class="affiliation">
+                        Kwame Nkrumah University of Science and Technology (KNUST)
+                      </p>
+                  </div>
+                      <div class="quarto-title-meta-contents">
+            <p class="author">Sena Gulsum Akgun </p>
+          </div>
+                <div class="quarto-title-meta-contents">
+                    <p class="affiliation">
+                        Izmir Institute of Technology, Izmir, Türkiye
+                      </p>
+                  </div>
+                      <div class="quarto-title-meta-contents">
+            <p class="author">Sema Nur Aydin </p>
+          </div>
+                <div class="quarto-title-meta-contents">
+                    <p class="affiliation">
+                        Izmir Institute of Technology, Izmir, Türkiye
+                      </p>
+                  </div>
+                      <div class="quarto-title-meta-contents">
+            <p class="author">David Baeza Moyano <a href="https://orcid.org/https://orcid.org/0000-0001-8395-9994" class="quarto-title-author-orcid"> <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAA2ZpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuMC1jMDYwIDYxLjEzNDc3NywgMjAxMC8wMi8xMi0xNzozMjowMCAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wTU09Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9tbS8iIHhtbG5zOnN0UmVmPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvc1R5cGUvUmVzb3VyY2VSZWYjIiB4bWxuczp4bXA9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC8iIHhtcE1NOk9yaWdpbmFsRG9jdW1lbnRJRD0ieG1wLmRpZDo1N0NEMjA4MDI1MjA2ODExOTk0QzkzNTEzRjZEQTg1NyIgeG1wTU06RG9jdW1lbnRJRD0ieG1wLmRpZDozM0NDOEJGNEZGNTcxMUUxODdBOEVCODg2RjdCQ0QwOSIgeG1wTU06SW5zdGFuY2VJRD0ieG1wLmlpZDozM0NDOEJGM0ZGNTcxMUUxODdBOEVCODg2RjdCQ0QwOSIgeG1wOkNyZWF0b3JUb29sPSJBZG9iZSBQaG90b3Nob3AgQ1M1IE1hY2ludG9zaCI+IDx4bXBNTTpEZXJpdmVkRnJvbSBzdFJlZjppbnN0YW5jZUlEPSJ4bXAuaWlkOkZDN0YxMTc0MDcyMDY4MTE5NUZFRDc5MUM2MUUwNEREIiBzdFJlZjpkb2N1bWVudElEPSJ4bXAuZGlkOjU3Q0QyMDgwMjUyMDY4MTE5OTRDOTM1MTNGNkRBODU3Ii8+IDwvcmRmOkRlc2NyaXB0aW9uPiA8L3JkZjpSREY+IDwveDp4bXBtZXRhPiA8P3hwYWNrZXQgZW5kPSJyIj8+84NovQAAAR1JREFUeNpiZEADy85ZJgCpeCB2QJM6AMQLo4yOL0AWZETSqACk1gOxAQN+cAGIA4EGPQBxmJA0nwdpjjQ8xqArmczw5tMHXAaALDgP1QMxAGqzAAPxQACqh4ER6uf5MBlkm0X4EGayMfMw/Pr7Bd2gRBZogMFBrv01hisv5jLsv9nLAPIOMnjy8RDDyYctyAbFM2EJbRQw+aAWw/LzVgx7b+cwCHKqMhjJFCBLOzAR6+lXX84xnHjYyqAo5IUizkRCwIENQQckGSDGY4TVgAPEaraQr2a4/24bSuoExcJCfAEJihXkWDj3ZAKy9EJGaEo8T0QSxkjSwORsCAuDQCD+QILmD1A9kECEZgxDaEZhICIzGcIyEyOl2RkgwAAhkmC+eAm0TAAAAABJRU5ErkJggg=="></a></p>
+          </div>
+                <div class="quarto-title-meta-contents">
+                    <p class="affiliation">
+                        Fundación Universitaria CEU San Pablo, Boadilla del Monte, Madrid, Spain
+                      </p>
+                  </div>
+                      <div class="quarto-title-meta-contents">
+            <p class="author">Daan Boesten </p>
+          </div>
+                <div class="quarto-title-meta-contents">
+                    <p class="affiliation">
+                        The Hague University of Applied Sciences
+                      </p>
+                  </div>
+                      <div class="quarto-title-meta-contents">
+            <p class="author">John Bolte </p>
+          </div>
+                <div class="quarto-title-meta-contents">
+                    <p class="affiliation">
+                        The Hague University of Applied Sciences
+                      </p>
+                  </div>
+                      <div class="quarto-title-meta-contents">
+            <p class="author">Kai Broszio <a href="https://orcid.org/https://orcid.org/0000-0002-8269-8654" class="quarto-title-author-orcid"> <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAA2ZpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuMC1jMDYwIDYxLjEzNDc3NywgMjAxMC8wMi8xMi0xNzozMjowMCAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wTU09Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9tbS8iIHhtbG5zOnN0UmVmPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvc1R5cGUvUmVzb3VyY2VSZWYjIiB4bWxuczp4bXA9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC8iIHhtcE1NOk9yaWdpbmFsRG9jdW1lbnRJRD0ieG1wLmRpZDo1N0NEMjA4MDI1MjA2ODExOTk0QzkzNTEzRjZEQTg1NyIgeG1wTU06RG9jdW1lbnRJRD0ieG1wLmRpZDozM0NDOEJGNEZGNTcxMUUxODdBOEVCODg2RjdCQ0QwOSIgeG1wTU06SW5zdGFuY2VJRD0ieG1wLmlpZDozM0NDOEJGM0ZGNTcxMUUxODdBOEVCODg2RjdCQ0QwOSIgeG1wOkNyZWF0b3JUb29sPSJBZG9iZSBQaG90b3Nob3AgQ1M1IE1hY2ludG9zaCI+IDx4bXBNTTpEZXJpdmVkRnJvbSBzdFJlZjppbnN0YW5jZUlEPSJ4bXAuaWlkOkZDN0YxMTc0MDcyMDY4MTE5NUZFRDc5MUM2MUUwNEREIiBzdFJlZjpkb2N1bWVudElEPSJ4bXAuZGlkOjU3Q0QyMDgwMjUyMDY4MTE5OTRDOTM1MTNGNkRBODU3Ii8+IDwvcmRmOkRlc2NyaXB0aW9uPiA8L3JkZjpSREY+IDwveDp4bXBtZXRhPiA8P3hwYWNrZXQgZW5kPSJyIj8+84NovQAAAR1JREFUeNpiZEADy85ZJgCpeCB2QJM6AMQLo4yOL0AWZETSqACk1gOxAQN+cAGIA4EGPQBxmJA0nwdpjjQ8xqArmczw5tMHXAaALDgP1QMxAGqzAAPxQACqh4ER6uf5MBlkm0X4EGayMfMw/Pr7Bd2gRBZogMFBrv01hisv5jLsv9nLAPIOMnjy8RDDyYctyAbFM2EJbRQw+aAWw/LzVgx7b+cwCHKqMhjJFCBLOzAR6+lXX84xnHjYyqAo5IUizkRCwIENQQckGSDGY4TVgAPEaraQr2a4/24bSuoExcJCfAEJihXkWDj3ZAKy9EJGaEo8T0QSxkjSwORsCAuDQCD+QILmD1A9kECEZgxDaEZhICIzGcIyEyOl2RkgwAAhkmC+eAm0TAAAAABJRU5ErkJggg=="></a></p>
+          </div>
+                <div class="quarto-title-meta-contents">
+                    <p class="affiliation">
+                        Federal Institute for Occupational Safety and Health (BAuA)
+                      </p>
+                  </div>
+                      <div class="quarto-title-meta-contents">
+            <p class="author">Guadalupe Cantarero García <a href="https://orcid.org/https://orcid.org/0000-0003-3169-8547" class="quarto-title-author-orcid"> <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAA2ZpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuMC1jMDYwIDYxLjEzNDc3NywgMjAxMC8wMi8xMi0xNzozMjowMCAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wTU09Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9tbS8iIHhtbG5zOnN0UmVmPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvc1R5cGUvUmVzb3VyY2VSZWYjIiB4bWxuczp4bXA9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC8iIHhtcE1NOk9yaWdpbmFsRG9jdW1lbnRJRD0ieG1wLmRpZDo1N0NEMjA4MDI1MjA2ODExOTk0QzkzNTEzRjZEQTg1NyIgeG1wTU06RG9jdW1lbnRJRD0ieG1wLmRpZDozM0NDOEJGNEZGNTcxMUUxODdBOEVCODg2RjdCQ0QwOSIgeG1wTU06SW5zdGFuY2VJRD0ieG1wLmlpZDozM0NDOEJGM0ZGNTcxMUUxODdBOEVCODg2RjdCQ0QwOSIgeG1wOkNyZWF0b3JUb29sPSJBZG9iZSBQaG90b3Nob3AgQ1M1IE1hY2ludG9zaCI+IDx4bXBNTTpEZXJpdmVkRnJvbSBzdFJlZjppbnN0YW5jZUlEPSJ4bXAuaWlkOkZDN0YxMTc0MDcyMDY4MTE5NUZFRDc5MUM2MUUwNEREIiBzdFJlZjpkb2N1bWVudElEPSJ4bXAuZGlkOjU3Q0QyMDgwMjUyMDY4MTE5OTRDOTM1MTNGNkRBODU3Ii8+IDwvcmRmOkRlc2NyaXB0aW9uPiA8L3JkZjpSREY+IDwveDp4bXBtZXRhPiA8P3hwYWNrZXQgZW5kPSJyIj8+84NovQAAAR1JREFUeNpiZEADy85ZJgCpeCB2QJM6AMQLo4yOL0AWZETSqACk1gOxAQN+cAGIA4EGPQBxmJA0nwdpjjQ8xqArmczw5tMHXAaALDgP1QMxAGqzAAPxQACqh4ER6uf5MBlkm0X4EGayMfMw/Pr7Bd2gRBZogMFBrv01hisv5jLsv9nLAPIOMnjy8RDDyYctyAbFM2EJbRQw+aAWw/LzVgx7b+cwCHKqMhjJFCBLOzAR6+lXX84xnHjYyqAo5IUizkRCwIENQQckGSDGY4TVgAPEaraQr2a4/24bSuoExcJCfAEJihXkWDj3ZAKy9EJGaEo8T0QSxkjSwORsCAuDQCD+QILmD1A9kECEZgxDaEZhICIzGcIyEyOl2RkgwAAhkmC+eAm0TAAAAABJRU5ErkJggg=="></a></p>
+          </div>
+                <div class="quarto-title-meta-contents">
+                    <p class="affiliation">
+                        Fundación Universitaria CEU San Pablo, Boadilla del Monte, Madrid, Spain
+                      </p>
+                  </div>
+                      <div class="quarto-title-meta-contents">
+            <p class="author">Roberto Alonso González Lezcano <a href="https://orcid.org/https://orcid.org/0000-0002-6185-4929" class="quarto-title-author-orcid"> <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAA2ZpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuMC1jMDYwIDYxLjEzNDc3NywgMjAxMC8wMi8xMi0xNzozMjowMCAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wTU09Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9tbS8iIHhtbG5zOnN0UmVmPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvc1R5cGUvUmVzb3VyY2VSZWYjIiB4bWxuczp4bXA9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC8iIHhtcE1NOk9yaWdpbmFsRG9jdW1lbnRJRD0ieG1wLmRpZDo1N0NEMjA4MDI1MjA2ODExOTk0QzkzNTEzRjZEQTg1NyIgeG1wTU06RG9jdW1lbnRJRD0ieG1wLmRpZDozM0NDOEJGNEZGNTcxMUUxODdBOEVCODg2RjdCQ0QwOSIgeG1wTU06SW5zdGFuY2VJRD0ieG1wLmlpZDozM0NDOEJGM0ZGNTcxMUUxODdBOEVCODg2RjdCQ0QwOSIgeG1wOkNyZWF0b3JUb29sPSJBZG9iZSBQaG90b3Nob3AgQ1M1IE1hY2ludG9zaCI+IDx4bXBNTTpEZXJpdmVkRnJvbSBzdFJlZjppbnN0YW5jZUlEPSJ4bXAuaWlkOkZDN0YxMTc0MDcyMDY4MTE5NUZFRDc5MUM2MUUwNEREIiBzdFJlZjpkb2N1bWVudElEPSJ4bXAuZGlkOjU3Q0QyMDgwMjUyMDY4MTE5OTRDOTM1MTNGNkRBODU3Ii8+IDwvcmRmOkRlc2NyaXB0aW9uPiA8L3JkZjpSREY+IDwveDp4bXBtZXRhPiA8P3hwYWNrZXQgZW5kPSJyIj8+84NovQAAAR1JREFUeNpiZEADy85ZJgCpeCB2QJM6AMQLo4yOL0AWZETSqACk1gOxAQN+cAGIA4EGPQBxmJA0nwdpjjQ8xqArmczw5tMHXAaALDgP1QMxAGqzAAPxQACqh4ER6uf5MBlkm0X4EGayMfMw/Pr7Bd2gRBZogMFBrv01hisv5jLsv9nLAPIOMnjy8RDDyYctyAbFM2EJbRQw+aAWw/LzVgx7b+cwCHKqMhjJFCBLOzAR6+lXX84xnHjYyqAo5IUizkRCwIENQQckGSDGY4TVgAPEaraQr2a4/24bSuoExcJCfAEJihXkWDj3ZAKy9EJGaEo8T0QSxkjSwORsCAuDQCD+QILmD1A9kECEZgxDaEZhICIzGcIyEyOl2RkgwAAhkmC+eAm0TAAAAABJRU5ErkJggg=="></a></p>
+          </div>
+                <div class="quarto-title-meta-contents">
+                    <p class="affiliation">
+                        Fundación Universitaria CEU San Pablo, Boadilla del Monte, Madrid, Spain
+                      </p>
+                  </div>
+                      <div class="quarto-title-meta-contents">
+            <p class="author">Carolina Guidolin <a href="https://orcid.org/https://orcid.org/0009-0007-4959-2667" class="quarto-title-author-orcid"> <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAA2ZpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuMC1jMDYwIDYxLjEzNDc3NywgMjAxMC8wMi8xMi0xNzozMjowMCAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wTU09Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9tbS8iIHhtbG5zOnN0UmVmPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvc1R5cGUvUmVzb3VyY2VSZWYjIiB4bWxuczp4bXA9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC8iIHhtcE1NOk9yaWdpbmFsRG9jdW1lbnRJRD0ieG1wLmRpZDo1N0NEMjA4MDI1MjA2ODExOTk0QzkzNTEzRjZEQTg1NyIgeG1wTU06RG9jdW1lbnRJRD0ieG1wLmRpZDozM0NDOEJGNEZGNTcxMUUxODdBOEVCODg2RjdCQ0QwOSIgeG1wTU06SW5zdGFuY2VJRD0ieG1wLmlpZDozM0NDOEJGM0ZGNTcxMUUxODdBOEVCODg2RjdCQ0QwOSIgeG1wOkNyZWF0b3JUb29sPSJBZG9iZSBQaG90b3Nob3AgQ1M1IE1hY2ludG9zaCI+IDx4bXBNTTpEZXJpdmVkRnJvbSBzdFJlZjppbnN0YW5jZUlEPSJ4bXAuaWlkOkZDN0YxMTc0MDcyMDY4MTE5NUZFRDc5MUM2MUUwNEREIiBzdFJlZjpkb2N1bWVudElEPSJ4bXAuZGlkOjU3Q0QyMDgwMjUyMDY4MTE5OTRDOTM1MTNGNkRBODU3Ii8+IDwvcmRmOkRlc2NyaXB0aW9uPiA8L3JkZjpSREY+IDwveDp4bXBtZXRhPiA8P3hwYWNrZXQgZW5kPSJyIj8+84NovQAAAR1JREFUeNpiZEADy85ZJgCpeCB2QJM6AMQLo4yOL0AWZETSqACk1gOxAQN+cAGIA4EGPQBxmJA0nwdpjjQ8xqArmczw5tMHXAaALDgP1QMxAGqzAAPxQACqh4ER6uf5MBlkm0X4EGayMfMw/Pr7Bd2gRBZogMFBrv01hisv5jLsv9nLAPIOMnjy8RDDyYctyAbFM2EJbRQw+aAWw/LzVgx7b+cwCHKqMhjJFCBLOzAR6+lXX84xnHjYyqAo5IUizkRCwIENQQckGSDGY4TVgAPEaraQr2a4/24bSuoExcJCfAEJihXkWDj3ZAKy9EJGaEo8T0QSxkjSwORsCAuDQCD+QILmD1A9kECEZgxDaEZhICIzGcIyEyOl2RkgwAAhkmC+eAm0TAAAAABJRU5ErkJggg=="></a></p>
+          </div>
+                <div class="quarto-title-meta-contents">
+                    <p class="affiliation">
+                        Max Planck Institute for Biological Cybernetics; Technical University of Munich, Germany
+                      </p>
+                  </div>
+                      <div class="quarto-title-meta-contents">
+            <p class="author">Sarina Hilden </p>
+          </div>
+                <div class="quarto-title-meta-contents">
+                    <p class="affiliation">
+                        Technical University of Munich, Munich, Germany
+                      </p>
+                  </div>
+                      <div class="quarto-title-meta-contents">
+            <p class="author">Nico Hogervorst </p>
+          </div>
+                <div class="quarto-title-meta-contents">
+                    <p class="affiliation">
+                        The Hague University of Applied Sciences
+                      </p>
+                  </div>
+                      <div class="quarto-title-meta-contents">
+            <p class="author">Astrid Jansen </p>
+          </div>
+                <div class="quarto-title-meta-contents">
+                    <p class="affiliation">
+                        The Hague University of Applied Sciences
+                      </p>
+                  </div>
+                      <div class="quarto-title-meta-contents">
+            <p class="author">Zeynep Kayar </p>
+          </div>
+                <div class="quarto-title-meta-contents">
+                    <p class="affiliation">
+                        Izmir Institute of Technology, Izmir, Türkiye
+                      </p>
+                  </div>
+                      <div class="quarto-title-meta-contents">
+            <p class="author">Stefan Källberg <a href="https://orcid.org/https://orcid.org/0009-0003-8259-3400" class="quarto-title-author-orcid"> <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAA2ZpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuMC1jMDYwIDYxLjEzNDc3NywgMjAxMC8wMi8xMi0xNzozMjowMCAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wTU09Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9tbS8iIHhtbG5zOnN0UmVmPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvc1R5cGUvUmVzb3VyY2VSZWYjIiB4bWxuczp4bXA9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC8iIHhtcE1NOk9yaWdpbmFsRG9jdW1lbnRJRD0ieG1wLmRpZDo1N0NEMjA4MDI1MjA2ODExOTk0QzkzNTEzRjZEQTg1NyIgeG1wTU06RG9jdW1lbnRJRD0ieG1wLmRpZDozM0NDOEJGNEZGNTcxMUUxODdBOEVCODg2RjdCQ0QwOSIgeG1wTU06SW5zdGFuY2VJRD0ieG1wLmlpZDozM0NDOEJGM0ZGNTcxMUUxODdBOEVCODg2RjdCQ0QwOSIgeG1wOkNyZWF0b3JUb29sPSJBZG9iZSBQaG90b3Nob3AgQ1M1IE1hY2ludG9zaCI+IDx4bXBNTTpEZXJpdmVkRnJvbSBzdFJlZjppbnN0YW5jZUlEPSJ4bXAuaWlkOkZDN0YxMTc0MDcyMDY4MTE5NUZFRDc5MUM2MUUwNEREIiBzdFJlZjpkb2N1bWVudElEPSJ4bXAuZGlkOjU3Q0QyMDgwMjUyMDY4MTE5OTRDOTM1MTNGNkRBODU3Ii8+IDwvcmRmOkRlc2NyaXB0aW9uPiA8L3JkZjpSREY+IDwveDp4bXBtZXRhPiA8P3hwYWNrZXQgZW5kPSJyIj8+84NovQAAAR1JREFUeNpiZEADy85ZJgCpeCB2QJM6AMQLo4yOL0AWZETSqACk1gOxAQN+cAGIA4EGPQBxmJA0nwdpjjQ8xqArmczw5tMHXAaALDgP1QMxAGqzAAPxQACqh4ER6uf5MBlkm0X4EGayMfMw/Pr7Bd2gRBZogMFBrv01hisv5jLsv9nLAPIOMnjy8RDDyYctyAbFM2EJbRQw+aAWw/LzVgx7b+cwCHKqMhjJFCBLOzAR6+lXX84xnHjYyqAo5IUizkRCwIENQQckGSDGY4TVgAPEaraQr2a4/24bSuoExcJCfAEJihXkWDj3ZAKy9EJGaEo8T0QSxkjSwORsCAuDQCD+QILmD1A9kECEZgxDaEZhICIzGcIyEyOl2RkgwAAhkmC+eAm0TAAAAABJRU5ErkJggg=="></a></p>
+          </div>
+                <div class="quarto-title-meta-contents">
+                    <p class="affiliation">
+                        RISE Research Institutes of Sweden
+                      </p>
+                  </div>
+                      <div class="quarto-title-meta-contents">
+            <p class="author">Suyoun Lee </p>
+          </div>
+                <div class="quarto-title-meta-contents">
+                    <p class="affiliation">
+                        Technical University of Munich, Munich, Germany
+                      </p>
+                  </div>
+                      <div class="quarto-title-meta-contents">
+            <p class="author">Sofía Melero Tur <a href="https://orcid.org/https://orcid.org/0000-0002-5902-4539" class="quarto-title-author-orcid"> <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAA2ZpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuMC1jMDYwIDYxLjEzNDc3NywgMjAxMC8wMi8xMi0xNzozMjowMCAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wTU09Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9tbS8iIHhtbG5zOnN0UmVmPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvc1R5cGUvUmVzb3VyY2VSZWYjIiB4bWxuczp4bXA9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC8iIHhtcE1NOk9yaWdpbmFsRG9jdW1lbnRJRD0ieG1wLmRpZDo1N0NEMjA4MDI1MjA2ODExOTk0QzkzNTEzRjZEQTg1NyIgeG1wTU06RG9jdW1lbnRJRD0ieG1wLmRpZDozM0NDOEJGNEZGNTcxMUUxODdBOEVCODg2RjdCQ0QwOSIgeG1wTU06SW5zdGFuY2VJRD0ieG1wLmlpZDozM0NDOEJGM0ZGNTcxMUUxODdBOEVCODg2RjdCQ0QwOSIgeG1wOkNyZWF0b3JUb29sPSJBZG9iZSBQaG90b3Nob3AgQ1M1IE1hY2ludG9zaCI+IDx4bXBNTTpEZXJpdmVkRnJvbSBzdFJlZjppbnN0YW5jZUlEPSJ4bXAuaWlkOkZDN0YxMTc0MDcyMDY4MTE5NUZFRDc5MUM2MUUwNEREIiBzdFJlZjpkb2N1bWVudElEPSJ4bXAuZGlkOjU3Q0QyMDgwMjUyMDY4MTE5OTRDOTM1MTNGNkRBODU3Ii8+IDwvcmRmOkRlc2NyaXB0aW9uPiA8L3JkZjpSREY+IDwveDp4bXBtZXRhPiA8P3hwYWNrZXQgZW5kPSJyIj8+84NovQAAAR1JREFUeNpiZEADy85ZJgCpeCB2QJM6AMQLo4yOL0AWZETSqACk1gOxAQN+cAGIA4EGPQBxmJA0nwdpjjQ8xqArmczw5tMHXAaALDgP1QMxAGqzAAPxQACqh4ER6uf5MBlkm0X4EGayMfMw/Pr7Bd2gRBZogMFBrv01hisv5jLsv9nLAPIOMnjy8RDDyYctyAbFM2EJbRQw+aAWw/LzVgx7b+cwCHKqMhjJFCBLOzAR6+lXX84xnHjYyqAo5IUizkRCwIENQQckGSDGY4TVgAPEaraQr2a4/24bSuoExcJCfAEJihXkWDj3ZAKy9EJGaEo8T0QSxkjSwORsCAuDQCD+QILmD1A9kECEZgxDaEZhICIzGcIyEyOl2RkgwAAhkmC+eAm0TAAAAABJRU5ErkJggg=="></a></p>
+          </div>
+                <div class="quarto-title-meta-contents">
+                    <p class="affiliation">
+                        Fundación Universitaria CEU San Pablo, Boadilla del Monte, Madrid, Spain
+                      </p>
+                  </div>
+                      <div class="quarto-title-meta-contents">
+            <p class="author">Maria Nilsson Tengelin <a href="https://orcid.org/https://orcid.org/0000-0002-0909-626X" class="quarto-title-author-orcid"> <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAA2ZpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuMC1jMDYwIDYxLjEzNDc3NywgMjAxMC8wMi8xMi0xNzozMjowMCAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wTU09Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9tbS8iIHhtbG5zOnN0UmVmPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvc1R5cGUvUmVzb3VyY2VSZWYjIiB4bWxuczp4bXA9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC8iIHhtcE1NOk9yaWdpbmFsRG9jdW1lbnRJRD0ieG1wLmRpZDo1N0NEMjA4MDI1MjA2ODExOTk0QzkzNTEzRjZEQTg1NyIgeG1wTU06RG9jdW1lbnRJRD0ieG1wLmRpZDozM0NDOEJGNEZGNTcxMUUxODdBOEVCODg2RjdCQ0QwOSIgeG1wTU06SW5zdGFuY2VJRD0ieG1wLmlpZDozM0NDOEJGM0ZGNTcxMUUxODdBOEVCODg2RjdCQ0QwOSIgeG1wOkNyZWF0b3JUb29sPSJBZG9iZSBQaG90b3Nob3AgQ1M1IE1hY2ludG9zaCI+IDx4bXBNTTpEZXJpdmVkRnJvbSBzdFJlZjppbnN0YW5jZUlEPSJ4bXAuaWlkOkZDN0YxMTc0MDcyMDY4MTE5NUZFRDc5MUM2MUUwNEREIiBzdFJlZjpkb2N1bWVudElEPSJ4bXAuZGlkOjU3Q0QyMDgwMjUyMDY4MTE5OTRDOTM1MTNGNkRBODU3Ii8+IDwvcmRmOkRlc2NyaXB0aW9uPiA8L3JkZjpSREY+IDwveDp4bXBtZXRhPiA8P3hwYWNrZXQgZW5kPSJyIj8+84NovQAAAR1JREFUeNpiZEADy85ZJgCpeCB2QJM6AMQLo4yOL0AWZETSqACk1gOxAQN+cAGIA4EGPQBxmJA0nwdpjjQ8xqArmczw5tMHXAaALDgP1QMxAGqzAAPxQACqh4ER6uf5MBlkm0X4EGayMfMw/Pr7Bd2gRBZogMFBrv01hisv5jLsv9nLAPIOMnjy8RDDyYctyAbFM2EJbRQw+aAWw/LzVgx7b+cwCHKqMhjJFCBLOzAR6+lXX84xnHjYyqAo5IUizkRCwIENQQckGSDGY4TVgAPEaraQr2a4/24bSuoExcJCfAEJihXkWDj3ZAKy9EJGaEo8T0QSxkjSwORsCAuDQCD+QILmD1A9kECEZgxDaEZhICIzGcIyEyOl2RkgwAAhkmC+eAm0TAAAAABJRU5ErkJggg=="></a></p>
+          </div>
+                <div class="quarto-title-meta-contents">
+                    <p class="affiliation">
+                        RISE Research Institutes of Sweden
+                      </p>
+                  </div>
+                      <div class="quarto-title-meta-contents">
+            <p class="author">María Concepción Pérez Gutiérrez <a href="https://orcid.org/https://orcid.org/0000-0003-0963-6147" class="quarto-title-author-orcid"> <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAA2ZpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuMC1jMDYwIDYxLjEzNDc3NywgMjAxMC8wMi8xMi0xNzozMjowMCAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wTU09Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9tbS8iIHhtbG5zOnN0UmVmPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvc1R5cGUvUmVzb3VyY2VSZWYjIiB4bWxuczp4bXA9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC8iIHhtcE1NOk9yaWdpbmFsRG9jdW1lbnRJRD0ieG1wLmRpZDo1N0NEMjA4MDI1MjA2ODExOTk0QzkzNTEzRjZEQTg1NyIgeG1wTU06RG9jdW1lbnRJRD0ieG1wLmRpZDozM0NDOEJGNEZGNTcxMUUxODdBOEVCODg2RjdCQ0QwOSIgeG1wTU06SW5zdGFuY2VJRD0ieG1wLmlpZDozM0NDOEJGM0ZGNTcxMUUxODdBOEVCODg2RjdCQ0QwOSIgeG1wOkNyZWF0b3JUb29sPSJBZG9iZSBQaG90b3Nob3AgQ1M1IE1hY2ludG9zaCI+IDx4bXBNTTpEZXJpdmVkRnJvbSBzdFJlZjppbnN0YW5jZUlEPSJ4bXAuaWlkOkZDN0YxMTc0MDcyMDY4MTE5NUZFRDc5MUM2MUUwNEREIiBzdFJlZjpkb2N1bWVudElEPSJ4bXAuZGlkOjU3Q0QyMDgwMjUyMDY4MTE5OTRDOTM1MTNGNkRBODU3Ii8+IDwvcmRmOkRlc2NyaXB0aW9uPiA8L3JkZjpSREY+IDwveDp4bXBtZXRhPiA8P3hwYWNrZXQgZW5kPSJyIj8+84NovQAAAR1JREFUeNpiZEADy85ZJgCpeCB2QJM6AMQLo4yOL0AWZETSqACk1gOxAQN+cAGIA4EGPQBxmJA0nwdpjjQ8xqArmczw5tMHXAaALDgP1QMxAGqzAAPxQACqh4ER6uf5MBlkm0X4EGayMfMw/Pr7Bd2gRBZogMFBrv01hisv5jLsv9nLAPIOMnjy8RDDyYctyAbFM2EJbRQw+aAWw/LzVgx7b+cwCHKqMhjJFCBLOzAR6+lXX84xnHjYyqAo5IUizkRCwIENQQckGSDGY4TVgAPEaraQr2a4/24bSuoExcJCfAEJihXkWDj3ZAKy9EJGaEo8T0QSxkjSwORsCAuDQCD+QILmD1A9kECEZgxDaEZhICIzGcIyEyOl2RkgwAAhkmC+eAm0TAAAAABJRU5ErkJggg=="></a></p>
+          </div>
+                <div class="quarto-title-meta-contents">
+                    <p class="affiliation">
+                        Fundación Universitaria CEU San Pablo, Boadilla del Monte, Madrid, Spain
+                      </p>
+                  </div>
+                      <div class="quarto-title-meta-contents">
+            <p class="author">Andrea Sancho-Salas <a href="https://orcid.org/https://orcid.org/0000-0002-6566-2772" class="quarto-title-author-orcid"> <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAA2ZpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuMC1jMDYwIDYxLjEzNDc3NywgMjAxMC8wMi8xMi0xNzozMjowMCAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wTU09Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9tbS8iIHhtbG5zOnN0UmVmPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvc1R5cGUvUmVzb3VyY2VSZWYjIiB4bWxuczp4bXA9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC8iIHhtcE1NOk9yaWdpbmFsRG9jdW1lbnRJRD0ieG1wLmRpZDo1N0NEMjA4MDI1MjA2ODExOTk0QzkzNTEzRjZEQTg1NyIgeG1wTU06RG9jdW1lbnRJRD0ieG1wLmRpZDozM0NDOEJGNEZGNTcxMUUxODdBOEVCODg2RjdCQ0QwOSIgeG1wTU06SW5zdGFuY2VJRD0ieG1wLmlpZDozM0NDOEJGM0ZGNTcxMUUxODdBOEVCODg2RjdCQ0QwOSIgeG1wOkNyZWF0b3JUb29sPSJBZG9iZSBQaG90b3Nob3AgQ1M1IE1hY2ludG9zaCI+IDx4bXBNTTpEZXJpdmVkRnJvbSBzdFJlZjppbnN0YW5jZUlEPSJ4bXAuaWlkOkZDN0YxMTc0MDcyMDY4MTE5NUZFRDc5MUM2MUUwNEREIiBzdFJlZjpkb2N1bWVudElEPSJ4bXAuZGlkOjU3Q0QyMDgwMjUyMDY4MTE5OTRDOTM1MTNGNkRBODU3Ii8+IDwvcmRmOkRlc2NyaXB0aW9uPiA8L3JkZjpSREY+IDwveDp4bXBtZXRhPiA8P3hwYWNrZXQgZW5kPSJyIj8+84NovQAAAR1JREFUeNpiZEADy85ZJgCpeCB2QJM6AMQLo4yOL0AWZETSqACk1gOxAQN+cAGIA4EGPQBxmJA0nwdpjjQ8xqArmczw5tMHXAaALDgP1QMxAGqzAAPxQACqh4ER6uf5MBlkm0X4EGayMfMw/Pr7Bd2gRBZogMFBrv01hisv5jLsv9nLAPIOMnjy8RDDyYctyAbFM2EJbRQw+aAWw/LzVgx7b+cwCHKqMhjJFCBLOzAR6+lXX84xnHjYyqAo5IUizkRCwIENQQckGSDGY4TVgAPEaraQr2a4/24bSuoExcJCfAEJihXkWDj3ZAKy9EJGaEo8T0QSxkjSwORsCAuDQCD+QILmD1A9kECEZgxDaEZhICIzGcIyEyOl2RkgwAAhkmC+eAm0TAAAAABJRU5ErkJggg=="></a></p>
+          </div>
+                <div class="quarto-title-meta-contents">
+                    <p class="affiliation">
+                        Universidad de Costa Rica
+                      </p>
+                  </div>
+                      <div class="quarto-title-meta-contents">
+            <p class="author">Ingemar Svensson <a href="https://orcid.org/https://orcid.org/0009-0006-9283-509X" class="quarto-title-author-orcid"> <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAA2ZpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuMC1jMDYwIDYxLjEzNDc3NywgMjAxMC8wMi8xMi0xNzozMjowMCAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wTU09Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9tbS8iIHhtbG5zOnN0UmVmPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvc1R5cGUvUmVzb3VyY2VSZWYjIiB4bWxuczp4bXA9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC8iIHhtcE1NOk9yaWdpbmFsRG9jdW1lbnRJRD0ieG1wLmRpZDo1N0NEMjA4MDI1MjA2ODExOTk0QzkzNTEzRjZEQTg1NyIgeG1wTU06RG9jdW1lbnRJRD0ieG1wLmRpZDozM0NDOEJGNEZGNTcxMUUxODdBOEVCODg2RjdCQ0QwOSIgeG1wTU06SW5zdGFuY2VJRD0ieG1wLmlpZDozM0NDOEJGM0ZGNTcxMUUxODdBOEVCODg2RjdCQ0QwOSIgeG1wOkNyZWF0b3JUb29sPSJBZG9iZSBQaG90b3Nob3AgQ1M1IE1hY2ludG9zaCI+IDx4bXBNTTpEZXJpdmVkRnJvbSBzdFJlZjppbnN0YW5jZUlEPSJ4bXAuaWlkOkZDN0YxMTc0MDcyMDY4MTE5NUZFRDc5MUM2MUUwNEREIiBzdFJlZjpkb2N1bWVudElEPSJ4bXAuZGlkOjU3Q0QyMDgwMjUyMDY4MTE5OTRDOTM1MTNGNkRBODU3Ii8+IDwvcmRmOkRlc2NyaXB0aW9uPiA8L3JkZjpSREY+IDwveDp4bXBtZXRhPiA8P3hwYWNrZXQgZW5kPSJyIj8+84NovQAAAR1JREFUeNpiZEADy85ZJgCpeCB2QJM6AMQLo4yOL0AWZETSqACk1gOxAQN+cAGIA4EGPQBxmJA0nwdpjjQ8xqArmczw5tMHXAaALDgP1QMxAGqzAAPxQACqh4ER6uf5MBlkm0X4EGayMfMw/Pr7Bd2gRBZogMFBrv01hisv5jLsv9nLAPIOMnjy8RDDyYctyAbFM2EJbRQw+aAWw/LzVgx7b+cwCHKqMhjJFCBLOzAR6+lXX84xnHjYyqAo5IUizkRCwIENQQckGSDGY4TVgAPEaraQr2a4/24bSuoExcJCfAEJihXkWDj3ZAKy9EJGaEo8T0QSxkjSwORsCAuDQCD+QILmD1A9kECEZgxDaEZhICIzGcIyEyOl2RkgwAAhkmC+eAm0TAAAAABJRU5ErkJggg=="></a></p>
+          </div>
+                <div class="quarto-title-meta-contents">
+                    <p class="affiliation">
+                        RISE Research Institutes of Sweden
+                      </p>
+                  </div>
+                      <div class="quarto-title-meta-contents">
+            <p class="author">Helga von-Breymann <a href="https://orcid.org/https://orcid.org/0000-0002-6841-5953" class="quarto-title-author-orcid"> <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAA2ZpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuMC1jMDYwIDYxLjEzNDc3NywgMjAxMC8wMi8xMi0xNzozMjowMCAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wTU09Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9tbS8iIHhtbG5zOnN0UmVmPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvc1R5cGUvUmVzb3VyY2VSZWYjIiB4bWxuczp4bXA9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC8iIHhtcE1NOk9yaWdpbmFsRG9jdW1lbnRJRD0ieG1wLmRpZDo1N0NEMjA4MDI1MjA2ODExOTk0QzkzNTEzRjZEQTg1NyIgeG1wTU06RG9jdW1lbnRJRD0ieG1wLmRpZDozM0NDOEJGNEZGNTcxMUUxODdBOEVCODg2RjdCQ0QwOSIgeG1wTU06SW5zdGFuY2VJRD0ieG1wLmlpZDozM0NDOEJGM0ZGNTcxMUUxODdBOEVCODg2RjdCQ0QwOSIgeG1wOkNyZWF0b3JUb29sPSJBZG9iZSBQaG90b3Nob3AgQ1M1IE1hY2ludG9zaCI+IDx4bXBNTTpEZXJpdmVkRnJvbSBzdFJlZjppbnN0YW5jZUlEPSJ4bXAuaWlkOkZDN0YxMTc0MDcyMDY4MTE5NUZFRDc5MUM2MUUwNEREIiBzdFJlZjpkb2N1bWVudElEPSJ4bXAuZGlkOjU3Q0QyMDgwMjUyMDY4MTE5OTRDOTM1MTNGNkRBODU3Ii8+IDwvcmRmOkRlc2NyaXB0aW9uPiA8L3JkZjpSREY+IDwveDp4bXBtZXRhPiA8P3hwYWNrZXQgZW5kPSJyIj8+84NovQAAAR1JREFUeNpiZEADy85ZJgCpeCB2QJM6AMQLo4yOL0AWZETSqACk1gOxAQN+cAGIA4EGPQBxmJA0nwdpjjQ8xqArmczw5tMHXAaALDgP1QMxAGqzAAPxQACqh4ER6uf5MBlkm0X4EGayMfMw/Pr7Bd2gRBZogMFBrv01hisv5jLsv9nLAPIOMnjy8RDDyYctyAbFM2EJbRQw+aAWw/LzVgx7b+cwCHKqMhjJFCBLOzAR6+lXX84xnHjYyqAo5IUizkRCwIENQQckGSDGY4TVgAPEaraQr2a4/24bSuoExcJCfAEJihXkWDj3ZAKy9EJGaEo8T0QSxkjSwORsCAuDQCD+QILmD1A9kECEZgxDaEZhICIzGcIyEyOl2RkgwAAhkmC+eAm0TAAAAABJRU5ErkJggg=="></a></p>
+          </div>
+                <div class="quarto-title-meta-contents">
+                    <p class="affiliation">
+                        Universidad de Costa Rica
+                      </p>
+                  </div>
+                      <div class="quarto-title-meta-contents">
+            <p class="author">Manuel Spitschan <a href="mailto:manuel.spitschan@tum.de" class="quarto-title-author-email"><i class="bi bi-envelope"></i></a> <a href="https://orcid.org/https://orcid.org/0000-0002-8572-9268" class="quarto-title-author-orcid"> <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAA2ZpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuMC1jMDYwIDYxLjEzNDc3NywgMjAxMC8wMi8xMi0xNzozMjowMCAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wTU09Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9tbS8iIHhtbG5zOnN0UmVmPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvc1R5cGUvUmVzb3VyY2VSZWYjIiB4bWxuczp4bXA9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC8iIHhtcE1NOk9yaWdpbmFsRG9jdW1lbnRJRD0ieG1wLmRpZDo1N0NEMjA4MDI1MjA2ODExOTk0QzkzNTEzRjZEQTg1NyIgeG1wTU06RG9jdW1lbnRJRD0ieG1wLmRpZDozM0NDOEJGNEZGNTcxMUUxODdBOEVCODg2RjdCQ0QwOSIgeG1wTU06SW5zdGFuY2VJRD0ieG1wLmlpZDozM0NDOEJGM0ZGNTcxMUUxODdBOEVCODg2RjdCQ0QwOSIgeG1wOkNyZWF0b3JUb29sPSJBZG9iZSBQaG90b3Nob3AgQ1M1IE1hY2ludG9zaCI+IDx4bXBNTTpEZXJpdmVkRnJvbSBzdFJlZjppbnN0YW5jZUlEPSJ4bXAuaWlkOkZDN0YxMTc0MDcyMDY4MTE5NUZFRDc5MUM2MUUwNEREIiBzdFJlZjpkb2N1bWVudElEPSJ4bXAuZGlkOjU3Q0QyMDgwMjUyMDY4MTE5OTRDOTM1MTNGNkRBODU3Ii8+IDwvcmRmOkRlc2NyaXB0aW9uPiA8L3JkZjpSREY+IDwveDp4bXBtZXRhPiA8P3hwYWNrZXQgZW5kPSJyIj8+84NovQAAAR1JREFUeNpiZEADy85ZJgCpeCB2QJM6AMQLo4yOL0AWZETSqACk1gOxAQN+cAGIA4EGPQBxmJA0nwdpjjQ8xqArmczw5tMHXAaALDgP1QMxAGqzAAPxQACqh4ER6uf5MBlkm0X4EGayMfMw/Pr7Bd2gRBZogMFBrv01hisv5jLsv9nLAPIOMnjy8RDDyYctyAbFM2EJbRQw+aAWw/LzVgx7b+cwCHKqMhjJFCBLOzAR6+lXX84xnHjYyqAo5IUizkRCwIENQQckGSDGY4TVgAPEaraQr2a4/24bSuoExcJCfAEJihXkWDj3ZAKy9EJGaEo8T0QSxkjSwORsCAuDQCD+QILmD1A9kECEZgxDaEZhICIzGcIyEyOl2RkgwAAhkmC+eAm0TAAAAABJRU5ErkJggg=="></a></p>
+          </div>
+                <div class="quarto-title-meta-contents">
+                    <p class="affiliation">
+                        Technical University of Munich
+                      </p>
+                    <p class="affiliation">
+                        Max Planck Institute for Biological Cybernetics
+                      </p>
+                    <p class="affiliation">
+                        TUM Institute for Advanced Study (TUM-IAS)
+                      </p>
+                    <p class="affiliation">
+                        TUMCREATE ltd., Singapore
+                      </p>
+                  </div>
+                    </div>
+        
+        <div class="quarto-title-meta">
+
+                      
+                <div>
+            <div class="quarto-title-meta-heading">Last modified:</div>
+            <div class="quarto-title-meta-contents">
+              <p class="date">May 19, 2026</p>
+            </div>
+          </div>
+          
+                
+              </div>
+      </div>
+      <div class="quarto-title-meta-column-end quarto-other-formats-target">
+      </div>
+    </div>
+
+    <div>
+      <div class="abstract">
+        <div class="block-title">Abstract</div>
+        <p>The abstract serves both as a general introduction to the topic and as a brief, non-technical summary of the main results and their implications. Authors are advised to check the author instructions for the journal they are submitting to for word limits and if structural elements like subheadings, citations, or equations are permitted.</p>
+      </div>
+    </div>
+
+    <div>
+      <div class="keywords">
+        <div class="block-title">Keywords</div>
+        <p>wearable, light logging, personal light exposure, experience sampling, circadian</p>
+      </div>
+    </div>
+
+    <div class="quarto-other-links-text-target">
+    </div>  </div>
+</header><div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+<div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+  <nav id="TOC" role="doc-toc" class="toc-active" data-toc-expanded="2">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#sec-intro" id="toc-sec-intro" class="nav-link active" data-scroll-target="#sec-intro"><span class="header-section-number">1</span> Introduction</a>
+  <ul class="collapse">
+  <li><a href="#short-intro-problem-statement" id="toc-short-intro-problem-statement" class="nav-link" data-scroll-target="#short-intro-problem-statement"><span class="header-section-number">1.1</span> Short intro + problem statement</a></li>
+  <li><a href="#circadian-rhythms-and-light" id="toc-circadian-rhythms-and-light" class="nav-link" data-scroll-target="#circadian-rhythms-and-light"><span class="header-section-number">1.2</span> circadian rhythms and light</a></li>
+  <li><a href="#laboratory-research-in-the-past-decades" id="toc-laboratory-research-in-the-past-decades" class="nav-link" data-scroll-target="#laboratory-research-in-the-past-decades"><span class="header-section-number">1.3</span> laboratory research in the past decades</a></li>
+  <li><a href="#real-world-findings" id="toc-real-world-findings" class="nav-link" data-scroll-target="#real-world-findings"><span class="header-section-number">1.4</span> Real-world findings</a></li>
+  <li><a href="#the-state-of-personal-light-exposure-in-naturalistic-conditions" id="toc-the-state-of-personal-light-exposure-in-naturalistic-conditions" class="nav-link" data-scroll-target="#the-state-of-personal-light-exposure-in-naturalistic-conditions"><span class="header-section-number">1.5</span> The state of personal light exposure in naturalistic conditions</a></li>
+  <li><a href="#the-scope-of-this-publication-and-reference-to-others" id="toc-the-scope-of-this-publication-and-reference-to-others" class="nav-link" data-scroll-target="#the-scope-of-this-publication-and-reference-to-others"><span class="header-section-number">1.6</span> The scope of this publication and reference to others</a></li>
+  <li><a href="#research-questions-and-hypotheses" id="toc-research-questions-and-hypotheses" class="nav-link" data-scroll-target="#research-questions-and-hypotheses"><span class="header-section-number">1.7</span> Research questions and Hypotheses</a></li>
+  </ul></li>
+  <li><a href="#sec-results" id="toc-sec-results" class="nav-link" data-scroll-target="#sec-results"><span class="header-section-number">2</span> Results</a></li>
+  <li><a href="#sec-discussion" id="toc-sec-discussion" class="nav-link" data-scroll-target="#sec-discussion"><span class="header-section-number">3</span> Discussion</a></li>
+  <li><a href="#sec-methods" id="toc-sec-methods" class="nav-link" data-scroll-target="#sec-methods"><span class="header-section-number">4</span> Methods</a>
+  <ul class="collapse">
+  <li><a href="#research-questions-and-hypotheses-1" id="toc-research-questions-and-hypotheses-1" class="nav-link" data-scroll-target="#research-questions-and-hypotheses-1"><span class="header-section-number">4.1</span> Research questions and hypotheses</a></li>
+  <li><a href="#study-design" id="toc-study-design" class="nav-link" data-scroll-target="#study-design"><span class="header-section-number">4.2</span> Study design</a></li>
+  <li><a href="#inclusion-and-exclusion-criteria" id="toc-inclusion-and-exclusion-criteria" class="nav-link" data-scroll-target="#inclusion-and-exclusion-criteria"><span class="header-section-number">4.3</span> Inclusion and exclusion criteria</a></li>
+  <li><a href="#data-collection-procedures" id="toc-data-collection-procedures" class="nav-link" data-scroll-target="#data-collection-procedures"><span class="header-section-number">4.4</span> Data collection procedures</a></li>
+  <li><a href="#wearable-light-logger" id="toc-wearable-light-logger" class="nav-link" data-scroll-target="#wearable-light-logger"><span class="header-section-number">4.5</span> Wearable light logger</a></li>
+  <li><a href="#surveys" id="toc-surveys" class="nav-link" data-scroll-target="#surveys"><span class="header-section-number">4.6</span> Surveys</a></li>
+  <li><a href="#measured-variables" id="toc-measured-variables" class="nav-link" data-scroll-target="#measured-variables"><span class="header-section-number">4.7</span> Measured variables</a></li>
+  <li><a href="#transformation-of-variables-and-preprocesing-steps" id="toc-transformation-of-variables-and-preprocesing-steps" class="nav-link" data-scroll-target="#transformation-of-variables-and-preprocesing-steps"><span class="header-section-number">4.8</span> Transformation of variables and preprocesing steps</a></li>
+  <li><a href="#inference-criteria" id="toc-inference-criteria" class="nav-link" data-scroll-target="#inference-criteria"><span class="header-section-number">4.9</span> Inference criteria</a></li>
+  <li><a href="#statistical-analysis" id="toc-statistical-analysis" class="nav-link" data-scroll-target="#statistical-analysis"><span class="header-section-number">4.10</span> Statistical analysis</a></li>
+  <li><a href="#sec-preregdev" id="toc-sec-preregdev" class="nav-link" data-scroll-target="#sec-preregdev"><span class="header-section-number">4.11</span> Deviation from the preregistration</a>
+  <ul class="collapse">
+  <li><a href="#preprocessing" id="toc-preprocessing" class="nav-link" data-scroll-target="#preprocessing"><span class="header-section-number">4.11.1</span> Preprocessing</a></li>
+  <li><a href="#r1" id="toc-r1" class="nav-link" data-scroll-target="#r1"><span class="header-section-number">4.11.2</span> R1</a></li>
+  <li><a href="#r2" id="toc-r2" class="nav-link" data-scroll-target="#r2"><span class="header-section-number">4.11.3</span> R2</a></li>
+  </ul></li>
+  <li><a href="#cross-referencing" id="toc-cross-referencing" class="nav-link" data-scroll-target="#cross-referencing"><span class="header-section-number">4.12</span> Cross Referencing</a></li>
+  </ul></li>
+  <li><a href="#references" id="toc-references" class="nav-link" data-scroll-target="#references"><span class="header-section-number">5</span> References</a></li>
+  </ul>
+<div class="quarto-alternate-notebooks"><h2>Notebooks</h2><ul><li><a href="descriptives-preview.html"><i class="bi bi-journal-code"></i>Descriptives</a></li><li><a href="LICENSE-preview.html"><i class="bi bi-journal-code"></i>LICENSE.md</a></li><li><a href="data_preparation-preview.html"><i class="bi bi-journal-code"></i>Personal light exposure: Data preparation</a></li><li><a href="metric_preparation-preview.html"><i class="bi bi-journal-code"></i>Personal light exposure: Metric preparation</a></li><li><a href="RQ1-preview.html"><i class="bi bi-journal-code"></i>Research Question 1</a></li><li><a href="RQ2-preview.html"><i class="bi bi-journal-code"></i>Research Question 2</a></li><li><a href="RQ3-preview.html"><i class="bi bi-journal-code"></i>Research Question 3</a></li></ul></div></nav>
+</div>
+<main class="content quarto-banner-title-block" id="quarto-document-content">
+
+
+
+  
+
+
+<p>https://www.nature.com/nathumbehav/content Main text – up to 5,000 words, excluding abstract, Methods, references and figure legends. Abstract – up to 150 words, unreferenced. Display items – up to 8 items (figures and/or tables). Article should be divided as follows: Introduction (without heading) Results (concise, focused account of the findings) Discussion Methods. ​ Results and Methods should be divided by topical subheadings; the Discussion does not contain subheadings.</p>
+<section id="sec-intro" class="level1" data-number="1">
+<h1 data-number="1"><span class="header-section-number">1</span> Introduction</h1>
+<section id="short-intro-problem-statement" class="level2" data-number="1.1">
+<h2 data-number="1.1" class="anchored" data-anchor-id="short-intro-problem-statement"><span class="header-section-number">1.1</span> Short intro + problem statement</h2>
+<p>Human health and ocular light exposure are intricately linked through non-visual neural pathways from the eye into the autonomous nervous system. Because light exposure at the eye level is not only shaped by the solar potential, but also by geographic location, culture, the built environment, and, ultimately, individual behaviour, it is considered a highly modifiable determinant of human health. However, to date, we have a limited understanding about personal light exposure patterns under naturalistic conditions, how much it varies within and between populations, and how it is determined by individual, behavioural, and environmental conditions. In this study, we provide the first multi-country wearable and experience-sampling dataset in terms of measurement fidelity and scope, and decompose personal light exposure data into contributing components.</p>
+</section>
+<section id="circadian-rhythms-and-light" class="level2" data-number="1.2">
+<h2 data-number="1.2" class="anchored" data-anchor-id="circadian-rhythms-and-light"><span class="header-section-number">1.2</span> circadian rhythms and light</h2>
+<p>Human behaviour and physiology is shaped by the 24-hour day and night cycle. The evolutionary benefit of being able to anticipate changes in the environment and act upon them, instead of merely reacting, has led to the development of an endogenous circadian rhythm. In humans, as in many other mammals, the circadian system is conducted by a central pacemaker, the Suprachiasmatic nucleus (SCN), situated in the hypothalamus of the brain. The SCN regulates many physiological processes in a major way, either directly, or indirectly by setting the peripheral clocks within all cells of the body. Circadian effects include hormone production, such as Melatonin and Cortisol, sleep-wake regulation, as well as mood, cognitive, and physical performance. In an entrained, i.e., aligned system, internal processes provide the ideal substrate to handle exterior stressors during the day and interior stressors at night. A property of the SCN is its flexibility of alignment, that allows readjustments of the endogenous rhythm through external stimuli, so-called Zeitgeber. The strongest Zeitgeber for humans is light input through the eyes. Intrinsically photosensitive retinal ganglion cells (ipRGCs) in the retina relay environmental light levels through the retino-hypothalamic tract directly to the SCN. Secondary downstream targets of the ipRGCs are sleep-wake regulating centers of the brain, and possibly also mood-regulating centers as found in the mouse model. This link between retinal light exposure and acute and longterm effects on human physiology has wide-reaching implications for human health and wellbeing, as a misaligned circadian system increases the risk for mental, metabolic, cardiovascular disease, as well as for breast and prostate cancer.</p>
+</section>
+<section id="laboratory-research-in-the-past-decades" class="level2" data-number="1.3">
+<h2 data-number="1.3" class="anchored" data-anchor-id="laboratory-research-in-the-past-decades"><span class="header-section-number">1.3</span> laboratory research in the past decades</h2>
+<p>Controlled laboratory studies over the past decades have allowed to characterize the novel receptor type in the human retina, as well as describe the downstream effects on physiology. In short, light that excites the ipRGCs acutely increases alertness, suppresses melatonin synthetization in the pineal gland, and phase-shifts the circadian rhythm, collectively summarized as non-visual effects of light. Through the photopigment Melanopsin, ipRGCs are maximally sensitive around 490&nbsp;nm, i.e., shorter wavelengths compared to daytime brightness perception (~555&nbsp;nm). ipRGC are further sparse in number (about 1% of all RGCs, though widely distributed), sluggish in their reaction, and integrating in their behavior. This makes them ideal daylight detectors, however, they can be excited by any type of lightsource. The spectral sensitivity of the ipRCG has been standardized by the CIE in the standard CIE S 026/2018, with the melanopic equivalent daylight illuminance (melanopic EDI) as the primary measure to describe a corneal stimulus to the non-visual system. It has since been shown that melanopic EDI are superior to describe non-visual effects in a dose-effect-dependent manner compared to all other single photoreceptor sensitivities or indeed photopic illuminance, i.e., daytime brightness perception. Based on this, recommendations for healthy light exposure have been published that are based on the excitability of the non-visual system, with a minimum of 250&nbsp;lx melanopic EDI during waking hours to support circadian synchronisation and alertness, and a maximum of 10&nbsp;lx melanopic EDI during the three hours before sleep to support a shift towards rest. The sleeping environment should be as dark as possible, with an upper threshold of 1&nbsp;lx melanopic EDI if light cannot be avoided.</p>
+</section>
+<section id="real-world-findings" class="level2" data-number="1.4">
+<h2 data-number="1.4" class="anchored" data-anchor-id="real-world-findings"><span class="header-section-number">1.4</span> Real-world findings</h2>
+<p>While laboratory studies brought insights into the mechanisms, longterm effects of light exposure on human health require observational studies under naturalistic conditions. List studies that do that: - Didikoglu - Price - Udovicjic - 1980s - Renske - Biller et al. A number of real-world and large-scale cohort studies have shown that mechanistically derived assumptions about the physiological impact of light exposure are visible as associations under naturalistic conditions. - Windred - Burns - Zahng - Obayashi - Cardoso - Metabolic</p>
+</section>
+<section id="the-state-of-personal-light-exposure-in-naturalistic-conditions" class="level2" data-number="1.5">
+<h2 data-number="1.5" class="anchored" data-anchor-id="the-state-of-personal-light-exposure-in-naturalistic-conditions"><span class="header-section-number">1.5</span> The state of personal light exposure in naturalistic conditions</h2>
+<ul>
+<li>non mel EDI</li>
+<li>wrist</li>
+<li>differing protocols</li>
+<li>few contextual data ## The MeLiDos project and the task</li>
+</ul>
+</section>
+<section id="the-scope-of-this-publication-and-reference-to-others" class="level2" data-number="1.6">
+<h2 data-number="1.6" class="anchored" data-anchor-id="the-scope-of-this-publication-and-reference-to-others"><span class="header-section-number">1.6</span> The scope of this publication and reference to others</h2>
+</section>
+<section id="research-questions-and-hypotheses" class="level2" data-number="1.7">
+<h2 data-number="1.7" class="anchored" data-anchor-id="research-questions-and-hypotheses"><span class="header-section-number">1.7</span> Research questions and Hypotheses</h2>
+</section>
+</section>
+<section id="sec-results" class="level1" data-number="2">
+<h1 data-number="2"><span class="header-section-number">2</span> Results</h1>
+</section>
+<section id="sec-discussion" class="level1" data-number="3">
+<h1 data-number="3"><span class="header-section-number">3</span> Discussion</h1>
+</section>
+<section id="sec-methods" class="level1" data-number="4">
+<h1 data-number="4"><span class="header-section-number">4</span> Methods</h1>
+<p>The current study was preregistered with ASPREDICTED (#273407) on 13 February 2026 (https://aspredicted.org/te3zw2.pdf). Deviations from the preregistration are documented below in <a href="#sec-preregdev" class="quarto-xref">Section&nbsp;4.11</a>.</p>
+<section id="research-questions-and-hypotheses-1" class="level2" data-number="4.1">
+<h2 data-number="4.1" class="anchored" data-anchor-id="research-questions-and-hypotheses-1"><span class="header-section-number">4.1</span> Research questions and hypotheses</h2>
+<p>We assessed the following research questions and hypotheses as specified in the preregistration and <a href="#sec-preregdev" class="quarto-xref">Section&nbsp;4.11</a>:</p>
+<p><strong>Research Question 1</strong>:</p>
+<blockquote class="blockquote">
+<p>Do sites differ in objectively measured personal light exposure? If so, does an individual’s behaviour and micro-environment have a stronger effect than site?</p>
+</blockquote>
+<p><strong>H1:</strong> <em>There is a significant difference in personal light-exposure metrics across sites, even after accounting for latitude and photoperiod.</em></p>
+<p><strong>H2:</strong> <em>The variance of personal light exposure patterns (hourly geometric mean of melanopic EDI) by participants within sites is greater than the variance between sites.</em></p>
+</section>
+<section id="study-design" class="level2" data-number="4.2">
+<h2 data-number="4.2" class="anchored" data-anchor-id="study-design"><span class="header-section-number">4.2</span> Study design</h2>
+</section>
+<section id="inclusion-and-exclusion-criteria" class="level2" data-number="4.3">
+<h2 data-number="4.3" class="anchored" data-anchor-id="inclusion-and-exclusion-criteria"><span class="header-section-number">4.3</span> Inclusion and exclusion criteria</h2>
+</section>
+<section id="data-collection-procedures" class="level2" data-number="4.4">
+<h2 data-number="4.4" class="anchored" data-anchor-id="data-collection-procedures"><span class="header-section-number">4.4</span> Data collection procedures</h2>
+</section>
+<section id="wearable-light-logger" class="level2" data-number="4.5">
+<h2 data-number="4.5" class="anchored" data-anchor-id="wearable-light-logger"><span class="header-section-number">4.5</span> Wearable light logger</h2>
+</section>
+<section id="surveys" class="level2" data-number="4.6">
+<h2 data-number="4.6" class="anchored" data-anchor-id="surveys"><span class="header-section-number">4.6</span> Surveys</h2>
+</section>
+<section id="measured-variables" class="level2" data-number="4.7">
+<h2 data-number="4.7" class="anchored" data-anchor-id="measured-variables"><span class="header-section-number">4.7</span> Measured variables</h2>
+</section>
+<section id="transformation-of-variables-and-preprocesing-steps" class="level2" data-number="4.8">
+<h2 data-number="4.8" class="anchored" data-anchor-id="transformation-of-variables-and-preprocesing-steps"><span class="header-section-number">4.8</span> Transformation of variables and preprocesing steps</h2>
+</section>
+<section id="inference-criteria" class="level2" data-number="4.9">
+<h2 data-number="4.9" class="anchored" data-anchor-id="inference-criteria"><span class="header-section-number">4.9</span> Inference criteria</h2>
+</section>
+<section id="statistical-analysis" class="level2" data-number="4.10">
+<h2 data-number="4.10" class="anchored" data-anchor-id="statistical-analysis"><span class="header-section-number">4.10</span> Statistical analysis</h2>
+</section>
+<section id="sec-preregdev" class="level2" data-number="4.11">
+<h2 data-number="4.11" class="anchored" data-anchor-id="sec-preregdev"><span class="header-section-number">4.11</span> Deviation from the preregistration</h2>
+<p>This section summarizes deviations from the preregistration (https://aspredicted.org/te3zw2.pdf)</p>
+<section id="preprocessing" class="level3" data-number="4.11.1">
+<h3 data-number="4.11.1" class="anchored" data-anchor-id="preprocessing"><span class="header-section-number">4.11.1</span> Preprocessing</h3>
+<ul>
+<li>During preprocessing, only non-wear periods that did not occur within a sleep window were set to NA.</li>
+<li>For sleep-environment-related analyses, sleep windows were defined based on sleepprep, that is, the time at which participants reported trying to sleep, rather than the estimated sleep onset time (sleepprep + sleepdelay). This distinction primarily affects analyses related to the Brown recommendations for healthy light exposure during wake, pre-sleep, and sleep periods. This change aligns the requirements for the sleep environment with the intention to sleep.</li>
+<li>Metric update: the geometric mean of melanopic EDI during the 10 darkest hours of the day (lx) was used instead of the 5 darkest hours. This approach is consistent with the midpoint of the darkest 10 hours of the day and provides a more stable time frame. Regularly a participant-night would contain more than 5 hours of darkness, making the choice of which 5-hour period is chosen somewhat arbitrary. Using a longer timeframe avoids this effectively.</li>
+<li>Metric update: the midpoint of the longest period above 250 lx melanopic EDI was replaced by the mean timing of exposure above 250 lx melanopic EDI, because the latter does not reduce the day to a single event.</li>
+</ul>
+</section>
+<section id="r1" class="level3" data-number="4.11.2">
+<h3 data-number="4.11.2" class="anchored" data-anchor-id="r1"><span class="header-section-number">4.11.2</span> R1</h3>
+<ul>
+<li>In H1, latitude had to be accounted for separately from site. Including both terms in the same model is problematic because each site is associated with a specific latitude, which effectively removes the estimable effect of latitude. Therefore, model comparison based on AIC was used to assess which model provided the better fit.</li>
+<li>In H2, an <em>sz</em> basis was used to model the smooth interaction between time and site instead of a cyclic spline. Although this approach does not force the estimates and derivatives at the boundaries of the spline, that is, midnight to midnight, to be identical, the <em>sz</em> basis addresses identifiability issues in these models that would otherwise persist.</li>
+<li>In H2, a main effect of time was added so that the site-specific smooths model only deviations from the overall temporal pattern.</li>
+<li>In H2, average melanopic EDI per 30-minute interval was used instead of the hourly geometric mean. This was because model diagnostics indicated that the model captured the average on a logarithmic scale substantially better than the geometric mean. To reduce potential bias introduced by arithmetic averaging, the aggregation window was shortened from 1 hour to 30 minutes.</li>
+</ul>
+</section>
+<section id="r2" class="level3" data-number="4.11.3">
+<h3 data-number="4.11.3" class="anchored" data-anchor-id="r2"><span class="header-section-number">4.11.3</span> R2</h3>
+<ul>
+<li>In H3 and H4, site was included as a fixed effect rather than a random effect to improve the stability of model fitting.</li>
+<li>In H3 and H4, generalized linear mixed-effects models with a Tweedie error distribution were used because they provided better model performance.</li>
+<li>In H6, the hourly geometric mean was used instead of derived exposure metrics. This decision was made because the large number of candidate metrics, combined with the number of predictors, did not yield a parsimonious or interpretable model structure. The revised hypothesis is: <em>There is a significant relationship between day type, daily exercise, sleep, and the hourly geometric mean of light exposure.</em></li>
+<li>In H7, only parameter combinations that were significant in H2 were retained. In addition, an interaction model was not used because the joint parameter space of latitude and photoperiod was sparse. Therefore, only photoperiod was included, and the hypothesis was revised to: <em>There is a ceiling effect of photoperiod on level-, duration-, and exposure-history-based metrics.</em> H7 was moved to R1 because it fits better there thematically. The original numbering was retained to facilitate cross-referencing with the preregistration.</li>
+</ul>
+</section>
+</section>
+<section id="cross-referencing" class="level2" data-number="4.12">
+<h2 data-number="4.12" class="anchored" data-anchor-id="cross-referencing"><span class="header-section-number">4.12</span> Cross Referencing</h2>
+<p>To reference a figure with example label “plot”, use <code>@fig-plot</code>. Analogously, to reference a table with example label “data”, use <code>@tbl-data</code>. To reference a section, such as the Introduction (<a href="#sec-intro" class="quarto-xref">Section&nbsp;1</a>), use <code>@sec-intro</code>.</p>
+<p>For complete information on cross referencing with Quarto, see <a href="https://quarto.org/docs/authoring/cross-references.html" class="uri">https://quarto.org/docs/authoring/cross-references.html</a>.</p>
+<div id="fig-plot" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-plot-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="fig.eps" class="lightbox" data-gallery="quarto-lightbox-gallery-1" title="Figure&nbsp;1: An example figure (an empty plot)"><embed src="fig.eps" class="img-fluid"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-plot-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;1: An example figure (an empty plot)
+</figcaption>
+</figure>
+</div>
+<p>For both figures and tables, you can use LaTeX syntax if you need additional customizability.</p>
+<p>For example, to use footnotes within a table, you may want to use LaTeX.</p>
+</section>
+</section>
+<section id="references" class="level1" data-number="5">
+<h1 data-number="5"><span class="header-section-number">5</span> References</h1>
+<!-- the pattern below controls the placement of the references -->
+<div id="refs" role="list">
+
+</div>
+<!-- -->
+
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+    const viewSource = window.document.getElementById('quarto-view-source') ||
+                       window.document.getElementById('quarto-code-tools-source');
+    if (viewSource) {
+      const sourceUrl = viewSource.getAttribute("data-quarto-source-url");
+      viewSource.addEventListener("click", function(e) {
+        if (sourceUrl) {
+          // rstudio viewer pane
+          if (/\bcapabilities=\b/.test(window.location)) {
+            window.open(sourceUrl);
+          } else {
+            window.location.href = sourceUrl;
+          }
+        } else {
+          const modal = new bootstrap.Modal(document.getElementById('quarto-embedded-source-code-modal'));
+          modal.show();
+        }
+        return false;
+      });
+    }
+    function toggleCodeHandler(show) {
+      return function(e) {
+        const detailsSrc = window.document.querySelectorAll(".cell > details > .sourceCode");
+        for (let i=0; i<detailsSrc.length; i++) {
+          const details = detailsSrc[i].parentElement;
+          if (show) {
+            details.open = true;
+          } else {
+            details.removeAttribute("open");
+          }
+        }
+        const cellCodeDivs = window.document.querySelectorAll(".cell > .sourceCode");
+        const fromCls = show ? "hidden" : "unhidden";
+        const toCls = show ? "unhidden" : "hidden";
+        for (let i=0; i<cellCodeDivs.length; i++) {
+          const codeDiv = cellCodeDivs[i];
+          if (codeDiv.classList.contains(fromCls)) {
+            codeDiv.classList.remove(fromCls);
+            codeDiv.classList.add(toCls);
+          } 
+        }
+        return false;
+      }
+    }
+    const hideAllCode = window.document.getElementById("quarto-hide-all-code");
+    if (hideAllCode) {
+      hideAllCode.addEventListener("click", toggleCodeHandler(false));
+    }
+    const showAllCode = window.document.getElementById("quarto-show-all-code");
+    if (showAllCode) {
+      showAllCode.addEventListener("click", toggleCodeHandler(true));
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp("https:\/\/tscnlab\.github\.io\/ZaunerEtAl_NatHumBehav_2026");
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+            // target, if specified
+            link.setAttribute("target", "_blank");
+            if (link.getAttribute("rel") === null) {
+              link.setAttribute("rel", "noopener");
+            }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script><div class="modal fade" id="quarto-embedded-source-code-modal" tabindex="-1" aria-labelledby="quarto-embedded-source-code-modal-label" aria-hidden="true"><div class="modal-dialog modal-dialog-scrollable"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="quarto-embedded-source-code-modal-label">Source Code</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1" data-shortcodes="false"><pre class="sourceCode numberSource markdown number-lines code-with-copy"><code class="sourceCode markdown"><span id="cb1-1"><a href="#cb1-1"></a><span class="co">---</span></span>
+<span id="cb1-2"><a href="#cb1-2"></a><span class="an">title:</span><span class="co"> "Individual, behavioural, and environmental determinants of personal light exposure in daily life"</span></span>
+<span id="cb1-3"><a href="#cb1-3"></a><span class="an">subtitle:</span><span class="co"> "A multi-country wearable and experience-sampling study"</span></span>
+<span id="cb1-4"><a href="#cb1-4"></a><span class="an">authors:</span><span class="co"> </span></span>
+<span id="cb1-5"><a href="#cb1-5"></a><span class="co">  - given: Johannes</span></span>
+<span id="cb1-6"><a href="#cb1-6"></a><span class="co">    family: Zauner</span></span>
+<span id="cb1-7"><a href="#cb1-7"></a><span class="co">    corresponding: true</span></span>
+<span id="cb1-8"><a href="#cb1-8"></a><span class="co">    email: johannes.zauner@tum.de</span></span>
+<span id="cb1-9"><a href="#cb1-9"></a><span class="co">    affiliation: &gt;-</span></span>
+<span id="cb1-10"><a href="#cb1-10"></a><span class="co">      Technical University of Munich</span></span>
+<span id="cb1-11"><a href="#cb1-11"></a><span class="co">    orcid: 'https://orcid.org/0000-0003-2171-4566'</span></span>
+<span id="cb1-12"><a href="#cb1-12"></a><span class="co">  </span></span>
+<span id="cb1-13"><a href="#cb1-13"></a><span class="co">  - given: Altug</span></span>
+<span id="cb1-14"><a href="#cb1-14"></a><span class="co">    family: Didikoglu</span></span>
+<span id="cb1-15"><a href="#cb1-15"></a><span class="co">    orcid: 'https://orcid.org/0000-0002-5582-6956'</span></span>
+<span id="cb1-16"><a href="#cb1-16"></a><span class="co">    affiliation: 'Izmir Institute of Technology, Izmir, Türkiye'</span></span>
+<span id="cb1-17"><a href="#cb1-17"></a><span class="co">  </span></span>
+<span id="cb1-18"><a href="#cb1-18"></a><span class="co">  - given: Sam</span></span>
+<span id="cb1-19"><a href="#cb1-19"></a><span class="co">    family: Aerts</span></span>
+<span id="cb1-20"><a href="#cb1-20"></a><span class="co">    affiliation: The Hague University of Applied Sciences</span></span>
+<span id="cb1-21"><a href="#cb1-21"></a><span class="co">  </span></span>
+<span id="cb1-22"><a href="#cb1-22"></a><span class="co">  - given: Gabriel Kwaku</span></span>
+<span id="cb1-23"><a href="#cb1-23"></a><span class="co">    family: Agbeshie</span></span>
+<span id="cb1-24"><a href="#cb1-24"></a><span class="co">    affiliation: &gt;-</span></span>
+<span id="cb1-25"><a href="#cb1-25"></a><span class="co">      Kwame Nkrumah University of Science and Technology</span></span>
+<span id="cb1-26"><a href="#cb1-26"></a><span class="co">      (KNUST)</span></span>
+<span id="cb1-27"><a href="#cb1-27"></a><span class="co">    orcid: 'https://orcid.org/0009-0009-6135-7111'</span></span>
+<span id="cb1-28"><a href="#cb1-28"></a><span class="co">  </span></span>
+<span id="cb1-29"><a href="#cb1-29"></a><span class="co">  - given: Kwadwo Owusu</span></span>
+<span id="cb1-30"><a href="#cb1-30"></a><span class="co">    family: Akuffo</span></span>
+<span id="cb1-31"><a href="#cb1-31"></a><span class="co">    affiliation: &gt;-</span></span>
+<span id="cb1-32"><a href="#cb1-32"></a><span class="co">      Kwame Nkrumah University of Science and Technology</span></span>
+<span id="cb1-33"><a href="#cb1-33"></a><span class="co">      (KNUST)</span></span>
+<span id="cb1-34"><a href="#cb1-34"></a><span class="co">    orcid: 'https://orcid.org/0000-0001-6683-249X'</span></span>
+<span id="cb1-35"><a href="#cb1-35"></a><span class="co">  </span></span>
+<span id="cb1-36"><a href="#cb1-36"></a><span class="co">  - given: Sena Gulsum</span></span>
+<span id="cb1-37"><a href="#cb1-37"></a><span class="co">    family: Akgun</span></span>
+<span id="cb1-38"><a href="#cb1-38"></a><span class="co">    affiliation: 'Izmir Institute of Technology, Izmir, Türkiye'</span></span>
+<span id="cb1-39"><a href="#cb1-39"></a><span class="co">  </span></span>
+<span id="cb1-40"><a href="#cb1-40"></a><span class="co">  - given: Sema Nur</span></span>
+<span id="cb1-41"><a href="#cb1-41"></a><span class="co">    family: Aydin</span></span>
+<span id="cb1-42"><a href="#cb1-42"></a><span class="co">    affiliation: 'Izmir Institute of Technology, Izmir, Türkiye'</span></span>
+<span id="cb1-43"><a href="#cb1-43"></a><span class="co">  </span></span>
+<span id="cb1-44"><a href="#cb1-44"></a><span class="co">  - given: David</span></span>
+<span id="cb1-45"><a href="#cb1-45"></a><span class="co">    family: Baeza Moyano</span></span>
+<span id="cb1-46"><a href="#cb1-46"></a><span class="co">    affiliation: &gt;-</span></span>
+<span id="cb1-47"><a href="#cb1-47"></a><span class="co">      Fundación Universitaria CEU San Pablo, Boadilla del</span></span>
+<span id="cb1-48"><a href="#cb1-48"></a><span class="co">      Monte, Madrid, Spain</span></span>
+<span id="cb1-49"><a href="#cb1-49"></a><span class="co">    orcid: 'https://orcid.org/0000-0001-8395-9994'</span></span>
+<span id="cb1-50"><a href="#cb1-50"></a><span class="co">  </span></span>
+<span id="cb1-51"><a href="#cb1-51"></a><span class="co">  - family: Boesten</span></span>
+<span id="cb1-52"><a href="#cb1-52"></a><span class="co">    given: Daan</span></span>
+<span id="cb1-53"><a href="#cb1-53"></a><span class="co">    affiliation: The Hague University of Applied Sciences</span></span>
+<span id="cb1-54"><a href="#cb1-54"></a><span class="co">  </span></span>
+<span id="cb1-55"><a href="#cb1-55"></a><span class="co">  - given: John</span></span>
+<span id="cb1-56"><a href="#cb1-56"></a><span class="co">    family: Bolte</span></span>
+<span id="cb1-57"><a href="#cb1-57"></a><span class="co">    affiliation: The Hague University of Applied Sciences</span></span>
+<span id="cb1-58"><a href="#cb1-58"></a><span class="co">  </span></span>
+<span id="cb1-59"><a href="#cb1-59"></a><span class="co">  - given: Kai</span></span>
+<span id="cb1-60"><a href="#cb1-60"></a><span class="co">    family: Broszio</span></span>
+<span id="cb1-61"><a href="#cb1-61"></a><span class="co">    affiliation: &gt;-</span></span>
+<span id="cb1-62"><a href="#cb1-62"></a><span class="co">      Federal Institute for Occupational Safety and Health</span></span>
+<span id="cb1-63"><a href="#cb1-63"></a><span class="co">      (BAuA)</span></span>
+<span id="cb1-64"><a href="#cb1-64"></a><span class="co">    orcid: 'https://orcid.org/0000-0002-8269-8654'</span></span>
+<span id="cb1-65"><a href="#cb1-65"></a><span class="co">  </span></span>
+<span id="cb1-66"><a href="#cb1-66"></a><span class="co">  - given: Guadalupe</span></span>
+<span id="cb1-67"><a href="#cb1-67"></a><span class="co">    family: Cantarero García</span></span>
+<span id="cb1-68"><a href="#cb1-68"></a><span class="co">    orcid: 'https://orcid.org/0000-0003-3169-8547'</span></span>
+<span id="cb1-69"><a href="#cb1-69"></a><span class="co">    affiliation: &gt;-</span></span>
+<span id="cb1-70"><a href="#cb1-70"></a><span class="co">      Fundación Universitaria CEU San Pablo, Boadilla del</span></span>
+<span id="cb1-71"><a href="#cb1-71"></a><span class="co">      Monte, Madrid, Spain</span></span>
+<span id="cb1-72"><a href="#cb1-72"></a><span class="co">  </span></span>
+<span id="cb1-73"><a href="#cb1-73"></a><span class="co">  - given: Roberto Alonso</span></span>
+<span id="cb1-74"><a href="#cb1-74"></a><span class="co">    family: González Lezcano</span></span>
+<span id="cb1-75"><a href="#cb1-75"></a><span class="co">    affiliation: &gt;-</span></span>
+<span id="cb1-76"><a href="#cb1-76"></a><span class="co">      Fundación Universitaria CEU San Pablo, Boadilla del</span></span>
+<span id="cb1-77"><a href="#cb1-77"></a><span class="co">      Monte, Madrid, Spain</span></span>
+<span id="cb1-78"><a href="#cb1-78"></a><span class="co">    orcid: 'https://orcid.org/0000-0002-6185-4929'</span></span>
+<span id="cb1-79"><a href="#cb1-79"></a><span class="co">  </span></span>
+<span id="cb1-80"><a href="#cb1-80"></a><span class="co">  - given: Carolina</span></span>
+<span id="cb1-81"><a href="#cb1-81"></a><span class="co">    family: Guidolin</span></span>
+<span id="cb1-82"><a href="#cb1-82"></a><span class="co">    affiliation: &gt;-</span></span>
+<span id="cb1-83"><a href="#cb1-83"></a><span class="co">      Max Planck Institute for Biological Cybernetics;</span></span>
+<span id="cb1-84"><a href="#cb1-84"></a><span class="co">      Technical University of Munich, Germany</span></span>
+<span id="cb1-85"><a href="#cb1-85"></a><span class="co">    orcid: 'https://orcid.org/0009-0007-4959-2667'</span></span>
+<span id="cb1-86"><a href="#cb1-86"></a><span class="co">  </span></span>
+<span id="cb1-87"><a href="#cb1-87"></a><span class="co">  - given: Sarina</span></span>
+<span id="cb1-88"><a href="#cb1-88"></a><span class="co">    family: Hilden</span></span>
+<span id="cb1-89"><a href="#cb1-89"></a><span class="co">    affiliation: &gt;-</span></span>
+<span id="cb1-90"><a href="#cb1-90"></a><span class="co">      Technical University of Munich, Munich, Germany</span></span>
+<span id="cb1-91"><a href="#cb1-91"></a><span class="co">  </span></span>
+<span id="cb1-92"><a href="#cb1-92"></a><span class="co">  - given: Nico</span></span>
+<span id="cb1-93"><a href="#cb1-93"></a><span class="co">    family: Hogervorst</span></span>
+<span id="cb1-94"><a href="#cb1-94"></a><span class="co">    affiliation: The Hague University of Applied Sciences</span></span>
+<span id="cb1-95"><a href="#cb1-95"></a><span class="co">  </span></span>
+<span id="cb1-96"><a href="#cb1-96"></a><span class="co">  - given: Astrid</span></span>
+<span id="cb1-97"><a href="#cb1-97"></a><span class="co">    family: Jansen</span></span>
+<span id="cb1-98"><a href="#cb1-98"></a><span class="co">    affiliation: The Hague University of Applied Sciences</span></span>
+<span id="cb1-99"><a href="#cb1-99"></a><span class="co">  </span></span>
+<span id="cb1-100"><a href="#cb1-100"></a><span class="co">  - family: Kayar</span></span>
+<span id="cb1-101"><a href="#cb1-101"></a><span class="co">    given: Zeynep</span></span>
+<span id="cb1-102"><a href="#cb1-102"></a><span class="co">    affiliation: 'Izmir Institute of Technology, Izmir, Türkiye'</span></span>
+<span id="cb1-103"><a href="#cb1-103"></a><span class="co">  </span></span>
+<span id="cb1-104"><a href="#cb1-104"></a><span class="co">  - given: Stefan</span></span>
+<span id="cb1-105"><a href="#cb1-105"></a><span class="co">    family: Källberg</span></span>
+<span id="cb1-106"><a href="#cb1-106"></a><span class="co">    orcid: 'https://orcid.org/0009-0003-8259-3400'</span></span>
+<span id="cb1-107"><a href="#cb1-107"></a><span class="co">    affiliation: RISE Research Institutes of Sweden</span></span>
+<span id="cb1-108"><a href="#cb1-108"></a><span class="co">  </span></span>
+<span id="cb1-109"><a href="#cb1-109"></a><span class="co">  - given: Suyoun</span></span>
+<span id="cb1-110"><a href="#cb1-110"></a><span class="co">    family: Lee</span></span>
+<span id="cb1-111"><a href="#cb1-111"></a><span class="co">    affiliation: &gt;-</span></span>
+<span id="cb1-112"><a href="#cb1-112"></a><span class="co">      Technical University of Munich, Munich, Germany</span></span>
+<span id="cb1-113"><a href="#cb1-113"></a><span class="co">  </span></span>
+<span id="cb1-114"><a href="#cb1-114"></a><span class="co">  - given: Sofía</span></span>
+<span id="cb1-115"><a href="#cb1-115"></a><span class="co">    family: Melero Tur</span></span>
+<span id="cb1-116"><a href="#cb1-116"></a><span class="co">    affiliation: &gt;-</span></span>
+<span id="cb1-117"><a href="#cb1-117"></a><span class="co">      Fundación Universitaria CEU San Pablo, Boadilla del</span></span>
+<span id="cb1-118"><a href="#cb1-118"></a><span class="co">      Monte, Madrid, Spain</span></span>
+<span id="cb1-119"><a href="#cb1-119"></a><span class="co">    orcid: 'https://orcid.org/0000-0002-5902-4539'</span></span>
+<span id="cb1-120"><a href="#cb1-120"></a><span class="co">  </span></span>
+<span id="cb1-121"><a href="#cb1-121"></a><span class="co">  - given: Maria</span></span>
+<span id="cb1-122"><a href="#cb1-122"></a><span class="co">    family: Nilsson Tengelin</span></span>
+<span id="cb1-123"><a href="#cb1-123"></a><span class="co">    affiliation: RISE Research Institutes of Sweden</span></span>
+<span id="cb1-124"><a href="#cb1-124"></a><span class="co">    orcid: 'https://orcid.org/0000-0002-0909-626X'</span></span>
+<span id="cb1-125"><a href="#cb1-125"></a><span class="co">  </span></span>
+<span id="cb1-126"><a href="#cb1-126"></a><span class="co">  - given: María Concepción</span></span>
+<span id="cb1-127"><a href="#cb1-127"></a><span class="co">    family: Pérez Gutiérrez</span></span>
+<span id="cb1-128"><a href="#cb1-128"></a><span class="co">    affiliation: &gt;-</span></span>
+<span id="cb1-129"><a href="#cb1-129"></a><span class="co">      Fundación Universitaria CEU San Pablo, Boadilla del</span></span>
+<span id="cb1-130"><a href="#cb1-130"></a><span class="co">      Monte, Madrid, Spain</span></span>
+<span id="cb1-131"><a href="#cb1-131"></a><span class="co">    orcid: 'https://orcid.org/0000-0003-0963-6147'</span></span>
+<span id="cb1-132"><a href="#cb1-132"></a><span class="co">  </span></span>
+<span id="cb1-133"><a href="#cb1-133"></a><span class="co">  - given: Andrea</span></span>
+<span id="cb1-134"><a href="#cb1-134"></a><span class="co">    family: Sancho-Salas</span></span>
+<span id="cb1-135"><a href="#cb1-135"></a><span class="co">    affiliation: Universidad de Costa Rica</span></span>
+<span id="cb1-136"><a href="#cb1-136"></a><span class="co">    orcid: 'https://orcid.org/0000-0002-6566-2772'</span></span>
+<span id="cb1-137"><a href="#cb1-137"></a><span class="co">  </span></span>
+<span id="cb1-138"><a href="#cb1-138"></a><span class="co">  - given: Ingemar</span></span>
+<span id="cb1-139"><a href="#cb1-139"></a><span class="co">    family: Svensson</span></span>
+<span id="cb1-140"><a href="#cb1-140"></a><span class="co">    affiliation: RISE Research Institutes of Sweden</span></span>
+<span id="cb1-141"><a href="#cb1-141"></a><span class="co">    orcid: 'https://orcid.org/0009-0006-9283-509X'</span></span>
+<span id="cb1-142"><a href="#cb1-142"></a><span class="co">  </span></span>
+<span id="cb1-143"><a href="#cb1-143"></a><span class="co">  - given: Helga</span></span>
+<span id="cb1-144"><a href="#cb1-144"></a><span class="co">    family: von-Breymann</span></span>
+<span id="cb1-145"><a href="#cb1-145"></a><span class="co">    orcid: 'https://orcid.org/0000-0002-6841-5953'</span></span>
+<span id="cb1-146"><a href="#cb1-146"></a><span class="co">    affiliation: Universidad de Costa Rica</span></span>
+<span id="cb1-147"><a href="#cb1-147"></a><span class="co">  </span></span>
+<span id="cb1-148"><a href="#cb1-148"></a><span class="co">  - given: Manuel</span></span>
+<span id="cb1-149"><a href="#cb1-149"></a><span class="co">    family: Spitschan</span></span>
+<span id="cb1-150"><a href="#cb1-150"></a><span class="co">    email: manuel.spitschan@tum.de</span></span>
+<span id="cb1-151"><a href="#cb1-151"></a><span class="co">    affiliation:</span></span>
+<span id="cb1-152"><a href="#cb1-152"></a><span class="co">      - Technical University of Munich</span></span>
+<span id="cb1-153"><a href="#cb1-153"></a><span class="co">      - Max Planck Institute for Biological Cybernetics</span></span>
+<span id="cb1-154"><a href="#cb1-154"></a><span class="co">      - TUM Institute for Advanced Study (TUM-IAS)</span></span>
+<span id="cb1-155"><a href="#cb1-155"></a><span class="co">      - TUMCREATE ltd., Singapore</span></span>
+<span id="cb1-156"><a href="#cb1-156"></a><span class="co">    orcid: 'https://orcid.org/0000-0002-8572-9268'</span></span>
+<span id="cb1-157"><a href="#cb1-157"></a><span class="an">abstract:</span><span class="co"> |</span></span>
+<span id="cb1-158"><a href="#cb1-158"></a><span class="co">  The abstract serves both as a general introduction to the topic and as a brief, non-technical summary of the main results and their implications. Authors are advised to check the author instructions for the journal they are submitting to for word limits and if structural elements like subheadings, citations, or equations are permitted.</span></span>
+<span id="cb1-159"><a href="#cb1-159"></a><span class="an">keywords:</span><span class="co"> </span></span>
+<span id="cb1-160"><a href="#cb1-160"></a><span class="co">  - wearable</span></span>
+<span id="cb1-161"><a href="#cb1-161"></a><span class="co">  - light logging</span></span>
+<span id="cb1-162"><a href="#cb1-162"></a><span class="co">  - personal light exposure</span></span>
+<span id="cb1-163"><a href="#cb1-163"></a><span class="co">  - experience sampling</span></span>
+<span id="cb1-164"><a href="#cb1-164"></a><span class="co">  - circadian</span></span>
+<span id="cb1-165"><a href="#cb1-165"></a><span class="an">bibliography:</span><span class="co"> bibliography.bib  </span></span>
+<span id="cb1-166"><a href="#cb1-166"></a><span class="an">funding:</span><span class="co"> "The project MeLiDos (22NRM05 MeLiDos) has received funding from the European Partnership on Metrology, co-financed from the European Union’s Horizon Europe Research and Innovation Programme and by the Participating States. Views and opinions expressed are however those of the author(s) only and do not necessarily reflect those of the European Union or EURAMET. Neither the European Union nor the granting authority can be held responsible for them."</span></span>
+<span id="cb1-167"><a href="#cb1-167"></a><span class="an">format:</span></span>
+<span id="cb1-168"><a href="#cb1-168"></a><span class="co">  html:</span></span>
+<span id="cb1-169"><a href="#cb1-169"></a><span class="co">    toc: true</span></span>
+<span id="cb1-170"><a href="#cb1-170"></a><span class="co">    toc-depth: 3</span></span>
+<span id="cb1-171"><a href="#cb1-171"></a><span class="co">    toc-location: right</span></span>
+<span id="cb1-172"><a href="#cb1-172"></a><span class="co">    number-sections: true</span></span>
+<span id="cb1-173"><a href="#cb1-173"></a><span class="co">    code-link: true</span></span>
+<span id="cb1-174"><a href="#cb1-174"></a><span class="co">    code-tools: true</span></span>
+<span id="cb1-175"><a href="#cb1-175"></a><span class="co">    grid:</span></span>
+<span id="cb1-176"><a href="#cb1-176"></a><span class="co">      body-width: 850px</span></span>
+<span id="cb1-177"><a href="#cb1-177"></a><span class="co">    html-math-method:</span></span>
+<span id="cb1-178"><a href="#cb1-178"></a><span class="co">      method: mathjax</span></span>
+<span id="cb1-179"><a href="#cb1-179"></a><span class="co">      url: "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/latest.js?config=TeX-MML-AM_CHTML"</span></span>
+<span id="cb1-180"><a href="#cb1-180"></a><span class="an">lightbox:</span><span class="co"> true</span></span>
+<span id="cb1-181"><a href="#cb1-181"></a><span class="co">---</span></span>
+<span id="cb1-182"><a href="#cb1-182"></a></span>
+<span id="cb1-183"><a href="#cb1-183"></a>https://www.nature.com/nathumbehav/content</span>
+<span id="cb1-184"><a href="#cb1-184"></a>Main text – up to 5,000 words, excluding abstract, Methods, references and figure legends.</span>
+<span id="cb1-185"><a href="#cb1-185"></a>Abstract – up to 150 words, unreferenced. </span>
+<span id="cb1-186"><a href="#cb1-186"></a>Display items – up to 8 items (figures and/or tables). </span>
+<span id="cb1-187"><a href="#cb1-187"></a>Article should be divided as follows: </span>
+<span id="cb1-188"><a href="#cb1-188"></a>Introduction (without heading) </span>
+<span id="cb1-189"><a href="#cb1-189"></a>Results (concise, focused account of the findings)</span>
+<span id="cb1-190"><a href="#cb1-190"></a>Discussion</span>
+<span id="cb1-191"><a href="#cb1-191"></a>Methods. ​</span>
+<span id="cb1-192"><a href="#cb1-192"></a>Results and Methods should be divided by topical subheadings; the Discussion does not contain subheadings.</span>
+<span id="cb1-193"><a href="#cb1-193"></a></span>
+<span id="cb1-194"><a href="#cb1-194"></a></span>
+<span id="cb1-195"><a href="#cb1-195"></a><span class="fu"># Introduction {#sec-intro}</span></span>
+<span id="cb1-196"><a href="#cb1-196"></a></span>
+<span id="cb1-197"><a href="#cb1-197"></a><span class="fu">## Short intro + problem statement</span></span>
+<span id="cb1-198"><a href="#cb1-198"></a>Human health and ocular light exposure are intricately linked through non-visual neural pathways from the eye into the autonomous nervous system. Because light exposure at the eye level is not only shaped by the solar potential, but also by geographic location, culture, the built environment, and, ultimately, individual behaviour, it is considered a highly modifiable determinant of human health. However, to date, we have a limited understanding about personal light exposure patterns under naturalistic conditions, how much it varies within and between populations, and how it is determined by individual, behavioural, and environmental conditions. In this study, we provide the first multi-country wearable and experience-sampling dataset in terms of measurement fidelity and scope, and decompose personal light exposure data into contributing components.</span>
+<span id="cb1-199"><a href="#cb1-199"></a></span>
+<span id="cb1-200"><a href="#cb1-200"></a><span class="fu">## circadian rhythms and light</span></span>
+<span id="cb1-201"><a href="#cb1-201"></a>Human behaviour and physiology is shaped by the 24-hour day and night cycle. The evolutionary benefit of being able to anticipate changes in the environment and act upon them, instead of merely reacting, has led to the development of an endogenous circadian rhythm. In humans, as in many other mammals, the circadian system is conducted by a central pacemaker, the Suprachiasmatic nucleus (SCN), situated in the hypothalamus of the brain. The SCN regulates many physiological processes in a major way, either directly, or indirectly by setting the peripheral clocks within all cells of the body. Circadian effects include hormone production, such as Melatonin and Cortisol, sleep-wake regulation, as well as mood, cognitive, and physical performance. In an entrained, i.e., aligned system, internal processes provide the ideal substrate to handle exterior stressors during the day and interior stressors at night. A property of the SCN is its flexibility of alignment, that allows readjustments of the endogenous rhythm through external stimuli, so-called Zeitgeber. The strongest Zeitgeber for humans is light input through the eyes. Intrinsically photosensitive retinal ganglion cells (ipRGCs) in the retina relay environmental light levels through the retino-hypothalamic tract directly to the SCN. Secondary downstream targets of the ipRGCs are sleep-wake regulating centers of the brain, and possibly also mood-regulating centers as found in the mouse model. This link between retinal light exposure and acute and longterm effects on human physiology has wide-reaching implications for human health and wellbeing, as a misaligned circadian system increases the risk for mental, metabolic, cardiovascular disease, as well as for breast and prostate cancer.</span>
+<span id="cb1-202"><a href="#cb1-202"></a></span>
+<span id="cb1-203"><a href="#cb1-203"></a><span class="fu">## laboratory research in the past decades</span></span>
+<span id="cb1-204"><a href="#cb1-204"></a>Controlled laboratory studies over the past decades have allowed to characterize the novel receptor type in the human retina, as well as describe the downstream effects on physiology. In short, light that excites the ipRGCs  acutely increases alertness, suppresses melatonin synthetization in the pineal gland, and phase-shifts the circadian rhythm, collectively summarized as non-visual effects of light. Through the photopigment Melanopsin, ipRGCs are maximally sensitive around 490&nbsp;nm, i.e., shorter wavelengths compared to daytime brightness perception (~555&nbsp;nm). ipRGC are further sparse in number (about 1% of all RGCs, though widely distributed), sluggish in their reaction, and integrating in their behavior. This makes them ideal daylight detectors, however, they can be excited by any type of lightsource. The spectral sensitivity of the ipRCG has been standardized by the CIE in the standard CIE S 026/2018, with the melanopic equivalent daylight illuminance (melanopic EDI) as the primary measure to describe a corneal stimulus to the non-visual system. It has since been shown that melanopic EDI are superior to describe non-visual effects in a dose-effect-dependent manner compared to all other single photoreceptor sensitivities or indeed photopic illuminance, i.e., daytime brightness perception. Based on this, recommendations for healthy light exposure have been published that are based on the excitability of the non-visual system, with a minimum of 250&nbsp;lx melanopic EDI during waking hours to support circadian synchronisation and alertness, and a maximum of 10&nbsp;lx melanopic EDI during the three hours before sleep to support a shift towards rest. The sleeping environment should be as dark as possible, with an upper threshold of 1&nbsp;lx melanopic EDI if light cannot be avoided.</span>
+<span id="cb1-205"><a href="#cb1-205"></a></span>
+<span id="cb1-206"><a href="#cb1-206"></a><span class="fu">## Real-world findings </span></span>
+<span id="cb1-207"><a href="#cb1-207"></a>While laboratory studies brought insights into the mechanisms, longterm effects of light exposure on human health require observational studies under naturalistic conditions. List studies that do that:</span>
+<span id="cb1-208"><a href="#cb1-208"></a><span class="ss">- </span>Didikoglu</span>
+<span id="cb1-209"><a href="#cb1-209"></a><span class="ss">- </span>Price</span>
+<span id="cb1-210"><a href="#cb1-210"></a><span class="ss">- </span>Udovicjic</span>
+<span id="cb1-211"><a href="#cb1-211"></a><span class="ss">- </span>1980s</span>
+<span id="cb1-212"><a href="#cb1-212"></a><span class="ss">- </span>Renske</span>
+<span id="cb1-213"><a href="#cb1-213"></a><span class="ss">- </span>Biller et al.</span>
+<span id="cb1-214"><a href="#cb1-214"></a>A number of real-world and large-scale cohort studies have shown that mechanistically derived assumptions about the physiological impact of light exposure are visible as associations under naturalistic conditions.</span>
+<span id="cb1-215"><a href="#cb1-215"></a><span class="ss">- </span>Windred</span>
+<span id="cb1-216"><a href="#cb1-216"></a><span class="ss">- </span>Burns</span>
+<span id="cb1-217"><a href="#cb1-217"></a><span class="ss">- </span>Zahng</span>
+<span id="cb1-218"><a href="#cb1-218"></a><span class="ss">- </span>Obayashi</span>
+<span id="cb1-219"><a href="#cb1-219"></a><span class="ss">- </span>Cardoso</span>
+<span id="cb1-220"><a href="#cb1-220"></a><span class="ss">- </span>Metabolic</span>
+<span id="cb1-221"><a href="#cb1-221"></a></span>
+<span id="cb1-222"><a href="#cb1-222"></a><span class="fu">## The state of personal light exposure in naturalistic conditions</span></span>
+<span id="cb1-223"><a href="#cb1-223"></a><span class="ss">- </span>non mel EDI</span>
+<span id="cb1-224"><a href="#cb1-224"></a><span class="ss">- </span>wrist</span>
+<span id="cb1-225"><a href="#cb1-225"></a><span class="ss">- </span>differing protocols</span>
+<span id="cb1-226"><a href="#cb1-226"></a><span class="ss">- </span>few contextual data</span>
+<span id="cb1-227"><a href="#cb1-227"></a><span class="fu">## The MeLiDos project and the task</span></span>
+<span id="cb1-228"><a href="#cb1-228"></a></span>
+<span id="cb1-229"><a href="#cb1-229"></a><span class="fu">## The scope of this publication and reference to others</span></span>
+<span id="cb1-230"><a href="#cb1-230"></a></span>
+<span id="cb1-231"><a href="#cb1-231"></a><span class="fu">## Research questions and Hypotheses</span></span>
+<span id="cb1-232"><a href="#cb1-232"></a></span>
+<span id="cb1-233"><a href="#cb1-233"></a><span class="fu"># Results {#sec-results}</span></span>
+<span id="cb1-234"><a href="#cb1-234"></a></span>
+<span id="cb1-235"><a href="#cb1-235"></a><span class="fu"># Discussion {#sec-discussion}</span></span>
+<span id="cb1-236"><a href="#cb1-236"></a></span>
+<span id="cb1-237"><a href="#cb1-237"></a><span class="fu"># Methods {#sec-methods}</span></span>
+<span id="cb1-238"><a href="#cb1-238"></a></span>
+<span id="cb1-239"><a href="#cb1-239"></a>The current study was preregistered with ASPREDICTED (#273407) on 13 February 2026 (https://aspredicted.org/te3zw2.pdf). Deviations from the preregistration are documented below in @sec-preregdev.</span>
+<span id="cb1-240"><a href="#cb1-240"></a></span>
+<span id="cb1-241"><a href="#cb1-241"></a><span class="fu">## Research questions and hypotheses</span></span>
+<span id="cb1-242"><a href="#cb1-242"></a></span>
+<span id="cb1-243"><a href="#cb1-243"></a>We assessed the following research questions and hypotheses as specified in the preregistration and @sec-preregdev:</span>
+<span id="cb1-244"><a href="#cb1-244"></a></span>
+<span id="cb1-245"><a href="#cb1-245"></a>**Research Question 1**: </span>
+<span id="cb1-246"><a href="#cb1-246"></a></span>
+<span id="cb1-247"><a href="#cb1-247"></a><span class="at">&gt; Do sites differ in objectively measured personal light exposure? If so, does an individual’s behaviour and micro-environment have a stronger effect than site?</span></span>
+<span id="cb1-248"><a href="#cb1-248"></a></span>
+<span id="cb1-249"><a href="#cb1-249"></a>**H1:** *There is a significant difference in personal light-exposure metrics across sites, even after accounting for latitude and photoperiod.*</span>
+<span id="cb1-250"><a href="#cb1-250"></a></span>
+<span id="cb1-251"><a href="#cb1-251"></a>**H2:** *The variance of personal light exposure patterns (hourly geometric mean of melanopic EDI) by participants within sites is greater than the variance between sites.*</span>
+<span id="cb1-252"><a href="#cb1-252"></a></span>
+<span id="cb1-253"><a href="#cb1-253"></a><span class="fu">## Study design</span></span>
+<span id="cb1-254"><a href="#cb1-254"></a></span>
+<span id="cb1-255"><a href="#cb1-255"></a><span class="fu">## Inclusion and exclusion criteria</span></span>
+<span id="cb1-256"><a href="#cb1-256"></a></span>
+<span id="cb1-257"><a href="#cb1-257"></a><span class="fu">## Data collection procedures</span></span>
+<span id="cb1-258"><a href="#cb1-258"></a></span>
+<span id="cb1-259"><a href="#cb1-259"></a><span class="fu">## Wearable light logger</span></span>
+<span id="cb1-260"><a href="#cb1-260"></a></span>
+<span id="cb1-261"><a href="#cb1-261"></a><span class="fu">## Surveys</span></span>
+<span id="cb1-262"><a href="#cb1-262"></a></span>
+<span id="cb1-263"><a href="#cb1-263"></a><span class="fu">## Measured variables</span></span>
+<span id="cb1-264"><a href="#cb1-264"></a></span>
+<span id="cb1-265"><a href="#cb1-265"></a><span class="fu">## Transformation of variables and preprocesing steps</span></span>
+<span id="cb1-266"><a href="#cb1-266"></a></span>
+<span id="cb1-267"><a href="#cb1-267"></a><span class="fu">## Inference criteria</span></span>
+<span id="cb1-268"><a href="#cb1-268"></a></span>
+<span id="cb1-269"><a href="#cb1-269"></a><span class="fu">## Statistical analysis</span></span>
+<span id="cb1-270"><a href="#cb1-270"></a></span>
+<span id="cb1-271"><a href="#cb1-271"></a><span class="fu">## Deviation from the preregistration {#sec-preregdev}</span></span>
+<span id="cb1-272"><a href="#cb1-272"></a></span>
+<span id="cb1-273"><a href="#cb1-273"></a>This section summarizes deviations from the preregistration (https://aspredicted.org/te3zw2.pdf)</span>
+<span id="cb1-274"><a href="#cb1-274"></a></span>
+<span id="cb1-275"><a href="#cb1-275"></a>{{&lt; include _deviations.qmd &gt;}}</span>
+<span id="cb1-276"><a href="#cb1-276"></a></span>
+<span id="cb1-277"><a href="#cb1-277"></a><span class="fu">## Cross Referencing</span></span>
+<span id="cb1-278"><a href="#cb1-278"></a></span>
+<span id="cb1-279"><a href="#cb1-279"></a>To reference a figure with example label "plot", use <span class="in">`@fig-plot`</span>. </span>
+<span id="cb1-280"><a href="#cb1-280"></a>Analogously, to reference a table with example label "data", use <span class="in">`@tbl-data`</span>.</span>
+<span id="cb1-281"><a href="#cb1-281"></a>To reference a section, such as the Introduction (@sec-intro), use <span class="in">`@sec-intro`</span>.</span>
+<span id="cb1-282"><a href="#cb1-282"></a></span>
+<span id="cb1-283"><a href="#cb1-283"></a>For complete information on cross referencing with Quarto, see <span class="ot">&lt;https://quarto.org/docs/authoring/cross-references.html&gt;</span>.</span>
+<span id="cb1-284"><a href="#cb1-284"></a></span>
+<span id="cb1-285"><a href="#cb1-285"></a></span>
+<span id="cb1-286"><a href="#cb1-286"></a><span class="al">![An example figure (an empty plot)](fig.eps)</span>{#fig-plot}</span>
+<span id="cb1-287"><a href="#cb1-287"></a></span>
+<span id="cb1-288"><a href="#cb1-288"></a>For both figures and tables, you can use LaTeX syntax if you need additional customizability. </span>
+<span id="cb1-289"><a href="#cb1-289"></a></span>
+<span id="cb1-290"><a href="#cb1-290"></a>For example, to use footnotes within a table, you may want to use LaTeX.</span>
+<span id="cb1-291"><a href="#cb1-291"></a></span>
+<span id="cb1-292"><a href="#cb1-292"></a><span class="fu"># References</span></span>
+<span id="cb1-293"><a href="#cb1-293"></a><span class="co">&lt;!-- the pattern below controls the placement of the references --&gt;</span></span>
+<span id="cb1-294"><a href="#cb1-294"></a>:::{#refs}</span>
+<span id="cb1-295"><a href="#cb1-295"></a>:::</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button" data-in-quarto-modal=""><i class="bi"></i></button></div>
+</div></div></div></div></div>
+</div> <!-- /content -->
+<script>var lightboxQuarto = GLightbox({"closeEffect":"zoom","descPosition":"bottom","loop":false,"openEffect":"zoom","selector":".lightbox"});
+(function() {
+  let previousOnload = window.onload;
+  window.onload = () => {
+    if (previousOnload) {
+      previousOnload();
+    }
+    lightboxQuarto.on('slide_before_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      const href = trigger.getAttribute('href');
+      if (href !== null) {
+        const imgEl = window.document.querySelector(`a[href="${href}"] img`);
+        if (imgEl !== null) {
+          const srcAttr = imgEl.getAttribute("src");
+          if (srcAttr && srcAttr.startsWith("data:")) {
+            slideConfig.href = srcAttr;
+          }
+        }
+      } 
+    });
+  
+    lightboxQuarto.on('slide_after_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(slideNode);
+      }
+    });
+  
+  };
+  
+})();
+          </script>
+
+
+
+
+</body></html>

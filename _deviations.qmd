@@ -1,0 +1,25 @@
+
+### General
+
+- Glasses-level data were used for the primary analyses instead of chest-level data, because the glasses-mounted sensor position is closer to the corneal plane and therefore provides a more biologically relevant approximation of ocular light exposure. Chest-level data were retained for supplementary exploratory analyses.
+
+### Preprocessing
+
+- During preprocessing, only non-wear periods that did not occur within a sleep window were set to NA.
+- For sleep-environment-related analyses, sleep windows were defined based on sleepprep, that is, the time at which participants reported trying to sleep, rather than the estimated sleep onset time (sleepprep + sleepdelay). This distinction primarily affects analyses related to the Brown recommendations for healthy light exposure during wake, pre-sleep, and sleep periods. This change aligns the requirements for the sleep environment with the intention to sleep.
+- Metric update: the geometric mean of melanopic EDI during the 10 darkest hours of the day (lx) was used instead of the 5 darkest hours. This approach is consistent with the midpoint of the darkest 10 hours of the day and provides a more stable time frame. Regularly a participant-night would contain more than 5 hours of darkness, making the choice of which 5-hour period is chosen somewhat arbitrary. Using a longer timeframe avoids this effectively.
+- Metric update: the midpoint of the longest period above 250 lx melanopic EDI was replaced by the mean timing of exposure above 250 lx melanopic EDI, because the latter does not reduce the day to a single event.
+
+### R1
+
+- In H1, latitude had to be accounted for separately from site. Including both terms in the same model is problematic because each site is associated with a specific latitude, which effectively removes the estimable effect of latitude. Therefore, model comparison based on AIC was used to assess which model provided the better fit.
+- In H2, an *sz* basis was used to model the smooth interaction between time and site instead of a cyclic spline. Although this approach does not force the estimates and derivatives at the boundaries of the spline, that is, midnight to midnight, to be identical, the *sz* basis addresses identifiability issues in these models that would otherwise persist.
+- In H2, a main effect of time was added so that the site-specific smooths model only deviations from the overall temporal pattern.
+- In H2, average melanopic EDI per 30-minute interval was used instead of the hourly geometric mean. This was because model diagnostics indicated that the model captured the average on a logarithmic scale substantially better than the geometric mean. To reduce potential bias introduced by arithmetic averaging, the aggregation window was shortened from 1 hour to 30 minutes.
+
+### R2
+
+- In H3 and H4, site was included as a fixed effect rather than a random effect to improve the stability of model fitting.
+- In H3 and H4, generalized linear mixed-effects models with a Tweedie error distribution were used because they provided better model performance.
+- In H6, the hourly geometric mean was used instead of derived exposure metrics. This decision was made because the large number of candidate metrics, combined with the number of predictors, did not yield a parsimonious or interpretable model structure. The revised hypothesis is: *There is a significant relationship between day type, daily exercise, sleep, and the hourly geometric mean of light exposure.*
+- In H7, only parameter combinations that were significant in H2 were retained. In addition, an interaction model was not used because the joint parameter space of latitude and photoperiod was sparse. Therefore, only photoperiod was included, and the hypothesis was revised to: *There is a ceiling effect of photoperiod on level-, duration-, and exposure-history-based metrics.*

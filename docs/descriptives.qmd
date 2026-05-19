@@ -658,12 +658,77 @@ tbl1_transposed |>
   ) |> 
   site_conv_gt(rev = FALSE)
 
-tbl1
-
 gtsave(tbl1, "tables/tbl1.png", vwidth = 1200)
 ```
 
-### Reduced table
+
+### Reduced table A
+
+```{r}
+tbl1_red <- 
+tbl1_transposed |> 
+  filter_out(
+    description %in% 
+      c("Chronotype (MEQ-score)", "Gender", "Collection dates", 
+        "Weekday / weekend", "Workday / free", "Social jetlag", "Sleep duration")
+    ) |> 
+    group_by(type) |> 
+  gt(rowname_col = "description") |> 
+  # cols_move(Overall, 1) |> 
+  sub_missing() |> 
+  gt_multiple(names(melidos_cities), style_tab) |> 
+  tab_style(style = cell_text(align = "center"), 
+            locations = list(cells_body(),
+                             cells_column_labels())) |> 
+  tab_style(style = cell_text(weight = "bold", ), 
+            locations = list(cells_row_groups(),
+                             cells_column_labels())) |> 
+  fmt_markdown() |> 
+  tab_footnote(
+    "g: glasses-mounted measurement device; c: chest-level measurement device",
+    locations = cells_stub(c("Participants", "Participant-days", "Complete days (>80% data)"))
+  ) |> 
+  tab_footnote(
+    "Median (minimum, maximum)",
+    locations = cells_stub(any_of(c("Collection dates", "Age")))
+  ) |> 
+  tab_footnote(
+    "Median (5% percentile, 95% percentile)",
+    locations = cells_stub(any_of(c("Photoperiod", "Chronotype (MCTQ-score)", 
+                             "Chronotype (MEQ-score)", "Social jetlag",
+                             "Sleep duration")))
+  ) |> 
+  tab_footnote(
+    "w: weeks, d: days, h: hours, m: minutes, s: seconds",
+    locations = cells_stub(any_of(c("Participant time", "Participant-days", "Nonwear time (%)", 
+                             "Complete days (>80% data)", "Photoperiod", "Social jetlag",
+                             "Sleep duration")))
+  ) |> 
+  tab_footnote(
+    "F: female, M: male(sex)",
+    locations = cells_stub(any_of(c("Sex", "Gender")))
+  ) |> 
+  tab_footnote(
+    "F: Fully employed OR Studying and employed OR Not employed but studying or in training; P: Part time employed OR Marginally employed (Minijob); N: Unemployed",
+    locations = cells_stub(c("Employment status"))
+  ) |> 
+  tab_footnote(
+    "Following the MEQ score; m: morning type; i: intermediary type; e: evening type",
+    locations = cells_stub(c("Chronotype (MEQ-based)"))
+  ) |> 
+  tab_footnote(
+    "MEQ: Morningness-Eveningness-Questionnaire (circadian preference); MCTQ: Munich Chronotype Questionnaire (midsleep on free days, sleep corrected",
+    locations = cells_stub(any_of(c("Chronotype (MEQ-score)", "Chronotype (MCTQ-score)")))
+  ) |> 
+  site_conv_gt(rev = FALSE)
+
+tbl1_red
+
+gtsave(tbl1_red, "tables/tbl1_red.png", vwidth = 1200)
+```
+
+
+### Reduced table B
 
 ```{r}
 demographics |> 
@@ -1254,7 +1319,6 @@ walk(names(melidos_cities),
 
 ```
 
-
 ## Figure 3: Metric plots
 
 ```{r}
@@ -1372,6 +1436,138 @@ P_E_data |>
 
 ggsave("figures/photoperiod_potential_ridges.pdf", width = 6, height = 6)
 ```
+
+## Table: Personal light exposure vs. recommendations
+
+```{r}
+Brown.by.site <-
+light_glasses_processed2 |> 
+  Brown2reference(
+    Brown.day = "wake",
+    Brown.evening = "pre-sleep",
+    Brown.night = "sleep"
+  ) |> 
+  drop_na(Reference.check) |> 
+  group_by(site, State.Brown, Reference.check) |> 
+  durations() |> 
+  pivot_wider(names_from = Reference.check, names_prefix = "check_", values_from = duration) |> 
+  mutate(adhered = check_TRUE,
+         duration = check_FALSE + check_TRUE,
+         adherence = check_TRUE / duration)
+
+Brown.by.site.total <-
+Brown.by.site |> 
+  group_by(site) |> 
+  summarize(adhered = sum(adhered) |> as.duration(),
+            duration = sum(duration) |> as.duration(),
+            adherence = adhered/duration,
+            State.Brown = "total")
+
+Brown.by.site <- 
+Brown.by.site |> 
+  select(site, State.Brown, adhered, duration, adherence) |> 
+  bind_rows(Brown.by.site.total) |> 
+  pivot_wider(names_from = State.Brown, values_from = c(adhered, duration, adherence))
+
+Brown_missing <-
+  light_glasses_processed2 |> 
+  Brown2reference(
+    Brown.day = "wake",
+    Brown.evening = "pre-sleep",
+    Brown.night = "sleep"
+  ) |> 
+  group_by(site) |> 
+  durations(Reference.check, show.missing = TRUE) |> 
+  mutate(missing_pct = missing/total) |> 
+  select(site, missing_pct, missing, total)
+
+Brown_overall <- 
+Brown.by.site |> 
+  left_join(Brown_missing, by = "site") |> 
+  ungroup() |> 
+  summarize(site = "Overall", 
+            adherence_wake = sum(adhered_wake)/sum(duration_wake),
+            `adherence_pre-sleep` = sum(`adhered_pre-sleep`)/sum(`duration_pre-sleep`),
+            adherence_sleep = sum(adhered_sleep)/sum(duration_sleep),
+            adherence_total = sum(adhered_total)/sum(duration_total),
+            fraction_wake = sum(duration_wake)/sum(total),
+            `fraction_pre-sleep` = sum(`duration_pre-sleep`)/sum(total),
+            fraction_sleep = sum(duration_sleep)/sum(total),
+            fraction_missing = sum(missing)/sum(total))
+
+Brown_summary <-
+Brown.by.site |> 
+  left_join(Brown_missing, by = "site") |> 
+  mutate(
+    fraction_wake = (duration_wake)/(total),
+    `fraction_pre-sleep` = (`duration_pre-sleep`)/(total),
+    fraction_sleep = (duration_sleep)/(total),
+    fraction_missing = (missing)/(total)
+  ) |> 
+  select(-starts_with("adhered_"), -starts_with("duration_"), -total, -missing_pct, -missing) |> 
+  site_conv_mutate(rev = FALSE) |> 
+  arrange(site)
+```
+
+
+```{r}
+source("scripts/RQ2_specific.R")
+Brown_table <- 
+bind_rows(Brown_overall, Brown_summary) |> 
+  gt() |> 
+  gt::rows_add(site = NA, .after = 1)|> 
+  tab_style(
+    style = list(css(`padding-top` = "0px",
+            `padding-bottom` = "0px"),
+            cell_fill("lightgrey")
+            ),
+    locations = cells_body(rows = 2)) |>
+  sub_missing(missing_text = "") |> 
+  fmt_percent(decimals = 0) |> 
+  tab_spanner("Adherence to recommendations during:", starts_with("adherence_")) |> 
+  tab_spanner("Percentage of measured time:", starts_with("fraction_")) |> 
+  cols_label_with(fn = \(x) str_remove(x, "adherence_|fraction_") |> str_to_sentence()) |> 
+  tab_style(
+    style = cell_text(weight = "bold"),
+    locations = list(
+      cells_body(site),
+      cells_column_labels(),
+      cells_column_spanners(),
+      cells_body(rows = 1)
+    )
+  ) |> 
+  gt_multiple(
+    melidos_colors |> names(),
+    style_rows
+  ) |>
+  tab_style(
+    style = cell_borders("right", "lightgrey", weight = "2px"),
+    locations = cells_body(adherence_total)
+  ) |> 
+  tab_style(
+    style = cell_text(align = "center"),
+    list(cells_body(), cells_column_labels())
+  ) |> 
+  tab_footnote(
+    "Missingness can result from either missing sleep-wake diary data for a given day, and/or missing or removed measurements of melanopic EDI",
+    cells_column_labels(fraction_missing)
+  ) |> 
+  tab_footnote(
+    "Recommendations for healthy lighting refer to Brown et al. (2022). Wake ≥ 250lx melanopic EDI, pre-sleep ≤ 10lx melanopic EDI, sleep ≤ 1lx melanopic EDI",
+    cells_column_spanners(1)
+  ) |> 
+  tab_footnote(
+    "Total is a time-weighted average",
+    cells_column_labels(adherence_total)
+  ) 
+  
+```
+
+```{r}
+Brown_table
+gtsave(Brown_table, "tables/Brown_table.png")
+```
+
 
 ## Session Info
 
