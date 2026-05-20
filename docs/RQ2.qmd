@@ -198,6 +198,25 @@ hourly_data2 <-
            )
 ```
 
+```{r}
+library(nnet)
+hourly_data3 <- hourly_data2 |> mutate(lightsource_primary = fct_drop(lightsource_primary))
+model_lightsource_site <- multinom(
+  lightsource_primary ~ site,
+  data = hourly_data3
+)
+model_lightsource_site0 <- multinom(
+  lightsource_primary ~ 1,
+  data = hourly_data3
+)
+anova(model_lightsource_site, model_lightsource_site0, test = "Chisq")
+prop.table(
+  table(hourly_data3$site, hourly_data3$lightsource_primary),
+  margin = 1)
+chisq.test(table(hourly_data3$site, hourly_data3$lightsource_primary))
+```
+
+
 ### Analysis
 
 ```{r}
@@ -448,6 +467,7 @@ locations = cells_body(rows = 2)) |>
 ```{r}
 H3_tab
 gtsave(H3_tab, "tables/H3.png")
+gtsave(H3_tab, "tables/H3.docx")
 ```
 
 #### Visualization
@@ -799,6 +819,7 @@ H3_ls_data |>
                   )
 
 ggsave("figures/Fig9.pdf", height = 10, width = 15)
+ggsave("figures/Fig9.png", height = 10, width = 15)
 ```
 
 ## Hypothesis 4
@@ -886,6 +907,23 @@ activity_data <-
   drop_na(activity)
 ```
 
+```{r}
+library(nnet)
+activity_data2 <- activity_data |> mutate(activity = fct_drop(lightsource_primary))
+model_activity_site <- multinom(
+  activity ~ site,
+  data = activity_data2 
+)
+model_activity_site0 <- multinom(
+  activity ~ 1,
+  data = activity_data2 
+)
+anova(model_activity_site, model_activity_site0, test = "Chisq")
+prop.table(
+  table(activity_data2$site, activity_data2$activity),
+  margin = 1)
+chisq.test(table(activity_data2$site, activity_data2$activity))
+```
 
 ### Analysis
 
@@ -1140,6 +1178,7 @@ locations = cells_body(rows = 2)) |>
 ```{r}
 H4_tab
 gtsave(H4_tab, "tables/H4.png")
+gtsave(H4_tab, "tables/H4.docx")
 ```
 
 #### Visualization
@@ -1177,6 +1216,7 @@ H4_plot <-
 
 H3_plot + H4_plot
 ggsave("figures/Fig5.pdf", width = 15, height = 12)
+ggsave("figures/Fig5.png", width = 15, height = 12)
 
 activity_data |> 
     filter_out(is.na(activity)) |> 
@@ -1531,6 +1571,7 @@ H4_pred / P_terms / n_plot_H4 + plot_layout(heights = c(2,2,1)) +
                   )
 
 ggsave("figures/Fig10.pdf", height = 10, width = 15)
+ggsave("figures/Fig10.png", height = 10, width = 15)
 ```
 
 ## Hypothesis 5
@@ -1612,7 +1653,7 @@ leba |>
   tab_header("Significant differences in LEBA factors dependent on sites")
 ```
 
-Only to factors are significantly different: F2 and F5. Of those, only UCR for F2 and BAUA for F5 show significant differences from the mean, both being 2-3 points lower (post-hoc test). Thus, we deem that the factors can be analysed independent of site.
+Only two factors are significantly different: F2 and F5. Of those, only UCR for F2 and BAUA for F5 show significant differences from the mean, both being 2-3 points lower (post-hoc test). Thus, we deem that the factors can be analysed independent of site.
 
 
 ```{r}
@@ -1653,7 +1694,7 @@ H5_corr_matrix |>
   geom_text(
     aes(label = 
           paste(
-            paste("c=",round(correlation, 2)), 
+            paste("r=",round(correlation, 2)), 
             p_value %>% style_pvalue(prepend_p = TRUE), 
             sep = "\n"),
         color = significant
@@ -1670,6 +1711,7 @@ H5_corr_matrix |>
   labs(caption = paste0("p-values are fdr-corrected for n= ", H5_n, " comparisons"))
 
 ggsave("figures/Fig6.pdf", width = 12, height = 5)
+ggsave("figures/Fig6.png", width = 12, height = 5)
 ```
 
 ### Interpretation
@@ -1690,7 +1732,6 @@ Hypothesis 6 states:
 - $\text{mel EDI} \sim \text{day type}*\text{Site} + \text{daily exercise}*\text{Site} + \text{sleep duration}*\text{Site} +(1|\text{Participant})$
 
 *Notes:*
-- site as a random effect with random slopes was unstable. Thus, site will be used as an interaction
 - The confirmatory tests look at the base model compared to the Null models for each covariate
 - Site was sum-coded, so as to calculate an average effect of site
 - Sleep duration is based on the previous night
@@ -1742,6 +1783,41 @@ H6_contextdata <-
   H6_contextdata |> 
   mutate(Date = factor(Date))
 ```
+
+### Testing site-specific differences
+
+```{r}
+by.day.data <- H6_contextdata |> mutate(work = daytype == "a work day")
+```
+
+```{r}
+model_daytype <- glm(work ~ site, data = by.day.data, family = binomial())
+summary(model_daytype)
+drop1(model_daytype, test = "Chisq")
+```
+
+Daytype is not significantly different between sites.
+
+```{r}
+model_sleep <- lmer(sleep_duration ~ site + (1|Id), data = by.day.data)
+summary(model_sleep)
+drop1(model_sleep, test = "Chisq")
+```
+
+Sleep duration is not significantly different between sites
+
+```{r}
+#check for site differences of exercise:
+library(ordinal)
+model_exercise_site <- clmm(
+  exercise ~ site + (1 | Id),
+  data = H6_contextdata
+)
+
+summary(model_exercise_site)
+drop1(model_exercise_site)
+```
+
 
 ```{r}
 #| filename: Plot overview of light against self-reported activity
@@ -2146,6 +2222,7 @@ locations = cells_body(rows = 2)) |>
 ```{r}
 H6_tab
 gtsave(H6_tab, "tables/H6.png", vwidth = 1200)
+gtsave(H6_tab, "tables/H6.docx", vwidth = 1200)
 ```
 
 #### Visualization
@@ -2177,6 +2254,7 @@ H6_plot <-
 
 H6_plot
 ggsave("figures/Fig_H6.pdf", width = 7, height = 7)
+ggsave("figures/Fig_H6.png", width = 7, height = 7)
 ```
 
 
@@ -2475,6 +2553,7 @@ H6_pred / P_terms / n_plot_H6 + plot_layout(heights = c(2,2,1)) +
                   )
 
 ggsave("figures/Fig11.pdf", height = 10, width = 15)
+ggsave("figures/Fig11.png", height = 10, width = 15)
 ```
 
 #### Visualization for daytype
@@ -2619,6 +2698,7 @@ H6_dt_pred / H6_termplot +
                   )
 
 ggsave("figures/Fig12.pdf", height = 8, width = 7.3)
+ggsave("figures/Fig12.png", height = 8, width = 7.3)
 ```
 
 
@@ -2741,6 +2821,20 @@ gam_deriv_plot(mod[[5]], "Period above 250 lx melanopic EDI")
 #| fig-width: 12
 #| fig-height: 5
 gam_deriv_plot(mod[[6]], "Melanopic EDI dose")
+```
+
+```{r}
+#| fig-height: 21
+#| fig-width: 10
+gam_deriv_plot(mod[[1]], H7_models$name[[1]]) /
+gam_deriv_plot(mod[[3]], "Darkest 10h mean") /
+gam_deriv_plot(mod[[4]], "Duration above 1000 lx melanopic EDI") /
+gam_deriv_plot(mod[[6]], "Melanopic EDI dose") /
+gam_deriv_plot(mod[[5]], "Period above 250 lx melanopic EDI") /
+gam_deriv_plot(mod[[1]], H7_models$name[[1]]) + plot_annotation(tag_levels = "A")
+
+ggsave("figures/Fig14.pdf", height = 21, width = 10)
+ggsave("figures/Fig14.png", height = 21, width = 10)
 ```
 
 

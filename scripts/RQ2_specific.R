@@ -62,9 +62,9 @@ gam_deriv_plot <- function(model, name) {
       col = "red",
       linetype = "dashed"
     ) +
-    labs(y = "s(photoperiod)", x = "photoperiod")
+    labs(y = "s(photoperiod)", x = "photoperiod", title = paste0(name))
   
-  term_plot + deriv_plot + plot_annotation(title = paste0("Metric: ", name))
+  term_plot + deriv_plot
 }
 
 difference_sz <- function(model, data, x, fac, lev1, lev2,

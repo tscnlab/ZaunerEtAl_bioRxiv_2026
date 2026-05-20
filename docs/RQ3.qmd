@@ -257,6 +257,7 @@ H8_data <-
 
 
 ```{r}
+H8_tab <- 
 H8_data |> 
   select(metric_type, name, H8_1_p, H8_1_sig) |> 
   mutate(H8_1_p = style_pvalue(H8_1_p)) |> 
@@ -266,6 +267,13 @@ H8_data |>
     subtitle = H8
   )
 ```
+```{r}
+H8_tab
+gtsave(H8_tab, "tables/H8.png", vwidth = 1200)
+gtsave(H8_tab, "tables/H8.docx", vwidth = 1200)
+
+```
+
 
 ### Interpretation
 
