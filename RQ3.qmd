@@ -548,8 +548,16 @@ ggsave("figures/Fig7.png", width = 10, height = 5)
 ```
 
 ```{r}
+lm(msf_sc ~ site, data = ct, contrasts = list(site = "contr.sum")) |> drop1(test = "Chisq")
 lm(msf_sc ~ site, data = ct, contrasts = list(site = "contr.sum")) |> 
+  emmeans(~ site) |> contrast() |> plot()
+
+lm(msf_sc ~ photoperiod + site, data = H9_data$data[[1]]) |> drop1(test = "Chisq")
+lm(msf_sc ~ photoperiod + site, data = H9_data$data[[1]]) |> summary()
+lm(msf_sc ~ photoperiod + site, data = H9_data$data[[1]]) |> 
   emmeans(~ site) |> contrast()
+
+  
 ```
 
 
@@ -592,11 +600,13 @@ demographics <- load_data("demographics") |> flatten_data()
 
 ```{r}
 lm(age ~ site, data = demographics) |> emmeans(~ site) |> contrast()
+lm(age ~ site, data = demographics) |> drop1(test = "Chisq")
 demographics |> ggplot(aes(x = site, y = age)) + geom_boxplot()
 ```
 
 ```{r}
 glm(sex ~ site, data = demographics, family = binomial()) |> emmeans(~ site) |> contrast()
+glm(sex ~ site, data = demographics, family = binomial()) |> drop1(test = "Chisq")
 demographics |> ggplot(aes(x = site, fill = sex)) + geom_bar(position = position_dodge())
 ```
 
@@ -1159,7 +1169,144 @@ ggsave("figures/Fig13.png", height = 8, width = 7.3)
 
 ### Interpretation
 
-- Sex is a minor differentiator in terms of melanopic stimulus, that explanes less than 1% of the variance. The only significant difference between the sexes is a lower value during the morning for females compared to males. This phase lasts about 2 hours and has a peak difference of about factor 2
+- Sex is a minor differentiator in terms of melanopic stimulus, that explanes less than 1% of the variance. The only significant difference between the sexes is a lower value during the morning for females compared to males. This phase lasts about 2 hours and has a peak difference of about factor 2.
+
+### Testing for other drivers
+
+```{r}
+mHLEA <- load_data("lightexposurediary") |> flatten_data()
+mHLEA_labels <- 
+  mHLEA|> extract_labels() |> 
+  enframe() |> 
+  filter(str_detect(name, "act_")) |> 
+  mutate(name = name |> str_remove("act_"))
+
+hourly_data <- 
+  metric_participanthour #|> 
+  # aggregate_Datetime(
+  #   "1 hour",
+  #   type = "floor",
+  #   numeric.handler = \(x) x |> mean(na.rm = TRUE),
+  #   geo.MEDI = MEDI |> log_zero_inflated() |> mean(na.rm = TRUE) |> exp_zero_inflated()
+  # )|>
+  # add_Date_col(group.by = TRUE) |> 
+  # mutate(static = all(MEDI == MEDI[1])) |> 
+  # filter_out(static) |> 
+  # select(-static) |> 
+  # ungroup(Date)
+
+hourly_data <- 
+  hourly_data |> 
+  group_by(site, Id, Date) |> 
+  add_states(mHLEA |> mutate(Date = factor(Date)))
+
+hourly_data2 <-
+  hourly_data |> 
+  group_by(site, lightsource_primary) |> 
+  mutate(n = n(),
+         lightsource_primary = lightsource_primary |> 
+           replace_when((n < 20 ) ~ NA)
+           ) |> 
+  group_by(lightsource_primary) |> 
+  mutate(n = n(),
+         lightsource_primary = lightsource_primary |> 
+           replace_when((n < 200 ) ~ NA,
+                        lightsource_primary == "Light entering from outside during sleep" ~ NA),
+         site = factor(site)
+           )
+
+activity_data <- 
+hourly_data2 |> 
+  ungroup() |> 
+  select(site, sex, Id, Time, lzMEDI, Id_date, photoperiod, photoperiod.state, starts_with("act_"), Datetime, lightsource_primary) |> 
+  pivot_longer(cols = starts_with("act_"), names_to = "activity", names_prefix = "act_", values_to = "value") |> 
+  filter(value, !is.na(lzMEDI)) |>
+  distinct(.keep_all = TRUE, site, sex, Time, Id, Datetime, photoperiod.state, activity) |>
+  select(-value) |> 
+  mutate(
+    Id = factor(Id)
+  ) |> 
+    group_by(Id) |> 
+  mutate(AR.start = ifelse(row_number() == 1, TRUE, FALSE)) |> 
+  ungroup()
+
+activity_data <-
+  activity_data |> 
+  mutate(activity = 
+           fct(activity) |> 
+           fct_collapse(outdoor = c("free_outdoor", "working_outdoor", "road_open")) |> 
+           fct_recode(NULL = "other") |> 
+           fct_relevel("home")
+         )
+```
+
+```{r}
+#| filename: H11 formulas
+H11_form_1b <- lzMEDI ~ s(Time, k = 12) + s(Time, photoperiod.state, bs = "sz", k=12) + s(Time, activity, bs = "sz", k = 12) + s(Time, site, bs = "sz", k = 12) + s(Time, Id, bs = "fs") + s(Id_date, bs = "re")
+H11_form_2 <- lzMEDI ~ s(Time, k = 12) + s(Time, photoperiod.state, bs = "sz", k=12) + s(Time, sex, bs = "sz", k = 12) + s(Time, activity, bs = "sz", k = 12) + s(Time, site, bs = "sz", k = 12) + s(Time, Id, bs = "fs") + s(Id_date, bs = "re")
+```
+
+
+```{r}
+#| filename: Main model
+H11_model_1b <- 
+  bam(H11_form_1b, 
+      data = activity_data, 
+      discrete = TRUE,
+      method = "fREML",
+      nthreads = 10
+      )
+
+r1 <- start_value_rho(H11_model_1b, 
+                      plot=TRUE)
+
+H11_model_1b <- 
+  bam(H11_form_1b, 
+      data = activity_data, 
+      discrete = TRUE,
+      method = "fREML",
+      nthreads = 10,
+      rho = r1,
+      AR.start = AR.start
+      )
+
+acf_resid(H11_model_1b, split_pred = "AR.start")
+
+```
+
+```{r}
+#| filename: Activity model
+H11_model_2 <- 
+  bam(H11_form_2, 
+      data = activity_data, 
+      discrete = TRUE,
+      method = "fREML",
+      nthreads = 10
+      )
+
+r1 <- start_value_rho(H11_model_2, 
+                      plot=TRUE)
+
+H11_model_2 <- 
+  bam(H11_form_2, 
+      data = activity_data, 
+      discrete = TRUE,
+      method = "fREML",
+      nthreads = 10,
+      rho = r1,
+      AR.start = AR.start
+      )
+
+acf_resid(H11_model_2, split_pred = "AR.start")
+```
+
+```{r}
+# H11_model_1b |> draw(select = "s(Time,sex)")
+H11_model_2 |> draw(select = "s(Time,sex)")
+H11_model_2 |> draw(select = "s(Time,activity)")
+AIC(H11_model_1b, H11_model_2)
+```
+
 
 ## Session Info
 

@@ -1856,48 +1856,6 @@ H6_data |>
 
 ```
 
-
-```{r}
-#| filename: Prepare model formulas
-metrics <- 
-metrics |> 
-    mutate(H6_1 = case_when(
-                                type == "participant-day" ~ 
-                                  "~ site*daytype + site*exercise + site*sleep_duration + (1| Id)"),
-         H6_0_daytype = case_when(
-                                 type == "participant-day" ~ 
-                                  "~ site*exercise + site*sleep_duration + (1| site:Id)"),
-         H6_0_exercise = case_when(
-                                 type == "participant-day" ~ 
-                                  "~ site*daytype + site*sleep_duration + (1|site:Id)"),
-         H6_0_sleep = case_when(
-                                 type == "participant-day" ~ 
-                                  "~ site*daytype + site*exercise + (1|site:Id)"),
-         data = data |> map2(type, \(x, type) if(type == "participant") {
-           return(x)
-           } else {
-           x |> left_join(H6_contextdata, by = c("site", "Id", "Date")) |> 
-               mutate(sleep_duration = sleep_duration |> as.numeric())
-         } 
-         )
-    )
-
-H6_formulas <-  names(metrics) |> subset(grepl("H6_", names(metrics)))
-
-metrics <- metrics |> relocate(all_of(H6_formulas), .after = family)
-H6_fdr_n <- metrics |> filter_out(when_any(is.na(response), type == "participant")) |> nrow() *3
-```
-
-```{r}
-#| code-summary: Code cell - Formula creation
-metrics <-
-  metrics |> 
-  mutate(across(all_of(H6_formulas),
-                \(x) map2(x, response, \(y,z) make_formula(z, y))
-                )
-         )
-```
-
 ### Analysis
 
 ```{r}
@@ -2701,6 +2659,101 @@ ggsave("figures/Fig12.pdf", height = 8, width = 7.3)
 ggsave("figures/Fig12.png", height = 8, width = 7.3)
 ```
 
+### Testing other drivers
+
+```{r}
+activity_data <- 
+H6_data |> 
+  ungroup() |> 
+  # select(site, Id, geo.MEDI, starts_with("act_"), Datetime, lightsource_primary) |> 
+  pivot_longer(cols = starts_with("act_"), names_to = "activity", names_prefix = "act_", values_to = "value") |> 
+  filter(value, !is.na(geo.MEDI)) |>
+  distinct(.keep_all = TRUE, site, Id, Datetime, activity) |>
+  select(-value)
+
+activity_data <-
+  activity_data |> 
+  mutate(activity = 
+           fct(activity) |> 
+           fct_collapse(outdoor = c("free_outdoor", "working_outdoor", "road_open")) |> 
+           fct_recode(NULL = "other") |> 
+           fct_relevel("home")
+         ) |> 
+  drop_na(geo.MEDI, daytype, exercise, sleep_duration, activity)
+```
+
+
+```{r}
+#| filename: Fit the model for H6
+#| fig-height: 10
+#| fig-width: 8
+H6_formula_1 <- geo.MEDI ~ site*daytype + site*exercise + site*sleep_duration + (1| Id)
+H6_formula_2 <- geo.MEDI ~ site*activity + site*daytype + site*exercise + site*sleep_duration + (1| Id)
+H6_formula_0_daytype <- geo.MEDI ~ site*activity + site*exercise + site*sleep_duration + (1| Id)
+H6_formula_0_exercise <- geo.MEDI ~ site*activity + site*daytype + site*sleep_duration + (1|Id)
+H6_formula_0_sleep <- geo.MEDI ~ site*activity + site*daytype + site*exercise + (1|Id)
+H6_formula_0_site <- geo.MEDI ~ activity + daytype + exercise + sleep_duration + (1|Id)
+
+#confirmatory
+H6_model_1 <- 
+  glmmTMB(H6_formula_1, 
+          data = activity_data, 
+          REML = FALSE, 
+          family = tweedie(),
+          contrasts = list(site = "contr.sum")
+          )
+H6_model_2 <- 
+  glmmTMB(H6_formula_2, 
+          data = activity_data, 
+          REML = FALSE, 
+          family = tweedie(),
+          contrasts = list(site = "contr.sum")
+          )
+H6_model_0_daytype <- 
+  glmmTMB(H6_formula_0_daytype, 
+          data = activity_data, 
+          REML = FALSE, 
+          family = tweedie(),
+          contrasts = list(site = "contr.sum")
+          )
+H6_model_0_exercise <- 
+  glmmTMB(H6_formula_0_exercise, 
+          data = activity_data, 
+          REML = FALSE, 
+          family = tweedie(),
+          contrasts = list(site = "contr.sum")
+          )
+H6_model_0_sleep <- 
+  glmmTMB(H6_formula_0_sleep, 
+          data = activity_data,
+          REML = FALSE, 
+          family = tweedie(),
+          contrasts = list(site = "contr.sum")
+          )
+H6_model_0_site <- 
+  glmmTMB(H6_formula_0_site, 
+          data = activity_data,
+          REML = FALSE, 
+          family = tweedie(),
+          # contrasts = list(site = "contr.sum")
+          )
+
+comp_daytype <- 
+anova(H6_model_0_daytype, H6_model_2)
+comp_daytype
+comp_exercise <- 
+anova(H6_model_0_exercise, H6_model_2)
+comp_exercise
+comp_sleep <- 
+anova(H6_model_0_sleep, H6_model_2)
+comp_sleep
+
+
+AIC(H6_model_0_sleep, H6_model_0_exercise, H6_model_0_daytype, H6_model_2) |> 
+  arrange(AIC) |> 
+  rownames_to_column("model") |> gt()
+```
+
 
 ## Hypothesis 7
 
@@ -2736,8 +2789,8 @@ metrics |>
   mutate(H7_1 = "log_zero_inflated(metric) ~ s(photoperiod) + s(site, bs = 're') + s(Id, bs = 're')",
          H7_0 = "log_zero_inflated(metric) ~  s(site, bs = 're') + s(Id, bs = 're')",
          across(c(H7_1, H7_0), \(x) map(x, as.formula)),
-         data = data |> map(\(x) x |> mutate(site = fct(site),
-                                             Id = fct(Id)))
+         data = data |> map(\(x) x |> mutate(site = factor(site),
+                                             Id = factor(Id)))
          )
 ```
 
