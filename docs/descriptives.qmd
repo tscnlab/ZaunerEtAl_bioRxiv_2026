@@ -717,7 +717,7 @@ tbl1_transposed |>
     locations = cells_stub(c("Chronotype (MEQ-based)"))
   ) |> 
   tab_footnote(
-    "MEQ: Morningness-Eveningness-Questionnaire (circadian preference); MCTQ: Munich Chronotype Questionnaire (midsleep on free days, sleep corrected",
+    "MEQ: Morningness-Eveningness-Questionnaire (circadian preference); MCTQ: Munich Chronotype Questionnaire (midsleep on free days, sleep corrected)",
     locations = cells_stub(any_of(c("Chronotype (MEQ-score)", "Chronotype (MCTQ-score)")))
   ) |> 
   site_conv_gt(rev = FALSE)
@@ -931,7 +931,7 @@ tbl2
 gtsave(tbl2, "tables/tbl2.png", vwidth = 1750)
 ```
 
-## Figure 1: Overview
+## Figure: Overview
 
 ### Panel A: Protocol
 
@@ -1221,7 +1221,7 @@ ggsave("figures/Fig1.pdf", height = 10, width = 10.5, scale = 1.5)
 ggsave("figures/Fig1.png", height = 10, width = 10.5, scale = 1.5)
 ```
 
-## Figure 2: Site plots
+## Figure: Site plots
 
 ```{r}
 Fig2_data <-
@@ -1321,7 +1321,7 @@ walk(names(melidos_cities),
 
 ```
 
-## Figure 3: Metric plots
+## Figure: Metric plots
 
 ```{r}
 Fig3_data <- 
@@ -1567,11 +1567,339 @@ bind_rows(Brown_overall, Brown_summary) |>
   
 ```
 
+And for chest-level data: 
+
 ```{r}
-Brown_table
-gtsave(Brown_table, "tables/Brown_table.png")
+Brown.by.site <-
+light_chest_processed2 |> 
+  Brown2reference(
+    Brown.day = "wake",
+    Brown.evening = "pre-sleep",
+    Brown.night = "sleep"
+  ) |> 
+  drop_na(Reference.check) |> 
+  group_by(site, State.Brown, Reference.check) |> 
+  durations() |> 
+  pivot_wider(names_from = Reference.check, names_prefix = "check_", values_from = duration) |> 
+  mutate(adhered = check_TRUE,
+         duration = check_FALSE + check_TRUE,
+         adherence = check_TRUE / duration)
+
+Brown.by.site.total <-
+Brown.by.site |> 
+  group_by(site) |> 
+  summarize(adhered = sum(adhered) |> as.duration(),
+            duration = sum(duration) |> as.duration(),
+            adherence = adhered/duration,
+            State.Brown = "total")
+
+Brown.by.site <- 
+Brown.by.site |> 
+  select(site, State.Brown, adhered, duration, adherence) |> 
+  bind_rows(Brown.by.site.total) |> 
+  pivot_wider(names_from = State.Brown, values_from = c(adhered, duration, adherence))
+
+Brown_missing <-
+  light_glasses_processed2 |> 
+  Brown2reference(
+    Brown.day = "wake",
+    Brown.evening = "pre-sleep",
+    Brown.night = "sleep"
+  ) |> 
+  group_by(site) |> 
+  durations(Reference.check, show.missing = TRUE) |> 
+  mutate(missing_pct = missing/total) |> 
+  select(site, missing_pct, missing, total)
+
+Brown_overall <- 
+Brown.by.site |> 
+  left_join(Brown_missing, by = "site") |> 
+  ungroup() |> 
+  summarize(site = "Overall", 
+            adherence_wake = sum(adhered_wake)/sum(duration_wake),
+            `adherence_pre-sleep` = sum(`adhered_pre-sleep`)/sum(`duration_pre-sleep`),
+            adherence_sleep = sum(adhered_sleep)/sum(duration_sleep),
+            adherence_total = sum(adhered_total)/sum(duration_total),
+            fraction_wake = sum(duration_wake)/sum(total),
+            `fraction_pre-sleep` = sum(`duration_pre-sleep`)/sum(total),
+            fraction_sleep = sum(duration_sleep)/sum(total),
+            fraction_missing = sum(missing)/sum(total))
+
+Brown_summary <-
+Brown.by.site |> 
+  left_join(Brown_missing, by = "site") |> 
+  mutate(
+    fraction_wake = (duration_wake)/(total),
+    `fraction_pre-sleep` = (`duration_pre-sleep`)/(total),
+    fraction_sleep = (duration_sleep)/(total),
+    fraction_missing = (missing)/(total)
+  ) |> 
+  select(-starts_with("adhered_"), -starts_with("duration_"), -total, -missing_pct, -missing) |> 
+  site_conv_mutate(rev = FALSE) |> 
+  arrange(site)
 ```
 
+
+```{r}
+source("scripts/RQ2_specific.R")
+Brown_table <- 
+bind_rows(Brown_overall, Brown_summary) |> 
+  gt() |> 
+  gt::rows_add(site = NA, .after = 1)|> 
+  tab_style(
+    style = list(css(`padding-top` = "0px",
+            `padding-bottom` = "0px"),
+            cell_fill("lightgrey")
+            ),
+    locations = cells_body(rows = 2)) |>
+  sub_missing(missing_text = "") |> 
+  fmt_percent(decimals = 0) |> 
+  tab_spanner("Adherence to recommendations during:", starts_with("adherence_")) |> 
+  tab_spanner("Percentage of measured time:", starts_with("fraction_")) |> 
+  cols_label_with(fn = \(x) str_remove(x, "adherence_|fraction_") |> str_to_sentence()) |> 
+  tab_style(
+    style = cell_text(weight = "bold"),
+    locations = list(
+      cells_body(site),
+      cells_column_labels(),
+      cells_column_spanners(),
+      cells_body(rows = 1)
+    )
+  ) |> 
+  gt_multiple(
+    melidos_colors |> names(),
+    style_rows
+  ) |>
+  tab_style(
+    style = cell_borders("right", "lightgrey", weight = "2px"),
+    locations = cells_body(adherence_total)
+  ) |> 
+  tab_style(
+    style = cell_text(align = "center"),
+    list(cells_body(), cells_column_labels())
+  ) |> 
+  tab_footnote(
+    "Missingness can result from either missing sleep-wake diary data for a given day, and/or missing or removed measurements of melanopic EDI",
+    cells_column_labels(fraction_missing)
+  ) |> 
+  tab_footnote(
+    "Recommendations for healthy lighting refer to Brown et al. (2022). Wake ≥ 250lx melanopic EDI, pre-sleep ≤ 10lx melanopic EDI, sleep ≤ 1lx melanopic EDI",
+    cells_column_spanners(1)
+  ) |> 
+  tab_footnote(
+    "Total is a time-weighted average",
+    cells_column_labels(adherence_total)
+  ) 
+  
+```
+
+```{r}
+Brown_table
+gtsave(Brown_table, "tables/chest/Brown_table.png")
+```
+
+## Figure: Timeseries to metrics
+
+We start by downloading the german datasets from MeLiDos
+
+```{r}
+#load data
+load("data/metrics_separate_glasses.RData")
+#only german sites
+data <- metric_glasses_participanthour |> filter(site %in% c("TUM", "BAUA", "MPI"))
+#only participants with at least 6 days of data
+data <- data |> sample_groups(condition = length(unique(Date)) >=6)
+```
+
+## Panel A
+
+```{r}
+symlog <- function(base = 10, thr = 1, scale = 1){
+  trans <- function(x)
+    ifelse(abs(x) < thr, x, sign(x) * 
+             (thr + scale * (log(sign(x) * x / thr, base))))
+}
+```
+
+```{r}
+data_Fig1 <- 
+data |> 
+  add_Date_col(as.count = TRUE) |>
+  ungroup() |>
+  mutate(across(where(is.POSIXct),
+                \(x)  as_datetime(paste0(min(as_date(Datetime)) + Date, " ", hms::as_hms(x)))
+            )
+         ) |>
+  group_by(Id) |>
+  # sample_groups(sample = 36:40) |> 
+  filter(Id %in% c(
+    "BAUA_S003", "BAUA_S009", "BAUA_S022", "MPI_S226", "MPI_S227",
+    "TUM_S009", "MPI_S205"
+  )) |> 
+  filter_Date(start = "2023-08-16", length = "5 days") |> 
+  group_by(Id, Date) |> 
+  mutate(MEDI_sym = symlog()(MEDI),
+         dur = duration_above_threshold(MEDI, Datetime, threshold = 250, na.rm = TRUE)) |> 
+  group_by(Id)
+```
+
+
+```{r}
+#| fig-width: 8
+#| fig-height: 7.5
+Fig1_PanelA <-
+  data_Fig1 |> 
+  ungroup() |> 
+  mutate(Id = fct_reorder(Id, dur)) |> 
+  group_by(Id) |> 
+  drop_na(MEDI) |> 
+  gg_days(geom = "ribbon", 
+          # aes_col = MEDI >= 250, 
+          aes_col = Id,
+          aes_fill = Id, 
+          x.axis.breaks = \(x) Datetime_breaks(x),
+          x.axis.format = "%H:%M %a", 
+          y.axis.breaks = c(0, 10, 250, 10000),
+          # group = consecutive_id(MEDI >=250),
+          facetting = FALSE,
+          linewidth = 1, alpha = 0.25) |> 
+  gg_photoperiod() + 
+  facet_wrap(~Id, ncol = 1) +
+  theme_sub_strip(text = element_blank(), placement = "inside",
+                  background = element_blank(),
+                  ) +
+  guides(col = "none", fill = "none") +
+  theme_sub_plot(margin = margin(10, 30, 10, 10)) +
+  theme(
+    panel.grid.major.x = 
+        ggplot2::element_line(color = "grey80", linetype = 2, linewidth = 0.75),
+      panel.grid.minor.x = 
+        ggplot2::element_line(color = "grey80", linetype = 1, linewidth = 0.75)
+  ) +
+  geom_hline(yintercept = 250, linetype = 2) +
+    annotate(geom = "text", y = 2000, x = as_datetime("2023-08-16 12:00:00"), 
+             label = "recommended daytime minimum", hjust = 0, vjust = 0,
+             fontface = "bold",
+             layout = 1) + 
+    annotate("curve", y = 4000, x = as_datetime("2023-08-16 11:30:00"),
+           xend = as_datetime("2023-08-16 8:00:00"), yend = 250,
+           curvature = 0.4, layout = 1,
+           arrow = arrow(type = "closed",
+                         length = unit(0.2, "cm")))
+
+```
+
+```{r}
+data_Fig1_sum <- 
+  data_Fig1 |> 
+  filter(photoperiod.state == "day") |> 
+  add_Date_col(as.wday = TRUE) |> 
+  group_by(Id, Date) |> 
+  summarize(
+    duration_above_threshold(MEDI, Datetime, 
+                             threshold = 250, na.rm = TRUE, as.df = TRUE),
+    .groups = "drop"
+  )
+```
+
+```{r}
+Fig1_PanelC <-
+data_Fig1_sum |> 
+  ggplot(aes(x = Date, y = duration_above_250)) +
+  geom_boxplot(width= 0.5) + 
+  theme_cowplot() +
+  scale_y_time(labels = scales::label_time("%H")) +
+  labs(y = expression(TAT[250] ~ "(Hrs)"), x = NULL) +
+  scale_x_discrete(expand = FALSE) +
+  coord_cartesian(xlim = c(0.5,5.5))
+```
+
+```{r}
+Fig1_PanelB <-
+data_Fig1_sum |> 
+  mutate(Id = fct_reorder(Id, duration_above_250, .desc = TRUE)) |> 
+  ggplot(aes(x = duration_above_250, y = Id, fill = fct_rev(Id))) +
+  geom_boxplot(alpha = 0.25) + 
+  theme_cowplot() +
+  ggsci::scale_fill_jco() +
+  scale_x_time(labels = scales::label_time("%H")) +
+  labs(x = expression(TAT[250] ~ "(Hrs)"), y = NULL) +
+  guides(fill = "none") +
+  theme(axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        axis.line.y = element_blank())
+```
+
+```{r}
+Fig1_PanelD <-
+data_Fig1_sum |> 
+  mutate(Id = fct_reorder(Id, duration_above_250)) |> 
+  ggplot(aes(x = duration_above_250)) +
+  geom_histogram(
+    # aes(fill = Id),
+    binwidth = 3600, 
+    fill = "black",
+    color = "white",
+    # alpha = 0.75
+    ) +
+  theme_cowplot() + 
+  ggsci::scale_fill_jco() +
+  labs(x = NULL, y = NULL) +
+    theme(axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        axis.line.y = element_blank()) +
+    scale_x_time(labels = scales::label_time("%H")) +
+  guides(fill = "none")
+
+```
+
+```{r}
+Fig1_PanelD2 <-
+data_Fig1_sum |> 
+  mutate(Id = fct_reorder(Id, duration_above_250)) |> 
+  ggplot(aes(y=fct_rev(Id), x = Date)) +
+  geom_point(aes(size = duration_above_250, col = Id), alpha = 0.5) +
+  ggsci::scale_color_jco() +
+  theme_cowplot() +
+  labs(y = NULL, x = NULL) +
+  theme(
+    axis.text.y = element_blank(),
+        axis.ticks = element_blank(),
+    axis.line.y = element_blank()
+  ) +
+  scale_x_discrete(breaks = "Fri", labels = expression(Size: TAT[250])) +
+  scale_size_continuous(range = c(1,6)) +
+  guides(color = "none", size = "none")
+```
+
+```{r}
+#| fig-width: 10
+#| fig-height: 9
+
+layout <- 
+"AAAAB
+AAAAB
+AAAAB
+AAAAB
+CCCCD"
+
+Fig1_PanelA + Fig1_PanelB + Fig1_PanelC + Fig1_PanelD2 +
+  plot_layout(design = layout) +
+  plot_annotation(
+    tag_levels = "A",
+    caption = paste(
+      "TAT = Time above threshold, during daytime. Threshold is provided in the subscript and indicates melanopic EDI (lx).\nMelanopic EDI values are 30-minute averages at eye-level. ID's: ",
+      paste(
+    c("BAUA_S003", "BAUA_S009", "BAUA_S022", "MPI_S205", "MPI_S226", "MPI_S227",
+    "TUM_S009"), collapse =  ", ")
+    # "\nData source: https://github.com/MeLiDosProject"
+  ))  &
+  theme(
+    plot.tag.position = c(-0.025, 1.025)
+  )
+
+ggsave("figures/Timeseries_to_metrics.png", height = 9, width = 10)
+```
 
 ## Session Info
 

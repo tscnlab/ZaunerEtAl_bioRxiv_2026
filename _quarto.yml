@@ -1,6 +1,17 @@
 project:
-  type: manuscript
+  type: website
   output-dir: docs
+  render:
+    - data_preparation.qmd
+    - metric_preparation.qmd
+    - descriptives.qmd
+    - RQ1.qmd
+    - RQ2.qmd
+    - RQ3.qmd
+    - RQ1_chest.qmd
+    - RQ2_chest.qmd
+    - RQ3_chest.qmd
+    - index.qmd
 
 manuscript:
   resources:
@@ -14,29 +25,40 @@ website:
   repo-actions: [edit, issue]
   page-navigation: true
   bread-crumbs: true
-  navbar:
-    left:
+  sidebar:
+    style: "docked"
+    search: true
+    contents:
       - href: index.qmd
-        text: Manuscript
+        text: <strong>Manuscript</strong>
       - href: https://github.com/MeLiDosProject
         text: Data source
+      - text: "License"
+        href: LICENSE.md
+      - text: ---
+      - text: <strong>General</strong>
+      - href: data_preparation.qmd
+        text: "Data preparation"
+      - href: metric_preparation.qmd
+        text: "Metric preparation"
       - href: descriptives.qmd
         text: "Descriptive summaries"
+      - text: ---
+      - text: <strong>Glasses-level analysis</strong>
       - href: RQ1.qmd
         text: "RQ1: environmental effects"
       - href: RQ2.qmd
         text: "RQ2: behavioural effects"
       - href: RQ3.qmd
         text: "RQ3: individual effects"
-      - href: data_preparation.qmd
-        text: "Data preparation"
-      - href: metric_preparation.qmd
-        text: "Metric preparation"
-      - href: deviations.qmd
-        text: "Preregistration deviations"
-      - text: "License"
-        href: LICENSE.md
-    right:
+      - text: ---
+      - text: <strong>Chest-level analysis</strong>
+      - href: RQ1_chest.qmd
+        text: "RQ1: environmental effects"
+      - href: RQ2_chest.qmd
+        text: "RQ2: behavioural effects"
+      - href: RQ3_chest.qmd
+        text: "RQ3: individual effects"
       - icon: github
         href: https://github.com/tscnlab/ZaunerEtAl_NatHumBehav_2026
         aria-label: Quarto GitHub
@@ -51,8 +73,8 @@ format:
     html-math-method: katex
     link-external-newwindow: true
     toc: true
-    comments:
-      hypothesis: true
+    # comments:
+      # hypothesis: true
     format:
     code-link: true
     code-line-numbers: true
