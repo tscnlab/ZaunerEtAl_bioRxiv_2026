@@ -38,8 +38,8 @@ quarto --version
 ### 2. Clone the repository
 
 ```sh
-git clone https://github.com/tscnlab/ZaunerEtAl_NatHumBehav_2026.git
-cd ZaunerEtAl_NatHumBehav_2026
+git clone https://github.com/tscnlab/ZaunerEtAl_bioRxiv_2026.git
+cd ZaunerEtAl_bioRxiv_2026
 ```
 
 ### 3. Install `renv` if needed
