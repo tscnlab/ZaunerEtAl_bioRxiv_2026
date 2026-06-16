@@ -1,6 +1,6 @@
-# Individual, behavioural, and environmental determinants of personal light exposure in daily life
+# Environmental and behavioural determinants of the personal light exposome
 
-This repository is a Quarto research compendium for the manuscript **"Individual, behavioural, and environmental determinants of personal light exposure in daily life: A multi-country wearable and experience-sampling study"**. It contains the manuscript, analysis notebooks, figures, tables, a frozen `renv` dependency lockfile, and Quarto website configuration for reproducing the analyses and rendered outputs.
+This repository is a Quarto research compendium for the manuscript **"Environmental and behavioural determinants of the personal light exposome"**. It contains the manuscript, analysis notebooks, figures, tables, a frozen `renv` dependency lockfile, and Quarto website configuration for reproducing the analyses and rendered outputs.
 
 The project analyses harmonised personal light exposure data from the MeLiDos field study. Participants across nine sites in Costa Rica, Germany, Ghana, the Netherlands, Spain, Sweden, and Turkey wore calibrated light loggers near the corneal plane and at chest level and completed repeated contextual assessments. The repository documents data preparation, metric preparation, descriptive summaries, and glasses- and chest-level analyses of environmental, behavioural, and individual determinants of personal light exposure.
 
