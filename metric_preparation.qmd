@@ -220,7 +220,8 @@ metrics_glasses |>
   scale_fill_manual(values = melidos_colors) +
   theme_cowplot()
 
-ggsave("figures/exploration/metric_distribution_glasses.pdf", width = 18, height = 15)
+ggsave("figures/exploration/metric_distribution_glasses.pdf", width = 18, height = 15,
+       create.dir = TRUE)
 ```
 
 ```{r}
