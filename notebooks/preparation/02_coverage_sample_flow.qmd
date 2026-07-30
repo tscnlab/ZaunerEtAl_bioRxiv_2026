@@ -1,0 +1,381 @@
+---
+title: "Preparation 02: Apply coverage rules and count retained data"
+execute:
+  echo: true
+  warning: true
+  message: true
+  error: false
+  freeze: false
+---
+
+## Purpose
+
+This notebook applies the approved primary coverage rule A to the one-minute data
+from Preparation 01. An hour passes when at least 50% of its 60 local-clock
+minutes have valid melanopic equivalent daylight illuminance (melEDI) data.
+After this hourly rule has been applied, a day passes when valid melEDI covers
+at least 80% of the full 1,440-minute measurement day. The shared local-clock
+representation means that, for example, 08:00 denotes 08:00 local time at
+every site.
+
+The full-day decision intentionally includes bedside measurements during the
+sleep-diary window, together with near-eye or chest measurements while awake.
+This differs from the preregistered denominator, which excluded sleep. Rules B
+and C exclude diary-defined sleep at the daily stage or at both the hourly and
+daily stages, respectively, and are reserved as prespecified sensitivity
+analyses. Preparation 04 later checks whether each metric has enough data at
+the times relevant to that metric.
+
+No observation ordered in actual time is deleted. The output keeps the
+pre-coverage analysis variables (`MEDI`, `LIGHT`, `MEDI_precoverage`, and
+`LIGHT_precoverage`), the raw signals, the actual-time and local-clock
+variables, the diary and wear information, and flags showing whether each
+hour and day passed. `MEDI_eligible` and `LIGHT_eligible` are set to missing
+outside a failed hour or day. Within a passing period, melEDI and illuminance
+retain their own missing values, so a missing melEDI value does not erase an
+otherwise observed illuminance value.
+
+## What this step uses, produces, and checks
+
+- Coverage is evaluated using melEDI as the approved common coverage
+  signal.
+- Primary coverage rule A uses the full local-clock day. Explicit diary sleep
+  is not removed from its hourly or daily denominator.
+- Each local-clock hour has a fixed denominator of 60 minutes and
+  passes at coverage \(\geq 0.50\).
+- The hourly decision is applied before the local-clock day is compared with
+  its fixed denominator of 1,440 minutes; a day passes at coverage
+  \(\geq 0.80\).
+- During the autumn daylight-saving change, a repeated local-clock minute is
+  averaged only for the coverage decision. Both observations remain separate
+  in the data ordered by actual time.
+- Participant-days are defined by dates present in the aligned input. Missing
+  minutes within those dates are represented explicitly in the 1,440-minute
+  local-clock grid. A completely absent calendar date is not created without
+  an external record that the participant-day existed.
+- A day that passes remains available to all later metrics. Too little data at
+  relevant times can make one metric unavailable without discarding the day
+  from every other metric.
+
+## Setup
+
+```{r}
+#| label: setup-coverage
+
+root_hint <- Sys.getenv("QUARTO_PROJECT_DIR", unset = getwd())
+source(file.path(root_hint, "scripts/pipeline/paths_io.R"))
+root <- project_root(root_hint)
+
+dependencies <- c(
+  "assertions.R",
+  "aggregation_coverage.R",
+  "build_coverage_sample_flow.R"
+)
+for (dependency in dependencies) {
+  source(file.path(root, "scripts", "pipeline", dependency))
+}
+
+run_label <- Sys.getenv(
+  "NATHEALTH_COVERAGE_RUN_LABEL",
+  unset = "full"
+)
+aligned_root_argument <- Sys.getenv(
+  "NATHEALTH_ALIGNED_RUN_ROOT",
+  unset = ""
+)
+coverage_root_argument <- Sys.getenv(
+  "NATHEALTH_COVERAGE_RUN_ROOT",
+  unset = ""
+)
+placement_argument <- Sys.getenv(
+  "NATHEALTH_COVERAGE_PLACEMENTS",
+  unset = ""
+)
+placements <- if (nzchar(placement_argument)) {
+  strsplit(placement_argument, ",", fixed = TRUE)[[1L]]
+} else {
+  NULL
+}
+```
+
+For a quick test run, set `NATHEALTH_COVERAGE_RUN_LABEL` to the Preparation 01
+subset label. By default, the test reads
+`artifacts/02_aligned/runs/<label>/` and writes only to
+`artifacts/03_coverage/runs/<label>/`. The two explicit run-root environment
+variables can instead point to isolated input and output directories. A
+test run therefore cannot overwrite the full files used in the main analysis.
+
+## Apply the coverage rules and prepare sample-flow counts
+
+```{r}
+#| label: build-coverage-sample-flow
+
+coverage_build <- build_coverage_sample_flow(
+  root = root,
+  run_label = run_label,
+  aligned_run_root = if (nzchar(aligned_root_argument)) {
+    aligned_root_argument
+  } else {
+    NULL
+  },
+  coverage_run_root = if (nzchar(coverage_root_argument)) {
+    coverage_root_argument
+  } else {
+    NULL
+  },
+  placements = placements,
+  minimum_hour_coverage = 0.50,
+  minimum_day_coverage = 0.80
+)
+```
+
+The run label is `r coverage_build$run_label`. Its input root is
+`r coverage_build$aligned_run_root`, and its output root is
+`r coverage_build$coverage_run_root`.
+
+## Coverage settings and row-count check
+
+```{r}
+#| label: tbl-coverage-settings
+#| tbl-cap: "Coverage rules and check that no actual-time rows were lost."
+
+coverage_rule_summary <- coverage_build$settings |>
+  dplyr::transmute(
+    Placement = .data$placement,
+    Rule = .data$coverage_rule_id,
+    `Coverage signal` = dplyr::if_else(
+      .data$coverage_signal == "MEDI",
+      "melEDI",
+      .data$coverage_signal
+    ),
+    Sites = .data$input_sites,
+    Participants = .data$input_participants,
+    `Participant-days` = .data$input_participant_days,
+    `Hourly requirement` = paste0(
+      round(100 * .data$minimum_hour_coverage),
+      "% of ",
+      .data$expected_wall_minutes_per_hour,
+      " minutes"
+    ),
+    `Daily requirement` = paste0(
+      round(100 * .data$minimum_day_coverage),
+      "% of ",
+      .data$expected_wall_minutes_per_day,
+      " minutes"
+    ),
+    `Diary-defined sleep included` = dplyr::if_else(
+      .data$diary_sleep_excluded_from_denominator,
+      "No",
+      "Yes"
+    )
+  )
+knitr::kable(coverage_rule_summary)
+
+coverage_row_check <- coverage_build$settings |>
+  dplyr::transmute(
+    Placement = .data$placement,
+    `Rows before` = .data$input_true_utc_minutes,
+    `Rows after` = .data$output_true_utc_minutes,
+    `Rows lost` = (
+      .data$input_true_utc_minutes - .data$output_true_utc_minutes
+    ),
+    `Hours passing` = .data$eligible_hours,
+    `Hours failing` = .data$ineligible_hours,
+    `Days passing` = .data$eligible_days,
+    `Days failing` = .data$ineligible_days,
+    `Minutes with usable melEDI` = .data$medi_eligible_true_utc_minutes,
+    `Minutes with usable illuminance` =
+      .data$light_eligible_true_utc_minutes
+  )
+knitr::kable(
+  coverage_row_check,
+  caption = "Row preservation and retained hours, days, and signals."
+)
+```
+
+The number of rows ordered in actual time must agree before and after this
+step for every placement. The exact Preparation 01 input files and their
+SHA-256 digital fingerprints are retained in the output-file inventory.
+
+## Days retained by site and sensor placement
+
+```{r}
+#| label: tbl-coverage-day-summary
+#| tbl-cap: "Participant-days passing the coverage rule, by site and sensor placement."
+
+day_summary <- dplyr::bind_rows(coverage_build$daily) |>
+  dplyr::group_by(.data$placement, .data$site) |>
+  dplyr::summarise(
+    participant_days = dplyr::n(),
+    eligible_days = sum(.data$day_eligible),
+    ineligible_days = sum(!.data$day_eligible),
+    median_valid_fraction_after_hour = stats::median(
+      .data$day_valid_fraction_after_hour
+    ),
+    minimum_valid_fraction_after_hour = min(
+      .data$day_valid_fraction_after_hour
+    ),
+    maximum_valid_fraction_after_hour = max(
+      .data$day_valid_fraction_after_hour
+    ),
+    dst_fold_wall_minutes = sum(.data$day_dst_fold_minutes),
+    .groups = "drop"
+  )
+knitr::kable(
+  day_summary,
+  col.names = c(
+    "Placement",
+    "Site",
+    "Participant-days",
+    "Days passing",
+    "Days failing",
+    "Median valid fraction",
+    "Minimum valid fraction",
+    "Maximum valid fraction",
+    "Repeated autumn clock minutes"
+  )
+)
+```
+
+The downloadable hourly and daily coverage tables retain the number of
+expected and observed minutes, the observed fraction, and whether the
+corresponding hour or day passed.
+
+## Why data are missing
+
+```{r}
+#| label: tbl-coverage-gap-summary
+#| tbl-cap: "Continuous missing-data periods and the hourly or daily failures they caused."
+
+gap_summary <- dplyr::bind_rows(coverage_build$gap_runs) |>
+  dplyr::group_by(
+    .data$position,
+    .data$gap_reason,
+    .data$reason_class,
+    .data$signal
+  ) |>
+  dplyr::summarise(
+    runs = dplyr::n(),
+    participant_days = dplyr::n_distinct(
+      paste(.data$site, .data$Id, .data$local_date)
+    ),
+    wall_minutes = sum(.data$wall_minutes),
+    maximum_run_minutes = max(.data$wall_minutes),
+    .groups = "drop"
+  ) |>
+  dplyr::mutate(
+    position = dplyr::recode(
+      .data$position,
+      glasses = "Near-eye",
+      chest = "Chest"
+    ),
+    gap_reason = dplyr::recode(
+      .data$gap_reason,
+      raw_absence = "No one-minute record",
+      signal_invalidity = "Recorded signal could not be used",
+      hour_failure = "Hour had less than 50% valid melEDI",
+      day_failure = "Day had less than 80% valid melEDI"
+    ),
+    reason_class = dplyr::recode(
+      .data$reason_class,
+      availability = "Missing record",
+      measurement = "Invalid measurement",
+      coverage = "Coverage rule"
+    ),
+    signal = dplyr::recode(
+      .data$signal,
+      MEDI = "melEDI",
+      LIGHT = "Illuminance",
+      row = "Whole record"
+    )
+  )
+knitr::kable(
+  gap_summary,
+  col.names = c(
+    "Placement",
+    "Recorded reason",
+    "Reason type",
+    "Signal",
+    "Continuous periods",
+    "Participant-days",
+    "Local-clock minutes",
+    "Longest period (minutes)"
+  )
+)
+```
+
+The recorded reasons distinguish a missing one-minute record, an observed
+record whose light signal could not be used, an hour that failed the 50%
+requirement, and a day that failed the 80% requirement after the hourly rule
+was applied. The matching internal reason codes remain in the downloadable
+data.
+
+These reasons can overlap. For example, missing readings can cause both an
+hourly and a daily failure. Keeping each reason visible shows both the original
+missing data and its later consequence for coverage.
+
+## Sample counts after each coverage step
+
+```{r}
+#| label: tbl-coverage-sample-flow
+#| tbl-cap: "Sample counts after each coverage step, by sensor placement."
+
+sample_flow_summary <- coverage_build$sample_flow |>
+  dplyr::filter(.data$scope == "overall") |>
+  dplyr::mutate(
+    stage_label = dplyr::recode(
+      .data$stage,
+      aligned_real_minutes = "All aligned one-minute rows",
+      precoverage_medi_finite = "Rows with valid melEDI before coverage",
+      precoverage_light_finite =
+        "Rows with valid illuminance before coverage",
+      hour_eligible_real_minutes = "Rows in hours that passed",
+      day_eligible_real_minutes = "Rows in days that passed",
+      hour_and_day_eligible_real_minutes =
+        "Rows in hours and days that both passed",
+      medi_eligible_real_minutes = "Usable melEDI rows after coverage",
+      light_eligible_real_minutes =
+        "Usable illuminance rows after coverage"
+    )
+  ) |>
+  dplyr::select(
+    .data$placement,
+    .data$stage_label,
+    .data$participants,
+    .data$participant_days,
+    .data$true_utc_minutes,
+    .data$wall_minutes,
+    .data$finite_medi_minutes,
+    .data$finite_light_minutes
+  )
+knitr::kable(
+  sample_flow_summary,
+  col.names = c(
+    "Placement",
+    "Preparation stage",
+    "Participants",
+    "Participant-days",
+    "Actual-time minutes",
+    "Local-clock minutes",
+    "Minutes with valid melEDI",
+    "Minutes with valid illuminance"
+  )
+)
+```
+
+The downloadable sample-flow table contains the same stages by site and
+overall. Participants are identified by both site and participant label, so
+the same label used at different sites cannot be mistaken for one person.
+
+## Files produced
+
+For each sensor placement, Preparation 02 writes one R data file containing
+all rows in actual-time order, the unmodified and analysis light signals,
+the hourly and daily coverage decisions, and the reasons for missing values.
+It also writes downloadable tables for hourly coverage, daily coverage,
+continuous missing-data periods, sample flow, and settings.
+
+The output-file inventory includes a SHA-256 digital fingerprint for every
+file and is stored at:
+
+`r coverage_build$artifact_manifest_path`

@@ -1,0 +1,116 @@
+---
+title: "Preparation 05: Download fixed participant and site data"
+---
+
+## Purpose
+
+This notebook downloads the exact questionnaire, diary, and site-data versions
+needed for the analysis. It records where each file came from and which
+variables it contains. It does not clean, recalculate, filter, or combine
+scientific variables.
+
+## What this step uses, produces, and checks
+
+- Inputs: `config/site_sources.csv`,
+  `config/model_input_availability.csv`, and the verified Preparation 01
+  inventory of exact downloaded files.
+- Outputs: separate local copies of the model inputs, checks of the object and
+  columns stored in each file, and
+  `artifacts/12_manifests/model_input_acquisition.csv`.
+- Required checks: all 63 expected combinations of site and data type remain
+  visible; download addresses contain the complete commit identifier and never
+  `/main/`; paths to local copies are recorded relative to the project; each
+  source file contains exactly its declared single object; and the nine
+  sleep-diary files are reused only after their Preparation 01 download
+  address, commit, SHA-256 digital fingerprint, and byte size are independently
+  rechecked. A SHA-256 digital fingerprint confirms that a file has not
+  changed.
+
+The file inventory can also record an expected missing source and its reason,
+although every source in the current release is expected to be present.
+
+## Setup
+
+```{r}
+#| label: setup-model-input-acquisition
+#| eval: false
+
+root <- normalizePath(
+  Sys.getenv("QUARTO_PROJECT_DIR"),
+  winslash = "/",
+  mustWork = TRUE
+)
+source(file.path(root, "scripts/pipeline/paths_io.R"))
+source(file.path(root, "scripts/pipeline/assertions.R"))
+source(file.path(root, "scripts/pipeline/import_sources.R"))
+source(file.path(root, "scripts/pipeline/model_input_acquisition.R"))
+source(file.path(root, "scripts/pipeline/build_model_input_acquisition.R"))
+source(file.path(root, "scripts/pipeline/verify_model_input_acquisition.R"))
+```
+
+## Download and save the exact inputs
+
+This is the only step that connects to the network. Later hypothesis notebooks
+use the checked local R data files (`.rds`) and do not download source data.
+Use `cache_policy = "refresh"` for the first complete download and whenever an
+interrupted run has left local files without a complete file inventory. Use
+`cache_policy = "reuse"` only after the file inventory has passed the
+independent check; the notebook then stops if a download address, commit,
+digital fingerprint, byte size, or path differs.
+
+```{r}
+#| label: acquire-model-inputs
+#| eval: false
+
+model_input_acquisition <- build_model_input_acquisition(
+  root = root,
+  cache_policy = "refresh"
+)
+```
+
+## Check downloaded files and their recorded sources
+
+```{r}
+#| label: verify-model-input-acquisition
+#| eval: false
+
+model_input_verification <- verify_model_input_acquisition(root = root)
+stopifnot(identical(model_input_verification$status, "PASS"))
+knitr::kable(
+  data.frame(
+    Check = c(
+      "Overall verification status",
+      "Expected source files",
+      "Present source files",
+      "Expected missing source files",
+      "Sleep diaries reused from Preparation 01",
+      "Fixed source versions",
+      "Files downloaded in this run",
+      "Source-version inventory fingerprint",
+      "Downloaded-file inventory fingerprint",
+      "Object check fingerprint",
+      "Column check fingerprint"
+    ),
+    Result = unlist(
+      model_input_verification[c(
+        "status",
+        "expected_sources",
+        "present_sources",
+        "expected_absences",
+        "preparation01_reused",
+        "source_pins",
+        "downloaded_in_manifest",
+        "source_pins_sha256",
+        "manifest_sha256",
+        "object_audit_sha256",
+        "column_audit_sha256"
+      )],
+      use.names = FALSE
+    )
+  ),
+  caption = "Overall result of the independent file check."
+)
+```
+
+Preparation 06 cleans and interprets variables, checks participant
+identifiers, and combines the files needed for each hypothesis.

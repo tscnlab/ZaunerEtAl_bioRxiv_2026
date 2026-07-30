@@ -1,0 +1,42 @@
+---
+title: "H09: Chronotype and exposure timing"
+params:
+  placement: glasses
+  scenario: primary
+---
+
+## What this notebook checks
+
+Decide whether each clock-time outcome can be analysed on a linear scale using
+the approved unwrapping rules, which express relevant pre-midnight nighttime
+values as negative hours, or requires circular treatment, in which the end of
+one day connects to the start of the next. Define the roles of the Munich
+Chronotype Questionnaire (MCTQ) and Morningness--Eveningness Questionnaire
+(MEQ). Account for site, photoperiod, repeated measurements from participants,
+and days on which a timing metric cannot be calculated because the threshold
+was not observed. Adjust each complete predefined group of \(p\)-values
+together.
+
+## What this notebook uses and produces
+
+- Uses: the prepared H09 dataset in `artifacts/06_model_data/H09.rds`.
+- Produces: the declared groups of timing tests, fitted models, model checks,
+  adjusted estimates expressed as interpretable clock-time differences with
+  95% confidence intervals, the exact participants, participant-days,
+  observations, and sites used by each model. For each timing metric it also
+  reports participant-days excluded because the threshold was not observed,
+  temporal data support was insufficient, or another timing rule prevented
+  calculation, with tables, figures, and source data.
+- Data sensitivity: fit this identical H09 implementation to the
+  manuscript-prepared dataset and compare exact samples, timing-unavailable
+  reasons, estimates, 95% confidence intervals, diagnostics, and conclusions.
+
+```{r}
+#| label: setup-h09
+#| eval: false
+
+root <- normalizePath(Sys.getenv("QUARTO_PROJECT_DIR"), winslash = "/", mustWork = TRUE)
+source(file.path(root, "scripts/pipeline/paths_io.R"))
+source(file.path(root, "scripts/pipeline/assertions.R"))
+source(file.path(root, "scripts/pipeline/multiplicity.R"))
+```

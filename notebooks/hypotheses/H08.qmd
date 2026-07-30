@@ -1,0 +1,38 @@
+---
+title: "H08: Visual light sensitivity and personal exposure"
+params:
+  placement: glasses
+  scenario: primary
+---
+
+## What this notebook checks
+
+First determine which exposure metrics remain interpretable under the approved
+missing-data and coverage rules. Define and check the Visual Light Sensitivity
+Questionnaire-8 (VLSQ-8) score. Estimate the average association with visual
+light sensitivity across sites separately from whether that association
+differs by site. Report missing data, effect sizes in meaningful units, and the
+groups of \(p\)-values adjusted together.
+
+## What this notebook uses and produces
+
+- Uses: the prepared H08 dataset in `artifacts/06_model_data/H08.rds`.
+- Produces: the VLSQ-8 score check, every planned test, fitted models, model
+  checks, and adjusted results with 95% confidence intervals. Participant-day
+  models report participants, participant-days (model observations), and
+  sites; participant-level models report participants (model observations) and
+  sites. The notebook also reports the number missing VLSQ-8 and the number
+  missing each exposure outcome, with tables, figures, and exact source data.
+- Data sensitivity: fit this identical H08 implementation to the
+  manuscript-prepared dataset and compare exact samples, missingness,
+  estimates, 95% confidence intervals, diagnostics, and conclusions.
+
+```{r}
+#| label: setup-h08
+#| eval: false
+
+root <- normalizePath(Sys.getenv("QUARTO_PROJECT_DIR"), winslash = "/", mustWork = TRUE)
+source(file.path(root, "scripts/pipeline/paths_io.R"))
+source(file.path(root, "scripts/pipeline/assertions.R"))
+source(file.path(root, "scripts/pipeline/multiplicity.R"))
+```

@@ -1,0 +1,23 @@
+metric_id,manuscript_name,abbreviation,manuscript_category,analysis_unit,display_unit,analytical_role,variant_label
+thirty_minute_arithmetic_medi,Mean melEDI,Mean,level-based,participant-30-minute,lx,primary_outcome,30-minute arithmetic mean
+one_hour_geometric_mean_medi,Mean melEDI,Mean,level-based,participant-hour,lx,primary_outcome,Hourly geometric mean
+daily_geometric_mean_medi,Mean melEDI,Mean,level-based,participant-day,lx,primary_outcome,Daily geometric mean
+m10_mean_medi,Brightest 10 h mean,M10mean,level-based,participant-day,lx,primary_outcome,Supported 10-hour window
+l10_mean_medi,Darkest 10 h mean,L10mean,level-based,participant-day,lx,primary_outcome,Supported 10-hour window
+duration_above_1000,"Time above 1,000 lx melEDI",TAT1000,duration-based,participant-day,h,primary_outcome,Full 24-hour cycle
+duration_above_250_full_day,Time above 250 lx melEDI,TAT250,duration-based,participant-day,h,descriptive_only,Full 24-hour cycle
+duration_above_250_wake,Time above 250 lx melEDI during wake,TAT250,duration-based,participant-day,h,primary_outcome,Waking near-eye measurement
+duration_below_10_pre_sleep,Time below 10 lx melEDI before sleep,TBT10,duration-based,participant-day,h,primary_outcome,Three hours before attempted sleep
+duration_below_1_sleep_environment,Time below 1 lx melEDI during sleep,TBT1,duration-based,participant-day,h,primary_outcome,Bedside sleep-environment measurement
+longest_bout_above_250,Longest continuous period above 250 lx melEDI,PAT250,duration-based,participant-day,h,primary_outcome,Observed lower bound
+longest_bout_above_250_exact_only_sensitivity,Longest continuous period above 250 lx melEDI,PAT250,duration-based,participant-day,h,sensitivity_outcome,Exact-identifiable sensitivity
+first_timing_above_250,First light timing above 250 lx melEDI,FLIT250,timing-based,participant-day,clock time,primary_outcome,Boundary-censoring rule
+last_timing_above_250,Last light timing above 250 lx melEDI,LLIT250,timing-based,participant-day,clock time,primary_outcome,Boundary-censoring rule
+mean_timing_above_250,Mean timing of exposure above 250 lx melEDI,MLIT250,timing-based,participant-day,clock time,primary_outcome,Duration-weighted mean timing
+m10_midpoint,Midpoint of the brightest 10 hours,M10,timing-based,participant-day,clock time,primary_outcome,Supported 10-hour window
+l10_midpoint,Midpoint of the darkest 10 hours,L10,timing-based,participant-day,clock time,primary_outcome,Supported midnight-wrapping 10-hour window
+dose_observed_medi,melEDI dose,Dose,exposure-history-based,participant-day,lx·h,diagnostic_outcome,Observed-duration integration
+dose_time_sensitive_corrected_medi,melEDI dose,Dose,exposure-history-based,participant-day,lx·h,primary_outcome,Time-sensitive missing-coverage correction
+mder_ratio_of_integrals,Melanopic daylight efficacy ratio,MDER,spectrum-based,participant-day,dimensionless,primary_outcome,Ratio of paired-channel integrals
+interdaily_stability,Interdaily stability,IS,dynamics-based,participant,dimensionless,primary_outcome,Repeated-day regularity
+intradaily_variability,Intradaily variability,IV,dynamics-based,participant,dimensionless,primary_outcome,Within-day fragmentation

@@ -1,0 +1,41 @@
+---
+title: "H10: Age, sex, gender, and personal light exposure"
+params:
+  placement: glasses
+  scenario: primary
+---
+
+## What this notebook checks
+
+Keep biological sex and gender as distinct variables and state exactly how
+each is coded. Identify categories with few observations. Define the average
+associations and interaction tests, which assess whether an association
+changes across another variable or group. Define the groups of \(p\)-values
+adjusted together and use separate output names for near-eye and chest
+analyses.
+
+## What this notebook uses and produces
+
+- Uses: the prepared H10 dataset in `artifacts/06_model_data/H10.rds`.
+- Produces: definitions and sample counts for the age, sex, and gender
+  variables; fitted models; model checks; adjusted estimates in interpretable
+  units with 95% confidence intervals. Participant-day models report
+  participants, participant-days (model observations), and sites;
+  participant-level models report participants (model observations) and sites.
+  Sex and gender category counts are reported overall and by site so sparse
+  cells remain visible. Tables, figures, and source data are retained.
+- Fixed rule: near-eye and chest results are saved under different names and
+  cannot overwrite each other.
+- Data sensitivity: fit this identical H10 implementation to the
+  manuscript-prepared dataset and compare exact samples, sex and gender cell
+  counts, estimates, 95% confidence intervals, diagnostics, and conclusions.
+
+```{r}
+#| label: setup-h10
+#| eval: false
+
+root <- normalizePath(Sys.getenv("QUARTO_PROJECT_DIR"), winslash = "/", mustWork = TRUE)
+source(file.path(root, "scripts/pipeline/paths_io.R"))
+source(file.path(root, "scripts/pipeline/assertions.R"))
+source(file.path(root, "scripts/pipeline/multiplicity.R"))
+```

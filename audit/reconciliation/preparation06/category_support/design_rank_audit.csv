@@ -1,0 +1,11 @@
+analysis_id,formula,n_rows,n_columns,rank,rank_deficient,aliased_columns,residual_df
+H03_additive_all_declared_categories,~site + light_category,28864,15,15,FALSE,,28849
+H03_site_by_all_declared_categories,~site * light_category,28864,63,63,FALSE,,28801
+H04_indicator_global_additive,~site + act_sleep + act_home + act_road_vehicle + act_road_open +     act_working_indoor + act_working_outdoor + act_free_outdoor +     act_other,27515,17,17,FALSE,,27498
+H04_indicator_site_interactions,~site * (act_sleep + act_home + act_road_vehicle + act_road_open +     act_working_indoor + act_working_outdoor + act_free_outdoor +     act_other),27515,81,80,TRUE,siteKNUST:act_otherTRUE,27435
+H04_exact_one_original_additive,~site + activity,26094,16,16,FALSE,,26078
+H04_exact_one_original_site_interaction,~site * activity,26094,72,72,FALSE,,26022
+H04_exact_one_adapted_additive,~site + activity_adapted,25090,13,13,FALSE,,25077
+H04_exact_one_adapted_site_interaction,~site * activity_adapted,25090,45,45,FALSE,,25045
+H04_exact_one_plus_multilabel_additive,~site + activity_profile,27515,17,17,FALSE,,27498
+H04_exact_one_plus_multilabel_site_interaction,~site * activity_profile,27515,81,80,TRUE,siteKNUST:activity_profilemultiple_selected,27435

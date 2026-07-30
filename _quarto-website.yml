@@ -1,0 +1,10 @@
+# Explicit profile alias for the existing website configuration.
+#
+# The base _quarto.yml remains authoritative during the migration, so invoking
+# Quarto without a profile behaves exactly as before.
+project:
+  type: website
+  output-dir: docs
+
+execute:
+  freeze: auto

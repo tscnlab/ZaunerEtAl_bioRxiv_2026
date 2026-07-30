@@ -1,0 +1,175 @@
+---
+title: "How each hypothesis will be compared"
+subtitle: "Nature Health hypothesis review"
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    code-tools: false
+    page-layout: full
+---
+
+## Purpose
+
+The main question for each hypothesis is:
+
+> How do the analysis method, numerical results, and defensible claim after
+> audit differ from those in the submitted analysis?
+
+Comparison with the preregistration remains mandatory, but is reported in a
+separate section. The submitted analysis, rather than the preregistration, is
+the reference for the direct audit discussion.
+
+A separate **manuscript-prepared-data sensitivity** applies the same new
+H01--H11 implementation to the newly prepared data and to the dataset prepared
+for the manuscript, with only objectively demonstrable data errors corrected.
+It isolates data-preparation changes and does not rerun the submitted modelling
+implementation. Its rules are fixed in
+[`manuscript_prepared_data_sensitivity.md`](../decisions/manuscript_prepared_data_sensitivity.md).
+
+## Comparison order
+
+Every H01--H11 review and its HTML page must use this order:
+
+1. the question and exact comparison being estimated;
+2. what the manuscript reported;
+3. the main analysis;
+4. a direct submitted-versus-main table covering magnitude, direction,
+   uncertainty, statistical conclusion, analytical sample, and claim;
+5. the manuscript-prepared-data sensitivity using the same new implementation
+   for both datasets;
+6. the reason for every method or data-preparation change;
+7. diagnostics and other registered sensitivities;
+8. relation to the preregistration; and
+9. verification status, decisions still needed, and conditions that require a
+   new review.
+
+A preregistered method is never substituted for the method represented in the
+manuscript merely because the two differ.
+
+## Files used to record the comparisons
+
+[`hypothesis_implementation_audit.csv`](../ledgers/hypothesis_implementation_audit.csv)
+records one row for each hypothesis, comparison being estimated, analytical
+role, sensor placement, and analysis scenario. It identifies the submitted and
+main-analysis code and output files and records why the method stayed the same
+or changed. The manuscript-prepared-data scenario points to the same new model
+implementation as the main scenario and to a different prepared-data artifact.
+
+[`hypothesis_result_comparisons.csv`](../ledgers/hypothesis_result_comparisons.csv)
+records one row per exact result, contrast, model comparison, or conclusion
+about a fitted curve. It retains the numerical values rather than relying only
+on qualitative summaries.
+
+[`hypothesis_data_sensitivity_comparisons.csv`](../ledgers/hypothesis_data_sensitivity_comparisons.csv)
+records the same new implementation fitted to the main and
+manuscript-prepared datasets, including both exact model samples, their common
+sample, intervals, multiplicity fields, diagnostics, and stability
+classification.
+
+[`hypothesis_comparison_status.csv`](../ledgers/hypothesis_comparison_status.csv)
+tracks whether each H01--H11 HTML page has completed its method, result, claim,
+preregistration, and verification sections.
+
+The existing
+[`result_differences.csv`](../ledgers/result_differences.csv) remains the
+detailed record for preparation and metric changes. In that file, the field
+`baseline_value` stores the value from the submitted analysis, never a
+preregistered value. Hypothesis-level rows link to these detailed differences
+where relevant rather than duplicating them.
+
+## Method comparison
+
+The method comparison explicitly covers:
+
+- which data release and file were used, how rows were matched, and any
+  correction to source records;
+- sensor placement and analysis scenario;
+- inclusion rules and the denominator used to calculate a proportion;
+- outcome, predictor, contrast, transformation, and unit;
+- whether the analysis concerns participants, participant-days, hours, or
+  individual observations, and how repeated observations are handled;
+- the assumed outcome distribution and scale, the fixed and random model
+  terms, and how correlation between observations---including observations
+  close together in time---is handled;
+- the set of related tests adjusted together for multiple testing and the
+  adjustment method;
+- checks of model fit, influential observations, and whether model fitting
+  completed stably; and
+- code, fitted-model file, result table, figure, and the exact data used to
+  produce the figure.
+
+The manuscript-prepared-data sensitivity must use the same new analysis
+implementation as the main analysis. Only its prepared-data input differs.
+Each correction made to the manuscript-prepared dataset has an identifier and
+evidence locator. A model cannot be simplified only for this sensitivity.
+
+For every multiple-testing correction, the hypothesis page must state which
+single test is selected from each outcome model before the results are
+examined. Individual coefficients and follow-up contrasts are not automatically
+added to the same set of tests.
+
+Each difference is assigned a `change_class`. `none` is an affirmative result
+and means that the submitted method was reproduced and retained. A change is
+not called a repair unless the evidence and verification justify that
+classification.
+
+## Result comparison
+
+The direct submitted-versus-main table records, where applicable:
+
+- the exact fitted-model counts—not counts from the prepared dataset—for
+  participants, participant-days, hours, 30-minute observations, other
+  observations, and sites;
+- valid measurement hours used to derive a participant-day or
+  participant-level outcome, clearly separated from observations that entered
+  the fitted model;
+- category counts, including category × site counts when an interaction or
+  sparse-cell decision is involved;
+- exact common-sample counts, where a common sample means that both analyses
+  use the same participants, participant-days, or time-resolved observations;
+- estimate, standard error, confidence interval, raw and adjusted
+  \(p\)-values, the set of related tests adjusted together, and the result's
+  position within that set;
+- changes in direction, uncertainty, statistical significance, or conclusion;
+- the submitted manuscript claim and the main-analysis claim; and
+- links to the exact submitted and main-analysis code and output files.
+
+The accompanying data-sensitivity table repeats the result using the same new
+H01--H11 implementation on the manuscript-prepared dataset. It reports both
+model samples, their exact common sample, estimates and 95% confidence
+intervals, raw and adjusted \(p\)-values, diagnostics, and a stability
+classification.
+
+The numerical values take precedence over a qualitative label. A difference is described as
+`negligible` or `material` only when a practical margin was declared before
+the comparison. Otherwise it is `not_classified_no_margin`.
+
+## Preregistration section
+
+The preregistration section reports whether the audited analysis is aligned,
+clarified, an approved deviation, an unapproved deviation, not specified,
+ambiguous, could not be estimated as registered, or not applicable. It links
+to the preregistration summary and deviation register, while remaining
+separate from the submitted-versus-audited comparison.
+
+## When author approval is needed
+
+Author approval is required before adopting a change to the comparison being
+estimated, inclusion rule, metric, statistical model, set of tests adjusted
+together, substantive result, preregistration interpretation, or manuscript
+claim. A hypothesis review cannot be completed until:
+
+- its submitted method and result are recoverable or explicitly
+  marked otherwise;
+- its main-analysis and manuscript-prepared-data sensitivity code and output
+  pass a run in a fresh R session;
+- every correction to the manuscript-prepared dataset passes the data-fidelity
+  rule or is removed;
+- method and result rows are complete and linked;
+- relevant diagnostics and sensitivities are classified;
+- consequential manuscript claims are linked to verified results; and
+- mandatory checks are `PASS`.
+
+A change in an earlier preparation or analysis step requires every affected
+hypothesis to be reviewed again.

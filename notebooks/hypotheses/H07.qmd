@@ -1,0 +1,38 @@
+---
+title: "H07: Latitude, photoperiod, and possible exposure plateaus"
+params:
+  placement: glasses
+  scenario: primary
+---
+
+## What this notebook checks
+
+Assess whether exposure stops increasing beyond some latitude or photoperiod.
+Photoperiod is the daylight duration between dawn and dusk. A levelling-off
+would be described as a plateau, rather than assumed to be a ceiling. Separate
+the roles of site, latitude, photoperiod, and the dates or seasons in which
+each site was measured. Do not choose outcomes based on H02 results.
+
+## What this notebook uses and produces
+
+- Uses: the prepared H07 dataset in `artifacts/06_model_data/H07.rds`.
+- Produces: if a plateau can be estimated, its definition, size, and
+  uncertainty; otherwise, a clear statement that the available data cannot
+  identify one. The notebook also produces fitted models, model checks,
+  practical summaries with 95% confidence intervals, the exact participants,
+  participant-days, observations, and sites used by each model, overall and by
+  site; tables, figures, and source data.
+- Data sensitivity: fit this identical H07 implementation to the
+  manuscript-prepared dataset and compare exact samples, estimates, 95%
+  confidence intervals, diagnostics, plateau conclusions, and overall
+  stability.
+
+```{r}
+#| label: setup-h07
+#| eval: false
+
+root <- normalizePath(Sys.getenv("QUARTO_PROJECT_DIR"), winslash = "/", mustWork = TRUE)
+source(file.path(root, "scripts/pipeline/paths_io.R"))
+source(file.path(root, "scripts/pipeline/assertions.R"))
+source(file.path(root, "scripts/pipeline/multiplicity.R"))
+```

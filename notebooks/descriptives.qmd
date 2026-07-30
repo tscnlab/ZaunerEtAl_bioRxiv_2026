@@ -1,0 +1,36 @@
+---
+title: "Descriptive summaries"
+---
+
+## Purpose
+
+Summarize participants, participant-days (one participant's record for one
+calendar day), observations, exposure metrics, sites, and measurement
+positions before fitting the hypothesis models.
+
+## What this notebook uses and produces
+
+- Uses: the checked datasets prepared for analysis.
+- Produces: descriptive tables, components of the study overview, CSV files
+  containing the exact displayed data, and a sample-flow table showing how
+  many records remain after each preparation step.
+- Fixed rule: every count states the stage at which it was calculated, its
+  denominator, the measurement position, and the sites represented.
+
+```{r}
+#| label: setup-descriptives
+#| eval: false
+
+root <- normalizePath(
+  Sys.getenv("QUARTO_PROJECT_DIR"),
+  winslash = "/",
+  mustWork = TRUE
+)
+source(file.path(root, "scripts/pipeline/paths_io.R"))
+source(file.path(root, "scripts/pipeline/assertions.R"))
+
+paths <- pipeline_paths(root)
+```
+
+The completed notebook will first show brief data-quality checks and then
+create the publication-ready tables, figures, and source-data files.

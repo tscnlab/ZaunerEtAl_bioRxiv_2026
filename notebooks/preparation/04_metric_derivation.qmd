@@ -1,0 +1,811 @@
+---
+title: "Preparation 04: Calculate light-exposure metrics and check data sufficiency"
+execute:
+  echo: true
+  warning: true
+  message: true
+  error: false
+  freeze: false
+---
+
+## Purpose
+
+This notebook calculates the approved personal light-exposure metrics. A
+participant-day means one participant observed on one calendar day. For every
+participant-day and metric, the notebook records whether enough relevant data
+were available to calculate the value reliably. If one time period, diary
+window, timing value, ratio, or corrected dose cannot be calculated, that day
+remains available for all other metrics.
+
+The full-day metrics describe an intentional, placement-specific hybrid
+record. For glasses, this combines near-eye measurements during wake and
+pre-sleep with bedside sleep-environment measurements during the sleep-diary
+window. For chest loggers, the waking component is chest-level rather than
+near-eye, while the sleep component remains the bedside sleep environment.
+Neither construct is described as continuous 24-hour ocular exposure.
+
+## What this step uses, produces, and checks
+
+- Inputs are the exact coverage files from Preparation 02, the sleep and wear
+  interval files from Preparation 01, and the fixed profiles and time-of-day
+  relevance maps learned in Preparation 03. SHA-256 checksums, which are
+  digital fingerprints, identify the exact input files and confirm that they
+  have not changed.
+- Preparation 04 applies the Preparation 01 sleep and wear intervals to every
+  minute ordered in Coordinated Universal Time (UTC) before joining the light
+  values that passed coverage. UTC preserves the true order and elapsed time
+  of observations across daylight-saving changes. Intervals use `[start, end)`
+  bounds: the start is included and the end is excluded. The earlier state
+  labels are not simply copied. Wherever Preparation 01 contained a source
+  measurement, the recalculated diary period, wear record, and measurement
+  context must match it exactly.
+- Before calculating any metric, Preparation 04 verifies that Preparation 02
+  used approved primary Rule A: at least 50% valid melEDI per local-clock hour
+  and 80% per full 1,440-minute hybrid measurement day, including bedside
+  measurements during diary-defined sleep.
+- Actual UTC time determines the expected minute sequence, elapsed durations,
+  dose, continuous periods above threshold, gaps, and which observations are
+  adjacent for intradaily variability (IV). It also determines the matched
+  melEDI and illuminance values whose exposure is accumulated over time for
+  MDER.
+- The shared local-clock scale determines the 30-minute and hourly
+  time-of-day values, the brightest and darkest 10-hour means (M10 and L10),
+  timing metrics, and interdaily stability (IS). M10 and L10 test a 600-minute
+  window beginning at every eligible local-clock minute. Their fixed
+  30-minute relevance profiles are expanded to one-minute values without
+  being relearned. Repeated minutes during the autumn daylight-saving change
+  are averaged only on this local-clock scale; both actual observations remain
+  available to metrics based on elapsed time.
+- Melanopic equivalent daylight illuminance (melEDI) is the reader-facing name
+  for the light quantity stored as `MEDI` in the analysis files. A 30-minute
+  arithmetic-mean melEDI value requires at least 15 valid
+  local-clock minutes. A one-hour zero-aware geometric-mean melEDI value
+  requires at least 30 valid local-clock minutes. The geometric mean adds
+  0.1 lx before taking logarithms and subtracts it afterwards, which allows
+  true zero values to be included. A period with too little data is missing
+  without removing the participant-day.
+- Threshold endpoints are strict: greater than 1,000 lx, greater than 250 lx,
+  less than 10 lx, and less than 1 lx.
+- Only dose can be corrected for missing values using their time-of-day
+  relevance. For each minute, Preparation 03 learned how much that time
+  normally contributes to daily melEDI. The represented fraction is the sum
+  of those learned contributions for observed minutes divided by their sum
+  across the full day. Correction is allowed only when this fraction is at
+  least 80% and is capped at a factor of 1.25.
+  Means, durations, continuous periods, timings, 10-hour windows, and MDER are
+  not scaled.
+- The melanopic daylight efficacy ratio (MDER) is the ratio of melEDI and
+  illuminance exposure accumulated over exactly the same observed minutes.
+  Three requirements must each reach 80%: the fraction of expected minutes
+  with both values present; the fraction of the learned daily melEDI profile
+  represented by those minutes; and the equivalent fraction of the learned
+  illuminance profile. The accumulated illuminance must also be positive.
+  MDER is not scaled or weighted by a profile.
+- For each time of day, Preparation 03 learned the probability that melEDI
+  exceeds 250 lx. First, last, and mean timing above 250 lx use this fixed
+  probability distribution only to check whether observed minutes represent
+  enough of the times when an event would be expected. The distribution does
+  not change or weight the observed timing value.
+- The 10 darkest hours wrap across midnight. No five-hour darkest-window
+  metric or output is permitted.
+- The full-day duration above 250 lx is reported descriptively but is not used
+  to test a preregistered hypothesis.
+- The main longest-period value is the longest observed uninterrupted period
+  above 250 lx and is interpreted as a lower bound: missing or invalid minutes
+  break an observed period, so the true period may have been longer. The
+  possible upper bound, a flag showing whether missing data could hide a
+  longer period, a sensitivity restricted to exactly known periods, onset and
+  offset of the selected period, and contact with the day boundary remain in
+  the outputs. If several periods share the maximum duration, the earliest
+  onset and then the earliest offset select the reported period. Separate
+  checks distinguish boundary contact by that selected period from boundary
+  contact by any tied maximum period. Uncertainty about the exact duration
+  never removes the participant-day.
+
+## Minimum data required for wake, pre-sleep, and sleep metrics
+
+A wake, pre-sleep, or sleep metric requires valid melEDI for at least 80% of
+that diary-defined period. The fixed 70% and 90% alternatives are separate,
+metric-specific sensitivity analyses. The technical decision record is
+`STATE-005`.
+
+Failure affects only the metric for that diary period. It never excludes the
+participant-day or its full-day metrics. The output also reports retained and
+missing counts at all three fixed cutoffs. The cutoff was approved from checks
+of data support before final state-duration values or hypothesis results were
+inspected.
+
+The output distinguishes three reasons why a diary-period metric can be
+missing: the diary cannot identify the period across that day; the day has no
+such period; or the period exists but contains too little valid melEDI. The
+technical output retains the corresponding reason codes
+`incomplete_state_domain`, `no_state_window`, and
+`insufficient_state_support`. Each failure remains specific to the affected
+metric; the participant-day and all full-day metrics are retained.
+
+## Minimum paired data required for MDER
+
+MDER is calculated only when each of the three requirements described above
+reaches 80% and accumulated illuminance over the matched minutes is positive.
+Otherwise, MDER is missing with a recorded reason; the participant-day and its
+other metrics remain available. Fixed 70% and 90% scenarios are sensitivity
+analyses. The learned profiles only check whether the relevant times were
+observed and never scale, weight, or correct the ratio. The technical decision
+record is `METRIC-003`.
+
+The independently verified comparison of the three fixed candidate cutoffs
+produced:
+
+| Placement | Eligible days | 70% retained | 80% retained | 90% retained |
+|---|---:|---:|---:|---:|
+| Near-eye hybrid record | 811 | 790 | 733 | 601 |
+| Chest hybrid record | 897 | 874 | 825 | 691 |
+
+At 80%, all 141 near-eye participants across nine sites and all 154 chest
+participants across eight sites remain represented. Each placement has two
+days with non-positive accumulated illuminance over the matched minutes. This
+comparison did not calculate MDER itself. An independent R check reproduced
+all 2,650 diagnostic and summary rows. The complete methods, input
+fingerprints, and checks are
+recorded in
+[the MDER data-sufficiency audit](../../audit/findings/mder_support_cutoff_gate.md).
+
+## Minimum data required for timing above 250 lx
+
+Timing support is not based on the amount by which the median melEDI profile
+exceeds 250 lx: a population median can remain below 250 lx even when
+individual participant-days cross that threshold. Preparation 04 instead uses
+the distribution learned in Preparation 03 for the probability of being
+strictly above 250 lx at each time. That distribution gives equal influence
+first to days within a participant and then to participants. It is fixed at
+30-minute resolution and each learned value is assigned to its 30
+local-clock minutes.
+
+The primary cutoff is 80%. For a given timing metric, the numerator is the sum
+of the learned exceedance probabilities for observed minutes in its search
+period; the denominator is their sum for all expected minutes in that same
+period. The fixed 70% and 90% scenarios change only this cutoff and reuse the
+same learned distribution; they do not relearn a profile or change an observed
+value. Data across the whole day determine support for mean timing. Data in the
+early and late search periods determine support for first and last timing,
+respectively. A timing value with too little support is missing with a recorded
+reason, while its participant-day and unrelated metrics remain available.
+
+## How the brightest and darkest 10-hour periods are found
+
+M10 and L10 each use exactly 600 consecutive one-minute local-clock intervals.
+M10 tests all 841 possible starts from minute 0 through minute 840, so its
+10-hour period remains within the same calendar day. L10 tests all 1,440
+possible starts and may cross midnight. The fixed 30-minute M10/L10 relevance
+profiles are assigned to their one-minute periods; learning the profiles at
+30-minute resolution does not restrict the candidate start times. L10 is
+retained and L5 is not calculated.
+
+## How missing data affect the longest period above 250 lx
+
+For the longest period above 250 lx, missing or invalid minutes, gaps in
+actual time, changes in measurement context, and the day boundary break an
+observed period. The main output is the longest observed period and is labelled
+as a lower bound. A separate possible upper bound treats every missing or
+invalid minute as above 250 lx while retaining the same rules for consecutive
+minutes and measurement context.
+
+When the possible upper bound exceeds the observed lower bound, the lower
+bound remains available with a flag showing that missing data could hide a
+longer qualifying period. The sensitivity analysis restricted to exactly
+known durations is then missing; it is reported only when both bounds agree.
+Therefore, an observed lower bound of zero on a partly unobserved day is not
+interpreted as proof that no qualifying period occurred. No day is removed
+solely because its exact longest-period duration is uncertain.
+
+If several observed periods share the maximum duration, the reported onset
+and offset come from the period with the earliest onset and then the earliest
+offset. One check records whether that selected period touches the day
+boundary; a separate check records whether any tied maximum period touches
+the boundary.
+
+## Setup
+
+```{r}
+#| label: setup-metric-derivation
+
+root_hint <- Sys.getenv("QUARTO_PROJECT_DIR", unset = getwd())
+source(file.path(root_hint, "scripts/pipeline/paths_io.R"))
+root <- project_root(root_hint)
+
+dependencies <- c(
+  "assertions.R",
+  "state_alignment.R",
+  "time_axes.R",
+  "time_support.R",
+  "reference_profiles.R",
+  "state_interval_projection.R",
+  "metric_derivation.R",
+  "build_metric_derivation.R",
+  "metric_display_registry.R"
+)
+for (dependency in dependencies) {
+  source(file.path(root, "scripts", "pipeline", dependency))
+}
+
+metric_display_registry <- read_metric_display_registry(root)
+metric_display_names <- stats::setNames(
+  metric_display_registry$manuscript_name,
+  metric_display_registry$metric_id
+)
+metric_display_names <- c(
+  metric_display_names,
+  m10_onset = "M10 onset (calculation check only)",
+  m10_offset = "M10 offset (calculation check only)",
+  l10_onset = "L10 onset (calculation check only)",
+  l10_offset = "L10 offset (calculation check only)"
+)
+display_metric_name <- function(metric) {
+  display_name <- unname(metric_display_names[metric])
+  if (anyNA(display_name)) {
+    stop(
+      "A reader-facing metric name is missing for: ",
+      paste(unique(metric[is.na(display_name)]), collapse = ", ")
+    )
+  }
+  display_name
+}
+
+run_label <- Sys.getenv(
+  "NATHEALTH_METRIC_RUN_LABEL",
+  unset = "full"
+)
+coverage_root_argument <- Sys.getenv(
+  "NATHEALTH_COVERAGE_RUN_ROOT",
+  unset = ""
+)
+state_interval_root_argument <- Sys.getenv(
+  "NATHEALTH_STATE_INTERVAL_RUN_ROOT",
+  unset = ""
+)
+state_interval_manifest_argument <- Sys.getenv(
+  "NATHEALTH_STATE_INTERVAL_MANIFEST",
+  unset = ""
+)
+profile_root_argument <- Sys.getenv(
+  "NATHEALTH_PROFILE_RUN_ROOT",
+  unset = ""
+)
+metric_root_argument <- Sys.getenv(
+  "NATHEALTH_METRIC_RUN_ROOT",
+  unset = ""
+)
+placement_argument <- Sys.getenv(
+  "NATHEALTH_METRIC_PLACEMENTS",
+  unset = ""
+)
+placements <- if (nzchar(placement_argument)) {
+  strsplit(placement_argument, ",", fixed = TRUE)[[1L]]
+} else {
+  NULL
+}
+profile_variant <- Sys.getenv(
+  "NATHEALTH_METRIC_PROFILE_VARIANT",
+  unset = "pooled"
+)
+state_support_argument <- Sys.getenv(
+  "NATHEALTH_STATE_SUPPORT_CUTOFF",
+  unset = ""
+)
+state_support_cutoff <- if (nzchar(state_support_argument)) {
+  suppressWarnings(as.numeric(state_support_argument))
+} else if (identical(run_label, "full")) {
+  0.80
+} else {
+  NA_real_
+}
+if (nzchar(state_support_argument) && !is.finite(state_support_cutoff)) {
+  abort_pipeline("NATHEALTH_STATE_SUPPORT_CUTOFF must be numeric")
+}
+mder_support_argument <- Sys.getenv(
+  "NATHEALTH_MDER_SUPPORT_CUTOFF",
+  unset = ""
+)
+mder_support_cutoff <- if (nzchar(mder_support_argument)) {
+  suppressWarnings(as.numeric(mder_support_argument))
+} else if (identical(run_label, "full")) {
+  0.80
+} else {
+  NA_real_
+}
+if (nzchar(mder_support_argument) && !is.finite(mder_support_cutoff)) {
+  abort_pipeline("NATHEALTH_MDER_SUPPORT_CUTOFF must be numeric")
+}
+```
+
+The main and sensitivity outputs are stored separately and all reuse the fixed
+profiles learned in Preparation 03. The main calculation uses 80% for
+diary-period and MDER data sufficiency. Separate 70% and 90% sensitivity
+calculations change only the relevant cutoff. Site-specific and
+leave-one-site-out sensitivities likewise reuse the fixed profiles; they do
+not learn new profiles after results are known.
+
+## Participant-days retained at each candidate cutoff
+
+```{r}
+#| label: build-state-support-gate
+
+state_support_gate <- build_state_support_gate(
+  root = root,
+  run_label = run_label,
+  coverage_run_root = if (nzchar(coverage_root_argument)) {
+    coverage_root_argument
+  } else {
+    NULL
+  },
+  state_interval_run_root = if (nzchar(state_interval_root_argument)) {
+    state_interval_root_argument
+  } else {
+    NULL
+  },
+  state_interval_manifest_path = if (
+    nzchar(state_interval_manifest_argument)
+  ) {
+    state_interval_manifest_argument
+  } else {
+    NULL
+  },
+  metric_run_root = if (nzchar(metric_root_argument)) {
+    metric_root_argument
+  } else {
+    NULL
+  },
+  placements = placements,
+  profile_variant = profile_variant,
+  candidate_cutoffs = c(0.70, 0.80, 0.90)
+)
+```
+
+```{r}
+#| label: tbl-state-support-gate
+#| tbl-cap: "State-specific metric values retained at each candidate data-coverage cutoff, calculated before 80% was selected."
+
+state_candidate_display <- function(data) {
+  data |>
+    dplyr::transmute(
+      Placement = dplyr::recode(
+        .data$position,
+        glasses = "Near-eye",
+        chest = "Chest"
+      ),
+      Metric = display_metric_name(.data$metric),
+      `Coverage cutoff` = paste0(
+        round(100 * .data$candidate_state_support_cutoff),
+        "%"
+      ),
+      `Eligible days` = .data$eligible_participant_days,
+      `Values retained` = .data$retained_metric_instances,
+      `Retained (%)` = round(100 * .data$retained_fraction, 1),
+      `Incomplete diary period` =
+        .data$incomplete_state_domain_instances,
+      `No diary period` = .data$no_state_window_instances,
+      `Below coverage cutoff` =
+        .data$insufficient_state_support_instances
+    )
+}
+knitr::kable(
+  state_candidate_display(state_support_gate$candidates)
+)
+```
+
+This table is created without selecting a cutoff or calculating a final
+state-specific metric. It informed the author's decision and must not be used
+to choose the cutoff that preserves a preferred estimate or sample size.
+The complete candidate table, coverage quantiles, participant counts,
+additional losses at each stricter cutoff, and results by site are written to
+`state_support_candidate_diagnostics.csv` and
+`state_support_candidate_by_site.csv`.
+
+## Derive metrics
+
+```{r}
+#| label: build-metric-derivation
+
+if (!is.finite(state_support_cutoff)) {
+  abort_pipeline(
+    paste0(
+      "The approved primary cutoff is 0.80. Set ",
+      "NATHEALTH_STATE_SUPPORT_CUTOFF explicitly for a namespaced ",
+      "non-full sensitivity run."
+    )
+  )
+}
+if (!is.finite(mder_support_cutoff)) {
+  abort_pipeline(
+    paste0(
+      "The approved primary MDER cutoff is 0.80. Set ",
+      "NATHEALTH_MDER_SUPPORT_CUTOFF explicitly for a namespaced ",
+      "non-full sensitivity run."
+    )
+  )
+}
+metric_build <- build_metric_derivation(
+  root = root,
+  run_label = run_label,
+  coverage_run_root = if (nzchar(coverage_root_argument)) {
+    coverage_root_argument
+  } else {
+    NULL
+  },
+  state_interval_run_root = if (nzchar(state_interval_root_argument)) {
+    state_interval_root_argument
+  } else {
+    NULL
+  },
+  state_interval_manifest_path = if (
+    nzchar(state_interval_manifest_argument)
+  ) {
+    state_interval_manifest_argument
+  } else {
+    NULL
+  },
+  profile_run_root = if (nzchar(profile_root_argument)) {
+    profile_root_argument
+  } else {
+    NULL
+  },
+  metric_run_root = if (nzchar(metric_root_argument)) {
+    metric_root_argument
+  } else {
+    NULL
+  },
+  placements = placements,
+  profile_variant = profile_variant,
+  zero_offset = 0.1,
+  minimum_window_support = 0.80,
+  minimum_relevance_support = 0.80,
+  minimum_state_support = state_support_cutoff,
+  minimum_mder_support = mder_support_cutoff,
+  provisional_state_support = FALSE,
+  synthetic_test = FALSE,
+  minimum_circular_resultant = 0.10
+)
+```
+
+This is the `r metric_build$run_label` metric run. Technical input inventories
+identify the exact Preparation 01 sleep and wear intervals, the Preparation 02
+coverage file, and both Preparation 03 profile files. Too little relevant data
+can make one metric missing but cannot change whether the participant-day
+passed the overall coverage rule.
+
+## Settings and retained time-of-day values
+
+```{r}
+#| label: tbl-metric-settings
+#| tbl-cap: "Settings and size of each metric output."
+
+metric_settings_summary <- purrr::map_dfr(
+  seq_len(nrow(metric_build$settings)),
+  function(row) {
+    settings <- metric_build$settings[row, , drop = FALSE]
+    tibble::tibble(
+      Placement = dplyr::recode(
+        settings$placement,
+        glasses = "Near-eye",
+        chest = "Chest"
+      ),
+      Setting = c(
+        "Profile version",
+        "Minimum hourly coverage",
+        "Minimum daily coverage",
+        "Minimum data in a diary period",
+        "Minimum paired data for MDER",
+        "Time step used for metric calculation",
+        "Offset used for zero-aware geometric means",
+        "Sensor operating boundary",
+        "Threshold comparisons",
+        "Minimum data in a 30-minute value",
+        "Minimum data in an hourly value",
+        "M10 and L10 duration",
+        "Minimum data in an M10 or L10 window",
+        "Minimum timing relevance represented",
+        "Minimum dose relevance represented",
+        "Largest permitted dose correction",
+        "M10 may cross midnight",
+        "L10 may cross midnight",
+        "L5 calculated",
+        "Primary longest-period result",
+        "Measurement represented",
+        "Participants",
+        "Eligible participant-days",
+        "Thirty-minute rows",
+        "Hourly rows",
+        "Input files verified"
+      ),
+      Value = as.character(c(
+        ifelse(
+          settings$profile_variant == "pooled",
+          "All sites combined",
+          settings$profile_variant
+        ),
+        paste0(100 * settings$verified_minimum_hour_coverage, "%"),
+        paste0(100 * settings$verified_minimum_day_coverage, "%"),
+        paste0(100 * settings$state_support_cutoff, "%"),
+        paste0(100 * settings$mder_support_cutoff, "%"),
+        paste(settings$minute_epoch_seconds, "seconds (one minute)"),
+        paste(settings$zero_aware_offset_lx, "lx"),
+        "Values below 100,000 lx melEDI",
+        "> 1,000; > 250; < 10; < 1 lx melEDI",
+        paste(settings$thirty_minute_minimum, "of 30 minutes"),
+        paste(settings$hourly_minimum, "of 60 minutes"),
+        paste(settings$window_minutes, "minutes"),
+        paste0(100 * settings$minimum_window_support, "%"),
+        paste0(100 * settings$dose_minimum_relevance_support, "%"),
+        paste0(100 * settings$dose_minimum_relevance_support, "%"),
+        paste0(
+          "Factor of ",
+          format(settings$maximum_dose_correction_factor, trim = TRUE)
+        ),
+        ifelse(settings$m10_wraps_midnight, "Yes", "No"),
+        ifelse(settings$l10_wraps_midnight, "Yes", "No"),
+        "No",
+        "Longest observed uninterrupted period (lower bound)",
+        ifelse(
+          settings$placement == "glasses",
+          paste(
+            "Near-eye while awake plus bedside sleep-environment",
+            "measurement"
+          ),
+          paste(
+            "Chest while awake plus bedside sleep-environment",
+            "measurement"
+          )
+        ),
+        settings$participants,
+        settings$eligible_participant_days,
+        settings$thirty_minute_rows,
+        settings$hourly_rows,
+        "Yes"
+      ))
+    )
+  }
+) |>
+  tidyr::pivot_wider(
+    names_from = .data$Placement,
+    values_from = .data$Value
+  )
+knitr::kable(metric_settings_summary)
+```
+
+Every eligible participant-day produces exactly 48 rows of 30-minute
+arithmetic-mean values and 24 rows of hourly zero-aware geometric-mean values.
+A period with too few valid minutes cannot produce a value, but its row and
+participant-day remain present. The technical reason code is
+`insufficient_bin_support`. Exact input-file fingerprints remain available in
+the [metric artifact inventory](../../artifacts/12_manifests/metric_artifacts.csv).
+
+```{r}
+#| label: tbl-metric-bin-support
+#| tbl-cap: "Thirty-minute and hourly values that had enough valid data to calculate."
+
+bin_support <- purrr::imap_dfr(
+  metric_build$results,
+  function(result, placement) {
+    dplyr::bind_rows(
+      result$thirty_minute |>
+        dplyr::summarise(
+          placement = placement,
+          grid = "30_minute_arithmetic",
+          rows = dplyr::n(),
+          admissible_rows = sum(.data$bin_admissible),
+          unsupported_rows = sum(!.data$bin_admissible),
+          retained_days = dplyr::n_distinct(
+            paste(.data$site, .data$Id, .data$local_date)
+          )
+        ),
+      result$hourly |>
+        dplyr::summarise(
+          placement = placement,
+          grid = "one_hour_zero_aware_geometric",
+          rows = dplyr::n(),
+          admissible_rows = sum(.data$bin_admissible),
+          unsupported_rows = sum(!.data$bin_admissible),
+          retained_days = dplyr::n_distinct(
+            paste(.data$site, .data$Id, .data$local_date)
+          )
+      )
+    )
+  }
+) |>
+  dplyr::mutate(
+    placement = dplyr::recode(
+      .data$placement,
+      glasses = "Near-eye",
+      chest = "Chest"
+    ),
+    grid = dplyr::recode(
+      .data$grid,
+      `30_minute_arithmetic` = "30-minute arithmetic mean",
+      one_hour_zero_aware_geometric = "Hourly zero-aware geometric mean"
+    )
+  )
+knitr::kable(
+  bin_support,
+  col.names = c(
+    "Placement",
+    "Time grid",
+    "Values",
+    "Values calculated",
+    "Values with too little data",
+    "Participant-days retained"
+  )
+)
+```
+
+## Metrics that could and could not be calculated
+
+```{r}
+#| label: tbl-metric-admissibility
+#| tbl-cap: "Number of values that could and could not be calculated for each metric, with reasons."
+
+admissibility_summary <- purrr::imap_dfr(
+  metric_build$results,
+  function(result, placement) {
+    result$metric_values |>
+      dplyr::group_by(
+        .data$analysis_unit,
+        .data$metric,
+        .data$state_domain
+      ) |>
+      dplyr::summarise(
+        placement = placement,
+        metric_instances = dplyr::n(),
+        estimable_instances = sum(.data$estimable),
+        metric_na_instances = sum(!.data$estimable),
+        .groups = "drop"
+      )
+  }
+) |>
+  dplyr::mutate(
+    analysis_unit = dplyr::recode(
+      .data$analysis_unit,
+      participant = "Participant",
+      participant_day = "Participant-day"
+    ),
+    metric = display_metric_name(.data$metric),
+    state_domain = dplyr::recode(
+      .data$state_domain,
+      full_day = "Full 24-hour day",
+      wake = "Wake",
+      `pre-sleep` = "Three hours before sleep",
+      sleep = "Sleep"
+    ),
+    placement = dplyr::recode(
+      .data$placement,
+      glasses = "Near-eye",
+      chest = "Chest"
+    )
+  )
+knitr::kable(
+  admissibility_summary,
+  col.names = c(
+    "One value per",
+    "Metric",
+    "Diary period",
+    "Placement",
+    "Possible values",
+    "Values calculated",
+    "Values missing"
+  )
+)
+```
+
+The placement-specific value and data-sufficiency files retain one row for
+each possible metric value. When enough data show that melEDI never crossed
+the threshold, duration is zero, while first, last, and mean timing do not
+exist and are therefore missing. The technical reason code is
+`no_threshold_event`. If missing data could hide a longer qualifying period,
+the observed lower bound, possible upper bound, and uncertainty flag remain
+available; only the sensitivity restricted to exactly known periods is
+missing. A timing result is also left missing when the event may have occurred
+outside its permitted search period.
+
+## Check of candidate state-window cutoffs
+
+```{r}
+#| label: tbl-state-support-candidates
+#| tbl-cap: "Check that retained counts at 70%, 80%, and 90% match the earlier cutoff comparison."
+
+knitr::kable(
+  state_candidate_display(metric_build$state_support_candidates)
+)
+```
+
+This table, calculated after metric derivation, must match the earlier
+candidate-cutoff table for the same coverage inputs. It remains descriptive
+and does not retrospectively justify the approved cutoff.
+
+## Checks for gaps and daylight-saving changes
+
+```{r}
+#| label: tbl-metric-gap-diagnostics
+#| tbl-cap: "Checks of actual-time and local-clock data, gaps, and daylight-saving changes, by placement."
+
+gap_summary <- purrr::imap_dfr(
+  metric_build$results,
+  function(result, placement) {
+    result$gap |>
+      dplyr::summarise(
+        placement = placement,
+        participant_days = dplyr::n(),
+        true_utc_minutes = sum(.data$expected_real_minutes),
+        represented_wall_minutes = sum(.data$represented_wall_minutes),
+        unknown_diary_state_real_minutes = sum(
+          .data$unknown_diary_state_real_minutes
+        ),
+        missing_medi_real_minutes = sum(.data$missing_medi_real_minutes),
+        missing_medi_runs = sum(.data$missing_medi_runs),
+        maximum_missing_run_minutes = max(
+          .data$maximum_missing_medi_run_minutes
+        ),
+        dst_fold_real_minutes = sum(.data$dst_fold_real_minutes),
+        nonexistent_spring_wall_minutes = sum(
+          .data$structural_nonexistent_wall_minutes
+        )
+      )
+  }
+) |>
+  dplyr::mutate(
+    placement = dplyr::recode(
+      .data$placement,
+      glasses = "Near-eye",
+      chest = "Chest"
+    )
+  )
+knitr::kable(
+  gap_summary,
+  col.names = c(
+    "Placement",
+    "Participant-days",
+    "Expected actual-time minutes",
+    "Local-clock minutes represented",
+    "Minutes with unknown diary period",
+    "Minutes with missing melEDI",
+    "Continuous missing periods",
+    "Longest missing period (minutes)",
+    "Repeated autumn clock minutes",
+    "Absent spring clock minutes"
+  )
+)
+```
+
+The gap and uncertainty files distinguish several situations. A known zero
+means sufficient observed data showed that no qualifying event occurred. A
+zero lower bound means no event was observed, but missing data could hide one.
+The files also show whether a period touched the day boundary, was interrupted
+by missing data, or whether a timing event may have fallen outside the
+permitted search period. Missing diary periods are recorded separately.
+Participant-level interdaily stability (IS) and intradaily variability (IV)
+rows record the actual number of valid one-minute melEDI values and the
+expected number of minutes ordered in actual time. They do not assume that
+every retained hourly summary represents 60 observed minutes.
+
+## Files produced
+
+For each placement, Preparation 04 writes:
+
+- participant-day metrics and participant-level IS/IV as R data files
+  containing one object and as source-data-ready CSVs;
+- complete 30-minute arithmetic-mean and one-hour zero-aware geometric-mean
+  melEDI values as R data files and CSVs;
+- one-row-per-value CSVs for metric values and whether they could be
+  calculated; and
+- checks of metric coverage, uncertainty caused by missing data, and gaps,
+  including the observed longest-period lower bound, possible upper bound,
+  uncertainty flag, and sensitivity restricted to exactly known periods.
+
+The run also writes fixed settings, an exact inventory of the Preparation 01
+sleep and wear inputs, the diagnostic 70%/80%/90% data-sufficiency table, and
+an output-file inventory with digital fingerprints. These technical files are
+linked from the metric artifact inventory above.
+
+Focused R 4.6.1 tests passed for timing above 250 lx, the every-minute M10/L10
+search, and the longest-period lower-bound rules. An independent
+minute-by-minute calculation also reproduced M10 and L10. The full-data
+outputs have been built; their independent verification and comparison with
+the manuscript-prepared-data sensitivity remain in progress.

@@ -1,0 +1,39 @@
+---
+title: "H11: Sex-specific temporal exposure patterns"
+params:
+  placement: glasses
+  scenario: primary
+---
+
+## What this notebook checks
+
+Compare time-of-day exposure patterns by sex using the temporal model selected
+in H02. Account for autocorrelation, meaning that neighbouring time points tend
+to be similar, as well as repeated measurements from participants, site
+differences, and the relevant context. Interpret fitted time-pattern
+components as model terms, not as percentages of observed variation explained.
+
+## What this notebook uses and produces
+
+- Uses: the prepared H11 dataset in `artifacts/06_model_data/H11.rds` and the
+  temporal model selected in H02.
+- Produces: fitted models; checks of time dependence and influential
+  participants or sites; comparisons of time-of-day patterns; effect estimates
+  in interpretable units with 95% confidence intervals; the exact participants,
+  participant-days, 30-minute observations, and sites used by each model;
+  participants, participant-days, and 30-minute observations by sex, overall
+  and by site; tables; figures; and exact source data.
+- Fixed rule: variation in a fitted time-pattern term is not described as
+  variance explained.
+- Data sensitivity: fit this identical H11 implementation to the
+  manuscript-prepared dataset and compare exact samples by sex, temporal
+  estimates, 95% confidence intervals, diagnostics, and conclusions.
+
+```{r}
+#| label: setup-h11
+#| eval: false
+
+root <- normalizePath(Sys.getenv("QUARTO_PROJECT_DIR"), winslash = "/", mustWork = TRUE)
+source(file.path(root, "scripts/pipeline/paths_io.R"))
+source(file.path(root, "scripts/pipeline/assertions.R"))
+```

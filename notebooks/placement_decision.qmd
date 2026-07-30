@@ -1,0 +1,46 @@
+---
+title: "Sensor-placement decision"
+subtitle: "Primary near-eye analysis with chest-level measurements as a complementary comparison"
+---
+
+## Purpose
+
+Apply the approved decision to use near-eye measurements for the main
+analysis. Near-eye and chest measurements will not be combined into a single
+larger sample.
+
+## What this notebook uses and produces
+
+- Uses: participant-days, meaning one participant's record for one calendar
+  day, with measurements from both positions; the separately calculated
+  near-eye and chest metrics; and the approved placement decision in
+  `audit/decisions/placement_decision.md`.
+- Produces: comparisons based on the same participants and days at both
+  positions; checks of whether placement differences vary by site or context;
+  model checks; estimates in interpretable units with 95% confidence
+  intervals; and the exact participants, participant-days, observations, and
+  sites used by each model. For every metric, the report also gives the number
+  of complete near-eye--chest pairs, paired participants, and paired
+  participant-days overall and by site.
+- Fixed rule: chest measurements provide a complementary comparison. They are
+  not counted as additional independent measurements of near-eye exposure.
+
+```{r}
+#| label: setup-placement-decision
+#| eval: false
+
+root <- normalizePath(
+  Sys.getenv("QUARTO_PROJECT_DIR"),
+  winslash = "/",
+  mustWork = TRUE
+)
+source(file.path(root, "scripts/pipeline/paths_io.R"))
+source(file.path(root, "scripts/pipeline/assertions.R"))
+
+paths <- pipeline_paths(root)
+```
+
+The models will account for repeated measurements from the same participant
+and participant-day. Near-eye measurement is the reference. Results will show
+whether chest measurements differ and whether that difference changes by
+metric, site, or context.

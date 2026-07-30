@@ -1,0 +1,37 @@
+---
+title: "H02: Site, participant, and day pattern variation"
+params:
+  placement: glasses
+  scenario: primary
+---
+
+## What this notebook checks
+
+Determine how variation in time-of-day exposure patterns is associated with
+sites, participants, and days. Account for the fact that measurements close
+together in time tend to be similar, a pattern called autocorrelation. Do not
+describe variation in fitted model terms as the proportion of observed
+variation explained.
+
+## What this notebook uses and produces
+
+- Uses: the prepared H02 dataset in `artifacts/06_model_data/H02.rds`.
+- Produces: the selected time-of-day models; clearly defined summaries of
+  variation among sites, participants, and days; model checks; model
+  comparisons with 95% confidence intervals; the exact participants,
+  participant-days, 30-minute observations, and sites used by each model,
+  overall and by site;
+  figures; tables; and their exact source data.
+- Dependency: H11 will use only the temporal model selected and checked here.
+- Data sensitivity: fit this identical H02 implementation to the
+  manuscript-prepared dataset and compare exact model samples, estimates, 95%
+  confidence intervals, diagnostics, and conclusions with the main analysis.
+
+```{r}
+#| label: setup-h02
+#| eval: false
+
+root <- normalizePath(Sys.getenv("QUARTO_PROJECT_DIR"), winslash = "/", mustWork = TRUE)
+source(file.path(root, "scripts/pipeline/paths_io.R"))
+source(file.path(root, "scripts/pipeline/assertions.R"))
+```

@@ -1,0 +1,40 @@
+---
+title: "H06: Day type, exercise, sleep, and light exposure"
+params:
+  placement: glasses
+  scenario: primary
+---
+
+## What this notebook checks
+
+Define exactly how day type, exercise, and sleep are coded and confirm that the
+analysed exposure outcome matches the approved definition. Account for
+repeated measurements and similarity between measurements close in time.
+Whenever an interaction---a test of whether an association differs across
+groups---is included, retain the corresponding individual terms. Define the
+groups of \(p\)-values adjusted together for the H06 site comparisons before
+inspecting results.
+
+## What this notebook uses and produces
+
+- Uses: the prepared H06 dataset in `artifacts/06_model_data/H06.rds`.
+- Produces: definitions of the day type, exercise, and sleep variables; fitted
+  models; raw and adjusted tests; model checks; effect estimates in
+  interpretable units with 95% confidence intervals; the exact participants,
+  participant-days, hourly observations, and sites used by each model; counts
+  for every day-type and exercise category overall and by site; the usable
+  sleep observations in each fitted sleep model; tables; figures; and source
+  data.
+- Data sensitivity: fit this identical H06 implementation to the
+  manuscript-prepared dataset and compare exact samples, category counts,
+  estimates, 95% confidence intervals, diagnostics, and conclusions.
+
+```{r}
+#| label: setup-h06
+#| eval: false
+
+root <- normalizePath(Sys.getenv("QUARTO_PROJECT_DIR"), winslash = "/", mustWork = TRUE)
+source(file.path(root, "scripts/pipeline/paths_io.R"))
+source(file.path(root, "scripts/pipeline/assertions.R"))
+source(file.path(root, "scripts/pipeline/multiplicity.R"))
+```

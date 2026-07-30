@@ -1,0 +1,62 @@
+# HTML-first Nature Health working profile.
+#
+# This profile is opt-in and does not alter the existing website build.
+# Executable preparation, analysis, audit, manuscript, and supplementary
+# documents are reviewed in HTML. The single submission-stage manuscript DOCX
+# is deliberately deferred until the manuscript is stable.
+project:
+  type: default
+  output-dir: _build/nathealth
+  execute-dir: project
+  render:
+    - notebooks/preparation/01_import_state_alignment.qmd
+    - notebooks/preparation/02_coverage_sample_flow.qmd
+    - notebooks/preparation/03_reference_profiles.qmd
+    - notebooks/preparation/04_metric_derivation.qmd
+    - notebooks/preparation/05_model_input_acquisition.qmd
+    - notebooks/preparation/06_model_ready_datasets.qmd
+    - audit/hypotheses/implementation_result_comparison_contract.qmd
+    - notebooks/placement_decision.qmd
+    - notebooks/descriptives.qmd
+    - notebooks/hypotheses/H01.qmd
+    - notebooks/hypotheses/H02.qmd
+    - notebooks/hypotheses/H03.qmd
+    - notebooks/hypotheses/H04.qmd
+    - notebooks/hypotheses/H05.qmd
+    - notebooks/hypotheses/H06.qmd
+    - notebooks/hypotheses/H07.qmd
+    - notebooks/hypotheses/H08.qmd
+    - notebooks/hypotheses/H09.qmd
+    - notebooks/hypotheses/H10.qmd
+    - notebooks/hypotheses/H11.qmd
+    - notebooks/sensitivity_battery.qmd
+    - notebooks/assemble_artifacts.qmd
+    - index.qmd
+    - supplementary_information.qmd
+    # Profile arrays are union-merged with the base configuration. Explicitly
+    # exclude the superseded root analyses so an opt-in Nature Health render
+    # cannot execute both architectures.
+    - "!data_preparation.qmd"
+    - "!metric_preparation.qmd"
+    - "!Descriptives.qmd"
+    - "!RQ1.qmd"
+    - "!RQ2.qmd"
+    - "!RQ3.qmd"
+    - "!RQ1_chest.qmd"
+    - "!RQ2_chest.qmd"
+    - "!RQ3_chest.qmd"
+
+execute:
+  freeze: false
+  warning: true
+  message: true
+  error: false
+
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    code-tools: true
+    code-fold: true
+    code-summary: "Show R code"
+    page-layout: full

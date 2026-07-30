@@ -197,10 +197,6 @@ format:
     html-math-method:
       method: mathjax
       url: "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/latest.js?config=TeX-MML-AM_CHTML"
-  docx:
-    toc: false
-    number-sections: false
-    reference-doc: assets/reference.docx
 filters:
   - authors-block
 csl: nature.csl
@@ -462,7 +458,7 @@ Throughout the monitoring period, participants completed repeated smartphone-bas
 
 ## Wearable light logger
 
-Light exposure was recorded using spectrally sensitive ActLumus devices, Condor Instruments, São Paulo, Brazil [@ishihara2025; @vanduijnhoven2025]. Devices recorded continuously at 10-second intervals. Multispectral measurements across eight visible-band channels were processed internally by the device to derive photopic and α-opic quantities, including melanopic equivalent daylight illuminance, or melanopic EDI. The devices were factory calibrated to an operating range between 1 and 10\^5 lx (precision 10% at 1k lx).
+Light exposure was recorded using spectrally sensitive ActLumus devices, Condor Instruments, São Paulo, Brazil [@ishihara2025; @vanduijnhoven2025]. Devices recorded continuously at 10-second intervals. Multispectral measurements across eight visible-band channels were processed internally by the device to derive photopic and α-opic quantities, including melanopic equivalent daylight illuminance, or melanopic EDI. The manufacturer reports a light-sensor operating interval of 1--10\^5 lx and typical precision of 10% at 1,000 lx; minute-mean melanopic EDI values were retained only when below that upper boundary [@condor2023actlumus].
 
 The ActLumus devices used in this study have recently been independently benchmarked against a criterion spectrometer under indoor LED and outdoor daylight conditions, showing broad detection range (100% of the tested range of 2-100k lx), low inter-device variability, and higher photopic accuracy (+3.3 ±13.4%, mean ±SD) than several commonly used wearable light sensors [@ishihara2025].
 
@@ -525,7 +521,7 @@ Environmental and behavioural covariates included study site, latitude, photoper
 
 ## Transformation of variables and preprocessing steps
 
-Light exposure preprocessing and metric derivation were performed in R statistical software [@base] using the LightLogR package [@LightLogR]. Raw unaggregated light exposure recordings from near-corneal and chest-mounted devices were first trimmed according to participant-specific study start and end times. Physiologically implausible values exceeding 120000 lx were visually inspected and removed or recoded as missing values.
+Light exposure preprocessing and metric derivation were performed in R statistical software [@base] using the LightLogR package [@LightLogR]. Raw unaggregated light exposure recordings from near-corneal and chest-mounted devices were first trimmed according to participant-specific study start and end times. After one-minute aggregation, melanopic EDI values at or above the manufacturer's reported upper operating boundary of 100,000 lx were flagged and recoded as missing for analysis; the pre-mask melanopic EDI values were retained for provenance [@condor2023actlumus]. This device-range rule was not applied to photopic illuminance.
 
 Non-wear periods were identified from participant wear logs [@guidolin2026]. Only non-wear periods that did not overlap with reported sleep windows were set to missing. Sleep-period recordings were retained because devices were placed beside the participant during sleep to quantify the sleep environment.
 

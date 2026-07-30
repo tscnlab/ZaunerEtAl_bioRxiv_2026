@@ -11,9 +11,11 @@ format:
 
 This supplement documents the import and preprocessing of personal light exposure data for the MeLiDos field study analysis. The goal is to derive at three sets of data:
 
-1. An unaggregated set of light exposure data, both for the eye-level and chest-level wearing position where
-  - Values > 120 000 lx are removed (set to `NA`)
-  - non-wear periods, that are not also sleep periods, are removed
+1. A one-minute set of light exposure data, both for the eye-level and chest-level wearing position where
+  - melanopic EDI values at or above the manufacturer's reported upper operating boundary of 100,000 lx are flagged and set to `NA` for analysis, while the pre-mask values are retained in `MEDI_raw` [@condor2023actlumus]
+  - the operating-boundary rule is not applied to photopic illuminance (`LIGHT`)
+  - logged `off` periods outside diary-defined sleep are masked in both
+    analytical light channels; raw values are retained
 2. A further processed set (from 1.) where
   - hours with less than 50% data availability are removed
   - days with less than 80% data availability (after the previous step) are removed
@@ -26,7 +28,7 @@ This supplement documents the import and preprocessing of personal light exposur
   - level-based:
       - `Mean`: geometric mean of melanopic EDI (lx)
       - `M10mean`: geometric mean of melanopic EDI during 10 brightest hours of the day (lx)
-      - `L5mean`: geometric mean of melanopic EDI during 5 darkest hours of the day (lx)
+      - `L10mean`: geometric mean of melanopic EDI during the 10 darkest hours of the day (lx)
   - duration-based:  
       - `TAT1000`: time above 1000 lx melanopic EDI (minutes)
       - `TAT250`: time above 250 lx melanopic EDI (during wake) (hours)
@@ -37,7 +39,7 @@ This supplement documents the import and preprocessing of personal light exposur
       - `FLIT250`: first time above 250 lx melanopic EDI (HH:MM)
       - `LLIT250`: last time above 250 lx melanopic EDI (HH:MM)
       - `M10`: midpoint of brightest 10 hours (HH:MM)
-      - `L10`: midpoint of darkest 5 hours (HH:MM)
+      - `L10`: midpoint of the 10 darkest hours (HH:MM)
   - exposure-history-based:
       - `Dose`: melanopic EDI dose (lx·h)
   - spectrum-based:  
@@ -203,26 +205,40 @@ light_glasses |>
 
 ## Preprocessing step 1
 
-In this step, we will remove non-wear instances that are neither marked as sleep, nor fall into a sleep window (sleepdiary). We will also add photoperiod, and remove instances ≥ 1.2*10^5 lx melanopic EDI.
+In this step, we remove non-wear instances that are neither marked as sleep nor fall within a sleep window defined by the sleep diary. We also add photoperiod and flag one-minute melanopic EDI values at or above the manufacturer's reported upper operating boundary of 100,000 lx. These values are set to missing for analysis, while the pre-mask values are retained in `MEDI_raw`. This device-range rule is not applied to photopic illuminance (`LIGHT`).
 
 ```{r}
 light_chest_expanded <- 
 light_chest_expanded |> 
   imap(\(x, idx) x |> 
-    mutate(MEDI = replace_when(MEDI, 
-                               wear == "off" & (State.Brown != "sleep" | is.na(State.Brown)) ~ NA,
-                               MEDI >= 120000 ~ NA
-                               )) |> 
+    mutate(MEDI_raw = MEDI,
+           LIGHT_raw = LIGHT,
+           invalid_nonwear = wear == "off" & (State.Brown != "sleep" | is.na(State.Brown)),
+           medi_saturated = is.finite(MEDI_raw) & MEDI_raw >= 100000,
+           MEDI = replace_when(MEDI,
+                               invalid_nonwear ~ NA,
+                               medi_saturated ~ NA
+                               ),
+           LIGHT = replace_when(LIGHT,
+                                invalid_nonwear ~ NA
+                                )) |>
       add_photoperiod(melidos_coordinates[[idx]])
   )
 
 light_glasses_expanded <- 
 light_glasses_expanded |> 
   imap(\(x, idx) x |> 
-    mutate(MEDI = replace_when(MEDI, 
-                               wear == "off" & (State.Brown != "sleep" | is.na(State.Brown)) ~ NA,
-                               MEDI >= 120000 ~ NA
-                               )) |> 
+    mutate(MEDI_raw = MEDI,
+           LIGHT_raw = LIGHT,
+           invalid_nonwear = wear == "off" & (State.Brown != "sleep" | is.na(State.Brown)),
+           medi_saturated = is.finite(MEDI_raw) & MEDI_raw >= 100000,
+           MEDI = replace_when(MEDI,
+                               invalid_nonwear ~ NA,
+                               medi_saturated ~ NA
+                               ),
+           LIGHT = replace_when(LIGHT,
+                                invalid_nonwear ~ NA
+                                )) |>
       add_photoperiod(melidos_coordinates[[idx]])
   )
 
@@ -307,7 +323,7 @@ metric_glasses_participant <-
   - level-based:
       - `Mean`: geometric mean of melanopic EDI (lx)
       - `M10mean`: geometric mean of melanopic EDI during 10 brightest hours of the day (lx)
-      - `L5mean`: geometric mean of melanopic EDI during 5 darkest hours of the day (lx)
+      - `L10mean`: geometric mean of melanopic EDI during the 10 darkest hours of the day (lx)
   - duration-based:  
       - `TAT1000`: time above 1000 lx melanopic EDI (minutes)
       - `TAT250`: time above 250 lx melanopic EDI (during wake) (hours)
@@ -472,4 +488,3 @@ save(metric_glasses_participanthour,
 ```{r}
 sessionInfo()
 ```
-

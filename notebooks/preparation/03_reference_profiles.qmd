@@ -1,0 +1,434 @@
+---
+title: "Preparation 03: Learn fixed time-of-day reference profiles"
+execute:
+  echo: true
+  warning: true
+  message: true
+  error: false
+  freeze: false
+---
+
+## Purpose
+
+Before participant metrics are calculated, this notebook learns when light
+exposure typically occurs across the day. A reference profile summarizes the
+median melEDI or illuminance at each time of day while giving every
+participant equal influence. A separate profile records the probability that
+melEDI is strictly above 250 lx at each time. The profiles are learned once
+and are used only to judge whether a participant-day has enough data at
+relevant times; they never replace, weight, or change an observed value.
+
+## What this step uses, produces, and checks
+
+- Inputs are the one-minute files that passed Rule A in Preparation 02,
+  identified by SHA-256 checksums. A SHA-256 checksum is a digital fingerprint
+  used to confirm that a file has not changed. The full-day period is the
+  intended hybrid 24-hour cycle, including bedside measurements during
+  diary-defined sleep.
+- Outputs include the main profiles that pool all sites, profiles calculated
+  separately by site, and leave-one-site-out profiles that omit one site at a
+  time. The files also include the distributions for timing above 250 lx,
+  time-of-day relevance maps, and checks of how much data support them under
+  `artifacts/04_reference_profiles/`.
+- Profiles use fixed 30-minute periods on the shared local-clock scale and are
+  calculated separately by sensor placement, signal, and full-day, wake,
+  pre-sleep, or sleep period.
+- For each 30-minute period, the intensity profile first takes each
+  participant's median and then takes the median across participants. The
+  number of contributing participants remains visible.
+- For timing above 250 lx, the calculation first finds the fraction of valid
+  minutes strictly above 250 lx melEDI within every participant-day and
+  30-minute period. Days receive equal weight within a participant, and
+  participants then receive equal weight in the profile.
+- During the autumn daylight-saving change, repeated local-clock values are
+  averaged only while learning the full-day profile. All observations remain
+  separate in the fixed input ordered by actual time. For wake, pre-sleep, or
+  sleep profiles, the diary period is selected in actual time before repeated
+  local-clock values are averaged. This prevents a repeated clock label that
+  crosses a diary boundary from being assigned to the wrong period.
+- A full-day period in the pooled or leave-one-site-out profile requires at
+  least 20 participants. A period in a site-specific or diary-period-specific
+  profile requires at least five participants.
+- A 30-minute period with too few participants remains visible but has no
+  reference value. It is not interpolated and no unweighted replacement is
+  used.
+- Later notebooks may verify these fixed profiles and expand each 30-minute
+  weight to one-minute rows, but may not relearn or interpolate the profiles.
+  No L5 profile or relevance map is produced.
+
+## Setup
+
+```{r}
+#| label: setup-reference-profiles
+
+root_hint <- Sys.getenv("QUARTO_PROJECT_DIR", unset = getwd())
+source(file.path(root_hint, "scripts/pipeline/paths_io.R"))
+root <- project_root(root_hint)
+
+dependencies <- c(
+  "assertions.R",
+  "reference_profiles.R",
+  "build_reference_profiles.R"
+)
+for (dependency in dependencies) {
+  source(file.path(root, "scripts", "pipeline", dependency))
+}
+
+run_label <- Sys.getenv(
+  "NATHEALTH_PROFILE_RUN_LABEL",
+  unset = "full"
+)
+coverage_root_argument <- Sys.getenv(
+  "NATHEALTH_COVERAGE_RUN_ROOT",
+  unset = ""
+)
+profile_root_argument <- Sys.getenv(
+  "NATHEALTH_PROFILE_RUN_ROOT",
+  unset = ""
+)
+placement_argument <- Sys.getenv(
+  "NATHEALTH_PROFILE_PLACEMENTS",
+  unset = ""
+)
+placements <- if (nzchar(placement_argument)) {
+  strsplit(placement_argument, ",", fixed = TRUE)[[1L]]
+} else {
+  NULL
+}
+```
+
+For a quick test run, set `NATHEALTH_PROFILE_RUN_LABEL` to the Preparation 02
+subset label. By default, the test reads
+`artifacts/03_coverage/runs/<label>/` and writes only to
+`artifacts/04_reference_profiles/runs/<label>/`. Explicit input and output
+roots can instead be supplied through `NATHEALTH_COVERAGE_RUN_ROOT` and
+`NATHEALTH_PROFILE_RUN_ROOT`. A test run cannot overwrite the full profiles
+used in the main analysis. Render this notebook through the project profile, for
+example:
+
+```sh
+NATHEALTH_PROFILE_RUN_LABEL=subset_baua \
+quarto render notebooks/preparation/03_reference_profiles.qmd \
+  --profile nathealth --to html
+```
+
+## Learn the profiles once
+
+```{r}
+#| label: build-reference-profiles
+
+profile_build <- build_reference_profiles(
+  root = root,
+  run_label = run_label,
+  coverage_run_root = if (nzchar(coverage_root_argument)) {
+    coverage_root_argument
+  } else {
+    NULL
+  },
+  profile_run_root = if (nzchar(profile_root_argument)) {
+    profile_root_argument
+  } else {
+    NULL
+  },
+  placements = placements,
+  bin_minutes = 30L,
+  pooled_full_day_min = 20L,
+  leave_one_site_out_full_day_min = 20L,
+  state_specific_min = 5L,
+  site_specific_min = 5L,
+  zero_offset = 0.1
+)
+```
+
+The run label is `r profile_build$run_label`. The exact Preparation 02 inputs,
+identified by their digital fingerprints, are under
+`r profile_build$coverage_run_root`, and the fixed outputs are under
+`r profile_build$profile_run_root`.
+
+## Settings and exact input versions
+
+```{r}
+#| label: tbl-reference-profile-settings
+#| tbl-cap: "Settings used to learn the fixed reference profiles."
+
+profile_settings <- profile_build$settings
+profile_settings_summary <- data.frame(
+  Setting = c(
+    "Run",
+    "Coverage rule used",
+    "Period used for daily coverage",
+    "Diary-defined sleep excluded",
+    "Time-of-day period",
+    "Unit given equal influence",
+    "Threshold for the timing distribution",
+    "Main and sensitivity profile versions",
+    "Minimum participants: pooled full day",
+    "Minimum participants: leave one site out",
+    "Minimum participants: within a diary period",
+    "Minimum participants: within a site",
+    "Rule for periods with too few participants",
+    "Five-hour darkest-window (L5) profile allowed"
+  ),
+  Value = c(
+    profile_settings$run_label,
+    profile_settings$input_coverage_rule_id,
+    "Full 24-hour hybrid measurement day",
+    ifelse(
+      profile_settings$input_diary_sleep_excluded_from_denominator,
+      "Yes",
+      "No"
+    ),
+    paste(profile_settings$bin_minutes, "minutes"),
+    "Participant",
+    paste0(
+      "> ",
+      profile_settings$timing_distribution_threshold_lx,
+      " lx melEDI"
+    ),
+    "All sites; each site; leave one site out",
+    profile_settings$pooled_full_day_min,
+    profile_settings$leave_one_site_out_full_day_min,
+    profile_settings$state_specific_min,
+    profile_settings$site_specific_min,
+    "Keep the period, but do not assign a reference value",
+    ifelse(profile_settings$l5_permitted, "Yes", "No; the analysis uses L10")
+  )
+)
+knitr::kable(profile_settings_summary)
+```
+
+```{r}
+#| label: tbl-reference-profile-provenance
+#| tbl-cap: "Exact input files and checks that actual and local clock times agree."
+
+profile_input_summary <- profile_build$provenance |>
+  dplyr::transmute(
+    Placement = .data$placement,
+    Signal = dplyr::recode(
+      .data$signal,
+      MEDI = "melEDI",
+      LIGHT = "Illuminance"
+    ),
+    `Study sites` = .data$input_sites,
+    Participants = .data$input_participants,
+    `Participant-days` = .data$input_participant_days,
+    `Actual-time rows` = .data$input_true_utc_minutes,
+    `Usable actual-time rows` = .data$eligible_true_utc_minutes,
+    `Local-clock rows used for learning` = .data$learning_wall_minutes,
+    `Usable local-clock rows` = .data$eligible_learning_wall_minutes,
+    `Repeated local-clock rows averaged` =
+      .data$repeated_wall_minutes_averaged,
+    `Repeated rows spanning diary periods` =
+      .data$repeated_wall_minutes_with_mixed_state,
+    `Maximum actual rows for one local minute` =
+      .data$maximum_true_rows_per_wall_minute,
+    `Input digital fingerprint` = .data$input_sha256
+  )
+knitr::kable(profile_input_summary)
+```
+
+The input digital fingerprints identify the complete files ordered in actual
+time. Repeated local-clock minutes during the autumn daylight-saving change
+are averaged only in the local-clock copy used to learn the profiles. If one
+of the repeated observations is missing and the other has a valid value, the
+valid value is retained rather than treating the missing value as zero. The
+table records repeated clock labels that cross diary periods and checks the
+total and valid actual-time rows contributing to every full-day and
+diary-period-specific profile.
+
+## How much data supports each profile
+
+```{r}
+#| label: tbl-reference-profile-support
+#| tbl-cap: "Time periods with enough participants to estimate each main or sensitivity profile."
+
+profile_support_summary <- profile_build$profile_support |>
+  dplyr::select(
+    profile_scope,
+    placement,
+    state_domain,
+    signal,
+    clock_bins,
+    supported_bins,
+    unsupported_bins,
+    minimum_required_participants,
+    profile_estimable
+  ) |>
+  dplyr::group_by(
+    .data$profile_scope,
+    .data$placement,
+    .data$state_domain,
+    .data$signal,
+    .data$minimum_required_participants
+  ) |>
+  dplyr::summarise(
+    profile_variants = dplyr::n(),
+    supported_bins = sum(.data$supported_bins),
+    unsupported_bins = sum(.data$unsupported_bins),
+    estimable_profiles = sum(.data$profile_estimable),
+    .groups = "drop"
+  ) |>
+  dplyr::mutate(
+    profile_scope = dplyr::recode(
+      .data$profile_scope,
+      pooled = "All sites",
+      site_specific = "Each site",
+      leave_one_site_out = "Leave one site out"
+    ),
+    placement = dplyr::recode(
+      .data$placement,
+      glasses = "Near-eye",
+      chest = "Chest"
+    ),
+    state_domain = dplyr::recode(
+      .data$state_domain,
+      full_day = "Full 24-hour day",
+      wake = "Wake",
+      `pre-sleep` = "Three hours before sleep",
+      sleep = "Sleep"
+    ),
+    signal = dplyr::recode(
+      .data$signal,
+      MEDI = "melEDI",
+      LIGHT = "Illuminance"
+    )
+  )
+knitr::kable(
+  profile_support_summary,
+  col.names = c(
+    "Profile type",
+    "Placement",
+    "Diary period",
+    "Signal",
+    "Minimum participants",
+    "Profile versions",
+    "Supported periods",
+    "Unsupported periods",
+    "Profiles that could be calculated"
+  )
+)
+```
+
+Every downloadable profile table retains all 48 half-hour periods for each
+combination of placement, diary period, and light signal. A period with too
+few participants remains in the table but has no reference value. The internal
+support flag records why it was not used.
+
+## Probability of exceeding 250 lx by time of day
+
+The probability of timing above 250 lx cannot be learned from the amount by
+which the median melEDI profile exceeds 250 lx. The population median can
+remain below 250 lx even when individual participant-days cross the threshold.
+Preparation 03 therefore estimates the probability that melEDI is strictly
+above 250 lx at each time of day using the full-day minute records that passed
+Rule A.
+
+At each 30-minute period, every valid participant-day has equal weight within
+its participant, and every contributing participant then has equal weight in
+the profile. The pooled, site-specific, and leave-one-site-out versions are
+learned once and use the same minimum participant counts as the corresponding
+full-day profiles. The pooled, placement-specific distribution is used in the
+main analysis. Site-specific and leave-one-site-out versions are fixed
+sensitivity inputs.
+
+Later code gives each of the 30 minutes within a period its learned probability
+weight. This map is used only to determine whether enough relevant times were
+observed for the first, last, or mean timing above 250 lx. It never weights or
+changes an observed timing value. The main support cutoff is 0.80; the 0.70 and
+0.90 sensitivities reuse the same learned distribution. If the total learned
+probability is zero, timing support cannot be calculated; no uniform or
+median-based replacement is used.
+
+## Time-of-day relevance used for each metric
+
+```{r}
+#| label: tbl-reference-map-support
+#| tbl-cap: "Whether each metric-specific time-of-day profile could be calculated."
+
+map_support_summary <- profile_build$map_support |>
+  dplyr::group_by(
+    .data$metric_map,
+    .data$map_application,
+    .data$signal
+  ) |>
+  dplyr::summarise(
+    maps = dplyr::n(),
+    estimable_maps = sum(.data$map_estimable),
+    minimum_weight_sum = min(.data$relevance_weight_sum),
+    maximum_weight_sum = max(.data$relevance_weight_sum),
+    value_correction_allowed = all(.data$value_correction_allowed),
+    .groups = "drop"
+  ) |>
+  dplyr::mutate(
+    metric_map = dplyr::recode(
+      .data$metric_map,
+      dose = "melEDI dose",
+      M10 = "Brightest 10 hours",
+      L10 = "Darkest 10 hours",
+      paired_channel_coverage = "MDER",
+      timing_above_250 = "Timing above 250 lx melEDI"
+    ),
+    map_application = dplyr::recode(
+      .data$map_application,
+      dose_correction = "Estimate missing dose",
+      paired_coverage_only =
+        "Check paired melEDI and illuminance coverage",
+      support_only = "Check whether enough relevant times were observed"
+    ),
+    signal = dplyr::recode(
+      .data$signal,
+      MEDI = "melEDI",
+      LIGHT = "Illuminance"
+    )
+  )
+knitr::kable(
+  map_support_summary,
+  col.names = c(
+    "Metric profile",
+    "How the profile is used",
+    "Signal",
+    "Profiles",
+    "Profiles that could be calculated",
+    "Smallest total relevance across the day",
+    "Largest total relevance across the day",
+    "May change a metric value"
+  )
+)
+```
+
+The totals in the two relevance columns sum the learned importance assigned
+across the 48 half-hour periods. They are checks that each fixed profile is
+well defined; they are not participant exposure values.
+
+Only the additive correction for missing dose can alter a metric value. The
+M10, L10, timing-above-threshold, and paired-signal profiles only check whether
+enough relevant times were observed. They do not scale levels, durations,
+timings, or ratios.
+
+## Files produced
+
+Preparation 03 writes:
+
+- fixed profiles as `reference_profiles.rds` and
+  `reference_profiles.csv`;
+- the fixed threshold-timing distribution as
+  `timing_exceedance_distributions.rds` and
+  `timing_exceedance_distributions.csv`;
+- metric-specific maps as `metric_relevance_maps.rds` and
+  `metric_relevance_maps.csv`;
+- checks showing how much data support each profile, probability
+  distribution, and relevance map;
+- fixed settings and a record of the exact input versions; and
+- an output-file inventory with SHA-256 digital fingerprints.
+
+The file inventory is:
+
+`r profile_build$artifact_manifest_path`
+
+Focused R 4.6.1 tests passed for the probability-above-threshold calculation
+and its pooled, site-specific, and leave-one-site-out versions. The complete
+independent check also reconstructed all 288 median-profile groups and all 36
+probability-above-threshold groups: 394 of 394 checks passed, and all 11 file
+fingerprints matched. Preparation 03 is therefore complete; the Preparation 04
+metric values and their differences from the submitted analysis remain
+pending.

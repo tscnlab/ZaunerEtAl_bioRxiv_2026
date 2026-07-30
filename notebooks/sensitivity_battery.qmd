@@ -1,0 +1,79 @@
+---
+title: "Planned sensitivity checks"
+subtitle: "Change one analysis choice at a time"
+---
+
+## Purpose
+
+Run the predefined comparison and alternative analyses after the main metric
+definitions and models have been fixed.
+
+## Manuscript-prepared-data sensitivity
+
+Every hypothesis receives a **manuscript-prepared-data sensitivity**. The same
+new H01--H11 code and models are fitted twice: once to the newly prepared data
+for the main analysis and once to the dataset prepared for the manuscript,
+with only objectively demonstrable data errors corrected. This comparison
+therefore isolates the effect of data preparation and metric calculation.
+
+It does not rerun the manuscript's modelling implementation. Differences
+between the full manuscript-generating analysis chain and the main analysis
+are discussed in the audit with the author, but they are not treated as this
+sensitivity analysis.
+
+The permitted data corrections and required comparison fields are fixed in
+[`manuscript_prepared_data_sensitivity.md`](../audit/decisions/manuscript_prepared_data_sensitivity.md).
+Both scenarios report the same exact fitted-model sample sizes and 95%
+confidence intervals.
+
+## What this notebook uses and produces
+
+- Uses: the main H01--H11 results, the H01--H11 results obtained from the
+  manuscript-prepared dataset, the placement comparison, the decisions about
+  which metrics remain interpretable, and a table listing every planned
+  alternative analysis.
+- Alternatives considered: 70%, 80%, and 90% coverage requirements; all
+  near-eye records versus participant-days (one participant's record for one
+  calendar day) measured at both positions; complementary chest results;
+  omission of sparse sites or one site at a time; justified alternative
+  outcome distributions or transformations; alternative ways to represent
+  repeated measurements and time dependence; and approved alternatives for
+  gaps or state definitions.
+- Produces: the main-versus-manuscript-prepared-data comparison; sample counts
+  for each additional alternative; and direct comparisons restricted to
+  records shared by the main and alternative analyses. All comparisons report
+  estimates with 95% confidence intervals; the exact participants,
+  participant-days, time-resolved observations, and sites used by each model;
+  model-fitting and distribution checks; influential-observation checks;
+  warnings; and a conclusion about stability. Every comparison also reports
+  the participants, participant-days or participant-level rows, one-hour or
+  30-minute observations where applicable, and sites shared by both models.
+- Fixed rules: change only one choice at a time; do not test every possible
+  combination of alternatives; do not add temperature.
+
+```{r}
+#| label: setup-sensitivity-battery
+#| eval: false
+
+root <- normalizePath(
+  Sys.getenv("QUARTO_PROJECT_DIR"),
+  winslash = "/",
+  mustWork = TRUE
+)
+source(file.path(root, "scripts/pipeline/paths_io.R"))
+source(file.path(root, "scripts/pipeline/assertions.R"))
+
+paths <- pipeline_paths(root)
+```
+
+Each conclusion will be classified as:
+
+- **stable** when the conclusion and practical magnitude remain similar;
+- **quantitatively sensitive** when the conclusion remains but the magnitude
+  crosses a practical threshold defined before the comparison;
+- **qualitatively sensitive** when the direction or statistical conclusion
+  changes;
+- **inconclusive** when the available information does not support a clear
+  conclusion;
+- **invalid** when the alternative analysis violates a required assumption; or
+- **non-estimable** when the model cannot estimate the requested quantity.

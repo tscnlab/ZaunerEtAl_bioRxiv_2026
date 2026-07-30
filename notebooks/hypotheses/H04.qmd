@@ -1,0 +1,38 @@
+---
+title: "H04: Activity and measured exposure"
+params:
+  placement: glasses
+  scenario: primary
+---
+
+## What this notebook checks
+
+Test all declared activity categories. Account for repeated reports from the
+same participant and similarity between measurements close in time. First test
+whether the categories differ overall, then report the planned activity
+comparisons in interpretable units. Check whether differences vary by site,
+whether every category has enough observations, and whether the model fits each
+activity group adequately.
+
+## What this notebook uses and produces
+
+- Uses: the prepared H04 dataset in `artifacts/06_model_data/H04.rds`.
+- Produces: the category definitions, overall and activity-specific
+  comparisons, fitted models, model checks, estimates with 95% confidence
+  intervals, the exact participants, participant-days, hourly observations,
+  sites, and activity-category counts used by each model, both overall and for
+  every activity category × site combination; tables, figures, and the exact
+  data displayed.
+- Data sensitivity: fit this identical H04 implementation to the
+  manuscript-prepared dataset and compare exact samples, activity × site
+  counts, estimates, 95% confidence intervals, diagnostics, and conclusions.
+
+```{r}
+#| label: setup-h04
+#| eval: false
+
+root <- normalizePath(Sys.getenv("QUARTO_PROJECT_DIR"), winslash = "/", mustWork = TRUE)
+source(file.path(root, "scripts/pipeline/paths_io.R"))
+source(file.path(root, "scripts/pipeline/assertions.R"))
+source(file.path(root, "scripts/pipeline/multiplicity.R"))
+```

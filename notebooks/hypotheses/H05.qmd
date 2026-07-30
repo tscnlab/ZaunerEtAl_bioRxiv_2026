@@ -1,0 +1,39 @@
+---
+title: "H05: Light Exposure Behaviour Assessment and personal light exposure"
+params:
+  placement: glasses
+  scenario: primary
+---
+
+## What this notebook checks
+
+Specify the four Light Exposure Behaviour Assessment (LEBA) factor scores and
+the full set of exposure metrics before testing them. Report missing data.
+Calculate each correlation coefficient and its \(p\)-value using the same
+method, then apply one Benjamini--Hochberg correction to the complete
+predefined group of tests. The Benjamini--Hochberg procedure limits the
+expected proportion of false discoveries among the results treated as
+statistically supported.
+
+## What this notebook uses and produces
+
+- Uses: the prepared H05 dataset in `artifacts/06_model_data/H05.rds`.
+- Produces: every planned LEBA--exposure comparison, adjusted \(p\)-values,
+  effect sizes in interpretable units with 95% confidence intervals, model
+  checks, the exact participants, observations, and sites used for each
+  comparison, together with missing LEBA factors and exposure outcomes;
+  tables, figures, and source data.
+- Fixed rule: the H05 metric set is chosen before inspecting H01 results.
+- Data sensitivity: fit this identical H05 implementation to the
+  manuscript-prepared dataset and compare exact samples, estimates, 95%
+  confidence intervals, adjusted results, diagnostics, and conclusions.
+
+```{r}
+#| label: setup-h05
+#| eval: false
+
+root <- normalizePath(Sys.getenv("QUARTO_PROJECT_DIR"), winslash = "/", mustWork = TRUE)
+source(file.path(root, "scripts/pipeline/paths_io.R"))
+source(file.path(root, "scripts/pipeline/assertions.R"))
+source(file.path(root, "scripts/pipeline/multiplicity.R"))
+```
