@@ -6,15 +6,15 @@ source("scripts/pipeline/site_solar_context.R")
 source("scripts/pipeline/build_site_solar_context.R")
 source("scripts/pipeline/verify_site_solar_context_artifacts.R")
 
-message("Building isolated canonical inputs for independent verification")
+message("Building isolated main-analysis inputs for independent verification")
 test_root <- tempfile("nathealth-site-solar-verify-")
 dir.create(test_root, recursive = TRUE)
 on.exit(unlink(test_root, recursive = TRUE), add = TRUE)
 
-canonical_root <- normalizePath(getwd(), winslash = "/", mustWork = TRUE)
-metric_paths <- site_solar_default_metric_paths(canonical_root)
+project_input_root <- normalizePath(getwd(), winslash = "/", mustWork = TRUE)
+metric_paths <- site_solar_default_metric_paths(project_input_root)
 site_metadata_path <- file.path(
-  canonical_root,
+  project_input_root,
   "config",
   "site_metadata.csv"
 )
@@ -22,7 +22,7 @@ initial_build <- build_site_solar_context_artifacts(
   root = test_root,
   site_metadata_path = site_metadata_path,
   metric_paths = metric_paths,
-  input_root = canonical_root
+  input_root = project_input_root
 )
 
 message("Checking a complete independent verification pass")
@@ -30,12 +30,12 @@ verified <- verify_site_solar_context_artifacts(
   root = test_root,
   site_metadata_path = site_metadata_path,
   metric_paths = metric_paths,
-  input_root = canonical_root,
+  input_root = project_input_root,
   stop_on_failure = FALSE
 )
 stopifnot(
   verified$status == "PASS",
-  verified$site_dates == 616L,
+  verified$site_dates == nrow(initial_build$date_domain),
   verified$sites == 9L,
   verified$dst_transition_site_dates == 4L,
   verified$join_audit_rows == 6L,
@@ -76,7 +76,7 @@ tampered_csv <- verify_site_solar_context_artifacts(
   root = test_root,
   site_metadata_path = site_metadata_path,
   metric_paths = metric_paths,
-  input_root = canonical_root,
+  input_root = project_input_root,
   stop_on_failure = FALSE
 )
 stopifnot(
@@ -89,7 +89,7 @@ csv_restore_build <- build_site_solar_context_artifacts(
   root = test_root,
   site_metadata_path = site_metadata_path,
   metric_paths = metric_paths,
-  input_root = canonical_root
+  input_root = project_input_root
 )
 context_rds <- readRDS(paths$context_rds)
 context_rds$solar_noon_role[[1L]] <- "predictor"
@@ -103,7 +103,7 @@ tampered_role <- verify_site_solar_context_artifacts(
   root = test_root,
   site_metadata_path = site_metadata_path,
   metric_paths = metric_paths,
-  input_root = canonical_root,
+  input_root = project_input_root,
   stop_on_failure = FALSE
 )
 stopifnot(
@@ -115,18 +115,18 @@ stopifnot(
   )
 )
 
-message("Restoring and rechecking the isolated canonical artifacts")
+message("Restoring and rechecking the isolated main-analysis artifacts")
 role_restore_build <- build_site_solar_context_artifacts(
   root = test_root,
   site_metadata_path = site_metadata_path,
   metric_paths = metric_paths,
-  input_root = canonical_root
+  input_root = project_input_root
 )
 restored <- verify_site_solar_context_artifacts(
   root = test_root,
   site_metadata_path = site_metadata_path,
   metric_paths = metric_paths,
-  input_root = canonical_root,
+  input_root = project_input_root,
   stop_on_failure = FALSE
 )
 stopifnot(restored$status == "PASS")

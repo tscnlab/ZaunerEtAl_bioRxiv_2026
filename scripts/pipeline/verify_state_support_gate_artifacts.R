@@ -379,6 +379,12 @@ state_gate_verifier_assert_rule_a <- function(
     "coverage_rule_id",
     "coverage_signal",
     "daily_denominator_domain",
+    "daily_eligibility_basis",
+    "hourly_gate_scope",
+    "minute_values_masked_by_hour_gate",
+    "hour_screened_sensitivity_available",
+    "all_zero_medi_exclusion_applied",
+    "all_zero_medi_sensitivity_available",
     "diary_sleep_excluded_from_denominator",
     "expected_wall_minutes_per_hour",
     "expected_wall_minutes_per_day",
@@ -405,6 +411,15 @@ state_gate_verifier_assert_rule_a <- function(
       any(
         settings$daily_denominator_domain != "all_pseudo_local_wall_minutes"
       ) ||
+      any(
+        settings$daily_eligibility_basis !=
+          "finite_medi_minutes_across_fixed_24_hour_cycle"
+      ) ||
+      any(settings$hourly_gate_scope != "hourly_metrics_only") ||
+      any(settings$minute_values_masked_by_hour_gate) ||
+      any(!settings$hour_screened_sensitivity_available) ||
+      any(!settings$all_zero_medi_exclusion_applied) ||
+      any(!settings$all_zero_medi_sensitivity_available) ||
       any(settings$diary_sleep_excluded_from_denominator) ||
       any(settings$expected_wall_minutes_per_hour != 60) ||
       any(settings$expected_wall_minutes_per_day != 1440) ||
@@ -412,7 +427,11 @@ state_gate_verifier_assert_rule_a <- function(
       any(settings$minimum_day_coverage != 0.80)
   ) {
     abort_pipeline(
-      "Preparation 02 settings do not record the exact approved Rule A full-day hybrid denominator"
+      paste0(
+        "Preparation 02 settings do not record the approved full-day ",
+        "coverage rule, hourly-summary-only 50% requirement, and all-zero ",
+        "melEDI day exclusion with an inclusive sensitivity available"
+      )
     )
   }
   invisible(settings)

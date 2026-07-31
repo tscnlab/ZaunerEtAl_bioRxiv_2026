@@ -35,7 +35,7 @@ exposure.
 - Threshold endpoints are strict: `>1,000`, `>250`, `<10`, and `<1` lx
   melanopic EDI.
 - Missing or invalid minutes are never converted to zero or darkness.
-- No missing interval is bridged for durations, bouts, first/last timing,
+- No missing interval is bridged for durations, continuous periods, first/last timing,
   IS, or IV. Adjacency requires the expected separation on the true UTC
   instant axis.
 - A 30-minute outcome bin requires at least 15 valid minutes. An hourly
@@ -117,7 +117,7 @@ Correction is allowed only when profile-weighted coverage is at least 0.80,
 equivalent to a maximum correction factor of 1.25. Both observed and
 corrected dose, ordinary coverage, profile-weighted coverage, and correction
 factor are retained. This correction is not applied to means, quantiles,
-threshold durations, bouts, window levels, clock timings, or MDER.
+threshold durations, continuous periods, window levels, clock timings, or MDER.
 
 ## MDER
 
@@ -187,28 +187,28 @@ unobserved. The same learned distribution is reused at every cutoff. A
 strict-any-boundary-gap rule is retained only as a separate sensitivity
 scenario.
 
-## Longest bout above 250 lx
+## Longest period above 250 lx
 
-The primary value is the longest observed uninterrupted bout with MEDI
+The primary value is the longest observed uninterrupted period with MEDI
 strictly greater than 250 lx. Missing or invalid minutes, elapsed-time gaps,
 measurement-context changes, and the participant-day boundary break observed
 runs. The reported primary value is therefore an observed lower bound; it is
 not changed to missing merely because an unobserved interval could conceal a
-longer bout.
+longer qualifying period.
 
 The longest possible duration, calculated under the bounding assumption that
 every missing or invalid minute qualified, is retained as an upper bound. A
 censoring flag records when this upper bound exceeds the observed lower bound.
-An exact-identifiable-only sensitivity reports the bout only when the two
+An exact-identifiable-only sensitivity reports the period only when the two
 bounds agree. A lower bound of zero on a day with no observed qualifying
 minute is distinguishable from an observed no-event day through the upper
-bound and censoring fields. No participant-day is deleted because exact bout
+bound and censoring fields. No participant-day is deleted because the exact period
 duration is not identifiable.
 
-If several observed bouts share the maximum duration, the reported
+If several observed periods share the maximum duration, the reported
 onset/offset pair deterministically selects the earliest onset (then the
 earliest offset). The selected-winner boundary-contact flag refers to that
-same bout. A separate any-winning-run flag records whether another tied
+same period. A separate any-winning-run flag records whether another tied
 maximum touches either participant-day boundary.
 
 ## IS and IV
@@ -229,7 +229,7 @@ participant exclusion.
 
 These rules were fixed before the clean rebuilt outputs were inspected.
 The strict-exceedance distribution, every-minute M10/L10 search, and
-lower-bound longest-bout contract pass their focused R 4.6.1 synthetic tests.
+lower-bound longest-period contract pass their focused R 4.6.1 synthetic tests.
 The M10/L10 implementation also agrees with an independent literal
 enumeration on synthetic and sampled project inputs. The current canonical
 Preparation 03/04 artifacts predate these three repairs, so their final sample

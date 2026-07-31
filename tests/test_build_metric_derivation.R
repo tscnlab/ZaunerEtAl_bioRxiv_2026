@@ -641,6 +641,13 @@ readr::write_csv(
     coverage_rule_id = "A",
     coverage_signal = "MEDI",
     daily_denominator_domain = "all_pseudo_local_wall_minutes",
+    daily_eligibility_basis =
+      "finite_medi_minutes_across_fixed_24_hour_cycle",
+    hourly_gate_scope = "hourly_metrics_only",
+    minute_values_masked_by_hour_gate = FALSE,
+    hour_screened_sensitivity_available = TRUE,
+    all_zero_medi_exclusion_applied = TRUE,
+    all_zero_medi_sensitivity_available = TRUE,
     diary_sleep_excluded_from_denominator = FALSE,
     expected_wall_minutes_per_hour = 60L,
     expected_wall_minutes_per_day = 1440L,
@@ -792,6 +799,13 @@ readr::write_csv(
     coverage_rule_id = "A",
     coverage_signal = "MEDI",
     daily_denominator_domain = "all_pseudo_local_wall_minutes",
+    daily_eligibility_basis =
+      "finite_medi_minutes_across_fixed_24_hour_cycle",
+    hourly_gate_scope = "hourly_metrics_only",
+    minute_values_masked_by_hour_gate = FALSE,
+    hour_screened_sensitivity_available = TRUE,
+    all_zero_medi_exclusion_applied = TRUE,
+    all_zero_medi_sensitivity_available = TRUE,
     diary_sleep_excluded_from_denominator = FALSE,
     expected_wall_minutes_per_hour = 60L,
     expected_wall_minutes_per_day = 1440L,
@@ -806,7 +820,11 @@ bad_coverage_settings_error <- tryCatch(
     FALSE
   },
   error = function(error) {
-    grepl("exactly 0.50 per hour", conditionMessage(error), fixed = TRUE)
+    grepl(
+      "0.50 hourly requirement",
+      conditionMessage(error),
+      fixed = TRUE
+    )
   }
 )
 stopifnot(bad_coverage_settings_error)

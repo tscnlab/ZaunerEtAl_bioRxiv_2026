@@ -352,13 +352,13 @@ add_eligible_signal_channels <- function(
   )
   real_minutes$MEDI_eligibility_reason <- dplyr::case_when(
     !real_minutes$MEDI_precoverage_observed ~ "signal_invalidity",
-    !real_minutes$hour_eligible ~ "hour_failure",
+    real_minutes$day_all_zero_medi_excluded ~ "all_zero_medi_day",
     !real_minutes$day_eligible ~ "day_failure",
     TRUE ~ NA_character_
   )
   real_minutes$LIGHT_eligibility_reason <- dplyr::case_when(
     !real_minutes$LIGHT_precoverage_observed ~ "signal_invalidity",
-    !real_minutes$hour_eligible ~ "hour_failure",
+    real_minutes$day_all_zero_medi_excluded ~ "all_zero_medi_day",
     !real_minutes$day_eligible ~ "day_failure",
     TRUE ~ NA_character_
   )
@@ -420,6 +420,8 @@ coverage_gap_runs <- function(
     "dst_fold",
     "coverage_signal_observed",
     "hour_eligible",
+    "day_eligible_without_all_zero_screen",
+    "day_all_zero_medi_excluded",
     "day_eligible",
     "MEDI",
     "LIGHT"
@@ -458,16 +460,16 @@ coverage_gap_runs <- function(
       include = wall_grid$minute_present & !is.finite(wall_grid$LIGHT)
     ),
     list(
-      reason = "hour_failure",
-      reason_class = "coverage",
+      reason = "all_zero_medi_day",
+      reason_class = "plausibility",
       signal = "MEDI",
-      include = !wall_grid$hour_eligible
+      include = wall_grid$day_all_zero_medi_excluded
     ),
     list(
       reason = "day_failure",
       reason_class = "coverage",
       signal = "MEDI",
-      include = !wall_grid$day_eligible
+      include = !wall_grid$day_eligible_without_all_zero_screen
     )
   )
   gap_minutes <- dplyr::bind_rows(lapply(reason_specs, function(specification) {
@@ -615,8 +617,15 @@ coverage_sample_flow <- function(
     "MEDI_precoverage",
     "LIGHT_precoverage",
     "hour_eligible",
+    "day_all_finite_medi_zero",
+    "day_all_zero_medi_excluded",
+    "day_eligible_without_all_zero_screen",
     "day_eligible",
+    "day_eligible_after_hour",
     "coverage_period_eligible",
+    "all_zero_medi_inclusive_sensitivity_period_eligible",
+    "hourly_metric_period_eligible",
+    "hour_screened_coverage_period_eligible",
     "MEDI_coverage_eligible",
     "LIGHT_coverage_eligible"
   )
@@ -642,33 +651,39 @@ coverage_sample_flow <- function(
     ),
     list(
       order = 4L,
-      branch = "coverage",
-      label = "hour_eligible_real_minutes",
-      include = data$hour_eligible
+      branch = "coverage_sensitivity",
+      label = "all_zero_medi_inclusive_sensitivity_real_minutes",
+      include = data$all_zero_medi_inclusive_sensitivity_period_eligible
     ),
     list(
       order = 5L,
       branch = "coverage",
-      label = "day_eligible_real_minutes",
-      include = data$day_eligible
-    ),
-    list(
-      order = 6L,
-      branch = "coverage",
-      label = "hour_and_day_eligible_real_minutes",
+      label = "primary_day_eligible_real_minutes",
       include = data$coverage_period_eligible
     ),
     list(
-      order = 7L,
+      order = 6L,
       branch = "MEDI",
       label = "medi_eligible_real_minutes",
       include = data$MEDI_coverage_eligible
     ),
     list(
-      order = 8L,
+      order = 7L,
       branch = "LIGHT",
       label = "light_eligible_real_minutes",
       include = data$LIGHT_coverage_eligible
+    ),
+    list(
+      order = 8L,
+      branch = "hourly_metric",
+      label = "hourly_metric_eligible_real_minutes",
+      include = data$hourly_metric_period_eligible
+    ),
+    list(
+      order = 9L,
+      branch = "coverage_sensitivity",
+      label = "hour_screened_sensitivity_real_minutes",
+      include = data$hour_screened_coverage_period_eligible
     )
   )
   sites <- sort(unique(data$site))
@@ -732,6 +747,7 @@ validate_coverage_outputs <- function(
   if (
     anyNA(eligible$hour_eligible) ||
       anyNA(eligible$day_eligible) ||
+      anyNA(eligible$day_all_zero_medi_excluded) ||
       anyNA(eligible$coverage_period_eligible)
   ) {
     abort_pipeline(
@@ -742,11 +758,48 @@ validate_coverage_outputs <- function(
   if (
     any(
       eligible$coverage_period_eligible !=
-        (eligible$hour_eligible & eligible$day_eligible)
+        eligible$day_eligible
+    ) ||
+      any(
+        eligible$all_zero_medi_inclusive_sensitivity_period_eligible !=
+          eligible$day_eligible_without_all_zero_screen
+      )
+  ) {
+    abort_pipeline(
+      paste0(
+        "%s coverage-period or all-zero-inclusive sensitivity flags ",
+        "are internally inconsistent"
+      ),
+      placement
+    )
+  }
+  if (
+    any(
+      eligible$day_all_zero_medi_excluded &
+        (
+          !eligible$day_all_finite_medi_zero |
+            !eligible$day_eligible_without_all_zero_screen |
+            eligible$day_eligible
+        )
     )
   ) {
     abort_pipeline(
-      "%s coverage-period flags are internally inconsistent",
+      "%s all-zero melEDI exclusion flags are internally inconsistent",
+      placement
+    )
+  }
+  if (
+    any(
+      eligible$hourly_metric_period_eligible !=
+        (eligible$day_eligible & eligible$hour_eligible)
+    ) ||
+      any(
+        eligible$hour_screened_coverage_period_eligible !=
+          (eligible$day_eligible_after_hour & eligible$hour_eligible)
+      )
+  ) {
+    abort_pipeline(
+      "%s hourly or hour-screened sensitivity flags are inconsistent",
       placement
     )
   }
@@ -765,6 +818,10 @@ build_coverage_sample_flow <- function(
   producer <- "scripts/pipeline/build_coverage_sample_flow.R"
   coverage_rule_id <- "A"
   daily_denominator_domain <- "all_pseudo_local_wall_minutes"
+  daily_eligibility_basis <-
+    "finite_medi_minutes_across_fixed_24_hour_cycle"
+  hourly_gate_scope <- "hourly_metrics_only"
+  all_zero_medi_exclusion_applied <- TRUE
   validate_coverage_fraction(
     minimum_hour_coverage,
     argument = "minimum_hour_coverage"
@@ -827,6 +884,7 @@ build_coverage_sample_flow <- function(
       participant_days = NULL,
       minimum_hour_coverage = minimum_hour_coverage,
       minimum_day_coverage = minimum_day_coverage,
+      exclude_all_zero_days = all_zero_medi_exclusion_applied,
       object = paste0(placement, " aligned one-minute artifact")
     )
     eligible <- add_eligible_signal_channels(
@@ -891,6 +949,15 @@ build_coverage_sample_flow <- function(
       coverage_rule_id = coverage_rule_id,
       coverage_signal = "MEDI",
       daily_denominator_domain = daily_denominator_domain,
+      daily_eligibility_basis = daily_eligibility_basis,
+      hourly_gate_scope = hourly_gate_scope,
+      minute_values_masked_by_hour_gate = FALSE,
+      hour_screened_sensitivity_available = TRUE,
+      all_zero_medi_exclusion_applied =
+        all_zero_medi_exclusion_applied,
+      all_zero_medi_sensitivity_available = TRUE,
+      all_zero_medi_days_excluded =
+        sum(daily$day_all_zero_medi_excluded),
       diary_sleep_excluded_from_denominator = FALSE,
       minimum_hour_coverage = minimum_hour_coverage,
       minimum_day_coverage = minimum_day_coverage,
@@ -979,6 +1046,15 @@ build_coverage_sample_flow <- function(
       coverage_rule_id = coverage_rule_id,
       coverage_signal = "MEDI",
       daily_denominator_domain = daily_denominator_domain,
+      daily_eligibility_basis = daily_eligibility_basis,
+      hourly_gate_scope = hourly_gate_scope,
+      minute_values_masked_by_hour_gate = FALSE,
+      hour_screened_sensitivity_available = TRUE,
+      all_zero_medi_exclusion_applied =
+        all_zero_medi_exclusion_applied,
+      all_zero_medi_sensitivity_available = TRUE,
+      all_zero_medi_days_excluded =
+        sum(daily$day_all_zero_medi_excluded),
       diary_sleep_excluded_from_denominator = FALSE,
       expected_wall_minutes_per_hour = 60L,
       expected_wall_minutes_per_day = 1440L,

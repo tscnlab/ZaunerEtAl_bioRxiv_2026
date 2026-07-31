@@ -1706,6 +1706,12 @@ verify_reference_profile_artifacts <- function(
     "coverage_rule_id",
     "coverage_signal",
     "daily_denominator_domain",
+    "daily_eligibility_basis",
+    "hourly_gate_scope",
+    "minute_values_masked_by_hour_gate",
+    "hour_screened_sensitivity_available",
+    "all_zero_medi_exclusion_applied",
+    "all_zero_medi_sensitivity_available",
     "diary_sleep_excluded_from_denominator",
     "expected_wall_minutes_per_hour",
     "expected_wall_minutes_per_day",
@@ -1730,6 +1736,15 @@ verify_reference_profile_artifacts <- function(
         coverage_settings$daily_denominator_domain ==
           "all_pseudo_local_wall_minutes"
       ) &&
+      all(
+        coverage_settings$daily_eligibility_basis ==
+          "finite_medi_minutes_across_fixed_24_hour_cycle"
+      ) &&
+      all(coverage_settings$hourly_gate_scope == "hourly_metrics_only") &&
+      all(!coverage_settings$minute_values_masked_by_hour_gate) &&
+      all(coverage_settings$hour_screened_sensitivity_available) &&
+      all(coverage_settings$all_zero_medi_exclusion_applied) &&
+      all(coverage_settings$all_zero_medi_sensitivity_available) &&
       all(!coverage_settings$diary_sleep_excluded_from_denominator) &&
       all(coverage_settings$expected_wall_minutes_per_hour == 60) &&
       all(coverage_settings$expected_wall_minutes_per_day == 1440) &&
@@ -1741,7 +1756,10 @@ verify_reference_profile_artifacts <- function(
   add_check(
     "coverage_settings::exact_rule_a",
     rule_a_pass,
-    "50% hourly; 80% fixed 1440-minute wall day; MEDI"
+    paste(
+      "80% fixed 1440-minute wall day;",
+      "50% applies only to hourly summaries; MEDI"
+    )
   )
 
   placements <- sort(unique(as.character(profiles$placement)))

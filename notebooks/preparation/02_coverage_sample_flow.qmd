@@ -11,10 +11,14 @@ execute:
 ## Purpose
 
 This notebook applies the approved primary coverage rule A to the one-minute data
-from Preparation 01. An hour passes when at least 50% of its 60 local-clock
-minutes have valid melanopic equivalent daylight illuminance (melEDI) data.
-After this hourly rule has been applied, a day passes when valid melEDI covers
-at least 80% of the full 1,440-minute measurement day. The shared local-clock
+from Preparation 01. A day is included when it contains valid melanopic
+equivalent daylight illuminance (melEDI) for at least 80% of the complete
+1,440-minute measurement cycle. This daily decision is made directly from the
+one-minute values. A valid minute is therefore not discarded merely because
+other minutes are missing from the same hour.
+
+The separate 50% rule is used only when an hourly value is needed: an hour
+must contain at least 30 valid one-minute values. The shared local-clock
 representation means that, for example, 08:00 denotes 08:00 local time at
 every site.
 
@@ -31,9 +35,21 @@ pre-coverage analysis variables (`MEDI`, `LIGHT`, `MEDI_precoverage`, and
 `LIGHT_precoverage`), the raw signals, the actual-time and local-clock
 variables, the diary and wear information, and flags showing whether each
 hour and day passed. `MEDI_eligible` and `LIGHT_eligible` are set to missing
-outside a failed hour or day. Within a passing period, melEDI and illuminance
-retain their own missing values, so a missing melEDI value does not erase an
-otherwise observed illuminance value.
+outside a failed day, but not merely because an hour failed. Within a passing
+day, melEDI and illuminance retain their own missing values, so a missing
+melEDI value does not erase an otherwise observed illuminance value.
+
+For comparison, the output also records the former hour-screened rule, in
+which failed hours were removed before daily coverage was assessed. That flag
+is retained for a sensitivity analysis and is not used for the main metrics.
+
+A further plausibility check excludes a day if it otherwise passes the 80%
+rule but every finite one-minute melEDI value is exactly 0 lx. Individual
+zero readings remain valid measurements and are not removed. This check only
+targets a complete day-long flat-zero signal, which is more consistent with an
+inactive or failed recording than with a plausible personal light-exposure
+day. The original rows and values remain in the coverage file for audit, and a
+separate flag retains the all-zero days for a fixed sensitivity analysis.
 
 ## What this step uses, produces, and checks
 
@@ -41,11 +57,12 @@ otherwise observed illuminance value.
   signal.
 - Primary coverage rule A uses the full local-clock day. Explicit diary sleep
   is not removed from its hourly or daily denominator.
-- Each local-clock hour has a fixed denominator of 60 minutes and
-  passes at coverage \(\geq 0.50\).
-- The hourly decision is applied before the local-clock day is compared with
-  its fixed denominator of 1,440 minutes; a day passes at coverage
-  \(\geq 0.80\).
+- The local-clock day has a fixed denominator of 1,440 minutes and passes
+  when valid melEDI coverage is \(\geq 0.80\).
+- An otherwise passing day is excluded if all of its finite melEDI values are
+  exactly 0 lx. An all-zero-inclusive sensitivity flag is retained.
+- Each local-clock hour has a fixed denominator of 60 minutes and passes at
+  coverage \(\geq 0.50\). This decision is used only for hourly summaries.
 - During the autumn daylight-saving change, a repeated local-clock minute is
   averaged only for the coverage decision. Both observations remain separate
   in the data ordered by actual time.
@@ -163,10 +180,20 @@ coverage_rule_summary <- coverage_build$settings |>
       .data$expected_wall_minutes_per_day,
       " minutes"
     ),
+    `Does a failed hour remove valid minutes?` = dplyr::if_else(
+      .data$minute_values_masked_by_hour_gate,
+      "Yes",
+      "No"
+    ),
     `Diary-defined sleep included` = dplyr::if_else(
       .data$diary_sleep_excluded_from_denominator,
       "No",
       "Yes"
+    ),
+    `All-zero melEDI day excluded` = dplyr::if_else(
+      .data$all_zero_medi_exclusion_applied,
+      "Yes",
+      "No"
     )
   )
 knitr::kable(coverage_rule_summary)
@@ -183,6 +210,8 @@ coverage_row_check <- coverage_build$settings |>
     `Hours failing` = .data$ineligible_hours,
     `Days passing` = .data$eligible_days,
     `Days failing` = .data$ineligible_days,
+    `Otherwise passing all-zero days excluded` =
+      .data$all_zero_medi_days_excluded,
     `Minutes with usable melEDI` = .data$medi_eligible_true_utc_minutes,
     `Minutes with usable illuminance` =
       .data$light_eligible_true_utc_minutes
@@ -204,19 +233,25 @@ SHA-256 digital fingerprints are retained in the output-file inventory.
 #| tbl-cap: "Participant-days passing the coverage rule, by site and sensor placement."
 
 day_summary <- dplyr::bind_rows(coverage_build$daily) |>
-  dplyr::group_by(.data$placement, .data$site) |>
+  dplyr::group_by(.data$position, .data$site) |>
   dplyr::summarise(
     participant_days = dplyr::n(),
     eligible_days = sum(.data$day_eligible),
     ineligible_days = sum(!.data$day_eligible),
-    median_valid_fraction_after_hour = stats::median(
-      .data$day_valid_fraction_after_hour
+    all_zero_medi_days_excluded =
+      sum(.data$day_all_zero_medi_excluded),
+    days_passing_hour_screened_comparison =
+      sum(.data$day_eligible_after_hour),
+    days_added_by_direct_daily_rule =
+      sum(.data$day_eligible & !.data$day_eligible_after_hour),
+    median_valid_fraction = stats::median(
+      .data$day_valid_fraction_raw
     ),
-    minimum_valid_fraction_after_hour = min(
-      .data$day_valid_fraction_after_hour
+    minimum_valid_fraction = min(
+      .data$day_valid_fraction_raw
     ),
-    maximum_valid_fraction_after_hour = max(
-      .data$day_valid_fraction_after_hour
+    maximum_valid_fraction = max(
+      .data$day_valid_fraction_raw
     ),
     dst_fold_wall_minutes = sum(.data$day_dst_fold_minutes),
     .groups = "drop"
@@ -229,6 +264,9 @@ knitr::kable(
     "Participant-days",
     "Days passing",
     "Days failing",
+    "Otherwise passing all-zero melEDI days excluded",
+    "Days passing after first removing failed hours",
+    "Days added by direct daily rule",
     "Median valid fraction",
     "Minimum valid fraction",
     "Maximum valid fraction",
@@ -239,13 +277,14 @@ knitr::kable(
 
 The downloadable hourly and daily coverage tables retain the number of
 expected and observed minutes, the observed fraction, and whether the
-corresponding hour or day passed.
+corresponding hour or day passed. The daily table also shows what the decision
+would have been after first removing hours with less than 50% coverage.
 
 ## Why data are missing
 
 ```{r}
 #| label: tbl-coverage-gap-summary
-#| tbl-cap: "Continuous missing-data periods and the hourly or daily failures they caused."
+#| tbl-cap: "Continuous missing-data periods and daily coverage exclusions."
 
 gap_summary <- dplyr::bind_rows(coverage_build$gap_runs) |>
   dplyr::group_by(
@@ -273,13 +312,14 @@ gap_summary <- dplyr::bind_rows(coverage_build$gap_runs) |>
       .data$gap_reason,
       raw_absence = "No one-minute record",
       signal_invalidity = "Recorded signal could not be used",
-      hour_failure = "Hour had less than 50% valid melEDI",
+      all_zero_medi_day = "All finite melEDI values were 0 lx",
       day_failure = "Day had less than 80% valid melEDI"
     ),
     reason_class = dplyr::recode(
       .data$reason_class,
       availability = "Missing record",
       measurement = "Invalid measurement",
+      plausibility = "Implausible day-long signal",
       coverage = "Coverage rule"
     ),
     signal = dplyr::recode(
@@ -305,14 +345,15 @@ knitr::kable(
 ```
 
 The recorded reasons distinguish a missing one-minute record, an observed
-record whose light signal could not be used, an hour that failed the 50%
-requirement, and a day that failed the 80% requirement after the hourly rule
-was applied. The matching internal reason codes remain in the downloadable
-data.
+record whose light signal could not be used, an otherwise passing day with
+only zero melEDI values, and a day that failed the 80% requirement. The hourly
+table separately identifies hours that cannot support an hourly summary. Those
+hours are not called gaps because their observed one-minute values remain
+available for minute-based and daily metrics.
 
 These reasons can overlap. For example, missing readings can cause both an
-hourly and a daily failure. Keeping each reason visible shows both the original
-missing data and its later consequence for coverage.
+hourly and a daily failure. The tables therefore show both the original
+missing data and its consequences for hourly and daily analyses.
 
 ## Sample counts after each coverage step
 
@@ -329,13 +370,16 @@ sample_flow_summary <- coverage_build$sample_flow |>
       precoverage_medi_finite = "Rows with valid melEDI before coverage",
       precoverage_light_finite =
         "Rows with valid illuminance before coverage",
-      hour_eligible_real_minutes = "Rows in hours that passed",
-      day_eligible_real_minutes = "Rows in days that passed",
-      hour_and_day_eligible_real_minutes =
-        "Rows in hours and days that both passed",
+      all_zero_medi_inclusive_sensitivity_real_minutes =
+        "Rows retained when all-zero days are included",
+      primary_day_eligible_real_minutes = "Rows in days that passed",
       medi_eligible_real_minutes = "Usable melEDI rows after coverage",
       light_eligible_real_minutes =
-        "Usable illuminance rows after coverage"
+        "Usable illuminance rows after coverage",
+      hourly_metric_eligible_real_minutes =
+        "Rows available to hourly summaries",
+      hour_screened_sensitivity_real_minutes =
+        "Rows retained by the hour-screened comparison"
     )
   ) |>
   dplyr::select(

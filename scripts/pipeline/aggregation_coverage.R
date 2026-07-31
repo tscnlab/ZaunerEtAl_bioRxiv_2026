@@ -573,6 +573,7 @@ evaluate_wall_clock_coverage <- function(
   participant_days = NULL,
   minimum_hour_coverage = 0.5,
   minimum_day_coverage = 0.8,
+  exclude_all_zero_days = TRUE,
   object = deparse(substitute(wall_minutes))
 ) {
   validate_coverage_fraction(
@@ -583,6 +584,13 @@ evaluate_wall_clock_coverage <- function(
     minimum_day_coverage,
     argument = "minimum_day_coverage"
   )
+  if (
+    !is.logical(exclude_all_zero_days) ||
+      length(exclude_all_zero_days) != 1L ||
+      is.na(exclude_all_zero_days)
+  ) {
+    abort_pipeline("`exclude_all_zero_days` must be TRUE or FALSE")
+  }
   required <- c(
     id_cols,
     "local_date",
@@ -718,6 +726,13 @@ evaluate_wall_clock_coverage <- function(
       observed_wall_minutes = sum(.data$minute_present),
       source_real_minutes = sum(.data$source_real_minutes),
       valid_minutes_raw = sum(.data$coverage_signal_observed),
+      zero_minutes_raw = sum(
+        .data$coverage_signal_observed &
+          .data[[coverage_signal]] == 0,
+        na.rm = TRUE
+      ),
+      valid_fraction_raw = .data$valid_minutes_raw /
+        .data$expected_wall_minutes,
       valid_minutes_after_hour = sum(.data$coverage_signal_after_hour),
       valid_fraction_after_hour = .data$valid_minutes_after_hour /
         .data$expected_wall_minutes,
@@ -725,18 +740,40 @@ evaluate_wall_clock_coverage <- function(
         .data$clock_hour[.data$hour_eligible]
       ),
       dst_fold_minutes = sum(.data$dst_fold),
-      day_eligible = .data$valid_fraction_after_hour >= minimum_day_coverage,
       .groups = "drop"
+    ) |>
+    dplyr::mutate(
+      all_finite_coverage_values_zero =
+        .data$valid_minutes_raw > 0L &
+          .data$zero_minutes_raw == .data$valid_minutes_raw,
+      day_eligible_without_all_zero_screen =
+        .data$valid_fraction_raw >= minimum_day_coverage,
+      day_eligible_after_hour_without_all_zero_screen =
+        .data$valid_fraction_after_hour >= minimum_day_coverage,
+      all_zero_coverage_day_excluded =
+        exclude_all_zero_days &
+          .data$day_eligible_without_all_zero_screen &
+          .data$all_finite_coverage_values_zero,
+      day_eligible =
+        .data$day_eligible_without_all_zero_screen &
+          !.data$all_zero_coverage_day_excluded,
+      day_eligible_after_hour =
+        .data$day_eligible_after_hour_without_all_zero_screen &
+          !.data$all_zero_coverage_day_excluded
     ) |>
     dplyr::rename(
       day_expected_wall_minutes = "expected_wall_minutes",
       day_observed_wall_minutes = "observed_wall_minutes",
       day_source_real_minutes = "source_real_minutes",
       day_valid_minutes_raw = "valid_minutes_raw",
+      day_zero_medi_minutes_raw = "zero_minutes_raw",
+      day_valid_fraction_raw = "valid_fraction_raw",
       day_valid_minutes_after_hour = "valid_minutes_after_hour",
       day_valid_fraction_after_hour = "valid_fraction_after_hour",
       day_eligible_hours = "eligible_hours",
-      day_dst_fold_minutes = "dst_fold_minutes"
+      day_dst_fold_minutes = "dst_fold_minutes",
+      day_all_finite_medi_zero = "all_finite_coverage_values_zero",
+      day_all_zero_medi_excluded = "all_zero_coverage_day_excluded"
     )
 
   grid <- left_join_checked(
@@ -747,7 +784,13 @@ evaluate_wall_clock_coverage <- function(
     x_name = "complete wall-clock grid",
     y_name = "daily coverage"
   )
-  grid$coverage_period_eligible <- grid$hour_eligible & grid$day_eligible
+  grid$coverage_period_eligible <- grid$day_eligible
+  grid$all_zero_medi_inclusive_sensitivity_period_eligible <-
+    grid$day_eligible_without_all_zero_screen
+  grid$hourly_metric_period_eligible <-
+    grid$day_eligible & grid$hour_eligible
+  grid$hour_screened_coverage_period_eligible <-
+    grid$day_eligible_after_hour & grid$hour_eligible
   grid$coverage_value_eligible <- grid$coverage_period_eligible &
     grid$coverage_signal_observed
 
@@ -796,10 +839,20 @@ map_wall_coverage_to_real_minutes <- function(
     "hour_valid_fraction",
     "hour_eligible",
     "day_valid_minutes_raw",
+    "day_zero_medi_minutes_raw",
+    "day_valid_fraction_raw",
     "day_valid_minutes_after_hour",
     "day_valid_fraction_after_hour",
+    "day_all_finite_medi_zero",
+    "day_all_zero_medi_excluded",
+    "day_eligible_without_all_zero_screen",
+    "day_eligible_after_hour_without_all_zero_screen",
     "day_eligible",
-    "coverage_period_eligible"
+    "day_eligible_after_hour",
+    "coverage_period_eligible",
+    "all_zero_medi_inclusive_sensitivity_period_eligible",
+    "hourly_metric_period_eligible",
+    "hour_screened_coverage_period_eligible"
   )
   assert_columns(wall_grid, coverage_cols, object = "wall-clock grid")
   assert_unique_key(
@@ -868,6 +921,7 @@ apply_wall_clock_coverage_rules <- function(
   participant_days = NULL,
   minimum_hour_coverage = 0.5,
   minimum_day_coverage = 0.8,
+  exclude_all_zero_days = TRUE,
   object = deparse(substitute(minute_data))
 ) {
   if (!coverage_signal %in% value_cols) {
@@ -889,6 +943,7 @@ apply_wall_clock_coverage_rules <- function(
     participant_days = participant_days,
     minimum_hour_coverage = minimum_hour_coverage,
     minimum_day_coverage = minimum_day_coverage,
+    exclude_all_zero_days = exclude_all_zero_days,
     object = paste0(object, " wall-clock minutes")
   )
   real_minutes <- map_wall_coverage_to_real_minutes(
@@ -911,7 +966,8 @@ apply_wall_clock_coverage_rules <- function(
         expected_wall_minutes_per_hour = 60L,
         expected_wall_minutes_per_day = 1440L,
         minimum_hour_coverage = minimum_hour_coverage,
-        minimum_day_coverage = minimum_day_coverage
+        minimum_day_coverage = minimum_day_coverage,
+        exclude_all_zero_days = exclude_all_zero_days
       )
     ),
     class = c("wall_clock_coverage", "list")

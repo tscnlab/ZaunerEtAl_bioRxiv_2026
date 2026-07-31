@@ -40,9 +40,14 @@ Neither construct is described as continuous 24-hour ocular exposure.
   measurement, the recalculated diary period, wear record, and measurement
   context must match it exactly.
 - Before calculating any metric, Preparation 04 verifies that Preparation 02
-  used approved primary Rule A: at least 50% valid melEDI per local-clock hour
-  and 80% per full 1,440-minute hybrid measurement day, including bedside
-  measurements during diary-defined sleep.
+  used approved primary Rule A: valid melEDI for at least 80% of the full
+  1,440-minute hybrid measurement day, including bedside measurements during
+  diary-defined sleep. A local-clock hour needs at least 50% valid melEDI only
+  when an hourly value is calculated. A sparse hour does not remove its valid
+  one-minute measurements from daily or other minute-based metrics.
+  Preparation 02 also excludes an otherwise passing participant-day when every
+  finite one-minute melEDI value is exactly 0 lx. The original values remain
+  auditable, and an all-zero-inclusive sensitivity is retained.
 - Actual UTC time determines the expected minute sequence, elapsed durations,
   dose, continuous periods above threshold, gaps, and which observations are
   adjacent for intradaily variability (IV). It also determines the matched
@@ -133,21 +138,11 @@ analyses. The learned profiles only check whether the relevant times were
 observed and never scale, weight, or correct the ratio. The technical decision
 record is `METRIC-003`.
 
-The independently verified comparison of the three fixed candidate cutoffs
-produced:
-
-| Placement | Eligible days | 70% retained | 80% retained | 90% retained |
-|---|---:|---:|---:|---:|
-| Near-eye hybrid record | 811 | 790 | 733 | 601 |
-| Chest hybrid record | 897 | 874 | 825 | 691 |
-
-At 80%, all 141 near-eye participants across nine sites and all 154 chest
-participants across eight sites remain represented. Each placement has two
-days with non-positive accumulated illuminance over the matched minutes. This
-comparison did not calculate MDER itself. An independent R check reproduced
-all 2,650 diagnostic and summary rows. The complete methods, input
-fingerprints, and checks are
-recorded in
+The exact retained counts at the three fixed cutoffs are recalculated and
+independently verified below from the revised full-day data. This comparison
+checks only whether enough paired melEDI and illuminance data are available;
+it does not calculate MDER itself. The complete methods, input fingerprints,
+and checks are recorded in
 [the MDER data-sufficiency audit](../../audit/findings/mder_support_cutoff_gate.md).
 
 ## Minimum data required for timing above 250 lx
@@ -220,6 +215,9 @@ dependencies <- c(
   "time_support.R",
   "reference_profiles.R",
   "state_interval_projection.R",
+  "mder_support_gate.R",
+  "build_mder_support_gate.R",
+  "verify_mder_support_gate_artifacts.R",
   "metric_derivation.R",
   "build_metric_derivation.R",
   "metric_display_registry.R"
@@ -400,6 +398,81 @@ The complete candidate table, coverage quantiles, participant counts,
 additional losses at each stricter cutoff, and results by site are written to
 `state_support_candidate_diagnostics.csv` and
 `state_support_candidate_by_site.csv`.
+
+## Participant-days retained for MDER at each candidate cutoff
+
+```{r}
+#| label: build-mder-support-gate
+
+mder_support_gate <- build_mder_support_gate(
+  root = root,
+  run_label = run_label,
+  coverage_run_root = if (nzchar(coverage_root_argument)) {
+    coverage_root_argument
+  } else {
+    NULL
+  },
+  profile_run_root = if (nzchar(profile_root_argument)) {
+    profile_root_argument
+  } else {
+    NULL
+  },
+  placements = placements,
+  candidate_cutoffs = c(0.70, 0.80, 0.90)
+)
+mder_support_verification <- verify_mder_support_gate_artifacts(
+  root = root,
+  run_label = run_label,
+  coverage_run_root = if (nzchar(coverage_root_argument)) {
+    coverage_root_argument
+  } else {
+    NULL
+  },
+  profile_run_root = if (nzchar(profile_root_argument)) {
+    profile_root_argument
+  } else {
+    NULL
+  }
+)
+stopifnot(identical(mder_support_verification$status, "PASS"))
+```
+
+```{r}
+#| label: tbl-mder-support-gate
+#| tbl-cap: "Participant-days with enough paired melEDI and illuminance data for MDER at each fixed cutoff."
+
+mder_candidate_display <- mder_support_gate$candidates |>
+  dplyr::mutate(
+    Placement = dplyr::recode(
+      .data$position,
+      glasses = "Near-eye",
+      chest = "Chest"
+    ),
+    `Coverage cutoff` = paste0(
+      round(100 * .data$candidate_support_cutoff),
+      "%"
+    )
+  ) |>
+  dplyr::select(
+    .data$Placement,
+    .data$`Coverage cutoff`,
+    `Eligible participant-days` = .data$eligible_participant_days,
+    `Participant-days retained` = .data$retained_participant_days,
+    `Participants retained` = .data$retained_participants,
+    `Sites represented` = .data$sites_with_retained_days,
+    `No paired measurements` = .data$no_paired_observation_days,
+    `Non-positive illuminance exposure` =
+      .data$nonpositive_paired_light_integral_days,
+    `Below at least one coverage requirement` =
+      .data$below_any_support_days
+  )
+knitr::kable(mder_candidate_display)
+```
+
+The independent check reproduced the daily classifications and all summaries
+from the verified one-minute coverage files and the fixed time-of-day
+profiles. The 80% row is used for the main MDER calculation; the 70% and 90%
+rows define the fixed sensitivity analyses.
 
 ## Derive metrics
 

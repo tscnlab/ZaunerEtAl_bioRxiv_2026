@@ -263,6 +263,8 @@ verify_h01_manuscript_prepared_data_artifacts <- function(
   )
   site_verification <- verify_site_solar_context_artifacts(
     root = root,
+    supplemental_date_paths =
+      h01_manuscript_prepared_site_date_path(root),
     input_root = root
   )
   if (

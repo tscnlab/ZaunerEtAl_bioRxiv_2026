@@ -1,20 +1,24 @@
-# Compare daily coverage-denominator rules without selecting or applying one.
+# Compare the selected full-day rule with two fixed sensitivities.
 
 daily_coverage_rule_definitions <- function() {
   tibble::tibble(
-    rule = c("A_current", "B_prereg_minimal", "C_wake_aware"),
+    rule = c(
+      "A_full_day",
+      "B_sleep_excluded_daily",
+      "C_sleep_excluded_hourly_daily"
+    ),
     rule_label = c(
-      "Current fixed-day rule",
+      "Full 24-hour rule (primary)",
       "Sleep-excluded daily rule",
       "Sleep-excluded hourly and daily rule"
     ),
     hourly_denominator = c(
-      "60 wall-clock minutes",
+      "60 wall-clock minutes for hourly summaries only",
       "60 wall-clock minutes",
       "fractional non-sleep wall-minute support"
     ),
     hourly_numerator = c(
-      "wall minutes with any finite wall-mean MEDI",
+      "wall minutes with any finite wall-mean MEDI for hourly summaries only",
       "wall minutes with any finite wall-mean MEDI",
       "fractional finite non-sleep MEDI support"
     ),
@@ -24,7 +28,7 @@ daily_coverage_rule_definitions <- function() {
       "fractional non-sleep wall-minute support"
     ),
     daily_numerator = c(
-      "finite wall-mean MEDI in all-minute eligible hours",
+      "finite wall-mean MEDI across the fixed 24-hour day",
       "fractional finite non-sleep MEDI support in all-minute eligible hours",
       paste0(
         "fractional finite non-sleep MEDI support in wake-support ",
@@ -32,9 +36,14 @@ daily_coverage_rule_definitions <- function() {
       )
     ),
     full_sleep_hour = c(
-      "evaluated against 60 wall-clock minutes",
+      "does not affect daily eligibility; evaluated only for hourly summaries",
       "evaluated against 60 wall-clock minutes",
       "structurally excluded from the waking hourly gate"
+    ),
+    all_zero_medi_day = c(
+      "excluded if the day otherwise passes and every finite melEDI minute is zero",
+      "excluded if the day otherwise passes and every finite melEDI minute is zero",
+      "excluded if the day otherwise passes and every finite melEDI minute is zero"
     )
   )
 }
@@ -426,9 +435,15 @@ daily_coverage_rule_detail <- function(
       dplyr::all_of(day_key),
       day_expected_wall_minutes,
       day_valid_minutes_raw,
+      day_valid_fraction_raw,
       day_valid_minutes_after_hour,
       day_valid_fraction_after_hour,
-      day_eligible
+      day_all_finite_medi_zero,
+      day_all_zero_medi_excluded,
+      day_eligible_without_all_zero_screen,
+      day_eligible_after_hour_without_all_zero_screen,
+      day_eligible,
+      day_eligible_after_hour
     )
   day_support <- left_join_checked(
     day_support,
@@ -452,10 +467,10 @@ daily_coverage_rule_detail <- function(
     by = day_key,
     relationship = "one-to-one",
     x_name = "daily waking-support summary",
-    y_name = "canonical current daily coverage"
+    y_name = "primary full-day coverage"
   )
   if (anyNA(base$day_eligible)) {
-    abort_pipeline("Canonical current daily coverage did not map to every day")
+    abort_pipeline("Primary full-day coverage did not map to every day")
   }
 
   make_rule <- function(
@@ -466,8 +481,8 @@ daily_coverage_rule_detail <- function(
     hour_evaluable,
     hour_pass,
     hour_exempt,
-    canonical_fraction = NULL,
-    canonical_eligible = NULL
+    reference_fraction = NULL,
+    reference_eligible = NULL
   ) {
     day_evaluable <- expected > 0
     support_fraction <- ifelse(
@@ -475,19 +490,25 @@ daily_coverage_rule_detail <- function(
       valid_after_hour / expected,
       NA_real_
     )
-    eligible <- day_evaluable &
+    eligible_without_all_zero_screen <- day_evaluable &
       support_fraction >= minimum_day_coverage
-    if (!is.null(canonical_fraction)) {
+    all_zero_medi_excluded <-
+      eligible_without_all_zero_screen &
+        base$day_all_finite_medi_zero
+    eligible <-
+      eligible_without_all_zero_screen &
+        !all_zero_medi_excluded
+    if (!is.null(reference_fraction)) {
       tolerance <- sqrt(.Machine$double.eps)
       same_fraction <- isTRUE(all.equal(
         support_fraction,
-        canonical_fraction,
+        reference_fraction,
         tolerance = tolerance,
         check.attributes = FALSE
       ))
-      if (!same_fraction || !identical(eligible, canonical_eligible)) {
+      if (!same_fraction || !identical(eligible, reference_eligible)) {
         abort_pipeline(
-          "Rule A failed to reproduce canonical wall-clock eligibility"
+          "Rule A failed to reproduce primary full-day eligibility"
         )
       }
     }
@@ -500,11 +521,16 @@ daily_coverage_rule_detail <- function(
       day_expected_support_minutes = expected,
       day_valid_support_minutes_raw = valid_raw,
       day_valid_support_minutes_after_hour = valid_after_hour,
-      day_support_fraction_after_hour = support_fraction,
+      day_support_fraction_used = support_fraction,
       day_evaluable = day_evaluable,
+      day_all_finite_medi_zero = .data$day_all_finite_medi_zero,
+      day_eligible_without_all_zero_screen =
+        eligible_without_all_zero_screen,
+      day_all_zero_medi_excluded = all_zero_medi_excluded,
       day_eligible = eligible,
       day_eligibility_reason = dplyr::case_when(
         !.data$day_evaluable ~ "no_non_sleep_denominator",
+        .data$day_all_zero_medi_excluded ~ "all_zero_medi_day",
         .data$day_eligible ~ "eligible",
         TRUE ~ "below_daily_threshold"
       ),
@@ -523,18 +549,18 @@ daily_coverage_rule_detail <- function(
   }
 
   a <- make_rule(
-    rule = "A_current",
+    rule = "A_full_day",
     expected = base$day_expected_wall_minutes,
     valid_raw = base$day_valid_minutes_raw,
-    valid_after_hour = base$day_valid_minutes_after_hour,
+    valid_after_hour = base$day_valid_minutes_raw,
     hour_evaluable = base$current_hour_gate_evaluable_hours,
     hour_pass = base$current_hour_gate_pass_hours,
     hour_exempt = base$current_hour_gate_exempt_hours,
-    canonical_fraction = base$day_valid_fraction_after_hour,
-    canonical_eligible = base$day_eligible
+    reference_fraction = base$day_valid_fraction_raw,
+    reference_eligible = base$day_eligible
   )
   b <- make_rule(
-    rule = "B_prereg_minimal",
+    rule = "B_sleep_excluded_daily",
     expected = base$day_waking_expected_minutes,
     valid_raw = base$day_waking_valid_minutes_raw,
     valid_after_hour = base$b_valid_minutes_after_hour,
@@ -543,7 +569,7 @@ daily_coverage_rule_detail <- function(
     hour_exempt = base$current_hour_gate_exempt_hours
   )
   c <- make_rule(
-    rule = "C_wake_aware",
+    rule = "C_sleep_excluded_hourly_daily",
     expected = base$day_waking_expected_minutes,
     valid_raw = base$day_waking_valid_minutes_raw,
     valid_after_hour = base$c_valid_minutes_after_hour,
@@ -566,7 +592,11 @@ daily_coverage_rule_detail <- function(
       dplyr::across(dplyr::all_of(day_key)),
       factor(
         .data$rule,
-        levels = c("A_current", "B_prereg_minimal", "C_wake_aware")
+        levels = c(
+          "A_full_day",
+          "B_sleep_excluded_daily",
+          "C_sleep_excluded_hourly_daily"
+        )
       )
     )
   assert_unique_key(
@@ -630,12 +660,12 @@ summarise_daily_coverage_rule_transitions <- function(detail) {
   pair_specifications <- tibble::tribble(
     ~from_rule,
     ~to_rule,
-    "A_current",
-    "B_prereg_minimal",
-    "A_current",
-    "C_wake_aware",
-    "B_prereg_minimal",
-    "C_wake_aware"
+    "A_full_day",
+    "B_sleep_excluded_daily",
+    "A_full_day",
+    "C_sleep_excluded_hourly_daily",
+    "B_sleep_excluded_daily",
+    "C_sleep_excluded_hourly_daily"
   )
   transition_levels <- tibble::tibble(
     from_eligible = c(FALSE, FALSE, TRUE, TRUE),
@@ -842,7 +872,7 @@ compare_daily_coverage_rules <- function(
         minimum_day_coverage = minimum_day_coverage,
         fall_back_support = "mean_over_true_instances",
         source_absent_state = "unknown_and_not_excluded",
-        rule_selected = FALSE
+        selected_primary_rule = "A_full_day"
       )
     ),
     class = c("daily_coverage_rule_diagnostic", "list")

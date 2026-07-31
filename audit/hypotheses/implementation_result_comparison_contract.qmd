@@ -109,6 +109,28 @@ single test is selected from each outcome model before the results are
 examined. Individual coefficients and follow-up contrasts are not automatically
 added to the same set of tests.
 
+### Exact formula display
+
+Every H01--H11 audit page must contain a visible, evaluated R code cell that
+prints the exact Wilkinson formula objects supplied to the fitting functions.
+The display must include the selected model and every fitted model used in a
+likelihood, Wald, score, AIC, or other model-structure comparison, including
+full, reduced, null, and sensitivity models.
+
+The displayed formulas must be generated from the same formula-building
+function or recovered directly with `stats::formula()` from the fitted model;
+a separately typed mathematical equation is explanatory but does not satisfy
+this requirement. A generic `response ~ ...` formula may represent several
+outcomes only when their right-hand side, random effects, smooths, offsets, and
+correlation structure are identical. If any of these differ, each distinct
+formula must be shown and linked to its model ID.
+
+Wilkinson notation does not encode the response distribution, link,
+estimation method, contrasts, or residual-correlation settings. Those must be
+shown immediately beside the formula output and remain in the model manifest.
+The formula cell and manifest must agree exactly before a hypothesis audit can
+be marked complete.
+
 Each difference is assigned a `change_class`. `none` is an affirmative result
 and means that the submitted method was reproduced and retained. A change is
 not called a repair unless the evidence and verification justify that

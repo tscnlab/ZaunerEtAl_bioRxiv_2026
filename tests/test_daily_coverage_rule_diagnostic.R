@@ -71,9 +71,13 @@ mixed_fold <- new_daily_coverage_day(
 mixed_result <- compare_daily_coverage_rules(mixed_fold)
 mixed_wall <- mixed_result$wall_grid |>
   dplyr::filter(.data$clock_minute == 120L)
-mixed_a <- rule_day(mixed_result, "MIXED", "A_current")
-mixed_b <- rule_day(mixed_result, "MIXED", "B_prereg_minimal")
-mixed_c <- rule_day(mixed_result, "MIXED", "C_wake_aware")
+mixed_a <- rule_day(mixed_result, "MIXED", "A_full_day")
+mixed_b <- rule_day(mixed_result, "MIXED", "B_sleep_excluded_daily")
+mixed_c <- rule_day(
+  mixed_result,
+  "MIXED",
+  "C_sleep_excluded_hourly_daily"
+)
 stopifnot(
   nrow(mixed_wall) == 1L,
   mixed_wall$source_real_minutes == 2L,
@@ -105,8 +109,16 @@ sleep_b_hour <- sleep_result$current_hourly |>
   dplyr::filter(.data$clock_hour == 0L)
 sleep_c_hour <- sleep_result$wake_hourly |>
   dplyr::filter(.data$clock_hour == 0L)
-sleep_b <- rule_day(sleep_result, "SLEEP_HOUR", "B_prereg_minimal")
-sleep_c <- rule_day(sleep_result, "SLEEP_HOUR", "C_wake_aware")
+sleep_b <- rule_day(
+  sleep_result,
+  "SLEEP_HOUR",
+  "B_sleep_excluded_daily"
+)
+sleep_c <- rule_day(
+  sleep_result,
+  "SLEEP_HOUR",
+  "C_sleep_excluded_hourly_daily"
+)
 stopifnot(
   !sleep_b_hour$hour_eligible,
   sleep_b_hour$hour_valid_fraction == 0,
@@ -115,10 +127,10 @@ stopifnot(
   sleep_c_hour$hour_support_pass,
   sleep_c_hour$hour_structurally_excluded,
   sleep_b$day_expected_support_minutes == 1380,
-  sleep_b$day_support_fraction_after_hour == 1,
+  sleep_b$day_support_fraction_used == 1,
   sleep_b$hour_gate_exempt_hours == 0L,
   sleep_c$day_expected_support_minutes == 1380,
-  sleep_c$day_support_fraction_after_hour == 1,
+  sleep_c$day_support_fraction_used == 1,
   sleep_c$hour_gate_exempt_hours == 1L
 )
 
@@ -130,8 +142,16 @@ unknown_day <- new_daily_coverage_day(
   state = rep(NA_character_, 1440L)
 )
 unknown_result <- compare_daily_coverage_rules(unknown_day)
-unknown_b <- rule_day(unknown_result, "UNKNOWN", "B_prereg_minimal")
-unknown_c <- rule_day(unknown_result, "UNKNOWN", "C_wake_aware")
+unknown_b <- rule_day(
+  unknown_result,
+  "UNKNOWN",
+  "B_sleep_excluded_daily"
+)
+unknown_c <- rule_day(
+  unknown_result,
+  "UNKNOWN",
+  "C_sleep_excluded_hourly_daily"
+)
 stopifnot(
   unknown_b$day_expected_support_minutes == 1440,
   unknown_c$day_expected_support_minutes == 1440,
@@ -161,11 +181,11 @@ stopifnot(
   boundary_c_hour$hour_valid_fraction == 0.5,
   boundary_c_hour$hour_support_pass,
   all(boundary_detail$day_valid_support_minutes_after_hour == 1152),
-  all(boundary_detail$day_support_fraction_after_hour == 0.8),
+  all(boundary_detail$day_support_fraction_used == 0.8),
   all(boundary_detail$day_eligible)
 )
 
-message("Testing no-sleep equivalence and exact canonical rule A")
+message("Testing no-sleep equivalence and exact primary rule A")
 no_sleep <- new_daily_coverage_day(
   date = "2026-01-05",
   id = "NO_SLEEP",
@@ -173,7 +193,7 @@ no_sleep <- new_daily_coverage_day(
   state = rep("wake", 1440L)
 )
 no_sleep_result <- compare_daily_coverage_rules(no_sleep)
-canonical <- apply_wall_clock_coverage_rules(
+primary <- apply_wall_clock_coverage_rules(
   no_sleep,
   value_cols = "MEDI",
   coverage_signal = "MEDI"
@@ -181,22 +201,40 @@ canonical <- apply_wall_clock_coverage_rules(
 no_sleep_detail <- no_sleep_result$daily_detail |>
   dplyr::filter(.data$Id == "NO_SLEEP") |>
   dplyr::arrange(.data$rule)
-no_sleep_a <- rule_day(no_sleep_result, "NO_SLEEP", "A_current")
+no_sleep_a <- rule_day(no_sleep_result, "NO_SLEEP", "A_full_day")
 stopifnot(
   length(unique(no_sleep_detail$day_expected_support_minutes)) == 1L,
   length(unique(no_sleep_detail$day_valid_support_minutes_raw)) == 1L,
   length(unique(no_sleep_detail$day_valid_support_minutes_after_hour)) == 1L,
-  length(unique(no_sleep_detail$day_support_fraction_after_hour)) == 1L,
+  length(unique(no_sleep_detail$day_support_fraction_used)) == 1L,
   length(unique(no_sleep_detail$day_eligible)) == 1L,
   no_sleep_a$day_expected_support_minutes ==
-    canonical$daily$day_expected_wall_minutes,
+    primary$daily$day_expected_wall_minutes,
   no_sleep_a$day_valid_support_minutes_raw ==
-    canonical$daily$day_valid_minutes_raw,
+    primary$daily$day_valid_minutes_raw,
   no_sleep_a$day_valid_support_minutes_after_hour ==
-    canonical$daily$day_valid_minutes_after_hour,
-  no_sleep_a$day_support_fraction_after_hour ==
-    canonical$daily$day_valid_fraction_after_hour,
-  identical(no_sleep_a$day_eligible, canonical$daily$day_eligible)
+    primary$daily$day_valid_minutes_raw,
+  no_sleep_a$day_support_fraction_used ==
+    primary$daily$day_valid_fraction_raw,
+  identical(no_sleep_a$day_eligible, primary$daily$day_eligible)
+)
+
+message("Testing all-zero melEDI exclusion across all three rules")
+all_zero <- new_daily_coverage_day(
+  date = "2026-01-06",
+  id = "ALL_ZERO",
+  medi = rep(0, 1440L),
+  state = rep("wake", 1440L)
+)
+all_zero_result <- compare_daily_coverage_rules(all_zero)
+all_zero_detail <- all_zero_result$daily_detail
+stopifnot(
+  nrow(all_zero_detail) == 3L,
+  all(all_zero_detail$day_all_finite_medi_zero),
+  all(all_zero_detail$day_eligible_without_all_zero_screen),
+  all(all_zero_detail$day_all_zero_medi_excluded),
+  all(!all_zero_detail$day_eligible),
+  all(all_zero_detail$day_eligibility_reason == "all_zero_medi_day")
 )
 
 message("Building isolated diagnostic artifacts")
@@ -263,14 +301,15 @@ stopifnot(
   nrow(transitions) == 3L * 2L * 4L,
   all(
     c(
-      "A_current",
-      "B_prereg_minimal",
-      "C_wake_aware"
+      "A_full_day",
+      "B_sleep_excluded_daily",
+      "C_sleep_excluded_hourly_daily"
     ) %in%
       settings$rule
   ),
-  all(!settings$rule_selected),
-  all(settings$status == "DIAGNOSTIC_ONLY_NO_RULE_SELECTED"),
+  sum(settings$selected_as_primary) == 1L,
+  settings$rule[settings$selected_as_primary] == "A_full_day",
+  all(settings$status == "PRIMARY_WITH_FIXED_SENSITIVITIES"),
   identical(inputs$sha256, input_sha256),
   inputs$bytes == unname(file.info(input_path)$size),
   nrow(manifest) == 5L

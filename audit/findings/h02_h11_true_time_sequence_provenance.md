@@ -1,8 +1,8 @@
 # H02/H11 true-time sequence provenance
 
 Finding ID: `FIND-019`  
-Status: implementation and independent verification passed; provenance gate closed  
-Date: 2026-07-30  
+Status: implementation and independent verification passed; current bundle approved
+Date: 2026-07-30; current-input repin 2026-07-31
 Severity: high for temporal autocorrelation; no current metric value is invalidated
 
 ## Finding
@@ -43,13 +43,13 @@ a valid elapsed-time key.
 Inputs and recorded SHA-256 values were:
 
 - `artifacts/05_metrics/metrics_glasses_30_minute.rds`:
-  `b641145c79ddb7ef9331f188c57d4fe0b1d3f1cc4c3b9e3b974fc92a2683889e`;
+  `039031c1b8f362a911d750007504f01b943b91d7c7089ee8fb985b6a6871104a`;
 - `artifacts/05_metrics/metrics_chest_30_minute.rds`:
-  `d2fca0bf193c450124c31df58a7deb3a4603aaa7bde86c63bdea63997b992b27`;
+  `3c762936558099a904b9b8dbe1489cd912ec623b5d14490e2053c5af1fd766e6`;
 - `artifacts/03_coverage/light_glasses_coverage.rds`:
-  `6242b7f876658ec8f7bdd9998c4f6b06cdb85f613320f10314e2ff0ad2d2d9e6`;
+  `00085dc32ae370f059da9bfb6dfbf560eda4c4376fdb0727d2ef3c0b4fec34ee`;
 - `artifacts/03_coverage/light_chest_coverage.rds`:
-  `8c0eb074d799753e98bb0dc7b82d6ea2fe11aa8be1fb1e54b21dddc266e59426`.
+  `07f2be7b58839b384eda76c6bf21ca736791fc81e22c07bd4615e35bbb0ff1ce`.
 
 The audit grouped each 30-minute artifact by site, participant, placement,
 and local date and counted rows with positive `dst_fold_wall_minutes`. It did
@@ -94,16 +94,16 @@ The durable outputs under
 
 | Artifact | Rows | SHA-256 |
 |---|---:|---|
-| `true_utc_source_bins.rds` | 122,982 | `87c05a2534479c02ed62e16bc74a4c8a6a061aff125a528e404f403b3e2ff46b` |
-| `true_utc_source_bins.csv` | 122,982 | `88c7d2bb953a26290031e589ac4d51ca026889b0403299f8ba9db6b2f436b4b5` |
-| `wall_outcome_links.rds` | 122,976 | `a617893e74bbbd760950c185d0c548ff55692c52ded554a527dad2d72f2e6eb4` |
-| `wall_outcome_links.csv` | 122,976 | `b4e7623f2b930162f33f08f9e426e915f28226a32181c41e297e7d3eb0a25141` |
-| `artifact_manifest.csv` | 4 | `d05f8cf2ba7f5be01ae2fa5eb9c27350da2f84ed07508a731e243f1db23e1bb6` |
+| `true_utc_source_bins.rds` | 123,702 | `08d1adfb3e55c93da043b74d07dfade203c34f720c88062fa83eec5ebd1844f9` |
+| `true_utc_source_bins.csv` | 123,702 | `b77a80e327660607ccf24299b932f2d6e1c6eeb06ab8fac2b19d9aa577f101fd` |
+| `wall_outcome_links.rds` | 123,696 | `69232e8f7bdfbf379e7f92a220d2ecad893bce38e9ec57add313f5545e62829a` |
+| `wall_outcome_links.csv` | 123,696 | `0e8baf5e7548efff60c2cc2c4eda3418dfcddb02b5523acb30506f8a77890850` |
+| `artifact_manifest.csv` | 4 | `9355f7ca4f249059cf49808a3fb1caf9e764a6160f5d61beba8234a2bfbdef7d` |
 
-The current manifest fingerprint changed when the verified metric manifest
-was regenerated after the darkest-10-hour roundoff repair. The four
-scientific temporal artifacts retain their recorded hashes. See
-`audit/findings/temporal_manifest_hash_reconciliation.md`.
+The current bundle was regenerated from the final verified coverage and
+metric artifacts after the accepted preparation repairs, including the
+exact-all-zero melEDI day exclusion. Its coordinated approval is recorded in
+`audit/decisions/h02_shared_input_transition.md`.
 
 ## Independent verification
 
@@ -113,12 +113,12 @@ the upstream hashes, RDS/CSV agreement, every source and wall key, exact
 outcome links, support totals, sequence starts, and the known daylight-saving
 scope. The complete verification passed with:
 
-- 122,982 true-UTC source bins and 122,976 wall outcomes;
+- 123,702 true-UTC source bins and 123,696 wall outcomes;
 - 18 averaged two-to-one fall-back wall rows, representing 36 source bins;
 - 12 zero-link structural spring-gap wall rows;
 - six fall-back participant-days and four spring-forward
   placement-participant-days;
-- 118,635 sequence-eligible source bins and 2,583 sequence starts.
+- 119,537 sequence-eligible source bins and 2,632 sequence starts.
 
 Focused tests cover ordinary, fall-back, and spring-forward days, unusable
 outcomes, duplicate keys, a full build and verification from a non-project
@@ -130,15 +130,14 @@ runtime write timestamps and records output paths relative to the output
 project root and input/upstream-manifest paths relative to an explicit input
 root. Same-root and alternate-output-root builds produce the identical
 current manifest hash, and both producer and verifier reject paths outside the
-declared provenance root. This portability repair did not change any of the
-four scientific artifact hashes.
+declared provenance root. The current manifest and all four scientific files
+were reverified after the final shared-input regeneration.
 
-No temporal model was fitted and no clock-aligned outcome was changed.
-H02/H11 model fitting is therefore no longer blocked by missing provenance,
-but the eventual autocorrelation and correlation structure remains a separate
-model-specification gate. No temporal model may construct `AR.start`, another
-correlation index, or a gap-free sequence solely from participant order or
-`local_date + clock_bin`.
+The shared preparation step does not fit a temporal model or alter a
+clock-aligned outcome. H02 is authorized to rebuild and refit against the
+approved current bundle; H11 must inherit the same temporal-provenance inputs.
+No temporal model may construct `AR.start`, another correlation index, or a
+gap-free sequence solely from participant order or `local_date + clock_bin`.
 
 ## Reopening condition
 

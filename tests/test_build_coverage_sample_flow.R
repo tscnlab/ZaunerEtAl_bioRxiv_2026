@@ -89,7 +89,19 @@ site_b_glasses <- new_aligned_day(
   medi = medi_b,
   light = light_b
 )
-glasses_input <- dplyr::bind_rows(site_a_glasses, site_b_glasses)
+site_c_glasses <- new_aligned_day(
+  site = "C",
+  id = "P01",
+  placement = "glasses",
+  date = "2026-01-01",
+  medi = rep(0, 1440L),
+  light = rep(0, 1440L)
+)
+glasses_input <- dplyr::bind_rows(
+  site_a_glasses,
+  site_b_glasses,
+  site_c_glasses
+)
 
 chest_input <- new_aligned_day(
   site = "A",
@@ -154,11 +166,16 @@ light_invalid_medi_valid <- glasses |>
 failed_hour <- glasses |>
   dplyr::filter(
     .data$site == "A",
-    .data$clock_minute == 610L
+    .data$clock_minute == 631L
   )
 failed_day <- glasses |>
   dplyr::filter(
     .data$site == "B",
+    .data$clock_minute == 100L
+  )
+all_zero_day <- glasses |>
+  dplyr::filter(
+    .data$site == "C",
     .data$clock_minute == 100L
   )
 stopifnot(
@@ -171,14 +188,26 @@ stopifnot(
   is.na(light_invalid_medi_valid$LIGHT_eligible),
   light_invalid_medi_valid$LIGHT_eligibility_reason == "signal_invalidity",
   nrow(failed_hour) == 1L,
-  !failed_hour$coverage_period_eligible,
-  is.na(failed_hour$MEDI_eligible),
-  is.na(failed_hour$LIGHT_eligible),
-  failed_hour$LIGHT_eligibility_reason == "hour_failure",
+  failed_hour$coverage_period_eligible,
+  !failed_hour$hourly_metric_period_eligible,
+  !failed_hour$hour_screened_coverage_period_eligible,
+  failed_hour$MEDI_eligible == 10,
+  failed_hour$LIGHT_eligible == 20,
+  is.na(failed_hour$LIGHT_eligibility_reason),
   nrow(failed_day) == 1L,
   !failed_day$day_eligible,
   is.na(failed_day$MEDI_eligible),
-  is.na(failed_day$LIGHT_eligible)
+  is.na(failed_day$LIGHT_eligible),
+  nrow(all_zero_day) == 1L,
+  all_zero_day$day_all_finite_medi_zero,
+  all_zero_day$day_eligible_without_all_zero_screen,
+  all_zero_day$day_all_zero_medi_excluded,
+  !all_zero_day$day_eligible,
+  all_zero_day$all_zero_medi_inclusive_sensitivity_period_eligible,
+  is.na(all_zero_day$MEDI_eligible),
+  is.na(all_zero_day$LIGHT_eligible),
+  all_zero_day$MEDI_eligibility_reason == "all_zero_medi_day",
+  all_zero_day$LIGHT_eligibility_reason == "all_zero_medi_day"
 )
 
 message("Checking that both true instants in the synthetic fold survive")
@@ -213,12 +242,16 @@ stopifnot(
   ],
   glasses_daily$day_eligible[glasses_daily$site == "A"],
   !glasses_daily$day_eligible[glasses_daily$site == "B"],
+  glasses_daily$day_all_zero_medi_excluded[
+    glasses_daily$site == "C"
+  ],
+  !glasses_daily$day_eligible[glasses_daily$site == "C"],
   setequal(
     unique(glasses_gaps$gap_reason),
     c(
       "raw_absence",
       "signal_invalidity",
-      "hour_failure",
+      "all_zero_medi_day",
       "day_failure"
     )
   ),
@@ -232,6 +265,12 @@ stopifnot(
     glasses_gaps$gap_reason == "signal_invalidity" &
       glasses_gaps$signal == "LIGHT"
   ),
+  any(
+    glasses_gaps$gap_reason == "all_zero_medi_day" &
+      glasses_gaps$site == "C" &
+      glasses_gaps$start_clock_minute == 0L &
+      glasses_gaps$wall_minutes == 1440L
+  ),
   all(glasses_gaps$wall_minutes >= 1L)
 )
 
@@ -242,19 +281,19 @@ sample_flow <- readr::read_csv(
 )
 stopifnot(
   setequal(unique(sample_flow$scope), c("site", "overall")),
-  all(c("A", "B", "ALL") %in% unique(sample_flow$site)),
-  all(1:8 %in% unique(sample_flow$stage_order)),
+  all(c("A", "B", "C", "ALL") %in% unique(sample_flow$site)),
+  all(1:9 %in% unique(sample_flow$stage_order)),
   nrow(sample_flow[
     sample_flow$placement == "glasses" &
       sample_flow$scope == "overall",
   ]) ==
-    8L,
+    9L,
   sample_flow$participants[
     sample_flow$placement == "glasses" &
       sample_flow$scope == "overall" &
       sample_flow$stage == "aligned_real_minutes"
   ] ==
-    2L
+    3L
 )
 
 message("Checking the approved primary coverage-rule provenance")
@@ -268,6 +307,21 @@ stopifnot(
   all(
     settings$daily_denominator_domain == "all_pseudo_local_wall_minutes"
   ),
+  all(
+    settings$daily_eligibility_basis ==
+      "finite_medi_minutes_across_fixed_24_hour_cycle"
+  ),
+  all(settings$hourly_gate_scope == "hourly_metrics_only"),
+  all(!settings$minute_values_masked_by_hour_gate),
+  all(settings$hour_screened_sensitivity_available),
+  all(settings$all_zero_medi_exclusion_applied),
+  all(settings$all_zero_medi_sensitivity_available),
+  settings$all_zero_medi_days_excluded[
+    settings$placement == "glasses"
+  ] == 1L,
+  settings$all_zero_medi_days_excluded[
+    settings$placement == "chest"
+  ] == 0L,
   all(!settings$diary_sleep_excluded_from_denominator),
   all(settings$expected_wall_minutes_per_day == 1440L)
 )

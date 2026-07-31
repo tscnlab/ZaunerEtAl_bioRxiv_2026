@@ -100,12 +100,12 @@ metric.
 Profile-weighted coverage is a support diagnostic, not a universal
 correction factor. Time-sensitive correction is used only for an additive
 estimand that supports it, especially dose. Means, quantiles, threshold
-durations, bouts, windows, and clock timings must not be divided by coverage
+durations, continuous periods, windows, and clock timings must not be divided by coverage
 as a generic repair.
 
 ### Gaps, windows, and boundaries
 
-- Threshold bouts end at missing or invalid intervals, disallowed gaps,
+- Continuous threshold periods end at missing or invalid intervals, disallowed gaps,
   non-wear, device changes, participant-day boundaries, and any state boundary
   that is outside the metric's domain.
 - Durations use actual valid interval lengths. Consecutive retained rows do
@@ -114,7 +114,7 @@ as a generic repair.
   Each 10-hour candidate must comprise 20 consecutive clock bins and carry
   explicit observed and profile-weighted support. Unsupported candidates
   cannot win merely because missing values were removed.
-- First/last events and bout onsets/offsets carry left- and right-boundary
+- First/last events and period onsets/offsets carry left- and right-boundary
   censor flags. An event adjacent to an unobserved search-window boundary is
   not reported as the true first or last event without qualification.
 - The L10 search wraps across midnight without compressing the time axis.
@@ -169,10 +169,10 @@ metric must not be produced.
 | Time above 250 lx during wake | `modify` | Project canonical diary intervals onto the complete true-minute grid, then sum actual qualifying intervals within valid waking near-eye wear. | `incomplete_state_domain`, `no_state_window`, or `insufficient_state_support`; an adequately observed no-event wake window is zero. |
 | Time below 10 lx during pre-sleep | `modify` | Project canonical diary intervals onto the complete true-minute grid, then sum actual qualifying intervals in the declared pre-sleep state. | `incomplete_state_domain`, `no_state_window`, or `insufficient_state_support`. |
 | Time below 1 lx during sleep | `modify` | Project canonical diary intervals onto the complete true-minute grid, then sum actual qualifying intervals and label the result as bedside sleep-environment duration. | `incomplete_state_domain`, `no_state_window`, or `insufficient_state_support`. |
-| Longest bout above 250 lx | `modify` | Use true interval lengths and terminate bouts at every disallowed gap or boundary. | Unsupported continuity or censored bout; observed no-event day has zero duration. |
+| Longest period above 250 lx | `modify` | Use true interval lengths and terminate periods at every disallowed gap or boundary. | Unsupported continuity or a boundary-censored period; an observed no-event day has zero duration. |
 | First time above 250 lx | `modify` | Use local clock time with explicit search-window and left-censor status; no coverage scaling. | No event, unobserved left boundary, or insufficient search support. |
 | Last time above 250 lx | `modify` | Use local clock time with explicit search-window and right-censor status; no coverage scaling. | No event, unobserved right boundary, or insufficient search support. |
-| Mean timing above 250 lx | `modify` | Use a circular, interval-duration-weighted mean of supported qualifying intervals. This remains a documented replacement of the registered longest-bout midpoint, not the same metric under a new name. | No event or insufficient circular/search-window support. |
+| Mean timing above 250 lx | `modify` | Use a circular, interval-duration-weighted mean of supported qualifying intervals. This remains a documented replacement of the registered midpoint of the longest period, not the same metric under a new name. | No event or insufficient circular/search-window support. |
 | M10 midpoint | `modify` | Report the circular local-clock midpoint of the selected supported M10 candidate. | No supported candidate or unresolved boundary. |
 | L10 midpoint | `modify` | Report the circular local-clock midpoint of the selected supported midnight-wrapping L10 candidate. | No supported candidate or unresolved boundary. |
 | Daily melanopic EDI dose | `modify` | Integrate MEDI using actual durations; use the fixed MEDI profile for the approved time-sensitive missing-coverage correction and retain observed dose and correction factor. | Missing/zero reference mass, unsupported correction, or failed eligibility; never substitute zero. |

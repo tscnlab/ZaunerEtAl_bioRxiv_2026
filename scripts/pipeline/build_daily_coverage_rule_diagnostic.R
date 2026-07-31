@@ -1,4 +1,4 @@
-# Build diagnostic-only comparisons of three daily coverage rules.
+# Build the primary daily-coverage rule and two fixed sensitivity comparisons.
 
 normalise_daily_coverage_run_label <- function(run_label = "full") {
   if (
@@ -261,7 +261,7 @@ build_daily_coverage_rule_diagnostic <- function(
       dplyr::mutate(
         run_label = layout$run_label,
         input_sha256 = input_sha256,
-        status = "DIAGNOSTIC_ONLY_NO_RULE_SELECTED",
+        status = "PRIMARY_WITH_FIXED_SENSITIVITIES",
         .before = 1L
       )
     input_rows[[placement]] <- tibble::tibble(
@@ -292,7 +292,11 @@ build_daily_coverage_rule_diagnostic <- function(
       .data$local_date,
       factor(
         .data$rule,
-        levels = c("A_current", "B_prereg_minimal", "C_wake_aware")
+        levels = c(
+          "A_full_day",
+          "B_sleep_excluded_daily",
+          "C_sleep_excluded_hourly_daily"
+        )
       )
     )
   assert_unique_key(
@@ -303,13 +307,13 @@ build_daily_coverage_rule_diagnostic <- function(
   counts <- summarise_daily_coverage_rule_counts(daily) |>
     dplyr::mutate(
       run_label = layout$run_label,
-      status = "DIAGNOSTIC_ONLY_NO_RULE_SELECTED",
+      status = "PRIMARY_WITH_FIXED_SENSITIVITIES",
       .before = 1L
     )
   transitions <- summarise_daily_coverage_rule_transitions(daily) |>
     dplyr::mutate(
       run_label = layout$run_label,
-      status = "DIAGNOSTIC_ONLY_NO_RULE_SELECTED",
+      status = "PRIMARY_WITH_FIXED_SENSITIVITIES",
       .before = 1L
     )
   settings <- daily_coverage_rule_definitions() |>
@@ -329,8 +333,13 @@ build_daily_coverage_rule_diagnostic <- function(
       minimum_hour_coverage = minimum_hour_coverage,
       minimum_day_coverage = minimum_day_coverage,
       r_version = as.character(getRversion()),
-      rule_selected = FALSE,
-      status = "DIAGNOSTIC_ONLY_NO_RULE_SELECTED",
+      rule_role = dplyr::if_else(
+        .data$rule == "A_full_day",
+        "primary",
+        "sensitivity"
+      ),
+      selected_as_primary = .data$rule == "A_full_day",
+      status = "PRIMARY_WITH_FIXED_SENSITIVITIES",
       .before = 1L
     )
   input_hash_set <- paste(
@@ -367,7 +376,7 @@ build_daily_coverage_rule_diagnostic <- function(
   )
   common_metadata <- list(
     run_label = layout$run_label,
-    status = "diagnostic_only_no_rule_selected",
+    status = "primary_with_fixed_sensitivities",
     input_hashes = input_hash_set,
     coverage_signal = coverage_signal,
     state_col = state_col,

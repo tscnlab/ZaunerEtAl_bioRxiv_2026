@@ -248,10 +248,11 @@ stopifnot(
 message("Testing inclusive 50%-hour and 80%-wall-day boundaries")
 exact_80 <- rep(NA_real_, 1440L)
 exact_80[1:1080] <- 1
-exact_80[1081:1116] <- 1
-exact_80[1141:1176] <- 1
+exact_80[1081:1104] <- 1
+exact_80[1141:1164] <- 1
+exact_80[1201:1224] <- 1
 just_below_80 <- exact_80
-just_below_80[1176L] <- NA_real_
+just_below_80[1224L] <- NA_real_
 boundary_minutes <- dplyr::bind_rows(
   new_minute_day("2026-01-01", exact_80, id = "PASS"),
   new_minute_day("2026-01-01", just_below_80, id = "FAIL")
@@ -262,19 +263,31 @@ boundary_days <- boundary$daily |>
 pass_day <- boundary_days[boundary_days$Id == "PASS", ]
 fail_day <- boundary_days[boundary_days$Id == "FAIL", ]
 stopifnot(
-  pass_day$day_valid_minutes_after_hour == 1152L,
-  pass_day$day_valid_fraction_after_hour == 0.8,
-  pass_day$day_eligible_hours == 20L,
+  pass_day$day_valid_minutes_raw == 1152L,
+  pass_day$day_valid_fraction_raw == 0.8,
+  pass_day$day_valid_minutes_after_hour == 1080L,
+  pass_day$day_valid_fraction_after_hour == 0.75,
+  pass_day$day_eligible_hours == 18L,
   pass_day$day_eligible,
-  fail_day$day_valid_minutes_after_hour == 1151L,
-  fail_day$day_eligible_hours == 20L,
-  !fail_day$day_eligible
+  !pass_day$day_eligible_after_hour,
+  fail_day$day_valid_minutes_raw == 1151L,
+  fail_day$day_valid_minutes_after_hour == 1080L,
+  fail_day$day_eligible_hours == 18L,
+  !fail_day$day_eligible,
+  !fail_day$day_eligible_after_hour
 )
 pass_hours <- boundary$hourly[boundary$hourly$Id == "PASS", ]
+pass_minutes <- boundary$real_minutes |>
+  dplyr::filter(.data$Id == "PASS", .data$clock_minute == 1080L)
 stopifnot(
-  pass_hours$hour_valid_minutes[pass_hours$clock_hour == 18L] == 36L,
-  pass_hours$hour_valid_minutes[pass_hours$clock_hour == 19L] == 36L,
-  all(pass_hours$hour_eligible[pass_hours$clock_hour %in% c(18L, 19L)])
+  pass_hours$hour_valid_minutes[pass_hours$clock_hour == 18L] == 24L,
+  pass_hours$hour_valid_minutes[pass_hours$clock_hour == 19L] == 24L,
+  all(!pass_hours$hour_eligible[
+    pass_hours$clock_hour %in% c(18L, 19L, 20L)
+  ]),
+  pass_minutes$coverage_period_eligible,
+  !pass_minutes$hourly_metric_period_eligible,
+  !pass_minutes$hour_screened_coverage_period_eligible
 )
 
 hour_boundary <- rep(NA_real_, 1440L)
@@ -291,8 +304,42 @@ stopifnot(
   hour_summary$hour_valid_minutes[hour_summary$clock_hour == 21L] == 29L,
   !hour_summary$hour_eligible[hour_summary$clock_hour == 21L],
   hour_result$daily$day_valid_minutes_raw == 1259L,
+  hour_result$daily$day_valid_fraction_raw == 1259 / 1440,
   hour_result$daily$day_valid_minutes_after_hour == 1230L,
-  hour_result$daily$day_eligible_hours == 21L
+  hour_result$daily$day_eligible_hours == 21L,
+  hour_result$daily$day_eligible,
+  hour_result$daily$day_eligible_after_hour
+)
+
+message("Testing the otherwise eligible all-zero melEDI day exclusion")
+all_zero_source <- new_minute_day(
+  "2026-01-03",
+  rep(0, 1440L),
+  id = "ALL_ZERO"
+)
+all_zero_primary <- apply_wall_clock_coverage_rules(all_zero_source)
+stopifnot(
+  all_zero_primary$daily$day_valid_minutes_raw == 1440L,
+  all_zero_primary$daily$day_zero_medi_minutes_raw == 1440L,
+  all_zero_primary$daily$day_all_finite_medi_zero,
+  all_zero_primary$daily$day_eligible_without_all_zero_screen,
+  all_zero_primary$daily$day_all_zero_medi_excluded,
+  !all_zero_primary$daily$day_eligible,
+  all(!all_zero_primary$real_minutes$coverage_period_eligible),
+  all(
+    all_zero_primary$real_minutes$
+      all_zero_medi_inclusive_sensitivity_period_eligible
+  )
+)
+all_zero_inclusive <- apply_wall_clock_coverage_rules(
+  all_zero_source,
+  exclude_all_zero_days = FALSE
+)
+stopifnot(
+  all_zero_inclusive$daily$day_all_finite_medi_zero,
+  !all_zero_inclusive$daily$day_all_zero_medi_excluded,
+  all_zero_inclusive$daily$day_eligible,
+  all(all_zero_inclusive$real_minutes$coverage_period_eligible)
 )
 
 message("Testing the fixed 1,440-minute denominator on a short clock day")
@@ -303,10 +350,12 @@ spring_result <- apply_wall_clock_coverage_rules(
 )
 stopifnot(
   spring_result$daily$day_expected_wall_minutes == 1440L,
+  spring_result$daily$day_valid_fraction_raw == 1380 / 1440,
   spring_result$daily$day_valid_minutes_after_hour == 1380L,
   spring_result$daily$day_valid_fraction_after_hour == 1380 / 1440,
   spring_result$daily$day_eligible_hours == 23L,
   spring_result$daily$day_eligible,
+  spring_result$daily$day_eligible_after_hour,
   !spring_result$hourly$hour_eligible[
     spring_result$hourly$clock_hour == 2L
   ]
@@ -366,7 +415,11 @@ stopifnot(
   indexed$daily$day_valid_minutes_after_hour[
     indexed$daily$local_date == as.Date("2026-01-04")
   ] ==
-    0L
+    0L,
+  indexed$daily$day_valid_fraction_raw[
+    indexed$daily$local_date == as.Date("2026-01-04")
+  ] ==
+    0
 )
 
 message("All aggregation and coverage tests passed")

@@ -181,12 +181,12 @@ an audit target, not hidden as though it had been preregistered.
 The saved metric table has 22 rows: two participant-level dynamics metrics
 and 20 participant-day metrics. The H01 code left-joins a hand-written model
 specification table and retains the 17 rows with a non-missing response
-specification. No explicit, immutable H01 inclusion flag exists. Each model
+specification. No explicit, fixed H01 inclusion flag exists. Each model
 silently uses the complete cases accepted by its fitting engine.
 
 The five saved rows not modelled in H01 are the M10 onset and offset, L10
 onset and offset, and unqualified full-day duration above 250 lx. The
-canonical 17-member H01 set is:
+17-member H01 set is:
 
 1. interdaily stability;
 2. intradaily variability;
@@ -209,7 +209,7 @@ canonical 17-member H01 set is:
 Current saved metric objects already reflect earlier 50% hourly and 80% daily
 filtering, but they do not implement the newly approved metric-specific
 support, gap, state-channel, DST, dose, MDER, M10/L10, circular-timing, or
-\(10^5\)-lx rules. Canonical H01 therefore consumes newly derived metrics,
+\(10^5\)-lx rules. The rebuilt H01 therefore consumes newly derived metrics,
 not these `.RData` objects.
 
 ### Current per-metric response and family map
@@ -227,6 +227,13 @@ The current timing treatment centers L10-related times around midnight in
 `metric_preparation.qmd`, but other clock times enter as ordinary decimal
 hours. It does not verify that the linearization cut is away from the
 observed support.
+
+For the rebuilt H01 model, `H01-007` retains time below 10 lx melEDI before
+sleep as a calendar-day cumulative duration, without a three- or six-hour
+cap; strictly above six hours is an audit warning. `H01-008` converts the L10
+midpoint by subtracting 24 hours only from times strictly later than 16:00.
+The noon conversion is a same-row, same-model sensitivity outside the four
+primary 17-test families.
 
 ## Exact current model formulas and reference handling
 
@@ -1328,6 +1335,12 @@ recoding, hourly outcome repair, or H02 temporal-specification change reopens
 H04.
 
 # Canonical output contract for all four notebooks
+
+Each completed audit HTML must also contain a visible, evaluated R code cell
+that prints the exact Wilkinson formulas passed to every selected and
+comparison model. The cell must obtain them from the actual formula builder or
+fitted objects; one generic response formula is allowed only for genuinely
+identical model structures.
 
 Each H01–H04 placement/scenario run must produce:
 

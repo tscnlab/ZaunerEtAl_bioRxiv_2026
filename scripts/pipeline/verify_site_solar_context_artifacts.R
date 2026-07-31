@@ -1,4 +1,4 @@
-# Independently verify canonical Preparation 06 site/solar artifacts.
+# Independently verify Preparation 06 site/solar artifacts.
 #
 # Source paths_io.R and assertions.R before this file. This verifier does not
 # call the site/solar producer or its builder.
@@ -9,6 +9,20 @@ p06_site_solar_default_transition_keys <- function() {
     "MPI|2023-10-29",
     "RISE|2025-03-30",
     "THUAS|2025-03-30"
+  )
+}
+
+p06_site_solar_default_site_codes <- function() {
+  c(
+    "BAUA",
+    "FUSPCEU",
+    "IZTECH",
+    "KNUST",
+    "MPI",
+    "RISE",
+    "THUAS",
+    "TUM",
+    "UCR"
   )
 }
 
@@ -147,6 +161,45 @@ p06_resolve_site_solar_metric_paths <- function(metric_paths, root) {
   )
 }
 
+p06_resolve_supplemental_date_paths <- function(
+  supplemental_date_paths = NULL
+) {
+  if (is.null(supplemental_date_paths)) {
+    return(stats::setNames(character(), character()))
+  }
+  p06_require(
+    is.character(supplemental_date_paths) &&
+      !is.null(names(supplemental_date_paths)) &&
+      length(supplemental_date_paths) > 0L &&
+      !anyNA(supplemental_date_paths) &&
+      all(nzchar(supplemental_date_paths)) &&
+      !anyNA(names(supplemental_date_paths)) &&
+      all(nzchar(names(supplemental_date_paths))) &&
+      !anyDuplicated(names(supplemental_date_paths)) &&
+      !any(
+        names(supplemental_date_paths) %in%
+          p06_site_solar_metric_specification(".")$input_role
+      ),
+    paste0(
+      "Verifier supplemental site-date paths must be NULL or a ",
+      "uniquely named character vector"
+    )
+  )
+  missing <- !file.exists(supplemental_date_paths)
+  p06_require(
+    !any(missing),
+    "Verifier supplemental site-date input(s) are missing: %s",
+    paste(supplemental_date_paths[missing], collapse = ", ")
+  )
+  vapply(
+    supplemental_date_paths,
+    normalizePath,
+    character(1),
+    winslash = "/",
+    mustWork = TRUE
+  )
+}
+
 p06_require <- function(condition, message, ...) {
   if (
     length(condition) != 1L ||
@@ -274,14 +327,56 @@ p06_read_and_validate_metric_inputs <- function(metric_paths, root) {
   inputs
 }
 
-p06_site_date_domain <- function(inputs) {
-  dplyr::bind_rows(lapply(c("glasses_daily", "chest_daily"), function(role) {
+p06_read_supplemental_site_dates <- function(supplemental_date_paths) {
+  inputs <- lapply(supplemental_date_paths, readRDS)
+  names(inputs) <- names(supplemental_date_paths)
+  for (input_role in names(inputs)) {
+    data <- inputs[[input_role]]
+    p06_require(
+      is.data.frame(data) &&
+        nrow(data) > 0L,
+      "Verifier supplemental site-date input `%s` is empty",
+      input_role
+    )
+    assert_columns(
+      data,
+      c("site", "local_date"),
+      object = paste0("verifier supplemental input `", input_role, "`")
+    )
+    assert_no_missing_key(
+      data,
+      c("site", "local_date"),
+      object = paste0("verifier supplemental input `", input_role, "`")
+    )
+    p06_require(
+      is.character(data$site) &&
+        inherits(data$local_date, "Date") &&
+        all(data$site %in% p06_site_solar_default_site_codes()),
+      "Verifier supplemental site-date input `%s` has invalid fields",
+      input_role
+    )
+  }
+  inputs
+}
+
+p06_site_date_domain <- function(
+  inputs,
+  supplemental_dates = list()
+) {
+  main_dates <- lapply(c("glasses_daily", "chest_daily"), function(role) {
     data <- inputs[[role]]
     tibble::tibble(
       site = as.character(data$site),
       local_date = as.Date(data$local_date)
     )
-  })) |>
+  })
+  added_dates <- lapply(supplemental_dates, function(data) {
+    tibble::tibble(
+      site = as.character(data$site),
+      local_date = as.Date(data$local_date)
+    )
+  })
+  dplyr::bind_rows(c(main_dates, added_dates)) |>
     dplyr::distinct() |>
     dplyr::arrange(.data$site, .data$local_date)
 }
@@ -575,7 +670,7 @@ p06_expected_join_audit <- function(inputs, root) {
 p06_verify_manifest <- function(
   manifest,
   paths,
-  metric_paths,
+  declared_input_paths,
   site_metadata_path,
   expected_context,
   output_root,
@@ -592,7 +687,7 @@ p06_verify_manifest <- function(
       setequal(manifest$artifact_type, required_types),
     paste0(
       "Site/solar manifest must have the deterministic schema and exactly ",
-      "the three canonical artifacts"
+      "the three main-analysis artifacts"
     )
   )
   expected_paths <- c(
@@ -601,7 +696,7 @@ p06_verify_manifest <- function(
     site_solar_context_rds = paths$context_rds
   )
   relative_input_paths <- vapply(
-    metric_paths,
+    declared_input_paths,
     p06_site_solar_relative_path,
     character(1),
     anchor = input_root,
@@ -611,7 +706,11 @@ p06_verify_manifest <- function(
     paste(names(relative_input_paths), relative_input_paths, sep = "="),
     collapse = "|"
   )
-  input_hashes <- vapply(metric_paths, artifact_sha256, character(1))
+  input_hashes <- vapply(
+    declared_input_paths,
+    artifact_sha256,
+    character(1)
+  )
   expected_hash_string <- paste(
     paste(names(input_hashes), input_hashes, sep = "="),
     collapse = "|"
@@ -684,6 +783,7 @@ p06_verify_site_solar_context_impl <- function(
   root,
   site_metadata_path,
   metric_paths,
+  supplemental_date_paths,
   input_root,
   expected_site_dates,
   expected_sites,
@@ -700,17 +800,39 @@ p06_verify_site_solar_context_impl <- function(
   missing_outputs <- !file.exists(required_outputs)
   p06_require(
     !any(missing_outputs),
-    "Canonical site/solar output(s) are missing: %s",
+    "Site/solar output(s) are missing: %s",
     paste(required_outputs[missing_outputs], collapse = ", ")
   )
   metric_paths <- p06_resolve_site_solar_metric_paths(metric_paths, root)
+  supplemental_date_paths <- p06_resolve_supplemental_date_paths(
+    supplemental_date_paths
+  )
   site_metadata_path <- normalizePath(
     site_metadata_path,
     winslash = "/",
     mustWork = TRUE
   )
   inputs <- p06_read_and_validate_metric_inputs(metric_paths, root)
-  domain <- p06_site_date_domain(inputs)
+  supplemental_dates <- p06_read_supplemental_site_dates(
+    supplemental_date_paths
+  )
+  domain <- p06_site_date_domain(
+    inputs,
+    supplemental_dates = supplemental_dates
+  )
+  if (is.null(expected_site_dates)) {
+    expected_site_dates <- nrow(domain)
+  }
+  if (
+    !is.numeric(expected_site_dates) ||
+      length(expected_site_dates) != 1L ||
+      is.na(expected_site_dates) ||
+      expected_site_dates < 1L ||
+      expected_site_dates != as.integer(expected_site_dates)
+  ) {
+    p06_abort("`expected_site_dates` must be NULL or one positive integer")
+  }
+  expected_site_dates <- as.integer(expected_site_dates)
 
   metadata <- readr::read_csv(
     site_metadata_path,
@@ -771,12 +893,12 @@ p06_verify_site_solar_context_impl <- function(
       inherits(observed$local_date, "Date") &&
       nrow(observed) == expected_site_dates &&
       dplyr::n_distinct(observed$site) == expected_sites,
-    "Canonical context dimensions differ from expected values"
+    "Site/solar context dimensions differ from the metric date domain"
   )
   assert_unique_key(
     observed,
     c("site", "local_date"),
-    object = "canonical site solar context"
+    object = "site solar context"
   )
   expected <- p06_reconstruct_context(domain, metadata)
   p06_require(
@@ -785,7 +907,7 @@ p06_verify_site_solar_context_impl <- function(
       expected,
       tolerance = 1e-12
     ),
-    "Canonical RDS differs from the independent solar reconstruction"
+    "Site/solar RDS differs from the independent solar reconstruction"
   )
   p06_require(
     identical(lubridate::tz(observed$civil_dawn_utc), "UTC") &&
@@ -804,7 +926,7 @@ p06_verify_site_solar_context_impl <- function(
         observed$solar_noon_wall_minute >= 0 &
           observed$solar_noon_wall_minute < 1440
       ),
-    "Canonical context does not preserve the UTC/wall-clock contract"
+    "Site/solar context does not preserve the UTC/wall-clock contract"
   )
   transition_keys <- paste(
     observed$site[observed$local_day_crosses_dst],
@@ -813,7 +935,7 @@ p06_verify_site_solar_context_impl <- function(
   )
   p06_require(
     setequal(transition_keys, expected_transition_keys),
-    "Canonical DST-transition site-date set differs from expectation"
+    "Site/solar DST-transition site-date set differs from expectation"
   )
 
   expected_csv <- p06_expected_csv(expected)
@@ -825,7 +947,7 @@ p06_verify_site_solar_context_impl <- function(
   )
   p06_require(
     p06_tables_equal(observed_csv, expected_csv, tolerance = 1e-12),
-    "Canonical context CSV differs from the explicit formatted RDS values"
+    "Site/solar context CSV differs from the explicit formatted RDS values"
   )
 
   expected_join_audit <- p06_expected_join_audit(inputs, root)
@@ -843,10 +965,15 @@ p06_verify_site_solar_context_impl <- function(
       nrow(observed_join_audit) == 6L &&
       all(observed_join_audit$unmatched_rows == 0L) &&
       all(observed_join_audit$relationship == "many-to-one"),
-    "Canonical site/solar join audit failed"
+    "Site/solar join audit failed"
   )
 
-  input_hashes <- vapply(metric_paths, artifact_sha256, character(1))
+  declared_input_paths <- c(metric_paths, supplemental_date_paths)
+  input_hashes <- vapply(
+    declared_input_paths,
+    artifact_sha256,
+    character(1)
+  )
   settings <- attr(observed, "site_solar_settings", exact = TRUE)
   p06_require(
     is.data.frame(settings) &&
@@ -865,7 +992,7 @@ p06_verify_site_solar_context_impl <- function(
         attr(observed, "input_sha256", exact = TRUE),
         input_hashes
       ),
-    "Canonical RDS provenance attributes failed"
+    "Site/solar RDS provenance attributes failed"
   )
 
   manifest <- readr::read_csv(
@@ -876,7 +1003,7 @@ p06_verify_site_solar_context_impl <- function(
   p06_verify_manifest(
     manifest,
     paths = paths,
-    metric_paths = metric_paths,
+    declared_input_paths = declared_input_paths,
     site_metadata_path = site_metadata_path,
     expected_context = expected,
     output_root = root,
@@ -899,8 +1026,9 @@ verify_site_solar_context_artifacts <- function(
   root = project_root(),
   site_metadata_path = file.path(root, "config", "site_metadata.csv"),
   metric_paths = NULL,
+  supplemental_date_paths = NULL,
   input_root = root,
-  expected_site_dates = 616L,
+  expected_site_dates = NULL,
   expected_sites = 9L,
   expected_transition_keys = p06_site_solar_default_transition_keys(),
   stop_on_failure = TRUE
@@ -910,6 +1038,7 @@ verify_site_solar_context_artifacts <- function(
       root = root,
       site_metadata_path = site_metadata_path,
       metric_paths = metric_paths,
+      supplemental_date_paths = supplemental_date_paths,
       input_root = input_root,
       expected_site_dates = expected_site_dates,
       expected_sites = expected_sites,

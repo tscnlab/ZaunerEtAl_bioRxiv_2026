@@ -13,7 +13,7 @@ All 1,708 canonical Rule A participant-days reconcile to the baseline keys: 811 
 | M10 level | 811 finite | 897 finite | PASS; level retained for all five all-candidate ties |
 | M10 timing | 809 finite; 2 all-candidate ties reason-coded missing | 894 finite; 3 all-candidate ties reason-coded missing | PASS under METRIC-007 |
 | L10 timing | 809 finite | 894 finite | PASS |
-| Longest bout | 811 primary lower bounds; 497 exact-only | 897 primary lower bounds; 565 exact-only | PASS under METRIC-006 |
+| Longest period above 250 lx | 811 primary lower bounds; 497 exact-only | 897 primary lower bounds; 565 exact-only | PASS under METRIC-006 |
 | Mean timing >250 | 714 finite | 810 finite | PASS |
 | First/last timing >250 | 717/679 finite | 786/773 finite | PASS; metric-specific support/censoring retained |
 | Corrected dose | 736 finite | 827 finite | PASS |

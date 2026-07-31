@@ -351,6 +351,12 @@ validate_preparation02_settings <- function(
     "coverage_rule_id",
     "coverage_signal",
     "daily_denominator_domain",
+    "daily_eligibility_basis",
+    "hourly_gate_scope",
+    "minute_values_masked_by_hour_gate",
+    "hour_screened_sensitivity_available",
+    "all_zero_medi_exclusion_applied",
+    "all_zero_medi_sensitivity_available",
     "diary_sleep_excluded_from_denominator",
     "expected_wall_minutes_per_hour",
     "expected_wall_minutes_per_day",
@@ -394,6 +400,13 @@ validate_preparation02_settings <- function(
   valid <- selected$coverage_rule_id == "A" &
     selected$coverage_signal == "MEDI" &
     selected$daily_denominator_domain == "all_pseudo_local_wall_minutes" &
+    selected$daily_eligibility_basis ==
+      "finite_medi_minutes_across_fixed_24_hour_cycle" &
+    selected$hourly_gate_scope == "hourly_metrics_only" &
+    !selected$minute_values_masked_by_hour_gate &
+    selected$hour_screened_sensitivity_available &
+    selected$all_zero_medi_exclusion_applied &
+    selected$all_zero_medi_sensitivity_available &
     !selected$diary_sleep_excluded_from_denominator &
     selected$expected_wall_minutes_per_hour == 60 &
     selected$expected_wall_minutes_per_day == 1440 &
@@ -403,8 +416,10 @@ validate_preparation02_settings <- function(
     abort_pipeline(
       paste0(
         "Preparation 04 requires primary coverage rule A: MEDI coverage ",
-        "over all 60/1440 pseudo-local wall minutes with diary sleep ",
-        "included, at exactly 0.50 per hour and 0.80 per day"
+        "over the fixed 1,440-minute pseudo-local wall day with diary ",
+        "sleep included; the 0.50 hourly requirement applies only when ",
+        "an hourly value is calculated, the daily cutoff is 0.80, and ",
+        "otherwise eligible days with only zero melEDI values are excluded"
       )
     )
   }
@@ -1016,7 +1031,7 @@ build_metric_derivation <- function(
   state_input_rows <- list()
 
   for (placement in placements) {
-    message("Deriving support-aware metrics for ", placement)
+    message("Calculating light-exposure metrics for ", placement)
     coverage_path <- file.path(
       layout$coverage_run_root,
       paste0("light_", placement, "_coverage.rds")

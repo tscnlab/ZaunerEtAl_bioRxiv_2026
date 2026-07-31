@@ -52,7 +52,7 @@ objects. It is not inferred from printed time-zone labels alone.
    record the number of source intervals, distinct instants, offsets, and a
    DST-fold flag.
 7. Never collapse repeated real intervals for dose, threshold duration,
-   bouts, adjacency, or other elapsed-time and sequential metrics. Those use
+   continuous periods, adjacency, or other elapsed-time and sequential metrics. Those use
    `datetime_utc` and actual interval durations.
 8. Rerun and compare every metric, model, table, figure, and claim that
    contains an affected participant-day.

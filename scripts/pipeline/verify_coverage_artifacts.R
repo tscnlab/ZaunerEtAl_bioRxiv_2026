@@ -1,4 +1,4 @@
-# Post-build verification for Canonical Preparation 02.
+# Post-build verification for Preparation 02.
 #
 # Source paths_io.R and assertions.R before calling
 # verify_coverage_artifacts(). The verifier reads completed artifacts only;
@@ -134,6 +134,13 @@ coverage_assert_rule_a <- function(data, object, manifest = FALSE) {
     coverage_rule_id = "A",
     coverage_signal = "MEDI",
     daily_denominator_domain = "all_pseudo_local_wall_minutes",
+    daily_eligibility_basis =
+      "finite_medi_minutes_across_fixed_24_hour_cycle",
+    hourly_gate_scope = "hourly_metrics_only",
+    minute_values_masked_by_hour_gate = FALSE,
+    hour_screened_sensitivity_available = TRUE,
+    all_zero_medi_exclusion_applied = TRUE,
+    all_zero_medi_sensitivity_available = TRUE,
     diary_sleep_excluded_from_denominator = FALSE,
     minimum_hour_coverage = 0.5,
     minimum_day_coverage = 0.8
@@ -381,6 +388,11 @@ coverage_reconstruct_rule_a <- function(aligned, placement) {
       wall_source_real_minutes = dplyr::n(),
       wall_distinct_utc_minutes = dplyr::n_distinct(.data$datetime_utc),
       coverage_signal_observed = any(is.finite(.data$MEDI)),
+      wall_medi = if (any(is.finite(.data$MEDI))) {
+        mean(.data$MEDI[is.finite(.data$MEDI)])
+      } else {
+        NA_real_
+      },
       .groups = "drop"
     ) |>
     dplyr::mutate(
@@ -453,6 +465,7 @@ coverage_reconstruct_rule_a <- function(aligned, placement) {
       day_observed_wall_minutes = sum(.data$hour_observed_wall_minutes),
       day_source_real_minutes = sum(.data$hour_source_real_minutes),
       day_valid_minutes_raw = sum(.data$hour_valid_minutes),
+      day_valid_fraction_raw = .data$day_valid_minutes_raw / 1440,
       day_valid_minutes_after_hour = sum(
         .data$hour_valid_minutes[.data$hour_eligible]
       ),
@@ -460,8 +473,40 @@ coverage_reconstruct_rule_a <- function(aligned, placement) {
         1440,
       day_eligible_hours = sum(.data$hour_eligible),
       day_dst_fold_minutes = sum(.data$hour_dst_fold_minutes),
-      day_eligible = .data$day_valid_fraction_after_hour >= 0.8,
       .groups = "drop"
+    )
+  daily_zero <- wall |>
+    dplyr::group_by(dplyr::across(dplyr::all_of(day_key))) |>
+    dplyr::summarise(
+      day_zero_medi_minutes_raw = sum(
+        is.finite(.data$wall_medi) & .data$wall_medi == 0
+      ),
+      .groups = "drop"
+    )
+  daily <- dplyr::left_join(
+    daily,
+    daily_zero,
+    by = day_key,
+    relationship = "one-to-one"
+  ) |>
+    dplyr::mutate(
+      day_all_finite_medi_zero =
+        .data$day_valid_minutes_raw > 0L &
+          .data$day_zero_medi_minutes_raw ==
+            .data$day_valid_minutes_raw,
+      day_eligible_without_all_zero_screen =
+        .data$day_valid_fraction_raw >= 0.8,
+      day_eligible_after_hour_without_all_zero_screen =
+        .data$day_valid_fraction_after_hour >= 0.8,
+      day_all_zero_medi_excluded =
+        .data$day_eligible_without_all_zero_screen &
+          .data$day_all_finite_medi_zero,
+      day_eligible =
+        .data$day_eligible_without_all_zero_screen &
+          !.data$day_all_zero_medi_excluded,
+      day_eligible_after_hour =
+        .data$day_eligible_after_hour_without_all_zero_screen &
+          !.data$day_all_zero_medi_excluded
     )
   list(wall = wall, hourly = hourly, daily = daily)
 }
@@ -511,33 +556,39 @@ coverage_expected_sample_flow <- function(eligible, placement) {
     ),
     list(
       4L,
-      "coverage",
-      "hour_eligible_real_minutes",
-      eligible$hour_eligible
+      "coverage_sensitivity",
+      "all_zero_medi_inclusive_sensitivity_real_minutes",
+      eligible$all_zero_medi_inclusive_sensitivity_period_eligible
     ),
     list(
       5L,
       "coverage",
-      "day_eligible_real_minutes",
-      eligible$day_eligible
-    ),
-    list(
-      6L,
-      "coverage",
-      "hour_and_day_eligible_real_minutes",
+      "primary_day_eligible_real_minutes",
       eligible$coverage_period_eligible
     ),
     list(
-      7L,
+      6L,
       "MEDI",
       "medi_eligible_real_minutes",
       eligible$MEDI_coverage_eligible
     ),
     list(
-      8L,
+      7L,
       "LIGHT",
       "light_eligible_real_minutes",
       eligible$LIGHT_coverage_eligible
+    ),
+    list(
+      8L,
+      "hourly_metric",
+      "hourly_metric_eligible_real_minutes",
+      eligible$hourly_metric_period_eligible
+    ),
+    list(
+      9L,
+      "coverage_sensitivity",
+      "hour_screened_sensitivity_real_minutes",
+      eligible$hour_screened_coverage_period_eligible
     )
   )
   sites <- sort(unique(as.character(eligible$site)))
@@ -604,10 +655,20 @@ coverage_verify_eligible_channels <- function(
     "hour_valid_fraction",
     "hour_eligible",
     "day_valid_minutes_raw",
+    "day_zero_medi_minutes_raw",
+    "day_valid_fraction_raw",
     "day_valid_minutes_after_hour",
     "day_valid_fraction_after_hour",
+    "day_all_finite_medi_zero",
+    "day_all_zero_medi_excluded",
+    "day_eligible_without_all_zero_screen",
+    "day_eligible_after_hour_without_all_zero_screen",
     "day_eligible",
+    "day_eligible_after_hour",
     "coverage_period_eligible",
+    "all_zero_medi_inclusive_sensitivity_period_eligible",
+    "hourly_metric_period_eligible",
+    "hour_screened_coverage_period_eligible",
     "coverage_signal_observed_real",
     "coverage_value_eligible_real",
     "MEDI_precoverage",
@@ -677,16 +738,28 @@ coverage_verify_eligible_channels <- function(
         "position",
         "local_date",
         "day_valid_minutes_raw",
+        "day_zero_medi_minutes_raw",
+        "day_valid_fraction_raw",
         "day_valid_minutes_after_hour",
         "day_valid_fraction_after_hour",
-        "day_eligible"
+        "day_all_finite_medi_zero",
+        "day_all_zero_medi_excluded",
+        "day_eligible_without_all_zero_screen",
+        "day_eligible_after_hour_without_all_zero_screen",
+        "day_eligible",
+        "day_eligible_after_hour"
       ))
     ),
     by = c("site", "Id", "position", "local_date"),
     relationship = "many-to-one"
   )
-  expected$coverage_period_eligible <-
-    expected$hour_eligible & expected$day_eligible
+  expected$coverage_period_eligible <- expected$day_eligible
+  expected$all_zero_medi_inclusive_sensitivity_period_eligible <-
+    expected$day_eligible_without_all_zero_screen
+  expected$hourly_metric_period_eligible <-
+    expected$day_eligible & expected$hour_eligible
+  expected$hour_screened_coverage_period_eligible <-
+    expected$day_eligible_after_hour & expected$hour_eligible
   expected$coverage_signal_observed_real <- is.finite(expected$MEDI)
   expected$coverage_value_eligible_real <-
     expected$coverage_period_eligible &
@@ -715,8 +788,8 @@ coverage_verify_eligible_channels <- function(
     !expected$MEDI_precoverage_observed,
     "signal_invalidity",
     ifelse(
-      !expected$hour_eligible,
-      "hour_failure",
+      expected$day_all_zero_medi_excluded,
+      "all_zero_medi_day",
       ifelse(!expected$day_eligible, "day_failure", NA_character_)
     )
   )
@@ -724,8 +797,8 @@ coverage_verify_eligible_channels <- function(
     !expected$LIGHT_precoverage_observed,
     "signal_invalidity",
     ifelse(
-      !expected$hour_eligible,
-      "hour_failure",
+      expected$day_all_zero_medi_excluded,
+      "all_zero_medi_day",
       ifelse(!expected$day_eligible, "day_failure", NA_character_)
     )
   )
@@ -769,6 +842,9 @@ coverage_verify_settings_row <- function(
     ineligible_hours = sum(!reconstructed$hourly$hour_eligible),
     eligible_days = sum(reconstructed$daily$day_eligible),
     ineligible_days = sum(!reconstructed$daily$day_eligible),
+    all_zero_medi_days_excluded = sum(
+      reconstructed$daily$day_all_zero_medi_excluded
+    ),
     medi_eligible_true_utc_minutes = sum(
       eligible$MEDI_coverage_eligible
     ),
@@ -1114,6 +1190,9 @@ verify_coverage_artifacts <- function(
       participant_days = nrow(reconstructed$daily),
       eligible_days = sum(reconstructed$daily$day_eligible),
       ineligible_days = sum(!reconstructed$daily$day_eligible),
+      all_zero_medi_days_excluded = sum(
+        reconstructed$daily$day_all_zero_medi_excluded
+      ),
       saturated_minutes = sum(aligned$medi_saturated),
       invalid_nonwear_minutes = sum(aligned$invalid_nonwear)
     )

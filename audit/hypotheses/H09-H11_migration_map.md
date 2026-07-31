@@ -1474,6 +1474,12 @@ reopens H11.
 
 # Canonical output contract for all three notebooks
 
+Each completed audit HTML must also contain a visible, evaluated R code cell
+that prints the exact Wilkinson formulas passed to every selected and
+comparison model. The cell must obtain them from the actual formula builder or
+fitted objects; one generic response formula is allowed only for genuinely
+identical model structures.
+
 Every H09–H11 placement/scenario run must produce:
 
 1. an exact model-frame RDS containing only fitted keys and inclusion reasons;

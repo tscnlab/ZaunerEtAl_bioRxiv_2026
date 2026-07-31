@@ -1,4 +1,4 @@
-# Longest-bout tied-winner boundary diagnostic
+# Longest-period tied-winner boundary diagnostic
 
 Finding ID: `FIND-016`  
 Decision ID: `METRIC-006`  
@@ -8,7 +8,7 @@ Severity: low diagnostic ambiguity; no scientific-value effect
 
 ## Finding
 
-The longest observed bout selected its reported onset and offset
+The longest observed period selected its reported onset and offset
 deterministically from the earliest tied maximum run. The existing
 `winner_day_boundary_contact` field, however, was true when *any* tied
 maximum run touched the participant-day boundary. The label could therefore
@@ -17,7 +17,7 @@ timestamps.
 
 ## Repair
 
-- Tied maximum observed bouts select the earliest onset and then the earliest
+- Tied maximum observed periods select the earliest onset and then the earliest
   offset.
 - `winner_day_boundary_contact` now describes that selected run.
 - `any_winning_observed_run_day_boundary_contact` separately reports whether
@@ -29,7 +29,7 @@ timestamps.
 
 ## Verification
 
-A focused synthetic test contains two equal longest bouts: the earlier,
+A focused synthetic test contains two equal longest periods: the earlier,
 selected run is internal, and a later tied run touches the day boundary. The
 selected-winner flag is false, the any-winning-run flag is true, and the
 reported onset/offset identify the internal run.
@@ -41,5 +41,5 @@ canonical data happened to contain no row on which the prior and clarified
 shared boundary flag differed; the repair added explanatory columns and
 metadata only.
 
-Reopen if winner selection, bout adjacency, boundary definitions, or the
+Reopen if winner selection, period adjacency, boundary definitions, or the
 lower/upper-bound contract changes.

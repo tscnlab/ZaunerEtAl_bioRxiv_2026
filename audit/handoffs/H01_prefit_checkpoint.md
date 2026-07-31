@@ -1,7 +1,8 @@
 # H01 pre-fit checkpoint
 
-Date: 2026-07-30  
-Status: preparation and method package approved; ready for fitting; no H01 model fitted
+Date: 2026-07-30; current-input repin 2026-07-31
+Status: preparation and method package approved; regenerated inputs repinned;
+fit-stage verification passed; production bootstrap pending
 
 ## Scope now complete
 
@@ -15,27 +16,34 @@ Status: preparation and method package approved; ready for fitting; no H01 model
   sample-flow and exclusion implementation.
 - Near-eye remains primary; paired/common-sample near-eye and chest remain
   comparison/complementary scenarios; placements are not pooled.
-- No H01 exposure model, estimate, confidence interval or rebuilt \(p\)-value
-  has been produced.
+- The original checkpoint preceded model fitting. After the approved Gate A
+  and Gate B repairs and the exact-all-zero day exclusion, the fit stage was
+  rerun against the identities below. Estimates, confidence intervals and
+  rebuilt \(p\)-values from that fit stage remain provisional until the
+  production bootstrap and final diagnostic review are complete.
 
 ## Pinned identities
 
 | Item | SHA-256 |
 |---|---|
-| Manuscript-prepared input manifest | `af74cc9fa36e426222d9b5f2328e2261c00b14436feb8d86fbf137d0ff313267` |
-| Main H01 manifest | `48f7cb7a9539bd1a35237275187a76528f1daacfc9abe368cbc4bc1397ed0375` |
-| Manuscript-prepared H01 manifest | `672312ba62871317b0910fbd781f7f6db92e6718fed26961e17a986a5eb989f5` |
+| Manuscript-prepared input manifest | `e604342c87e9cf4a97e766e248200fd4514da1ee9d1165829654f4769c5c0bfc` |
+| Main H01 data | `018b9a50c007a850ba21d026cc7a9fd7d6906322993c98785b3dccb8f19b7475` |
+| Main H01 manifest | `ea9d47f624a8777f8416447612bfcc2309cf2bac40fdf4fd5021c8767806dfbf` |
+| Manuscript-prepared H01 data | `c5ea147312735ccaa46ffaf642058115e8ed9d41376262e351a86b84a689e98a` |
+| Manuscript-prepared H01 manifest | `cb47b3678146604aadca875a96f79909e2d73355162683ff0603f038f3b31a25` |
 | Shared H01 implementation fingerprint | `e07db16818e565aff40fa6b9f79f34a31eb943d6c393343ca96471b795bacbed` |
 | Shared H01 code | `c7d66825c359066ec6dce1a623408d532c4686fd0b77bfe1da5e392fcc7f5516` |
-| Preparation 06 HTML | `b9f2a074b3020c1466d6737b9da30ce97080f09c08568e9301b773b5b57f0dd1` |
-| H01 HTML before approval refresh | `3c9b9c5b277df8e479f77e6adda64ee90059bf7cd5c2aa8aba40964e5131a852` |
+| Preparation 06 HTML | `8afa6ad4a253deba41a59f4463c25e40ccadac7e4477cf4916fc625211b930e8` |
+| Current H01 HTML | `482970c0c185d105edb75de7628977bcaa122eec91bb20cbb7ac24817c485804` |
 
 ## Prepared H01 rows
 
-- 45,410 rows per scenario interface.
-- 12,447 all-available near-eye rows.
-- 13,763 all-available chest rows.
-- 640 paired participant-days, represented by 9,600 daily metric rows per
+- 45,650 rows in the current main H01 interface.
+- 12,522 all-available near-eye rows: 816 participant-days for the 15
+  day-level metrics and 141 participants for IS and IV.
+- 13,838 all-available chest rows: 902 participant-days for the 15 day-level
+  metrics and 154 participants for IS and IV.
+- 643 paired participant-days, represented by 9,645 daily metric rows per
   placement.
 - Paired participant-level IS and IV remain unavailable until recalculated on
   paired common days.
@@ -81,10 +89,10 @@ starting package automatically.
 
 ## Suggested next-task boundary
 
-Start a new task dedicated to H01 model fitting, diagnostics, bootstrap
-confidence intervals, site deviations from the overall mean, variation
-summaries, main-versus-manuscript-prepared comparison, claim review and H01
-HTML output.
+Continue the dedicated H01 task with production bootstrap confidence
+intervals, diagnostic review, site deviations from the overall mean,
+variation summaries, main-versus-manuscript-prepared comparison, claim review
+and H01 HTML output.
 
 The new task should explicitly re-authorize the relevant specialist skills,
 because skill authorization does not carry across tasks. It should not edit

@@ -20,6 +20,20 @@ h01_manuscript_prepared_support_reason <- function() {
   )
 }
 
+h01_manuscript_prepared_site_date_path <- function(root) {
+  stats::setNames(
+    file.path(
+      root,
+      "artifacts",
+      "06_model_data",
+      "scenarios",
+      h01_manuscript_prepared_scenario_id(),
+      "participant_day_metrics.rds"
+    ),
+    "manuscript_prepared_participant_day"
+  )
+}
+
 h01_manuscript_prepared_missing_metric_reason <- function() {
   "manuscript_prepared_nonestimable_reason_not_recorded"
 }

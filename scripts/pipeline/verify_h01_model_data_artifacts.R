@@ -190,6 +190,71 @@ h01_verify_scenario_estimability <- function(rows) {
   invisible(TRUE)
 }
 
+h01_expected_model_row_counts <- function(provenance, contract, root) {
+  input_path <- function(input_id) {
+    row <- provenance[provenance$input_id == input_id, , drop = FALSE]
+    if (nrow(row) != 1L) {
+      h01_abort("H01 provenance does not identify `%s` exactly once", input_id)
+    }
+    h01_declared_absolute_path(row$path[[1L]], root)
+  }
+  glasses_day <- readRDS(input_path("glasses_participant_day_enriched"))
+  chest_day <- readRDS(input_path("chest_participant_day_enriched"))
+  glasses_participant <- readRDS(
+    input_path("glasses_participant_enriched")
+  )
+  chest_participant <- readRDS(input_path("chest_participant_enriched"))
+
+  day_key <- c("site", "Id", "position", "local_date")
+  participant_key <- c("site", "Id", "position")
+  assert_unique_key(
+    glasses_day,
+    day_key,
+    object = "verified near-eye participant-day input"
+  )
+  assert_unique_key(
+    chest_day,
+    day_key,
+    object = "verified chest participant-day input"
+  )
+  assert_unique_key(
+    glasses_participant,
+    participant_key,
+    object = "verified near-eye participant input"
+  )
+  assert_unique_key(
+    chest_participant,
+    participant_key,
+    object = "verified chest participant input"
+  )
+
+  daily_metrics <- sum(contract$analysis_unit == "participant_day")
+  participant_metrics <- sum(contract$analysis_unit == "participant")
+  common_key <- c("site", "Id", "local_date")
+  common_days <- dplyr::inner_join(
+    dplyr::distinct(
+      glasses_day,
+      dplyr::across(dplyr::all_of(common_key))
+    ),
+    dplyr::distinct(
+      chest_day,
+      dplyr::across(dplyr::all_of(common_key))
+    ),
+    by = common_key,
+    relationship = "one-to-one"
+  )
+  c(
+    all_available_glasses =
+      nrow(glasses_day) * daily_metrics +
+        nrow(glasses_participant) * participant_metrics,
+    all_available_chest =
+      nrow(chest_day) * daily_metrics +
+        nrow(chest_participant) * participant_metrics,
+    paired_common_sample_glasses = nrow(common_days) * daily_metrics,
+    paired_common_sample_chest = nrow(common_days) * daily_metrics
+  )
+}
+
 verify_h01_model_data_artifacts <- function(
   root = project_root(),
   output_root = root
@@ -493,16 +558,8 @@ verify_h01_model_data_artifacts <- function(
     ,
     drop = FALSE
   ]
-  if (
-    nrow(all_rows[all_rows$placement == "glasses", , drop = FALSE]) != 12447L ||
-      nrow(all_rows[all_rows$placement == "chest", , drop = FALSE]) != 13763L ||
-      nrow(paired_rows[paired_rows$placement == "glasses", , drop = FALSE]) !=
-        9600L ||
-      nrow(paired_rows[paired_rows$placement == "chest", , drop = FALSE]) !=
-        9600L ||
-      any(paired_rows$analysis_unit != "participant_day")
-  ) {
-    h01_abort("H01 production row counts differ from the verified inputs")
+  if (any(paired_rows$analysis_unit != "participant_day")) {
+    h01_abort("H01 paired rows contain a non-daily metric")
   }
 
   scenario_status <- object$scenario_status
@@ -599,6 +656,28 @@ verify_h01_model_data_artifacts <- function(
         )
       }
     }
+  }
+  expected_row_counts <- h01_expected_model_row_counts(
+    provenance,
+    contract,
+    root
+  )
+  observed_row_counts <- c(
+    all_available_glasses = nrow(
+      all_rows[all_rows$placement == "glasses", , drop = FALSE]
+    ),
+    all_available_chest = nrow(
+      all_rows[all_rows$placement == "chest", , drop = FALSE]
+    ),
+    paired_common_sample_glasses = nrow(
+      paired_rows[paired_rows$placement == "glasses", , drop = FALSE]
+    ),
+    paired_common_sample_chest = nrow(
+      paired_rows[paired_rows$placement == "chest", , drop = FALSE]
+    )
+  )
+  if (!identical(observed_row_counts, expected_row_counts)) {
+    h01_abort("H01 production row counts differ from the verified inputs")
   }
   input_bundle_text <- paste(
     paste(

@@ -1,4 +1,4 @@
-# Build canonical site/solar context from the finalized metric date domain.
+# Build site/solar context from the finalized metric date domain.
 #
 # Source paths_io.R, assertions.R, site_solar_context.R before this file.
 
@@ -93,6 +93,46 @@ resolve_site_solar_metric_paths <- function(metric_paths, root) {
   }
   vapply(
     metric_paths,
+    normalizePath,
+    character(1),
+    winslash = "/",
+    mustWork = TRUE
+  )
+}
+
+resolve_site_solar_supplemental_date_paths <- function(
+  supplemental_date_paths = NULL
+) {
+  if (is.null(supplemental_date_paths)) {
+    return(stats::setNames(character(), character()))
+  }
+  if (
+    !is.character(supplemental_date_paths) ||
+      is.null(names(supplemental_date_paths)) ||
+      length(supplemental_date_paths) == 0L ||
+      anyNA(supplemental_date_paths) ||
+      any(!nzchar(supplemental_date_paths)) ||
+      anyNA(names(supplemental_date_paths)) ||
+      any(!nzchar(names(supplemental_date_paths))) ||
+      anyDuplicated(names(supplemental_date_paths)) ||
+      any(names(supplemental_date_paths) %in% site_solar_metric_roles()$input_role)
+  ) {
+    abort_pipeline(
+      paste0(
+        "`supplemental_date_paths` must be NULL or a uniquely named ",
+        "character vector whose names differ from the main metric roles"
+      )
+    )
+  }
+  missing <- !file.exists(supplemental_date_paths)
+  if (any(missing)) {
+    abort_pipeline(
+      "Supplemental site-date input(s) do not exist: %s",
+      paste(supplemental_date_paths[missing], collapse = ", ")
+    )
+  }
+  vapply(
+    supplemental_date_paths,
     normalizePath,
     character(1),
     winslash = "/",
@@ -231,6 +271,44 @@ read_site_solar_metric_inputs <- function(metric_paths, root) {
   inputs
 }
 
+read_site_solar_supplemental_dates <- function(supplemental_date_paths) {
+  inputs <- lapply(
+    supplemental_date_paths,
+    readRDS
+  )
+  names(inputs) <- names(supplemental_date_paths)
+  for (input_role in names(inputs)) {
+    data <- inputs[[input_role]]
+    if (!is.data.frame(data) || nrow(data) == 0L) {
+      abort_pipeline(
+        "Supplemental site-date input `%s` must be a non-empty data frame",
+        input_role
+      )
+    }
+    assert_columns(
+      data,
+      c("site", "local_date"),
+      object = paste0("supplemental site-date input `", input_role, "`")
+    )
+    assert_no_missing_key(
+      data,
+      c("site", "local_date"),
+      object = paste0("supplemental site-date input `", input_role, "`")
+    )
+    if (
+      !is.character(data$site) ||
+        !inherits(data$local_date, "Date") ||
+        length(setdiff(unique(data$site), expected_site_codes())) > 0L
+    ) {
+      abort_pipeline(
+        "Supplemental site-date input `%s` has invalid site/date fields",
+        input_role
+      )
+    }
+  }
+  inputs
+}
+
 plain_participant_day_keys <- function(data) {
   tibble::tibble(
     site = as.character(data$site),
@@ -281,15 +359,25 @@ validate_site_solar_resolution_domains <- function(inputs) {
   dplyr::bind_rows(unlist(rows, recursive = FALSE))
 }
 
-derive_site_solar_date_domain <- function(inputs) {
+derive_site_solar_date_domain <- function(
+  inputs,
+  supplemental_dates = list()
+) {
   daily <- c("glasses_daily", "chest_daily")
-  dplyr::bind_rows(lapply(daily, function(input_role) {
+  main_dates <- lapply(daily, function(input_role) {
     data <- inputs[[input_role]]
     tibble::tibble(
       site = as.character(data$site),
       local_date = as.Date(data$local_date)
     )
-  })) |>
+  })
+  added_dates <- lapply(supplemental_dates, function(data) {
+    tibble::tibble(
+      site = as.character(data$site),
+      local_date = as.Date(data$local_date)
+    )
+  })
+  dplyr::bind_rows(c(main_dates, added_dates)) |>
     dplyr::distinct() |>
     dplyr::arrange(.data$site, .data$local_date)
 }
@@ -453,6 +541,7 @@ build_site_solar_context_artifacts <- function(
   root = project_root(),
   site_metadata_path = file.path(root, "config", "site_metadata.csv"),
   metric_paths = NULL,
+  supplemental_date_paths = NULL,
   input_root = root
 ) {
   root <- normalizePath(root, winslash = "/", mustWork = TRUE)
@@ -463,6 +552,10 @@ build_site_solar_context_artifacts <- function(
   )
   paths <- site_solar_artifact_paths(root)
   metric_paths <- resolve_site_solar_metric_paths(metric_paths, root)
+  supplemental_date_paths <-
+    resolve_site_solar_supplemental_date_paths(
+      supplemental_date_paths
+    )
   site_metadata_path <- normalizePath(
     site_metadata_path,
     winslash = "/",
@@ -470,8 +563,14 @@ build_site_solar_context_artifacts <- function(
   )
   site_metadata <- read_site_metadata(site_metadata_path)
   inputs <- read_site_solar_metric_inputs(metric_paths, root)
+  supplemental_dates <- read_site_solar_supplemental_dates(
+    supplemental_date_paths
+  )
   resolution_audit <- validate_site_solar_resolution_domains(inputs)
-  date_domain <- derive_site_solar_date_domain(inputs)
+  date_domain <- derive_site_solar_date_domain(
+    inputs,
+    supplemental_dates = supplemental_dates
+  )
   context <- build_site_solar_context(
     site_dates = date_domain,
     site_metadata = site_metadata
@@ -479,12 +578,19 @@ build_site_solar_context_artifacts <- function(
   join_audit <- audit_site_solar_context_joins(inputs, context)
 
   input_provenance <- site_solar_input_provenance(
-    metric_paths,
+    c(metric_paths, supplemental_date_paths),
     input_root = input_root
   )
   site_metadata_sha256 <- artifact_sha256(site_metadata_path)
   settings <- tibble::tibble(
-    date_domain_rule = "typed_union_of_glasses_and_chest_daily_metric_keys",
+    date_domain_rule = if (length(supplemental_date_paths) == 0L) {
+      "typed_union_of_glasses_and_chest_daily_metric_keys"
+    } else {
+      paste0(
+        "typed_union_of_main_daily_metric_and_declared_",
+        "supplemental_site_date_keys"
+      )
+    },
     site_dates = nrow(date_domain),
     sites = dplyr::n_distinct(date_domain$site),
     dst_transition_site_dates = sum(context$local_day_crosses_dst),

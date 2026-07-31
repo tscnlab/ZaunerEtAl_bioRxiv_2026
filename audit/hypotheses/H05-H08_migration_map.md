@@ -1594,6 +1594,12 @@ site-support classification reopens H08.
 
 # Canonical output contract for all four notebooks
 
+Each completed audit HTML must also contain a visible, evaluated R code cell
+that prints the exact Wilkinson formulas passed to every selected and
+comparison model. The cell must obtain them from the actual formula builder or
+fitted objects; one generic response formula is allowed only for genuinely
+identical model structures.
+
 Every H05–H08 placement/scenario run must produce:
 
 1. an exact model/correlation frame RDS with keys and inclusion reasons;

@@ -14,7 +14,7 @@ It passed:
 - expected dimensions for 897 chest and 811 glasses participant-days;
 - whole-cohort daily, long, admissibility, support, and censoring invariants;
 - all 36 fixed strict-`MEDI > 250` timing-map groups and normalization;
-- exact state-interval projection, longest observed/possible/exact bout
+- exact state-interval projection, longest observed/possible/exact period
   reconstruction, and threshold-timing value/support/reason reconstruction
   for all 1,708 eligible participant-days.
 - the approved all-841-candidate M10 rule: M10 level remains estimable, while

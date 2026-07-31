@@ -37,12 +37,22 @@ first_verification <- verify_h01_model_data_artifacts(
   root = root,
   output_root = first_root
 )
+expected_counts <- h01_expected_model_row_counts(
+  first$object$input_provenance,
+  first$object$metric_contract,
+  root
+)
+daily_metric_count <- sum(
+  first$object$metric_contract$analysis_unit == "participant_day"
+)
 stopifnot(
   first$status == "PASS_WITH_DECLARED_UNAVAILABLE_SCENARIO",
   first_verification$status == "PASS_WITH_DECLARED_UNAVAILABLE_SCENARIO",
   first_verification$h01_metrics == 17L,
-  first_verification$model_rows == 45410L,
-  first_verification$paired_daily_keys == 640L,
+  first_verification$model_rows == sum(expected_counts),
+  first_verification$paired_daily_keys ==
+    expected_counts[["paired_common_sample_glasses"]] /
+      daily_metric_count,
   all(first$object$model_rows$data_scenario_id == "main"),
   all(
     first$object$model_rows$model_implementation_id == "new_h01_h11"

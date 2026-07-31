@@ -203,12 +203,45 @@ file, but they are excluded from calculations that require a complete time
 interval. One MPI sleep-diary record without a wake time is handled in the
 same way. No questionnaire total or factor score is recalculated.
 
+The checked manuscript-prepared sensitivity files are also assembled here,
+before daylight information is calculated. This lets the daylight table cover
+the dates required by both datasets while keeping the light-exposure values in
+the two datasets separate.
+
+```{r}
+#| label: build-manuscript-prepared-inputs
+
+manuscript_prepared_build <- build_manuscript_prepared_data(
+  root = root,
+  output_root = root
+)
+manuscript_prepared_verification <-
+  verify_manuscript_prepared_data_artifacts(
+    root = root,
+    output_root = root
+  )
+stopifnot(
+  manuscript_prepared_verification$status == "PASS",
+  manuscript_prepared_verification$model_implementation_id ==
+    "new_h01_h11"
+)
+
+supplemental_site_date_paths <- stats::setNames(
+  manuscript_prepared_build$paths$rds[["participant_day_metrics"]],
+  "manuscript_prepared_participant_day"
+)
+```
+
 ## Add site and daylight information
 
 The analysis uses the checked location and time-zone information for all nine
 study sites. Daylight information is calculated for every site and local date
-that occurs in either the near-eye or chest data. Before these values are
-saved, the daily, 30-minute and one-hour files must contain the same sets of
+required by either the main data or the manuscript-prepared sensitivity. Two
+IZTECH dates occur only in the latter because the main analysis excludes their
+complete day-long flat-zero melEDI records. Keeping those dates in the
+daylight table allows the registered all-zero-inclusive comparison to be run;
+it does not return them to the main data. Before these values are saved, the
+main daily, 30-minute and one-hour files must contain the same sets of
 participant-days. Civil dawn, civil dusk and photoperiod are defined using a
 solar altitude of −6 degrees.
 
@@ -222,8 +255,14 @@ stored separately.
 ```{r}
 #| label: build-site-solar-context
 
-site_solar_build <- build_site_solar_context_artifacts(root = root)
-site_solar_verification <- verify_site_solar_context_artifacts(root = root)
+site_solar_build <- build_site_solar_context_artifacts(
+  root = root,
+  supplemental_date_paths = supplemental_site_date_paths
+)
+site_solar_verification <- verify_site_solar_context_artifacts(
+  root = root,
+  supplemental_date_paths = supplemental_site_date_paths
+)
 stopifnot(identical(site_solar_verification$status, "PASS"))
 ```
 
@@ -555,15 +594,6 @@ this sensitivity.
 ```{r}
 #| label: build-manuscript-prepared-data
 
-manuscript_prepared_build <- build_manuscript_prepared_data(
-  root = root,
-  output_root = root
-)
-manuscript_prepared_verification <-
-  verify_manuscript_prepared_data_artifacts(
-    root = root,
-    output_root = root
-  )
 stopifnot(
   manuscript_prepared_verification$status == "PASS",
   manuscript_prepared_verification$model_implementation_id ==
@@ -741,7 +771,7 @@ input cannot be mistaken for the version reviewed here.
 expected_normalization_manifest_sha256 <-
   "e3d484711abb54f69d63ff302e5a0329efda3fd0a8c85feaf9cc4f850005c9ab"
 expected_base_manifest_sha256 <-
-  "fd48dc5d1ecd5da125dd2c360c32239f0adfe7009eca881f5838b0e61b81b13d"
+  "142d1044dd7e6a566e45e3a5c56033b1e8251e100c0d7c7523564c824950a0e4"
 
 stopifnot(
   identical(

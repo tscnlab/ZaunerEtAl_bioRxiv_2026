@@ -34,11 +34,11 @@ must be used for the main and manuscript-prepared datasets.
 | Darkest 10-hour mean melEDI | Gaussian after `log10(value + 0.1)` | High-risk zero-mass check; Tweedie/log alternative |
 | Time above 1,000 lx melEDI | Tweedie with log link | Zero mass, tail, dispersion and prediction-bound checks |
 | Time above 250 lx melEDI during wake | Tweedie with log link | Zero mass, tail and waking-duration-bound checks |
-| Time below 10 lx melEDI before sleep | Tweedie with log link | Three-hour ceiling check; shifted-log Gaussian alternative |
+| Time below 10 lx melEDI before sleep | Tweedie with log link | Calendar-day cumulative duration; 24-hour physical bound; values strictly above six hours trigger an audit warning without truncation |
 | Time below 1 lx melEDI during sleep | Tweedie with log link | Distribution check; identity-Gaussian alternative |
 | Longest continuous period above 250 lx melEDI | Gaussian after `log10(value + 0.1)` | Mandatory exactly-identified-only sensitivity |
 | Midpoint of the brightest 10 hours | Gaussian with identity link | Verify one continuous daytime range |
-| Midpoint of the darkest 10 hours | Gaussian after subtracting 24 hours from values after noon | Verify one continuous range around midnight |
+| Midpoint of the darkest 10 hours | Gaussian after subtracting 24 hours from values strictly later than 16:00 | Verify the approved strict boundary; retain the noon conversion as a same-row, same-model sensitivity |
 | Mean timing above 250 lx melEDI | Gaussian with identity link | Verify one continuous clock range |
 | First light timing above 250 lx melEDI | Gaussian with identity link | Verify no late-evening cluster |
 | Last light timing above 250 lx melEDI | Gaussian with identity link | Verify no early-morning cluster |
@@ -81,3 +81,10 @@ support and do not replace the formal family.
 On 2026-07-30, before any rebuilt H01 exposure model was fitted, the author
 approved the complete 17-metric response-family package and the formal fourth
 17-test site-versus-latitude Benjamini--Hochberg family.
+
+On 2026-07-31, after the two required response diagnostics identified
+construct and clock-cut issues, the author approved `H01-007` and `H01-008`.
+These decisions retain the Tweedie-log and Gaussian response families,
+respectively. They clarify the pre-sleep construct and amend only the L10
+midpoint's prefit clock conversion. The complete H01 analysis must be rerun
+from newly pinned inputs before any result is released.

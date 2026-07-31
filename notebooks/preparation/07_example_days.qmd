@@ -1,0 +1,187 @@
+---
+title: "Preparation 07: Example days from each study site"
+subtitle: "One-minute melEDI, daylight, diary periods, and declared non-wear"
+execute:
+  echo: true
+  warning: true
+  message: true
+  error: false
+  freeze: false
+---
+
+## Purpose
+
+This page shows what the prepared one-minute data look like before any
+hypothesis model is fitted. It displays one participant-day from each study
+site, together with local daylight, diary-defined periods, and declared
+non-wear.
+
+The examples were chosen with a fixed random seed. A day could be selected
+only if it passed the main coverage rule, contained all 1,440 local-clock
+minutes, and had a complete diary sleep window with one visible sleep-window
+start and one wake time. The random selection was not repeated to find
+especially tidy or favourable examples.
+
+## Prepare the review page
+
+```{r}
+#| label: setup-example-days
+
+root_hint <- Sys.getenv("QUARTO_PROJECT_DIR", unset = getwd())
+source(file.path(root_hint, "scripts/pipeline/paths_io.R"))
+root <- project_root(root_hint)
+source(file.path(
+  root,
+  "scripts/pipeline/verify_prepared_day_showcase_artifacts.R"
+))
+
+showcase_paths <- prepared_day_showcase_verifier_paths(root)
+verification <- verify_prepared_day_showcase_artifacts(root = root)
+if (!identical(verification$status, "PASS")) {
+  print(verification$failures)
+  stop("Example-day files did not pass verification.", call. = FALSE)
+}
+
+selected_days <- readr::read_csv(
+  showcase_paths$selected_days,
+  show_col_types = FALSE,
+  progress = FALSE
+)
+eligible_counts <- readr::read_csv(
+  showcase_paths$eligible_day_counts,
+  show_col_types = FALSE,
+  progress = FALSE
+)
+```
+
+## Selected participant-days
+
+The 80% daily rule applies to the complete 24-hour measurement cycle. It
+combines near-eye measurements while participants were awake with bedside
+measurements during the diary-defined sleep window. This is an intentional
+way to retain information across the full day; it does not imply that the
+bedside sleep measurement was made at the eye.
+
+```{r}
+#| label: tbl-example-day-selection
+#| tbl-cap: "Participant-days selected with the fixed random seed."
+
+selection_table <- selected_days |>
+  dplyr::transmute(
+    Site = paste0(.data$location, " (", .data$site, ")"),
+    Participant = .data$participant,
+    Date = as.character(.data$local_date),
+    `Diary sleep-window start` = .data$sleep_preparation_time,
+    Wake = .data$wake_time,
+    `Civil dawn–dusk` = paste0(.data$civil_dawn, "–", .data$civil_dusk),
+    `Valid melEDI` = sprintf(
+      "%s min (%.1f%%)",
+      .data$valid_melEDI_minutes,
+      .data$valid_melEDI_percent
+    ),
+    `Declared non-wear` = paste0(
+      .data$declared_nonwear_minutes,
+      " min"
+    ),
+    `Other unavailable` = paste0(
+      .data$other_unavailable_minutes,
+      " min"
+    ),
+    `Eligible days at site` = .data$eligible_days_at_site
+  )
+
+knitr::kable(selection_table, align = "llcccccccc")
+```
+
+The table reports the actual number of one-minute melEDI values shown for
+each day. Declared non-wear and other unavailable minutes remain missing; the
+plot does not connect the line across those gaps. The 50% hourly requirement
+does not remove observed one-minute values from this figure. It is used only
+when an hourly summary is calculated.
+
+## One-minute profiles
+
+![One randomly selected qualifying participant-day from each site. The black
+trace is the prepared one-minute melEDI series. Dark blue background shading
+marks civil night. The opaque strip below zero shows waking daytime, the three
+hours before sleep, diary-defined sleep, and declared non-wear. The dashed step
+shows the 250 lx, 10 lx, and 1 lx contextual reference values for those three
+diary periods.](../../artifacts/10_figures/prepared_day_showcase.png){#fig-example-days
+fig-alt="Nine panels, one per study site, show one-minute melEDI across a local
+24-hour day. A coloured strip below each panel marks waking daytime in blue,
+the three hours before sleep in orange, sleep in dark navy, and declared
+non-wear in red. Translucent dark blue background marks civil night. Black
+exposure traces and gaps differ across sites and participant-days."
+width="100%"}
+
+### How to read the figure
+
+- The black line and points are one-minute melEDI values. Zero is a measured
+  value and is retained; a blank segment means that no analysis-ready melEDI
+  value was available because the record or signal was missing or invalid, or
+  because the complete day failed the 80% rule. A partly observed hour is not
+  blanked merely because it contains fewer than 30 valid minutes.
+- The background marks photoperiod: the unshaded interval is civil day and the
+  translucent dark-blue interval is civil night, when the Sun was more than
+  6° below the horizon.
+- The opaque strip below zero shows the daily periods used in the analysis:
+  waking daytime, the three hours before sleep, and the diary-defined sleep
+  window. “Brown period” is the technical variable name for these three
+  periods.
+- Red sections overwrite the same strip where the wear log recorded “off”
+  outside the diary-defined sleep window. Wear-log entries do not determine
+  sleep.
+- The dashed step is a contextual reference, not a fitted value: 250 lx
+  during waking daytime, 10 lx in the three hours before sleep, and 1 lx
+  during sleep.
+
+## Checks completed
+
+The display was checked against the prepared one-minute data rather than
+against a manually copied figure. A SHA-256 checksum is a digital fingerprint
+that changes if a file changes.
+
+```{r}
+#| label: tbl-example-day-verification
+#| tbl-cap: "Independent checks of the example-day files."
+
+reported_checks <- c(
+  "files::all_required",
+  "manifest::file_hashes",
+  "selection::one_day_per_site",
+  "selection::fixed_seed_reproduction",
+  "source_data::complete_minute_grid",
+  "source_data::prepared_minute_parity",
+  "source_data::nonwear_mask",
+  "source_data::solar_context_parity",
+  "figures::nonempty_png_and_svg"
+)
+check_names <- c(
+  "All required inputs and outputs are present",
+  "Digital fingerprints match the files",
+  "Exactly one day is shown for every site",
+  "The fixed random selection can be reproduced",
+  "Every displayed day contains 1,440 clock minutes",
+  "Displayed values and states match the prepared data",
+  "Declared non-wear has no analysis-ready melEDI",
+  "Dawn, dusk, and photoperiod match the site and date",
+  "Both high-resolution PNG and vector SVG exist"
+)
+verification_table <- verification$checks |>
+  dplyr::filter(.data$check_id %in% reported_checks) |>
+  dplyr::mutate(
+    Check = check_names[match(.data$check_id, reported_checks)]
+  ) |>
+  dplyr::select(Check, Status = status)
+
+knitr::kable(verification_table, align = "lc")
+```
+
+All `r nrow(verification$checks)` programmed checks passed. The source-data
+file contains `r format(verification$summary$source_rows, big.mark = ",")`
+one-minute rows: 1,440 rows for each of the nine selected participant-days.
+
+The exact values behind the figure are stored in
+`artifacts/11_source_data/prepared_day_showcase.csv`; the selection table and
+selection settings are stored in
+`artifacts/08_diagnostics/prepared_day_showcase/`.

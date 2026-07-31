@@ -178,6 +178,12 @@ validate_mder_coverage_settings <- function(
     "coverage_rule_id",
     "coverage_signal",
     "daily_denominator_domain",
+    "daily_eligibility_basis",
+    "hourly_gate_scope",
+    "minute_values_masked_by_hour_gate",
+    "hour_screened_sensitivity_available",
+    "all_zero_medi_exclusion_applied",
+    "all_zero_medi_sensitivity_available",
     "diary_sleep_excluded_from_denominator",
     "expected_wall_minutes_per_hour",
     "expected_wall_minutes_per_day",
@@ -213,6 +219,13 @@ validate_mder_coverage_settings <- function(
   valid <- selected$coverage_rule_id == "A" &
     selected$coverage_signal == "MEDI" &
     selected$daily_denominator_domain == "all_pseudo_local_wall_minutes" &
+    selected$daily_eligibility_basis ==
+      "finite_medi_minutes_across_fixed_24_hour_cycle" &
+    selected$hourly_gate_scope == "hourly_metrics_only" &
+    !selected$minute_values_masked_by_hour_gate &
+    selected$hour_screened_sensitivity_available &
+    selected$all_zero_medi_exclusion_applied &
+    selected$all_zero_medi_sensitivity_available &
     !selected$diary_sleep_excluded_from_denominator &
     selected$expected_wall_minutes_per_hour == 60 &
     selected$expected_wall_minutes_per_day == 1440 &
@@ -221,8 +234,10 @@ validate_mder_coverage_settings <- function(
   if (anyNA(valid) || !all(valid)) {
     abort_pipeline(
       paste0(
-        "The MDER support gate requires primary Rule A: 50% hourly and ",
-        "80% daily MEDI coverage over the full pseudo-local wall cycle"
+        "The MDER support gate requires primary Rule A: 80% daily MEDI ",
+        "coverage over the fixed 24-hour cycle, with the 50% hourly ",
+        "requirement restricted to hourly summaries and otherwise eligible ",
+        "all-zero melEDI days excluded"
       )
     )
   }
