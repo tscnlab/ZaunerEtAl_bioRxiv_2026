@@ -1,0 +1,1043 @@
+# H01 worker handoff
+
+Date: 2026-08-01  
+Worker scope: H01 only  
+Status: **Stage 3 author-approved; analysis-preparation and provenance
+companion rendered, verified, and ready for coordinator closure**  
+Primary placement: near eye  
+Complementary placement: chest  
+Runtime: R 4.6.1; Quarto 1.9.37
+
+## Authoritative current disposition
+
+This section supersedes every earlier gate-status or production-incomplete
+statement retained later in this file as audit history. `H01-005` and
+`H01-006` remain author-approved. The jointly pinned main and
+manuscript-prepared manifests match the prefit checkpoint. The response
+construct is calendar-day cumulative time below 10 lx melEDI before sleep,
+without truncation; strictly above six hours is an audit warning only. The
+primary L10 midpoint conversion subtracts 24 hours only for values strictly
+after 16:00, with the noon cut retained as a same-row sensitivity.
+
+The three-metric response-family assessment applied the same candidate
+implementation and model rows in both data scenarios. It changed only time
+below 10 lx melEDI before sleep, from the submitted-style Tweedie/log model to
+a Gaussian identity model reported as an ordinary difference. The
+submitted-style Tweedie/log family was retained for time below 1 lx melEDI
+during sleep, and the shifted-log Gaussian family was retained for darkest-10-
+hour mean melEDI because no common alternative improved the predeclared
+diagnostic screen across scenarios and placements. This is the approved
+calculation baseline; no family was switched silently.
+
+### Analysis-preparation and provenance companion completion
+
+The author approved the standalone results report and authorized the
+analysis-preparation and provenance companion under H01-010/CHG-089. The
+coordinator then completed the shared website integration under CHG-090,
+placing the companion immediately after H01 in both the Nature Health render
+list and sidebar. The H01 worker did not edit shared Quarto configuration.
+
+The source at
+`audit/hypotheses/H01/H01_analysis_preparation.qmd` is a scientific reader's
+record of the full data-to-result chain. It documents the pinned inputs and
+construct checks, 17-metric response package, eight analysis scenarios,
+exact fitted samples and exclusions, response transformations and units,
+exact Wilkinson formulas and model engines, estimands, four 17-test
+Benjamini--Hochberg families, hierarchical site contrasts, production
+bootstrap, diagnostics, influence checks, sensitivity branches, execution
+order, environment, and manifest chain. It links reciprocally to the H01
+results page and contains no internal workflow-stage narrative.
+
+Rendering is intentionally bounded. It verifies current SHA-256 identities,
+reads stored results, and calculates only descriptive summaries from already
+prepared H01 rows. Its executable R chunks contain no call to `lm()`,
+`lmer()`, `glmmTMB()`, `emmeans()`, `predict()`, `simulate()`, model-specific
+H01 fit functions, or bootstrap functions. No fit, prediction, simulation,
+response-family assessment, marginal mean, or bootstrap was repeated.
+
+The integrated H01-only render completed all 53 steps and exited 0 under R
+4.6.1 and Quarto 1.9.37. The final page contains 20 semantic `gt` tables, two
+reader figures with captions and non-empty alt text, and an informational
+execution-boundary callout. The authoring QMD and downloadable website QMD are
+byte-identical. Reciprocal links resolve in both rendered pages. Each figure
+has a paired full-precision source CSV; exact byte copies are available from
+the page support directory and match their audited sources by SHA-256.
+
+Both reader figures were inspected at their original rendered dimensions.
+Their metric labels, axis labels, tick labels, legend, shapes, and units are
+readable; no clipping, overlap, distorted text, awkward wrapping, or
+legend/data imbalance was found. Browser automation cannot inspect local
+`file://` pages under its URL policy, so this visual finding is limited to the
+original rendered PNGs, while page structure, tables, links, captions, and
+alt text were checked directly from the final HTML.
+
+The shared REPORT-007 verifier and the H01-specific preparation test passed:
+23 Quarto figure containers (20 table containers, one Mermaid diagram, and
+two image figures), 20 `gt` tables, two image figures, and 53 manifest
+identities. The following additional read-only H01 verifiers also passed:
+
+- `test_h01_bootstrap_outputs.R` (128 preserved production targets);
+- `test_h01_contract.R`;
+- `test_h01_fit_outputs.R`;
+- `test_h01_reporting_inputs.R`;
+- `test_h01_response_family_candidates.R`.
+
+The synthetic-fit unit tests were not rerun during this transition because
+the authorization explicitly prohibited new model or bootstrap execution.
+Their earlier passing results remain recorded below.
+
+| Final report/provenance identity | SHA-256 |
+|---|---|
+| `notebooks/hypotheses/H01.qmd` | `56d506d4f772ba11ef92353122b12f077adf83323946e434ea4b3d1024b9a7e5` |
+| `_build/nathealth/notebooks/hypotheses/H01.html` | `c2536fccd665a2845ab0252c1a98990423f10ddb040a59df25c2b5d02756fba1` |
+| `audit/hypotheses/H01/H01_analysis_preparation.qmd` | `c6afa418af2b833e44a7bfb68544f9c6e55c7218e8d6c3a9318cd0ecac72bf1c` |
+| Website-copy preparation QMD | `c6afa418af2b833e44a7bfb68544f9c6e55c7218e8d6c3a9318cd0ecac72bf1c` |
+| `_build/nathealth/audit/hypotheses/H01/H01_analysis_preparation.html` | `93bf0bad2763de3fe345b09f7f5867468e648a1c0ab682f65db5482e820b2fc8` |
+| Preparation manifest builder | `4828bfc279758b1b240e298ecbddd1ef2aace6ad1df8db5dfece1153b2f78b8d` |
+| Preparation verifier | `12b04008e60cab737780947308042634ee06643dddc450502754fade11228bea` |
+| Preparation report manifest | `9fbf278548796bb418708de5117ea94ca08d754d550f9919351d24f30c2aaaa4` |
+| Final worker inventory builder | `1bcfdc0eaee6a7d63e16368b87a33e3b0499789a756af1f551594d6f2d6f8a63` |
+| Model-results manifest | `2cc4081ae973f7d056539f7aef45c4f3a2ec7cbaa018346fff3dba564ec356b7` |
+| Fitted-sample figure source/download | `760e634fd6139b8c6561d185c95fb5c06ef5b41637c7b20f8c61b0e627ff37c7` |
+| Model-frame-retention figure source/download | `28cc582f2778c849025f2ea77fee2036ce693378630d6f7e172adc0db6bb6d5b` |
+| Stage 3 reporting verifier | `0acf7206aadae20d475de0ed9196255670da4f7debba72945575782bdfc29e05` |
+| Coordinator-owned Nature Health profile | `4b7ce91614a6d8f76f2526ced5aed3e2064fd2a70113018057b7a11b3916c803` |
+| `renv.lock` | `3bf99c633fb123626eb14d29f0847b91f71030c92e90331fe401e3204bca8350` |
+
+The exhaustive `artifacts/12_manifests/H01_worker_artifacts.csv` inventories
+1,279 H01-owned files, including this handoff, the companion source and
+website copy, page assets, tests, scripts, model outputs, tables, figures,
+source data, and nested manifests. It deliberately omits its own row to avoid
+a circular checksum; its final SHA-256 is therefore reported alongside this
+handoff to the coordinator.
+
+Commands used for this transition were limited to H01 rendering, manifest
+assembly, and read-only verification:
+
+```sh
+quarto render notebooks/hypotheses/H01.qmd --profile nathealth
+quarto render audit/hypotheses/H01/H01_analysis_preparation.qmd --profile nathealth
+Rscript --vanilla scripts/hypotheses/H01/build_h01_preparation_report_manifest.R
+Rscript --vanilla tests/hypotheses/H01/test_h01_preparation_report.R
+Rscript --vanilla tests/hypotheses/H01/test_h01_reporting_inputs.R
+Rscript --vanilla tests/hypotheses/H01/test_h01_bootstrap_outputs.R
+Rscript --vanilla tests/hypotheses/H01/test_h01_contract.R
+Rscript --vanilla tests/hypotheses/H01/test_h01_fit_outputs.R
+Rscript --vanilla tests/hypotheses/H01/test_h01_response_family_candidates.R
+```
+
+### Stage 3 standalone results report completion
+
+The accepted four-stage workflow has completed the author-approved standalone
+results report. Stage 1 is satisfied by the approved audit and gate records.
+Stage 2 is complete and its accepted comparison source and rendered page are
+preserved without content changes at:
+
+- `audit/hypotheses/H01/02_implementation_and_v0_comparison.qmd`, SHA-256
+  `af6a50df9d8f384f7a07053bdb543bd9c475f8dc13736ba3cb432f693b6628b3`;
+- `_build/nathealth/audit/H01/02_implementation_and_v0_comparison.html`,
+  SHA-256
+  `4daa424552ce83cd0a5879cae4ced62d6ca75c4703bc0a1b3be2806ff332c10e`.
+
+The unnumbered production-bootstrap gate between Stages 2 and 3 is complete.
+The Stage 3 source at `notebooks/hypotheses/H01.qmd` is now a standalone
+reader-facing report. It contains no comparison with the submitted analysis,
+internal gate history, discarded response-family candidates, or construction
+variants. It quotes the preregistered H1 hypothesis, reports the relevant
+deviations, and explains the scientific question, selected methods, results,
+interpretation, limitations, and registered sensitivities in manuscript
+language. Near-eye results are primary and chest results are complementary.
+The first sensitivity-dataset explanation uses the approved exact term
+“gap-timing-unaware dataset,” states that the general 50%-per-hour and
+80%-per-day coverage rules still apply, and explains the missing-observation
+timing distinction from the time-sensitive primary metric dataset; later uses
+call it the primary dataset and gap-timing-unaware dataset.
+
+Visible evaluated R cells show the exact Wilkinson formula objects supplied
+to fitted and comparison models. The report gives exact fitted participants,
+participant-days, observations or hours, and sites; 95% confidence intervals;
+the four separate 17-test Benjamini–Hochberg families; hierarchical
+site-versus-equally-weighted-overall-site `emmeans` contrasts only when the
+overall site test is supported; stored production-bootstrap R² summaries;
+diagnostic evidence and model-level acceptability assessments; registered
+sensitivities; and a matched near-eye-versus-chest placement display. All
+reader-facing p-values follow REPORT-008, and site names, order, and colours
+follow DISPLAY-001 without changing model coding or inference.
+
+The coordinator repaired the stale shared Quarto project cache recoverably at
+`/private/tmp/nathealth-quarto-cache-backup.AYhadH/project-cache` and rendered
+only H01 using:
+
+```sh
+env R_PROFILE_USER=/dev/null \
+  R_LIBS_USER=/Users/zauner/Documents/Arbeit/12-TUM/MeLiDos/WP2.2.5_Data_Analysis/ZaunerEtAl_bioRxiv_2026/renv/library/macos/R-4.6/aarch64-apple-darwin23 \
+  RENV_PATHS_SANDBOX=/private/tmp/H01-renv-sandbox-R4.6.1 \
+  NATHEALTH_PROJECT_ROOT=/Users/zauner/Documents/Arbeit/12-TUM/MeLiDos/WP2.2.5_Data_Analysis/ZaunerEtAl_bioRxiv_2026 \
+  quarto render notebooks/hypotheses/H01.qmd --profile nathealth
+```
+
+All 36 R cells and all 75 reported render steps completed, and the render
+exited 0. No H01 study fit, bootstrap, prediction, simulation, response-family
+selection, or other scientific calculation was repeated. The two modelling
+smoke tests use only their existing small synthetic fixtures. No shared Quarto
+configuration, shared preparation, dependency, manuscript, submission, or
+central-ledger file was edited by the H01 worker.
+
+The author-comment revision implements REPORT-012 with the exact
+**Answer in brief** note immediately after the hypothesis and analytical
+question. The former standalone “Results in brief” heading is absent. It adds
+a 17-row publication summary that combines the adjusted model decisions,
+photoperiod and latitude effects with 95% confidence intervals, and exact
+fitted samples while retaining the detailed test and effect tables. It also
+adds the requested site-by-metric matrix for the eight metrics with a
+supported overall site test; cells show the site-specific difference or ratio
+with 95% confidence interval and bold only the within-metric adjusted
+deviations. Exact
+samples are split into eight scenario/placement tabs. Formula cells now render
+semantic `gt` tables directly from the exact evaluated Wilkinson objects and
+do not expose transient R environments.
+
+The final profile HTML contains 36 semantic `gt` tables with table heads and
+bodies and 10 local figures with non-empty alt text; every local image
+reference resolves, no cell-output error is present, and the visible page has
+no Stage 2/pilot banner, prohibited historical scenario terminology, leaked
+`<environment: ...>` string, or duplicate photoperiod/latitude coverage
+section. The publication tables use semantic `gt` construction with
+Quarto-owned captions and labels. The exact-sample and representative-
+diagnostic displays use two panel tabsets instead of oversized single tables.
+Automated browser control does not permit a reload of the local `file://`
+page, so browser-level table appearance is not overclaimed here.
+
+All 10 reader-facing figure PNGs were inspected directly at original
+resolution. Axes, ticks, legends, facets, units, and direct labels are
+readable; no clipping, cropping, distorted text, orphaned units, or colour/
+order inconsistency was found. The near-eye and chest site-contrast figures
+now use two facet columns, larger 9--10.5 pt plot text, and taller canvases.
+The matched-placement figure is placed in the results overview and uses exact
+common samples; the all-available support heatmap is explicitly not used to
+infer a placement difference. Four preserved point-model diagnostic plots and
+their source CSVs make representative Gaussian and Tweedie review signals
+inspectable, with the formal Tweedie simulation values reported separately.
+The two photoperiod/latitude coverage figures are retained with checksums and
+marked `retained_not_displayed` because the section duplicates the descriptive
+report. This is an acceptable REPORT-011 visual-QA result.
+
+`tests/hypotheses/H01/test_h01_reporting_inputs.R` now enforces the accepted
+Stage 3 production and presentation contract: no preview rows, at least 1,000
+retained successful joint refits for every estimable target, exactly one
+**Answer in brief** callout, 36 semantic tables, 10 alt-text-bearing figures,
+eight sample tabs, four representative diagnostic figures, no formula-
+environment leakage, and preservation-but-nondisplay of both coverage figures.
+Under R 4.6.1 and the activated project library, all H01 tests pass:
+
+- `test_h01_reporting_inputs.R`;
+- `test_h01_contract.R`;
+- `test_h01_fit_outputs.R`;
+- `test_h01_response_family_candidates.R`;
+- `test_h01_bootstrap_outputs.R`;
+- `test_h01_modeling.R`;
+- `test_h01_response_gate_repairs.R`.
+
+The production-bootstrap test verifies all 128 stored canonical draw files,
+their audit statuses, and all 95% intervals; it does not refit them. The
+model-results manifest had one stale non-scientific code checksum for
+`build_h01_worker_manifest.R`; that H01-owned provenance row was refreshed to
+the current file hash and byte size, after which the production-bootstrap
+verification passed. No result artifact changed.
+
+| Current Stage 3 identity | SHA-256 |
+|---|---|
+| `notebooks/hypotheses/H01.qmd` | `56d506d4f772ba11ef92353122b12f077adf83323946e434ea4b3d1024b9a7e5` |
+| `_build/nathealth/notebooks/hypotheses/H01.html` | `c2536fccd665a2845ab0252c1a98990423f10ddb040a59df25c2b5d02756fba1` |
+| Stage 3 reporting-input builder | `79025b9f020d397f8cb31d4954c68d9a47502213bf4f86825bd159256f84a75b` |
+| Stage 3 reporting manifest | `2cc5fca0091ae280db0efed955ac1f55c91056ec2933b23b346653e40819454a` |
+| Stage 3 reporting provenance | `cde180c61514deed541f5a11b1bb112d43c743cb6269c5a01eacc50bab4cffc3` |
+| Model-results manifest | `2cc4081ae973f7d056539f7aef45c4f3a2ec7cbaa018346fff3dba564ec356b7` |
+| Stage 3 reporting test | `0acf7206aadae20d475de0ed9196255670da4f7debba72945575782bdfc29e05` |
+| Main model-data manifest | `ea9d47f624a8777f8416447612bfcc2309cf2bac40fdf4fd5021c8767806dfbf` |
+| Gap-timing-unaware internal model-data manifest | `cb47b3678146604aadca875a96f79909e2d73355162683ff0603f038f3b31a25` |
+| `renv.lock` | `3bf99c633fb123626eb14d29f0847b91f71030c92e90331fe401e3204bca8350` |
+
+### Current proposed coordinator ledger updates
+
+| Ledger class | Proposed entry |
+|---|---|
+| Finding | The H01 standalone reader-facing report rendered successfully with the Nature Health profile from verified stored outputs: 36 R cells, 36 semantic `gt` tables, 10 alt-text-bearing figures, and no cell-output error. |
+| Finding | Direct original-resolution QA found all 10 displayed figures acceptable under REPORT-011; the enlarged two-column site-contrast layouts, matched common-sample placement display, representative diagnostic plots, site order/colours, clipping, and units passed review. |
+| Finding | The H01 analysis-preparation and provenance companion rendered from stored outputs with 20 semantic `gt` tables, two alt-text-bearing figures, exact reciprocal links, a byte-identical downloadable QMD, two byte-identical downloadable source CSVs, and 53 verified manifest identities. |
+| Decision | Record H01 Stage 3 as author-approved under H01-010 and close Stage 4 as complete after applying the detailed preparation-manifest identities. |
+| Decision | Adopt the exact **Answer in brief** callout as the required H01 implementation of REPORT-012; the coordinator has already recorded this as a fixed Stage 3 reporting staple. |
+| Deviation | Automated browser control could not reload the local `file://` page under its navigation policy; structural HTML and direct exported-figure checks passed, and the author separately approved the final standalone results report. |
+| Change log | Added the combined publication summary and significant-site-deviation matrix; split exact samples into eight tabs; reformatted visible formula objects; added four representative diagnostic plots and stored diagnostic values; moved the common-sample placement display into the overview; enlarged site-contrast typography; removed the duplicate reader-facing coverage section while retaining its artifacts and checksums; added the reciprocal analysis-preparation companion and downloadable source data; and refreshed H01 reporting and provenance manifests without study-model recomputation. |
+| Result comparison | The accepted Stage 2 comparison source and HTML remain separately archived with exact hashes; the Stage 3 report intentionally contains no submitted-versus-new comparison language. |
+| Claim provenance | Results claims, intervals, diagnostics, multiplicity, and sensitivities are read from verified accepted result and production-bootstrap artifacts; the companion maps those outputs to their data, code, commands, and hashes without changing any claim or manuscript file. |
+
+This Stage 3 completion record supersedes all earlier preview-render counts,
+Stage 2 main-page hashes, and open-render statements retained below as audit
+history. The analysis-preparation companion above is the authoritative final
+provenance record.
+
+### Production bootstrap completion
+
+The author approved production after the separate 50-refit COMPUTE-001 pilot.
+The production wrapper ran only the eight changed targets: main and
+manuscript-prepared data crossed with near eye and chest and with all-available
+and paired/common samples. It reused the identical `h01_bootstrap_r2()`
+implementation and canonical seeds used by the other metrics.
+
+| Production check | Verified result |
+|---|---|
+| Changed targets | 8 of 8 PASS |
+| Retained successful joint refits | 1,000 per target; 8,000 total |
+| Attempts | 12,000 |
+| Successful attempts | 11,996 |
+| Failed/warning attempts | 4; each was a maximum-gradient convergence warning and was replaced by a successful attempt |
+| Preserved targets | 120 draw files, all hashes unchanged |
+| Complete package | 128 audit rows PASS; 128 canonical draw files |
+| Interval rows | 1,208 PASS and 8 explicitly NON_ESTIMABLE participant-associated-share rows; 1,216 total |
+| Runtime | 310.9 seconds wall time, four workers, one BLAS/OpenMP thread per worker |
+| Checkpoints | Eight completed run-metric checkpoints |
+| Gate status | No construct, clock-conversion, response-family, or bootstrap major gate reopened |
+
+The four failed attempts occurred once in each main-data target. All four
+manuscript-prepared targets completed 1,500/1,500 successful attempts. Failed
+attempts remain in `H01_r2_bootstrap_failures.csv`; they are not among the
+1,000 retained draws for any target.
+
+### Accepted reporting revision: Figure S10
+
+The author accepted progression to the next reporting stage and requested one
+exception: Figure S10 must apply the submitted visual styling to the new
+audited data. The exact V0 plotting code was recovered read-only from
+`20ba43c:Descriptives.qmd` in repository history. The H01 reconstruction now
+uses its square layout, point-plus-ridgeline geometry, black masks outside the
+theoretical civil-photoperiod envelope, in-panel
+legend, and white “possible photoperiods” annotation. DISPLAY-001 site names,
+visible order, and colours remain exact. Following the author's next display
+revision, all points use one circular symbol and the coloured observations and
+density ribbons are drawn in front of the black masks. Sites sharing a colour
+remain distinguishable by their fixed north-to-south placement.
+
+This was a reporting-only change. The observed source remains 816 main
+near-eye participant-days with SHA-256
+`5d17eaf6ee3c1ecceca38a5d57153d1f38f0374efcf85218450990063569997f`,
+and the 61-row theoretical 2025 civil-photoperiod source remains
+`073fa2fdae1e4a97c76409d2fc62136dddce0f4c16359b21d855cf7bf0b36f4a`.
+No model, multiplicity calculation, response-family decision, bootstrap draw,
+estimate, interval, sample, or claim changed. Only the H01 reporting builder,
+Figure S10 PNG/SVG, reporting provenance/manifest, H01 QMD/HTML, model-results
+manifest, and this handoff were regenerated.
+
+### Exact primary and manuscript-prepared samples
+
+Cells show participants / participant-days / observations. Main-data support
+hours are derivation support, not additional model observations. The main
+M10/L10 producer did not export exact support minutes, and the
+manuscript-prepared artifacts do not retain support minutes; those values
+remain unavailable rather than being imputed.
+
+| Metric | Main sample | Manuscript-prepared sample | Main support h |
+|---|---:|---:|---:|
+| Interdaily stability | 141 / 816 / 141 | 141 / 811 / 141 | 18,851.0 |
+| Intradaily variability | 141 / 816 / 141 | 141 / 811 / 141 | 18,851.0 |
+| Mean melEDI | 141 / 816 / 816 | 141 / 811 / 811 | 18,851.0 |
+| Brightest 10 h mean | 141 / 816 / 816 | 141 / 811 / 811 | unavailable |
+| Darkest 10 h mean | 141 / 816 / 816 | 141 / 811 / 811 | unavailable |
+| Time above 1,000 lx melEDI | 141 / 816 / 816 | 141 / 811 / 811 | 18,851.0 |
+| Time above 250 lx melEDI during wake | 141 / 737 / 737 | 140 / 755 / 755 | 9,174.3 |
+| Time below 10 lx melEDI before sleep | 139 / 655 / 655 | 141 / 780 / 780 | 1,925.5 |
+| Time below 1 lx melEDI during sleep | 141 / 778 / 778 | 141 / 790 / 790 | 6,282.5 |
+| Longest continuous period above 250 lx melEDI | 141 / 816 / 816 | 141 / 811 / 811 | 18,851.0 |
+| Midpoint of the brightest 10 hours | 141 / 816 / 816 | 141 / 811 / 811 | unavailable |
+| Midpoint of the darkest 10 hours | 141 / 816 / 816 | 141 / 811 / 811 | unavailable |
+| Mean timing of exposure above 250 lx melEDI | 141 / 742 / 742 | 141 / 778 / 778 | 17,209.6 |
+| First light timing above 250 lx melEDI | 140 / 727 / 727 | 141 / 778 / 778 | 16,832.5 |
+| Last light timing above 250 lx melEDI | 141 / 687 / 687 | 141 / 778 / 778 | 15,995.0 |
+| melEDI dose | 141 / 761 / 761 | 141 / 811 / 811 | 17,678.8 |
+| Melanopic daylight efficacy ratio | 141 / 760 / 760 | 140 / 725 / 725 | 17,656.6 |
+
+The exact 34-row machine-readable table, including sites, analysis units,
+families, transforms, and unavailability reasons, is
+`artifacts/09_tables/H01/reporting/H01_reporting_exact_samples.csv`.
+
+### Primary estimates, 95% intervals, multiplicity, and diagnostics
+
+Photoperiod and latitude entries are the declared practical-scale effect and
+95% confidence interval; `×` denotes a ratio. Four distinct vector-wide BH
+families use one model-level p-value per metric and `n = 17`: overall site,
+photoperiod, latitude, and same-frame site-versus-latitude adequacy.
+
+| Metric | Photoperiod effect [95% CI] | Latitude effect [95% CI] | Site q | Photoperiod q | Latitude q | Adequacy q | Diagnostic |
+|---|---:|---:|---:|---:|---:|---:|---|
+| Interdaily stability | ×0.983 [0.944, 1.024] | ×1.009 [0.961, 1.060] | 0.245 | 0.401 | 0.903 | 0.189 | PASS |
+| Intradaily variability | -0.019 [-0.056, 0.019] | -0.039 [-0.084, 0.005] | 0.483 | 0.327 | 0.155 | 0.723 | PASS |
+| Mean melEDI | ×1.181 [1.109, 1.257] | ×1.154 [1.066, 1.248] | 0.000703 | 0.00000131 | 0.00181 | 0.0379 | WARN_REVIEW |
+| Brightest 10 h mean | ×1.243 [1.133, 1.363] | ×1.238 [1.106, 1.385] | 0.0120 | 0.0000138 | 0.00140 | 0.332 | WARN_REVIEW |
+| Darkest 10 h mean | ×1.088 [1.034, 1.144] | ×1.040 [0.971, 1.115] | 0.0000134 | 0.00163 | 0.400 | 0.0000275 | WARN_REVIEW |
+| Time above 1,000 lx melEDI | ×1.206 [1.128, 1.288] | ×1.027 [0.942, 1.120] | 0.0773 | 0.00000131 | 0.769 | 0.0583 | PASS |
+| Time above 250 lx melEDI during wake | ×1.136 [1.073, 1.202] | ×1.115 [1.035, 1.202] | 0.00865 | 0.0000541 | 0.0136 | 0.0583 | WARN_REVIEW |
+| Time below 10 lx melEDI before sleep | -0.134 [-0.201, -0.066] | 0.002 [-0.085, 0.089] | 0.0541 | 0.000164 | 0.962 | 0.0468 | WARN_REVIEW |
+| Time below 1 lx melEDI during sleep | ×0.987 [0.968, 1.006] | ×0.998 [0.974, 1.022] | 0.0633 | 0.227 | 0.903 | 0.0489 | WARN_REVIEW |
+| Longest continuous period above 250 lx melEDI | ×1.125 [1.065, 1.187] | ×1.060 [0.992, 1.132] | 0.398 | 0.0000498 | 0.155 | 0.626 | PASS |
+| Midpoint of the brightest 10 hours | 0.054 [-0.045, 0.153] | 0.189 [0.061, 0.317] | 0.000715 | 0.305 | 0.0132 | 0.0122 | WARN_REVIEW |
+| Midpoint of the darkest 10 hours | -0.148 [-0.245, -0.050] | 0.121 [-0.002, 0.244] | 0.0223 | 0.00372 | 0.130 | 0.0489 | WARN_REVIEW |
+| Mean timing of exposure above 250 lx melEDI | 0.121 [0.028, 0.213] | 0.335 [0.210, 0.459] | 0.00000000249 | 0.0125 | 0.00000561 | 0.0000498 | WARN_REVIEW |
+| First light timing above 250 lx melEDI | -0.097 [-0.247, 0.053] | 0.020 [-0.170, 0.211] | 0.121 | 0.227 | 0.903 | 0.0844 | WARN_REVIEW |
+| Last light timing above 250 lx melEDI | 0.323 [0.186, 0.460] | 0.455 [0.275, 0.636] | 0.000000143 | 0.0000138 | 0.0000137 | 0.000827 | WARN_REVIEW |
+| melEDI dose | ×1.275 [1.169, 1.391] | ×1.016 [0.913, 1.131] | 0.225 | 0.00000109 | 0.903 | 0.169 | WARN_REVIEW |
+| Melanopic daylight efficacy ratio | 0.014 [0.008, 0.020] | -0.005 [-0.012, 0.003] | 0.305 | 0.0000240 | 0.384 | 0.332 | WARN_REVIEW |
+
+Supported primary metrics number 8/17 for site, 12/17 for photoperiod, 6/17
+for latitude, and 8/17 for adequacy. Hierarchical equal-site `emmeans`
+comparisons were produced only for the eight metrics with a supported overall
+site test: 72 site-versus-equally-weighted-overall contrasts, each with a
+difference or ratio, 95% confidence interval, raw p-value, and within-metric
+adjusted p-value. They are in
+`artifacts/09_tables/H01/reporting/H01_reporting_site_followups.csv` and Table
+5 of the H01 HTML.
+
+All 128 estimable fits converged, had positive-definite Hessians, and were
+nonsingular; the eight non-estimable rows are the predeclared paired-sample
+participant-level IS/IV combinations. Across all 136 run-metric rows there are
+31 PASS, 97 WARN_REVIEW, 8 NON_ESTIMABLE, and no FAIL_MAJOR_GATE. The primary
+run has 4 PASS and 13 WARN_REVIEW. WARN_REVIEW exposes residual-shape,
+zero-mass, or unavailable-upper-bound review signals; it is not a convergence
+failure and does not authorize a family switch. Four prediction-bound warnings
+and 14 strong residual warnings remain disclosed across the full battery.
+
+### R² package
+
+Every estimable metric/run has at least 1,000 successful joint bootstrap
+refits. `H01_r2_bootstrap_summaries.csv` contains marginal R², conditional R²,
+participant-associated share, site part-R², photoperiod part-R², latitude-model
+marginal R², latitude part-R², and unrepresented share with 95% percentile
+intervals. These contributions are not added because site and photoperiod
+information can overlap. Table 6 in the H01 HTML reports all 17 primary rows;
+all evidence cells now read `Production: 1,000`.
+
+For the changed pre-sleep metric in the main near-eye primary run, marginal R²
+is 0.076 [0.046, 0.172], conditional R² 0.383 [0.318, 0.485], the
+participant-associated share 0.307 [0.217, 0.381], site part-R² 0.054 [0.032,
+0.134], photoperiod part-R² 0.049 [0.012, 0.105], latitude part-R² 0.000
+[0.000, 0.017], and unrepresented share 0.617 [0.515, 0.682].
+
+### Sensitivity classification
+
+The battery is **qualitatively sensitive at the individual metric-family
+support level**, while the broad pattern is retained. Relative to the main
+near-eye primary run, eight metric-family support cells switch in the
+manuscript-prepared near-eye all-available run, nine switch in the main
+near-eye paired/common-sample run, and 21 switch in the complementary main
+chest run. Photoperiod remains 12/17 in the primary, manuscript-prepared
+near-eye, and both complementary all-available runs; site and latitude support
+are more placement- and sample-sensitive. This classification prevents the
+chest or prepared-data results from being described as numerically identical
+confirmations.
+
+Required auxiliary checks are complete: the noon-cut L10 fit uses identical
+rows and the same Gaussian implementation; longest-period results include the
+exactly-identified-only bout analysis; participant influence and leave-one-site
+latitude checks remain in the H01 diagnostics; and manuscript-prepared support
+hours remain unavailable. Near eye remains primary and chest complementary.
+
+### Comparison with submitted V0 and claim implications
+
+Relative to V0, supported primary metrics change from 7 to 8 for overall site,
+11 to 12 for photoperiod, and 5 to 6 for latitude. Time above 250 lx melEDI
+during wake is newly supported for site and latitude; L10 midpoint is newly
+supported for photoperiod. No previously supported metric is lost in these
+three submitted families. The fourth, site-versus-latitude adequacy family is
+new and must not be interpreted as a residual site test after latitude
+adjustment.
+
+The submitted broad statement that site differences concentrate in level- and
+timing-based outcomes remains recognizable but should be revised to include
+the newly supported waking-duration metric. Photoperiod remains broadly
+associated with duration, level, dose, spectrum, and selected timing metrics.
+First light timing remains unsupported for site in the primary analysis. No
+manuscript claim was edited; these are proposed consequences for coordinator
+review.
+
+### Historical Stage 2 commands and environment (superseded)
+
+The following is the preserved Stage 2 execution record. Scientific
+calculations used R 4.6.1 and the project library at
+`renv/library/macos/R-4.6/aarch64-apple-darwin23`. Consequential versions were
+lme4 2.0.1, glmmTMB 1.1.14, emmeans 2.0.3, performance 0.17.1, gt 1.3.0,
+knitr 1.51, and Quarto 1.9.37. No package was installed or updated.
+
+```sh
+H01_AUTHOR_APPROVAL=approved H01_PRODUCTION_REFITS=1000 \
+H01_PRODUCTION_CORES=4 OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 \
+MKL_NUM_THREADS=1 VECLIB_MAXIMUM_THREADS=1 \
+Rscript --vanilla \
+scripts/hypotheses/H01/run_h01_response_family_bootstrap_production.R
+
+H01_STAGE=manifest Rscript --vanilla \
+scripts/hypotheses/H01/run_h01_models.R
+
+Rscript --vanilla scripts/hypotheses/H01/build_h01_reporting_inputs.R
+
+Rscript --vanilla tests/hypotheses/H01/test_h01_contract.R
+Rscript --vanilla tests/hypotheses/H01/test_h01_modeling.R
+Rscript --vanilla tests/hypotheses/H01/test_h01_response_gate_repairs.R
+Rscript --vanilla tests/hypotheses/H01/test_h01_response_family_candidates.R
+Rscript --vanilla tests/hypotheses/H01/test_h01_fit_outputs.R
+Rscript --vanilla tests/hypotheses/H01/test_h01_bootstrap_outputs.R
+Rscript --vanilla tests/hypotheses/H01/test_h01_reporting_inputs.R
+
+quarto render notebooks/hypotheses/H01.qmd --profile nathealth --no-cache
+```
+
+At that stage, all seven H01 test scripts passed. The normal project render was blocked before
+R execution by the existing shared `.quarto/project-cache`. To preserve worker
+scope, that cache was not changed. The final render instead used an isolated
+temporary mirror containing byte-for-byte copies of the shared Quarto profile
+and configuration, executed the original H01 source against the original
+audited artifacts, and copied only the resulting H01 HTML to the declared
+Nature Health build path. Structural verification found 10 semantic gt tables,
+7 figures with alt text, no cell-output errors, and all referenced local style
+assets present. Visual inspection confirmed the Nature Health sidebar,
+Bootstrap styling, Table 6 production labels, and pilot-versus-production
+execution table.
+
+### Historical Stage 2 hashes (superseded)
+
+| Item | SHA-256 |
+|---|---|
+| Main model-data RDS | `018b9a50c007a850ba21d026cc7a9fd7d6906322993c98785b3dccb8f19b7475` |
+| Main model-data manifest | `ea9d47f624a8777f8416447612bfcc2309cf2bac40fdf4fd5021c8767806dfbf` |
+| Manuscript-prepared RDS | `c5ea147312735ccaa46ffaf642058115e8ed9d41376262e351a86b84a689e98a` |
+| Manuscript-prepared manifest | `cb47b3678146604aadca875a96f79909e2d73355162683ff0603f038f3b31a25` |
+| `renv.lock` | `3bf99c633fb123626eb14d29f0847b91f71030c92e90331fe401e3204bca8350` |
+| Production wrapper | `1a4840b14e716f99b6cbfce9312c36e69ebff2c018272b527a7998bc11fc5b8b` |
+| Production provenance | `8a447a4fac76def658c10eb34ab8c1890806b8d8739c7f7d45bf5b743a9d1550` |
+| Production runtime | `af906c4fa20ddebbe950cc66989274c6fbb18966287a70485154e25d034ec5a7` |
+| Production artifact manifest | `55af5644f35c8e81eaed7bb3b4ec7486ce070c6e1012181afe1a5d5a985431ea` |
+| Aggregate bootstrap audit | `dc229b82c5a27747c477c00aa7f8452d94e2e97905d1a9d54960b875a6347ac1` |
+| Aggregate bootstrap failures | `3ef9b2addf8886a661f76574dfa949610f8a0e2ce8d8e45972d676ca956cc464` |
+| Aggregate bootstrap summaries | `2931a04ed49fb361677fae344ce5ca528f10a8b839ecbacf7bc6bfe40c19bf2e` |
+| Model-results manifest | `19aacb9604e052cbdd2d60ee6689239faf520673ca0f6b10aaf84a5492ef73ae` |
+| Reporting manifest | `03f9f8eb728c43392c099e3a243d43da59f0319b1edd5ef97f0b90f17962675e` |
+| Reporting provenance | `fe497366777c72a8b9a62225928ea5b20ea62b984dd7097c583004f93247f675` |
+| Figure S10 PNG | `78f8e3d1ac7815c5c5ff1857da09a5733d1d3346708f6771be3e678e21644ff2` |
+| Figure S10 SVG | `dca75a104718abb8d65b2be7b894a5b461528f8d5f6cefa5d90c1154d180e2ba` |
+| Figure S10 observed source | `5d17eaf6ee3c1ecceca38a5d57153d1f38f0374efcf85218450990063569997f` |
+| Figure S10 theoretical source | `073fa2fdae1e4a97c76409d2fc62136dddce0f4c16359b21d855cf7bf0b36f4a` |
+| H01 reporting builder | `ec1b7d3e6947ad7d15661b6bb94fc24e99ad71981248a1a152f522dc981d9446` |
+| H01 QMD | `af6a50df9d8f384f7a07053bdb543bd9c475f8dc13736ba3cb432f693b6628b3` |
+| H01 HTML | `4daa424552ce83cd0a5879cae4ced62d6ca75c4703bc0a1b3be2806ff332c10e` |
+
+The H01 QMD, HTML, tests, and this handoff are inventoried after finalization in
+`artifacts/12_manifests/H01_worker_artifacts.csv`; its hash is reported in the
+final worker completion message. Embedding that manifest hash here would
+invalidate the handoff hash that the same manifest records.
+
+### Historical Stage 2 proposed coordinator ledger updates (superseded)
+
+| Ledger class | Proposed entry |
+|---|---|
+| Finding | The common response-family assessment changed only calendar-day cumulative time below 10 lx melEDI before sleep to Gaussian identity; no common candidate improved the retained families for darkest-10-hour mean or time below 1 lx melEDI during sleep. |
+| Finding | The completed H01 package contains 128 passing production-bootstrap targets with 1,000 retained successful joint refits each; the eight changed targets completed with four replaced failed attempts and all 120 preserved draw hashes unchanged. |
+| Finding | Primary 17-test BH support is 8 site, 12 photoperiod, 6 latitude, and 8 site-versus-latitude adequacy metrics. |
+| Decision | Close the H01 response-family and production-bootstrap major-change gates; retain disclosed WARN_REVIEW diagnostics without silently changing families. |
+| Deviation | The final H01 render used an isolated copy of shared Quarto configuration because the shared scratch cache blocked before R execution; shared configuration and cache were not modified. |
+| Change log | Added the approved eight-target production wrapper, per-target checkpoints, full 128-target validation, production reporting table, and final manifests; after author reporting-stage acceptance, restored the submitted Figure S10 visual grammar using the audited 816-day source without changing inference. |
+| Result comparison | Relative to V0, supported primary metrics are 8 versus 7 for site, 12 versus 11 for photoperiod, and 6 versus 5 for latitude; no previously supported metric is lost. |
+| Claim provenance | Revise the broad H01 claim to include site and latitude support for time above 250 lx melEDI during wake and photoperiod support for L10 midpoint; preserve near eye as primary and chest as complementary. |
+| Sensitivity | Classify the battery as qualitatively sensitive at the individual metric-family support level while retaining the broad site/photoperiod pattern. |
+
+### Remaining non-gating items
+
+- The coordinator must review and apply, reject, or amend the proposed central
+  ledger entries; this worker did not edit central ledgers.
+- The author-requested future Table 6 display revision remains recorded: grey
+  unsupported term-specific part-R² cells and compute the reader-facing grand
+  mean only among BH-supported metrics, with supported/unsupported counts.
+  This is a display-only iteration and must never sum overlapping part-R²
+  contributions.
+- Diagnostic WARN_REVIEW rows remain available for review in Table 4 and
+  `H01_model_diagnostics.csv`; they are not a reopened family gate.
+
+## Historical audit trail retained for provenance
+
+The dated sections below preserve earlier stops and superseded proposals. Any
+statement below that a response-family gate is open, results are withheld, or
+production is incomplete is superseded by the authoritative 2026-08-01
+section above. The final Table 6 display note remains a pending presentation
+iteration as restated above.
+
+## Historical executive disposition
+
+`H01-005` and `H01-006` remain author-approved. The jointly pinned main and
+manuscript-prepared manifests match the prefit checkpoint, and the approved
+calendar-day cumulative pre-sleep construct and strict-after-16:00 L10
+conversion pass their amended gates.
+
+The unchanged 17-response implementation was fitted across all eight declared
+runs. The production bootstrap then completed with 128 cached draw files and
+1,000 retained successful joint refits per estimable target. Independent R
+4.6.1 validation found 128 passing bootstrap-audit rows, 1,272 complete 95%
+interval rows, eight explicitly non-estimable participant-share rows, and no
+reopened construct or clock-conversion gate. The completed model-results
+manifest has SHA-256
+`086e95b50b97304396302b7093711cc1490ee498a5e4aa83a09ac7264a896d3e`.
+
+Required response-family review nevertheless crossed the predeclared stop
+condition. The Tweedie model for time below 1 lx melEDI during sleep is
+`WARN_STRONG_TWEEDIE_MISFIT` in all eight runs. In both all-available near-eye
+data scenarios, simulations essentially never reproduce the observed zeros;
+DHARMa uniformity and zero-mass checks fail, and the main model predicts 187
+durations beyond that day's sleep-window support. A common family replacement
+or explicit non-estimable disposition therefore requires author approval.
+
+The worker opened
+`audit/hypotheses/H01/H01_postbootstrap_response_family_gate.md` and stopped
+before replacing a family or releasing inferential results. The same gate asks
+for explicit disposition of the strong pre-sleep Tweedie warning in the main
+near-eye analysis and the strong shifted-log Gaussian warnings for L10 mean
+melEDI in six of eight runs. No shared preparation, central ledger, Quarto
+configuration, or manuscript file was changed.
+
+## Historical blocking evidence and preserved computation (superseded)
+
+| Item | Verified disposition |
+|---|---|
+| Production target files | 128 of 128 present; each has 1,000 distinct retained joint refits |
+| Successful refits | Minimum 1,491 of 1,500 attempts; 36 failed attempts across 24 targets and 25 warning attempts across 21 targets |
+| Bootstrap intervals | 1,272 passing 95% interval rows; eight participant-associated-share rows explicitly non-estimable for participant-level IS/IV |
+| Major construct/timing gates | None reopened; calendar-day cumulative pre-sleep and strict-after-16:00 L10 checks pass |
+| Response-family gate | Open for time below 1 lx melEDI during sleep; author disposition also required for pre-sleep darkness and L10 mean melEDI warnings |
+| Multiplicity | Four 17-row families retained but all inferential adjusted values withheld while the family gate is open |
+| Saved computation | Unaffected bootstrap draws remain reusable; changed metrics alone require policy-compliant pilot and production refits after approval |
+
+Exact gate evidence, samples, diagnostics, bootstrap counts, hashes, decision
+options, claim consequences, and proposed ledger rows are self-contained in
+`audit/hypotheses/H01/H01_postbootstrap_response_family_gate.md` and its three
+CSV companions. No submitted-versus-repaired numerical conclusion or
+sensitivity stability class is released while the gate is open.
+
+## Coordinator resolution recorded 2026-07-31
+
+The author resolved both checks in `audit/decisions/h01_gate_resolution.md`:
+
+1. Retain the calendar-day cumulative pre-sleep duration. Do not cap valid
+   values at three or six hours; use strictly above six hours only as an audit
+   warning.
+2. Convert the primary L10 midpoint by subtracting 24 hours only from clock
+   times strictly later than 16:00. Retain the noon conversion as a same-row,
+   same-model sensitivity.
+
+The response families are unchanged. The main and manuscript-prepared data,
+near-eye and chest measurements, and all-available and paired/common-sample
+analyses must use the same implementation. Every numerical count, fit, and
+diagnostic below this addendum describes the superseded diagnostic run and
+must not be reported as a current H01 result.
+
+Preparation 04 and Preparation 06 were rebuilt after the approved flat-zero
+day exclusion. The main and manuscript-prepared H01 manifests reproduced
+byte-for-byte in repeated builds and were repinned together. Gate A and Gate B
+then passed their amended contracts in both datasets and placements.
+
+## Pinned inputs and comparator identities
+
+| Input | SHA-256 |
+|---|---|
+| Main H01 model data, `artifacts/06_model_data/H01.rds` | `018b9a50c007a850ba21d026cc7a9fd7d6906322993c98785b3dccb8f19b7475` |
+| Main H01 manifest | `ea9d47f624a8777f8416447612bfcc2309cf2bac40fdf4fd5021c8767806dfbf` |
+| Manuscript-prepared H01 model data | `c5ea147312735ccaa46ffaf642058115e8ed9d41376262e351a86b84a689e98a` |
+| Manuscript-prepared H01 manifest | `cb47b3678146604aadca875a96f79909e2d73355162683ff0603f038f3b31a25` |
+| State-interval manifest | `216392d001ac92a3f7313200bae0354b21315a70d7017309d022fb4d1fc6903a` |
+| Approved implementation contract | `e07db16818e565aff40fa6b9f79f34a31eb943d6c393343ca96471b795bacbed` |
+| Approved shared implementation | `c7d66825c359066ec6dce1a623408d532c4686fd0b77bfe1da5e392fcc7f5516` |
+| Submitted near-eye result workspace | `d274865818cc4a0364dae9a444b9be44be02424daa8ad74b9452840f3115b3dc` |
+| Submitted chest result workspace | `01f91db675d1aa6ae96b6aa7bbc45b2f86445e851a37020d1fe5335d802de9b5` |
+| Submitted `RQ1.qmd` | `ecf2f7f7af569b4d2b3f8404e39690a1924173a02a97aa4db65233950b6f6643` |
+| Submitted `RQ1_chest.qmd` | `77ee597de0fd326587a336b38d1a820f312156f8cd599aab26a34abd75f8420d` |
+| Submitted fitting helper | `6cda57af0bea054b789619d110d1ae770829d919f1e1d301278008f688d68999` |
+| Submitted H1 helper | `b51ae0a3c2e077761d3aa5e779c8b11eaaae74048ec2314028f10bafe5cd1d3e` |
+| Submitted summary helper | `78fc0d4b8beac26a5dd9d3498c442150e7a887efce7124f22bc716701a08ebdb` |
+
+Both H01 objects declare model implementation `new_h01_h11` and the same
+approved implementation fingerprints.
+
+## Implemented H01 code
+
+The H01-only implementation consists of:
+
+- `scripts/hypotheses/H01/h01_contract.R`: ordered 17-metric registry, four
+  fixed 17-test families, scenario registry, pinned identities, formulas, and
+  deterministic seeds;
+- `scripts/hypotheses/H01/h01_modeling.R`: common transformations and model
+  frames, ML comparisons, REML Gaussian estimation fits, Tweedie log models,
+  equal-site `emmeans`, exact samples, diagnostics, influence checks,
+  random-site descriptions, part-\(R^2\), and joint parametric bootstrap
+  machinery;
+- `scripts/hypotheses/H01/run_h01_models.R`: one driver for main and
+  manuscript-prepared data, near eye and chest, all-available and paired
+  samples, plus a hard stop before bootstrapping any run with an open major
+  gate;
+- `scripts/hypotheses/H01/audit_h01_major_gates.R`: outcome-support audit for
+  the two failed checks;
+- `scripts/hypotheses/H01/build_h01_worker_manifest.R`: exhaustive H01 output
+  checksums; and
+- base-R contract and modelling tests under `tests/hypotheses/H01/`.
+
+The primary and manuscript-prepared scenarios call the identical response
+transformations, formulas, fit functions, diagnostic functions, and output
+functions. No package was installed or updated.
+
+## Historical fit-stage verification (superseded by current gate addendum)
+
+The full fit stage was rerun after the joint repinning. It produced eight
+analysis runs and 136 metric rows. Of these, 128 fitted and eight
+paired/common-sample participant-level IS/IV rows remained explicitly
+non-estimable, as predeclared.
+
+All 32 multiplicity vectors contain 17 planned rows. The 16 all-available
+vectors contain 17 observed tests, and the 16 paired/common-sample vectors
+contain 15 observed tests plus the two explicit IS/IV non-estimable rows.
+Independent R verification reproduced every adjusted value using one
+vector-wide BH calculation with `n = 17`.
+
+Fit-stage diagnostics comprise 28 pass, 100 warning/review, eight
+non-estimable, and no major-gate failure. The warnings remain open for
+model-by-model review. All primary and noon-sensitivity term effects, site
+estimates, and site deviations have 95% confidence intervals. The primary
+16:00 and noon-conversion L10 analyses use identical participants,
+participant-days, and observations in every run.
+
+The fit-stage-only result manifest was
+`535f033ebb68eaa9f87cd909713330b767c5287db28cb4d69c8416ec7f08db30`.
+It is superseded by the completed production manifest reported above. Final
+result interpretation remains withheld because the post-bootstrap
+response-family gate is open.
+
+Consequential package versions were LightLogR 0.10.3, melidosData 1.0.6,
+lme4 2.0.1, glmmTMB 1.1.14, emmeans 2.0.3, performance 0.17.1,
+insight 1.5.2, DHARMa 0.5.0, parameters 0.29.2, datawizard 1.3.1,
+effectsize 1.0.2, broom.mixed 0.2.9.7, readr 2.2.0, dplyr 1.2.1,
+tidyr 1.3.2, purrr 1.2.2, ggplot2 4.0.3, gt 1.3.0, and knitr 1.51.
+`partR2` and `testthat` were not installed and were not added.
+
+## Commands
+
+All scientific and reporting work used R 4.6.1 and the activated project
+library. The coordinator-owned ENV-001 reconciliation reports the environment
+synchronized; no package was installed or updated. The current Stage 3
+reporting revision used only stored accepted results:
+
+```sh
+env R_PROFILE_USER=/dev/null \
+  R_LIBS_USER=<project>/renv/library/macos/R-4.6/aarch64-apple-darwin23 \
+  RENV_PATHS_SANDBOX=/private/tmp/H01-renv-sandbox-R4.6.1 \
+  NATHEALTH_PROJECT_ROOT=<project> \
+  Rscript --vanilla \
+  scripts/hypotheses/H01/build_h01_stage3_reporting_inputs.R
+
+env R_PROFILE_USER=/dev/null \
+  R_LIBS_USER=<project>/renv/library/macos/R-4.6/aarch64-apple-darwin23 \
+  RENV_PATHS_SANDBOX=/private/tmp/H01-renv-sandbox-R4.6.1 \
+  NATHEALTH_PROJECT_ROOT=<project> \
+  quarto render notebooks/hypotheses/H01.qmd --profile nathealth
+
+env R_PROFILE_USER=/dev/null \
+  R_LIBS_USER=<project>/renv/library/macos/R-4.6/aarch64-apple-darwin23 \
+  RENV_PATHS_SANDBOX=/private/tmp/H01-renv-sandbox-R4.6.1 \
+  NATHEALTH_PROJECT_ROOT=<project> \
+  Rscript --vanilla tests/hypotheses/H01/test_h01_reporting_inputs.R
+```
+
+The completed production command was:
+
+```sh
+RENV_CONFIG_SANDBOX_ENABLED=FALSE OMP_NUM_THREADS=1 \
+OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 \
+H01_STAGE=bootstrap H01_BOOTSTRAP_REFITS=1000 \
+H01_BOOTSTRAP_CORES=4 \
+Rscript scripts/hypotheses/H01/run_h01_models.R
+```
+
+The completed cached outputs were independently verified with:
+
+```sh
+RENV_CONFIG_SANDBOX_ENABLED=FALSE OMP_NUM_THREADS=1 \
+NATHEALTH_PROJECT_ROOT=<project> \
+Rscript tests/hypotheses/H01/test_h01_bootstrap_outputs.R
+```
+
+The post-bootstrap gate evidence was generated with:
+
+```sh
+RENV_CONFIG_SANDBOX_ENABLED=FALSE OMP_NUM_THREADS=1 \
+NATHEALTH_PROJECT_ROOT=<project> \
+Rscript \
+scripts/hypotheses/H01/audit_h01_postbootstrap_response_families.R
+```
+
+The following commands document the earlier fit and gate-repair stages:
+
+```sh
+RENV_CONFIG_SANDBOX_ENABLED=FALSE OMP_NUM_THREADS=1 \
+NATHEALTH_PROJECT_ROOT=<project> \
+Rscript tests/hypotheses/H01/test_h01_contract.R
+
+RENV_CONFIG_SANDBOX_ENABLED=FALSE OMP_NUM_THREADS=1 \
+NATHEALTH_PROJECT_ROOT=<project> \
+Rscript tests/hypotheses/H01/test_h01_modeling.R
+
+RENV_CONFIG_SANDBOX_ENABLED=FALSE OMP_NUM_THREADS=1 \
+OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 \
+NATHEALTH_PROJECT_ROOT=<project> H01_STAGE=fit \
+H01_SAVE_PLOTS=true \
+Rscript scripts/hypotheses/H01/run_h01_models.R
+
+RENV_CONFIG_SANDBOX_ENABLED=FALSE OMP_NUM_THREADS=1 \
+NATHEALTH_PROJECT_ROOT=<project> \
+Rscript scripts/hypotheses/H01/audit_h01_major_gates.R
+
+RENV_CONFIG_SANDBOX_ENABLED=FALSE OMP_NUM_THREADS=1 \
+NATHEALTH_PROJECT_ROOT=<project> H01_STAGE=bootstrap \
+H01_BOOTSTRAP_REFITS=1000 \
+H01_RUN_FILTER='^main__glasses__all_available$' \
+Rscript scripts/hypotheses/H01/run_h01_models.R
+
+RENV_CONFIG_SANDBOX_ENABLED=FALSE \
+NATHEALTH_PROJECT_ROOT=<project> \
+quarto render notebooks/hypotheses/H01.qmd --profile nathealth
+```
+
+The bootstrap command stopped before its first replicate and identified
+`duration_below_10_pre_sleep` and `l10_midpoint` as the open-gate metrics.
+The rendered command targeted only H01.
+
+## Superseded diagnostic-fit samples
+
+These are diagnostic fit frames, not released result samples. Main-data
+support hours are metric derivation support rather than model observations.
+The manuscript-prepared artifacts do not retain exact support minutes, so
+support hours are unavailable for every sensitivity row.
+
+| Metric | Main participants | Main participant-days | Main observations | Main support h | Sensitivity participants | Sensitivity participant-days | Sensitivity observations |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| Interdaily stability | 141 | 811 | 141 | 18,671.02 | 141 | 811 | 141 |
+| Intradaily variability | 141 | 811 | 141 | 18,671.02 | 141 | 811 | 141 |
+| Daily geometric mean melEDI | 141 | 811 | 811 | 18,671.02 | 141 | 811 | 811 |
+| M10 mean melEDI | 141 | 811 | 811 | unavailable | 141 | 811 | 811 |
+| L10 mean melEDI | 141 | 811 | 811 | unavailable | 141 | 811 | 811 |
+| Time above 1,000 lx melEDI | 141 | 811 | 811 | 18,671.02 | 141 | 811 | 811 |
+| Time above 250 lx melEDI during wake | 141 | 714 | 714 | 8,883.15 | 140 | 755 | 755 |
+| Time below 10 lx melEDI before sleep | 139 | 645 | 645 | 1,895.93 | 141 | 780 | 780 |
+| Time below 1 lx melEDI in the sleep environment | 141 | 771 | 771 | 6,218.17 | 141 | 790 | 790 |
+| Longest period above 250 lx melEDI | 141 | 811 | 811 | 18,671.02 | 141 | 811 | 811 |
+| M10 midpoint | 141 | 809 | 809 | unavailable | 141 | 811 | 811 |
+| L10 midpoint | 141 | 809 | 809 | unavailable | 141 | 811 | 811 |
+| Mean timing above 250 lx melEDI | 141 | 714 | 714 | 16,541.78 | 141 | 778 | 778 |
+| First timing above 250 lx melEDI | 140 | 717 | 717 | 16,556.38 | 141 | 778 | 778 |
+| Last timing above 250 lx melEDI | 141 | 679 | 679 | 15,766.48 | 141 | 778 | 778 |
+| Time-sensitive corrected melEDI dose | 141 | 736 | 736 | 17,077.45 | 141 | 811 | 811 |
+| MDER | 141 | 733 | 733 | 17,007.85 | 140 | 725 | 725 |
+
+Every row uses nine near-eye sites. Exact all-run and by-site samples,
+including complementary chest and paired/common-sample frames, are retained
+in `artifacts/09_tables/H01/H01_exact_samples.csv` and
+`artifacts/09_tables/H01/H01_exact_samples_by_site.csv`. Paired participant
+IS and IV remain non-estimable as predeclared because paired common-day
+dynamics were not prepared.
+
+## Superseded major-gate evidence
+
+### Pre-sleep duration
+
+| Scenario | Placement | Participants | Participant-days/observations | Sites | Days >3 h | Maximum |
+|---|---|---:|---:|---:|---:|---:|
+| Main | Near eye | 139 | 645 | 9 | 60 (9.30%) | 5.90 h |
+| Main | Chest | 153 | 736 | 8 | 67 (9.10%) | 5.97 h |
+| Manuscript-prepared | Near eye | 141 | 780 | 9 | 62 (7.95%) | 5.90 h |
+| Manuscript-prepared | Chest | 154 | 867 | 8 | 69 (7.96%) | 5.97 h |
+
+Main-data expected support exceeds three hours on 142 near-eye and 143 chest
+days, up to six hours. Each affected placement-specific day contains exactly
+two diary pre-sleep intervals; projected source-interval minutes exactly
+match the metric denominator on all 285 rows. A shifted-log Gaussian family
+would not repair this estimand mismatch.
+
+### L10 midpoint
+
+| Scenario | Placement | Participants | Observations | Sites | Declared transformed span | Minimum circular covering arc |
+|---|---|---:|---:|---:|---:|---:|
+| Main | Near eye | 141 | 809 | 9 | 20.30 h | 18.72 h |
+| Main | Chest | 154 | 894 | 8 | 17.88 h | 17.88 h |
+| Manuscript-prepared | Near eye | 141 | 811 | 9 | 23.87 h | 18.88 h |
+| Manuscript-prepared | Chest | 154 | 897 | 8 | 20.60 h | 20.60 h |
+
+Because every minimum circular covering arc exceeds 12 hours, moving the
+linear cut cannot satisfy the approved continuous-range assumption. The
+linear Gaussian point fits are invalid diagnostic probes.
+
+## Superseded diagnostic-run status
+
+All 68 model-level comparisons for each all-available run fitted on identical
+rows and returned a comparison status of `PASS`. The final all-available
+near-eye site fits converged, had positive-definite Hessians, and were not
+singular for all 17 metrics in both data scenarios.
+
+Diagnostic classifications were:
+
+| Run | Pass | Warn/review | Fail major gate |
+|---|---:|---:|---:|
+| Main near eye, all available | 4 | 11 | 2 |
+| Manuscript-prepared near eye, all available | 6 | 9 | 2 |
+| Main chest, all available | 4 | 11 | 2 |
+| Manuscript-prepared chest, all available | 3 | 12 | 2 |
+
+The two failures in every row are the pre-sleep ceiling and L10
+linearization. Other warnings include Gaussian residual-shape flags in large
+samples and DHARMa distribution warnings for selected Tweedie responses.
+They require review if H01 resumes but did not authorize a family switch.
+
+The separately labelled random-site descriptions were non-estimable for
+participant-level IS/IV and singular for selected daily outcomes, including
+main near-eye longest period and dose. They are descriptive only and do not
+alter the fixed-site or latitude comparison. Participant influence,
+leave-one-site-out latitude, equal-site versus observed-weight
+marginalization, exactly identified longest-period, registered-scope, paired
+placement, and chest diagnostic artifacts were created, but no inferential
+stability conclusion is released while the gate is open.
+
+## Superseded diagnostic-run inferential status
+
+No estimate, 95% confidence interval, raw p-value, adjusted p-value, site
+deviation, marginal or conditional \(R^2\), participant-associated share, or
+part-\(R^2\) is reportable from this checkpoint.
+
+Diagnostic point fits and point \(R^2\) calculations are stored for
+troubleshooting, but the required ≥1,000 successful joint bootstrap refits
+were deliberately not run. The only bootstrap execution was an isolated
+temporary smoke test of five replicates for one Gaussian and one Tweedie
+metric; it is not a scientific output and is not in the project artifacts.
+
+All four declared families retain 17 planned rows. The fit-stage table now
+sets `family_status = INVALID_OPEN_MAJOR_GATE`, leaves every adjusted p-value
+missing, and supports zero inferential site follow-ups. It does not shorten a
+family or treat either failed metric as null. Registered-scope adjusted
+p-values are likewise withheld.
+
+## Sensitivity classification and submitted comparison
+
+The sensitivity-battery classification is `invalid/gated`. It is not
+`stable`, `quantitatively sensitive`, `qualitatively sensitive`, or
+`inconclusive`, because the primary response package is invalid before a
+common replacement/estimand decision.
+
+The same-model manuscript-prepared, paired/common-sample, and complementary
+chest fits confirmed that both gate failures persist. Their effects and
+family results were not compared. Submitted workspaces and code were hashed
+and inspected for provenance, but submitted-versus-repaired numerical result
+comparison stopped with the gate. No direction, significance, magnitude, or
+claim difference is asserted.
+
+## Claim implications
+
+- Existing submitted H01 claims remain unverified, not confirmed or
+  contradicted.
+- No latitude, photoperiod, site, placement, or explained-variation claim may
+  be updated from the diagnostic fits.
+- The pre-sleep construct is now calendar-day cumulative, but its rebuilt
+  estimate and uncertainty remain pending.
+- The L10 midpoint now has a primary 16:00 conversion and a noon sensitivity,
+  but the rebuilt comparison remains pending.
+- No manuscript prose was edited.
+
+## Historical required resumed work (completed or superseded)
+
+1. Obtain the author disposition for the common response family or
+   non-estimable status of time below 1 lx melEDI during sleep.
+2. Obtain the explicit author disposition for the pre-sleep Tweedie and L10
+   mean shifted-log Gaussian warnings documented in the new gate.
+3. If a family changes, apply the identical new family across main and
+   manuscript-prepared data, near eye and chest, and all-available and paired
+   runs; repeat required checks without changing the response construct.
+4. Preserve all unaffected production draws. Before any changed target is
+   rerun at production scale, complete the COMPUTE-001 pilot, preview, and
+   approval sequence.
+5. Recompute all four complete 17-row BH families, hierarchical site
+   follow-up eligibility, comparisons, sensitivity classifications,
+   publication tables/figures, H01-only render, handoff, and manifests.
+
+## Historical post-bootstrap gate ledger proposals (superseded)
+
+| Ledger class | Proposed entry |
+|---|---|
+| Finding | The approved Tweedie model for time below 1 lx melEDI during sleep fails distributional checks in both main and manuscript-prepared near-eye analyses and exceeds daily sleep support in main-data predictions. |
+| Finding | The approved pre-sleep Tweedie model has a strong residual warning in the main near-eye analysis despite passing the construct, audit-threshold, and physical-bound checks. |
+| Finding | The shifted-log Gaussian model for L10 mean melEDI has strong heteroscedasticity warnings in six of eight declared runs. |
+| Decision | Open a post-bootstrap H01 response-family major-change gate; require a common approved replacement or non-estimable disposition before release. |
+| Deviation | Preserve the completed production bootstrap but withhold all four BH families, site follow-ups, sensitivity classes, result comparison, and claim changes. |
+| Change log | Added the R 4.6.1 post-bootstrap response-family audit, 24-row evidence, summary, provenance, and major-gate document without fitting a replacement. |
+| Result comparison | Status `invalid/gated`; current submitted-versus-repaired numerical conclusions are not released. |
+| Claim provenance | No rebuilt H01 inferential claim is authorized; submitted claims remain unverified. |
+
+## Superseded worker proposals
+
+These proposals document the first diagnostic stop. The coordinator has since
+recorded the approved decisions as `H01-007` and `H01-008`; the rows below
+must not be treated as open decisions.
+
+| Ledger class | Proposed entry |
+|---|---|
+| Finding | Required H01 pre-sleep ceiling fails in both data scenarios and placements because a local date can contain two diary pre-sleep intervals. |
+| Finding | Required H01 L10-midpoint linearization fails in all scenario/placement frames; no clock cut yields a covering arc below 12 h. |
+| Decision | Open a post-fit major gate for one common pre-sleep estimand/response disposition. |
+| Decision | Open a post-fit major gate for one common L10-midpoint circular/restriction/exclusion disposition. |
+| Deviation | Production bootstrap, final multiplicity, site follow-up, comparison, and claim review halted as required; no family replacement attempted. |
+| Change log | Added H01-only shared model implementation, tests, diagnostics, hard bootstrap gate, gate audit, H01 status page, and exhaustive manifests. |
+| Result comparison | Status `invalid/gated`; submitted-versus-main and main-versus-manuscript-prepared effect comparisons pending gate closure. |
+| Claim provenance | No rebuilt H01 claim authorized; all submitted H01 claims remain pending verification. |
+| Shared-change request | Review analytical-day ownership of the pre-sleep metric; affected hypotheses H01/H05/H07/H08/H10. |
+
+## Historical pre-Stage-3 output inventory and hashes (superseded)
+
+`artifacts/12_manifests/H01_model_results_artifacts.csv` contains the hash of
+every diagnostic model, exact frame, table, diagnostic plot, plot source-data
+file, and H01 analysis script. Its completed-production SHA-256 is
+`086e95b50b97304396302b7093711cc1490ee498a5e4aa83a09ac7264a896d3e`.
+`artifacts/12_manifests/H01_worker_artifacts.csv` extends that inventory to
+tests, H01 Quarto source and rendered HTML, gate evidence, gate documents,
+shared-change request, and this handoff.
+
+The existing H01 HTML predates the post-bootstrap response-family gate and is
+not a released result. No new render or publication table was produced after
+the stop condition. The coordinating task should review the proposed ledger
+entries and obtain the author decisions recorded in
+`audit/hypotheses/H01/H01_postbootstrap_response_family_gate.md` before
+dispatching replacement-model work.
+
+## Reporting-iteration note: Table 6 term-specific part-R² display
+
+Author note received 2026-08-01 for the next H01 reporting iteration. The
+submitted V0 Table S3 displayed site, photoperiod, and latitude part-R² only
+when the corresponding term was supported. The audited table should preserve
+all estimates for transparency but visually de-emphasize unsupported cells
+rather than replacing them with missing values.
+
+Implementation rule for the next Table 6 revision:
+
+- determine support separately from the site, photoperiod, and latitude
+  17-test vector-wide BH families (`q < 0.05`);
+- grey the estimate and 95% confidence interval for an unsupported
+  term-specific cell, while retaining its numerical value;
+- do not grey conditional R², marginal R², participant-associated share, or
+  residual/unrepresented share, because those columns are not term-level
+  significance displays;
+- for each term-specific grand-average cell, report the mean among supported
+  metrics and append `(n supported / n unsupported)`;
+- retain the all-metric descriptive mean in the audited reporting object for
+  reproducibility, even if it is not the reader-facing grand average; and
+- never sum site, photoperiod, and latitude part-R² contributions. Their
+  information can overlap, and the requested grand average is a column-wise
+  mean conditional on BH support, not an additive decomposition.
+
+Reader-facing wording should call this quantity “mean part-R² among
+BH-supported metrics” because conditioning on significance makes it a
+selected descriptive summary rather than an unconditional average effect.

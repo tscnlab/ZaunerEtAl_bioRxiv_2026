@@ -1,382 +1,2081 @@
 ---
 title: "H01: Site differences in personal light exposure"
-subtitle: "Data prepared; modelling decisions approved"
-params:
-  placement: glasses
-  scenario: primary
+subtitle: "Standalone results report"
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    page-layout: full
+execute:
+  echo: false
+  warning: false
+  message: false
 ---
 
-::: {.callout-note}
-
-## Data prepared; model fitting has not started
-
-This page was prepared without examining results from the rebuilt H01 models.
-It records what the manuscript reported, states the approved parts of the main
-method, and defines a sensitivity that applies the same new method to the
-dataset prepared for the manuscript. The H01 input data now pass their checks.
-The author approved the complete 17-metric response-family package and the
-formal fourth 17-test site-versus-latitude family before fitting. No rebuilt
-H01 exposure model has yet been fitted.
-
-:::
-
-## Question and comparison being estimated
-
-The recognizable H01 question remains whether personal light-exposure metrics
-differ across the observed sites and whether the between-site pattern can be
-adequately summarized by observed photoperiod---the time from civil dawn to
-civil dusk, used here as day length---and a linear latitude gradient.
-
-The approved primary analysis estimates differences among the observed sites
-in the near-eye sample after accounting for day length. It gives each site
-equal weight and averages over the day lengths observed during data collection.
-It does not estimate a residual site difference after adjustment for latitude:
-each site has only one latitude, so separate effects of latitude and a fixed
-effect for every site cannot be estimated in the same model.
-
-In this page, a fixed site effect estimates a separate difference for each
-observed site. A participant random effect accounts for repeated days from the
-same participant. A random site effect instead estimates variation among sites
-while treating the observed sites as a sample from a broader population.
-Benjamini--Hochberg (BH) correction adjusts a declared set of related
-\(p\)-values together to limit the expected false-discovery rate: the expected
-share of false positives among results declared statistically significant.
-
-## What the manuscript reported
-
-### Manuscript-generating method
-
-| Component | Manuscript-generating method | Exact source |
-|---|---|---|
-| Data interface | Multiple objects were loaded from `data/all_metrics.RData` and questionnaire workspaces. Each model silently omitted rows missing any required value rather than reporting these exclusions explicitly. | `RQ1.qmd:62-96`, `RQ1.qmd:121-181` |
-| Placements | Near-eye analysis in `RQ1.qmd` and a near-duplicate chest analysis in `RQ1_chest.qmd`. | `audit/hypotheses/H01-H04_migration_map.md:55-83` |
-| Outcome set | Seventeen light-exposure metrics spanning level-, duration-, timing-, dynamics-, exposure-history-, and spectrum-based categories. | `RQ1.qmd:121-147` |
-| Primary site model | A separate model for each metric, with fixed effects for site and day length and a participant random effect within site. | `RQ1.qmd:152-175` |
-| Site deviations from the overall mean | When the overall site test was supported, `emmeans` calculated each site's deviation from an equally weighted overall site mean. The submitted table showed these estimates and greyed out deviations that were not statistically supported, but did not report confidence intervals. | `RQ1.qmd:333-342`, `scripts/H1_specific.R:73-95`, `scripts/summaries.R:117-125` |
-| Latitude analysis | Separate latitude models compared with site models; the manuscript describes latitude as explaining some level metrics better than site. | `RQ1.qmd:236-330`, `index.qmd:275-277` |
-| Random-site analysis | Fixed-site and random-site models were compared to assess whether the observed differences were specific to individual sites or could be summarized as general variation among sites. | `RQ1.qmd:309-350`, `index.qmd:271-273` |
-| Multiplicity | Each raw \(p\)-value was passed separately to `p.adjust(..., n = 17)`. | `RQ1.qmd:289-306`, `scripts/fitting.R:45-53` |
-| Variation represented by the models | Stored model summaries were converted into fixed-effect, participant, site, latitude, day-length, and residual components. | `RQ1.qmd:351-390` |
-| Outputs | Result workspaces were saved and manuscript tables were copied manually. | `data/H1_results.RData`, `data/H1_results_chest.RData`, `assets/H1.png`, `assets/H1_R2_tbl.png` |
-
-### Results reported from that method
-
-These are claims from the submitted manuscript that still need to be checked;
-they are not verified results from the audited analysis. A common sample means
-that both estimates use exactly the same participants and participant-days,
-where one participant-day is one participant observed on one calendar day.
-\(R^2\) summarizes how much variation is represented by a model. Marginal
-\(R^2\) covers the fixed effects, whereas conditional \(R^2\) covers both fixed
-and random effects; differences between these quantities are not automatically
-additive or causal contributions.
-
-| Submitted claim | Reported result | Review status |
-|---|---|---|
-| Site differences | Level- and timing-based metrics showed site differences after photoperiod adjustment (all p ≤ 0.04); first light timing above 250 lx melEDI did not (p = 0.40). Duration-, dynamics-, exposure-history-, and spectrum-based metrics showed no site differences; the submitted manuscript reports that all of their adjusted p-values were at least 0.062 and therefore greater than 0.05. | Exact submitted model/result extraction pending. |
-| Site contrasts | Kumasi had lower daytime, nighttime, and full-day melEDI; selected sites differed in timing and nighttime levels. | Contrast estimates will be reconstructed from the submitted files, and the observations shared by the submitted and audited analyses will be identified. |
-| Fixed versus random site | A random site effect was supported in 5 of 7 models with a supported fixed site effect and was preferable only for full-day and nighttime levels. | The model-comparison method and use of the same observations in each comparison require verification. |
-| Latitude | A 10-degree latitude increase was associated with 1.15-fold higher full-day and 1.24-fold higher daytime melEDI; latitude models reportedly fit those outcomes better than site models. | The reported estimates will be retained for direct comparison; interpretation must reflect that separate site and latitude effects cannot be estimated in the same model. |
-| Photoperiod | Reported effects included factors of 1.10--1.17 for durations above thresholds, 1.19 for melEDI dose, 1.09--1.25 for level metrics, +0.02 MDER, and later mean and last timing above 250 lx melEDI. | Exact estimates, intervals, family membership, and adjusted \(p\)-values require reconstruction. |
-| Explained variation | Conditional \(R^2\) ranged from 25% to 62% (mean 40%); fixed effects reportedly explained 2%--24%, participant differences 9%--42%, and site more than photoperiod when significant. | Full-model \(R^2\) will be verified; overlapping differences will not be called additive variance contributions. |
-
-The full submitted prose is at `index.qmd:261-291`; the submission-facing H01
-tables are referenced at `index.qmd:679-681`.
-
-## Manuscript-prepared-data sensitivity
-
-The same new H01 implementation described below will also be applied to the
-dataset prepared for the manuscript, with only objectively demonstrable data
-errors corrected. The model definitions, multiplicity families,
-confidence-interval methods, diagnostics, and reporting code remain identical
-to the main analysis. Only the prepared dataset changes.
-
-This sensitivity isolates the effect of the new data-preparation and metric
-rules. It does not rerun the manuscript's modelling code. Differences between
-that full manuscript-generating chain and the main analysis remain part of the
-audit discussion above.
-
-## Main analysis
-
-A common-sample placement comparison will use exactly the same participant-days
-for the near-eye and chest calculations. It therefore assesses placement
-differences without allowing unequal data availability to create an apparent
-difference.
-
-| Component | Manuscript-generating method | Main analysis | Expected comparison effect |
-|---|---|---|---|
-| Input and sample flow | Multiple workspaces and unreported model-specific omission of incomplete rows. | One explicit H01 dataset with inclusion flags, reasons for every exclusion, file checksums, and metric-specific sample flow. Participant-day models will report participants, participant-days (which are also the model rows), valid measurement hours contributing to the metric, and sites, both overall and by site. Participant-level IS and IV models will report participants (the model rows), contributing participant-days, valid measurement hours, and sites, both overall and by site. Measurement hours will be labelled as derivation support rather than model observations. | The exact fitted-model sample and the exposure data supporting each derived outcome will be compared for every metric rather than inferred from the prepared dataset. |
-| Placement | Duplicated near-eye and chest documents. | One analysis in which sensor placement is selected explicitly; near-eye primary, paired/common-sample near-eye check, and chest as complementary evidence; no pooling. | Separates placement evidence from an apparent sample-size increase. |
-| Metric values | Submitted metric calculations. | The same familiar seventeen metrics rebuilt under the approved rules for data coverage, diary states, sensor saturation, dose, melanopic daylight efficacy ratio (MDER), the brightest and darkest 10-hour windows (M10/L10), timing, and longest bouts. | Each result will first identify whether a difference arose from changed metric values or coverage, before considering model changes. |
-| Primary site model | Fixed site plus day length and participant nested within site. | Retain fixed site plus centered day length---day length expressed relative to its mean---and a participant random intercept for participant-day metrics. Report model-based averages in practical units at the mean observed day length, giving every site equal weight. | Preserves the submitted primary comparison while stating exactly how predictors are coded and results are averaged. |
-| Site deviations from the overall mean | `emmeans` estimates were shown only when the overall site test was supported; confidence intervals were absent. | Preserve the same follow-up: when the 17-test BH-adjusted overall site test is supported for a metric, use `emmeans` to compare every site's model-based average with the equally weighted overall site mean. Report the overall mean, each site difference or ratio in practical units, a 95% confidence interval, the raw p-value, and the p-value adjusted across the nine site deviations for that metric. | Keeps the recognizable H1 table while separating the overall site question from the follow-up question of which sites differ from the overall mean. |
-| Participant-level interdaily stability (IS) and intradaily variability (IV) | Handling of day-varying day length was not explicit. | Use each participant's mean day length across the participant-days contributing to IS or IV; never duplicate a participant outcome across days. | Preserves one record per participant and makes the day-length summary directly checkable. |
-| Latitude comparison | Separate latitude model with an inconsistent proposed random-site structure. | Use exactly the same participant-days and participant random-effect structure as the site model, but replace fixed site with centered absolute latitude per 10 degrees---absolute latitude expressed relative to its mean. Do not include a random site intercept in this comparison. | Tests whether a linear latitude gradient adequately summarizes the site pattern without changing the grouping structure between models. |
-| Random-site description | Fixed-site and random-site fits were compared. | Retain a separately labelled descriptive random-site model where it can be fitted reliably, with explicit caution that only nine sites are available. Do not use it in the latitude-versus-site comparison. | Preserves the recognizable analysis without changing the comparison that the latitude model is intended to make. |
-| Model comparison | Stored `anova()` and AIC comparisons could use different observations or REML fits with different fixed effects. | Require identical rows. For models with normally distributed errors (Gaussian models), use maximum likelihood (ML), which permits comparison of fixed-effect structures, then refit the selected model with restricted maximum likelihood (REML) to estimate effects, variance, and intervals. | Makes the likelihood and Akaike information criterion (AIC) comparisons valid for the specified models. |
-| Multiple-testing correction | Each \(p\)-value was adjusted separately with `n = 17`. | For each question, preselect one overall model-level test from each of the 17 metric models, then apply BH correction to that 17-value vector. Keep site, day length, and latitude as three separate families, as specified below. | Adjusted \(p\)-values and conclusions about statistical support may change. |
-| Variation represented by the models | Selected and overlapping differences were described as separate contributions. The submitted code also selected models by significance and used the no-site model's conditional \(R^2\) in both branches of one calculation. | Retain marginal and conditional \(R^2\), participant variance, and term-level part \(R^2\) for site and day length, calculated for every declared full model as described below. Report 95% confidence intervals and never add overlapping term-level values. | The variance-related construct is retained, but the submitted percentages may change because the method and a coding error are repaired. |
-| Diagnostics and outputs | Interactive diagnostics, saved workspaces, and manual copies. | Save the fitted model, estimates, diagnostics, table, figure, and exact data used for each figure, linked by model ID and checksum. | Creates a traceable path from each result to its manuscript claim. |
-
-### Approved model for each metric
-
-Different metrics have different distributions. For example, exposure levels
-are strongly right-skewed, several duration measures contain exact zeros, and
-clock times may cross midnight. One error distribution should therefore not be
-forced onto all 17 outcomes.
-
-The recommended package below preserves the manuscript's model choices as far
-as possible and fixes the model for each metric before any site, day-length or
-latitude effect is examined. “Normal after log transformation” means that
-`log10(value + 0.1)` is modelled with normally distributed errors; adding 0.1
-retains exact zeros. A Tweedie model is a continuous model that permits exact
-zeros and right-skewed positive values; its log link reports effects as ratios.
-An identity model reports effects as ordinary differences.
-
-| Metric | Recommended primary model | Why this is the starting choice | Required check or predefined alternative |
-|---|---|---|---|
-| Interdaily stability | Normal errors after a logit transformation | IS is bounded between 0 and 1; no value is at either boundary. | Check the transformed residuals. A beta model would be a major method change. |
-| Intradaily variability | Normal errors, identity scale | The observed range is not bounded near zero and is approximately symmetric. | Check residual spread and influential participants. |
-| Mean melEDI | Normal errors after `log10(value + 0.1)` | Preserves the recognizable zero-aware analysis of a strongly right-skewed exposure level. | Check the upper tail and sensitivity to the 0.1-lx offset; Tweedie is the named alternative. |
-| Brightest 10-hour mean melEDI | Normal errors after `log10(value + 0.1)` | Preserves the analysis while accommodating the long upper tail. | Strong influence and upper-tail checks; Tweedie is the named alternative. |
-| Darkest 10-hour mean melEDI | Normal errors after `log10(value + 0.1)` | Preserves the analysis and retains the 111 near-eye days with a value of zero. | This is a high-risk fit because 13.7% of near-eye values are zero; Tweedie is the named alternative. |
-| Time above 1,000 lx melEDI | Tweedie errors with a log link | The duration is non-negative, right-skewed and sometimes exactly zero. | Check the predicted zero frequency, upper tail and impossible predictions outside 0–24 hours. |
-| Time above 250 lx melEDI during wake | Tweedie errors with a log link | The duration is non-negative, right-skewed and sometimes zero. | Check predictions against each day's waking duration. Modelling a proportion would change the question and requires approval. |
-| Time below 10 lx melEDI before sleep | Tweedie errors with a log link | The duration is non-negative and can be zero. | Check the three-hour ceiling; a shifted-log normal model is the named alternative. |
-| Time below 1 lx melEDI during sleep | Tweedie errors with a log link | Preserves the manuscript model for a non-negative duration. | This distribution is less clearly right-skewed; an identity-scale normal model is the predefined alternative. Switching the primary model requires approval. |
-| Longest continuous period above 250 lx melEDI | Normal errors after `log10(value + 0.1)` | Preserves the recognizable model for the observed lower bound. | An analysis restricted to exactly identified periods is mandatory; an interval-censored model would change the outcome and requires approval. |
-| Midpoint of the brightest 10 hours | Normal errors, identity scale | Values remain within the daytime and behave linearly. | Check that the fitted sample remains away from the clock boundary. |
-| Midpoint of the darkest 10 hours | Normal errors after moving evening values before midnight onto a negative-hour scale | The darkest period crosses midnight; subtracting 24 hours from values after noon creates one continuous nighttime scale. | Confirm that both datasets remain centred around midnight. A circular model is needed only if that check fails. |
-| Mean timing above 250 lx melEDI | Normal errors, identity scale | The observed times lie on one continuous daytime-to-evening scale. | Confirm that no fitted sample crosses the chosen clock boundary. |
-| First light timing above 250 lx melEDI | Normal errors, identity scale | Values are concentrated from midnight into the morning, without a second late-evening cluster. | Confirm this one-sided pattern in both datasets. |
-| Last light timing above 250 lx melEDI | Normal errors, identity scale | Values are concentrated from morning to midnight, without a second early-morning cluster. | Confirm this one-sided pattern in both datasets. |
-| melEDI dose | Normal errors after `log10(value + 0.1)` | Preserves the recognizable analysis while accommodating a long upper tail and exact zeros. | Strong influence and upper-tail checks; Tweedie is the named alternative. |
-| MDER | Normal errors, identity scale | MDER is not restricted to 0–1; the chest data include zero and values above 1, so a beta model is invalid. | Check the lower tail and influential sites or participants; zero-capable Tweedie is the named alternative. |
-
-The same approved primary model must be used for the main and
-manuscript-prepared datasets. If it fails required checks in one dataset, that
-result is reported as non-estimable until the author approves a common
-replacement; the two data scenarios will not be given different models.
-
-### Approved multiple-testing families
-
-The correction uses one preselected test from each metric model, not every
-coefficient in that model. A likelihood-ratio test compares two models fitted
-to the same observations that differ only in the predictor being tested. The
-approved H01 families are:
-
-- **Site:** for each of the 17 metrics, one overall test comparing the model
-  with site and day length against the model with day length alone. This asks
-  whether site improves the model as a whole, rather than testing every site
-  coefficient separately.
-- **Day length:** for each metric, one test comparing the model with site and
-  day length against the model with site alone.
-- **Latitude:** for each metric, one test comparing the model with latitude
-  and day length against the model with day length alone.
-- **Site versus latitude:** for each metric, one formal same-frame comparison
-  between the full site-factor model and the otherwise identical
-  linear-latitude model. This tests whether one latitude gradient adequately
-  summarizes the full site pattern.
-
-Each comparison produces one \(p\)-value per metric. BH correction is then
-applied once to each of the four separate 17-value vectors. Individual site contrasts and
-other follow-up parameters are not added to these primary vectors; any formal
-tests of those parameters require a separately declared secondary correction.
-The descriptive random-site analysis is not part of any of these four
-families.
-
-### Approved formal test of latitude adequacy
-
-The three approved 17-test families answer whether site, day length and
-latitude improve their respective models. They do **not** directly test
-whether a single linear latitude gradient is an adequate summary of the
-full between-site pattern.
-
-For each metric, the site-factor model will be compared with the otherwise
-identical linear-latitude model on exactly the same observations. The 17
-model-level \(p\)-values form the approved fourth BH family. This permits a
-formal statement about whether latitude adequately summarizes the site
-pattern. Same-sample AIC differences and leave-one-site-out latitude estimates
-remain descriptive supporting analyses.
-
-For a metric whose overall site test is supported after the 17-test
-correction, the site follow-up uses the `emmeans` effect contrast: each site is
-compared with the mean of all site averages, with every site weighted equally.
-The nine near-eye follow-up p-values form a separate family for that metric
-and are adjusted together; the complementary chest analysis has eight
-site deviations and adjusts those eight values together. On a log scale the
-follow-up is reported as a ratio; on a linear scale it is reported as a
-difference. Both are accompanied by 95% confidence intervals. Metrics without
-a supported overall site test do not receive inferential site follow-ups,
-matching the hierarchy used in the submitted H1 table.
-
-### How variation will be described
-
-The submitted percentages remain unverified reported results. The repaired
-analysis will separate overall model performance from predictor-specific
-contributions:
-
-- **Marginal \(R^2\)** describes the variation represented by site and day
-  length together.
-- **Conditional \(R^2\)** additionally includes persistent differences among
-  participants. Their difference is reported as the participant-associated
-  share for participant-day models. IS and IV have one value per participant,
-  so they cannot estimate a participant random-effect share.
-- **Part \(R^2\) for site** is the loss in fixed-effect prediction variance
-  when the whole site term is removed from the same model.
-- **Part \(R^2\) for day length** is calculated in the same way after removing
-  day length.
-- The latitude model receives its own part \(R^2\) for latitude; it is not
-  added to the fixed-site model's quantities.
-- One minus conditional \(R^2\) describes variation not represented by the
-  fitted model.
-
-Every full and reduced model uses the same observations, outcome distribution,
-link function, and participant structure. Site and day length share
-information, so their part \(R^2\) values describe unique contributions and
-are reported separately rather than added. The calculations are made for
-every declared full model, regardless of whether its adjusted \(p\)-value is
-below 0.05; the submitted significance-dependent switching is removed.
-
-All effect estimates, model-based averages, marginal and conditional \(R^2\),
-participant variance, and part \(R^2\) values receive 95% confidence
-intervals. The intervals will be obtained from at least 1,000 successful
-parametric-bootstrap refits per metric, with the random seed and failed refits
-recorded. Full and reduced models are refitted within the same bootstrap
-replicate so uncertainty in an \(R^2\) difference is calculated directly.
-The Tweedie-model \(R^2\) values are summaries on the model's log-link scale;
-the primary calculation uses the lognormal residual-variance approximation,
-with the delta approximation as a named sensitivity.
-
-## Direct result comparison
-
-During implementation, every metric will be compared through four explicit
-stages:
-
-1. the saved or reported manuscript result, for audit discussion;
-2. the main H01 implementation using the newly prepared data;
-3. the same H01 implementation using the manuscript-prepared dataset, with
-   only objective data errors corrected; and
-4. paired/common-sample near-eye and complementary chest results.
-
-Each participant-day comparison row will include the exact participants,
-participant-days (model rows), and sites used by the model, overall and by
-site. Each participant-level IS or IV row will include the participants (model
-rows), contributing participant-days, and sites, overall and by site. The main
-analysis also reports the valid measurement hours contributing to each metric.
-Those exact hours were not retained with the manuscript-prepared metric
-artifacts and are therefore labelled as unavailable in that sensitivity,
-never as zero. Measurement hours are derivation support, not additional model
-rows. The table will also include the estimate, standard error, 95% confidence interval,
-interval method, raw \(p\)-value, submitted adjusted \(p\)-value where
-recoverable, main and manuscript-prepared-data adjusted \(p\)-values, the
-17-test family and its size, the result's position after sorting its
-\(p\)-values, \(R^2\), whether the model fitted stably, diagnostic status,
-direction, practical magnitude, change in statistical significance or
-conclusion, and manuscript-claim change. The main-versus-sensitivity comparison
-will also report the exact shared participants and participant-days.
-
-No main or manuscript-prepared-data H01 value is available yet. Result and
-claim differences therefore remain `pending`, not `unchanged`.
-
-## Why the method changes
-
-The review of predictor structure, conducted without examining rebuilt H01
-outcome results, established that:
-
-- site and day length can be estimated together;
-- separate site, latitude, and day-length effects cannot all be estimated
-  together because latitude is constant within each site;
-- a latitude coefficient cannot be interpreted after including a separate
-  term for every site; and
-- the site-adjusted day-length coefficient is estimated mainly from uneven
-  within-site collection periods, with very little variation at some sites.
-
-Accordingly, the main-analysis claim would be framed as:
-
-> Site differences were not fully summarized by latitude and observed
-> photoperiod.
-
-It would not say that a site effect persisted after adjustment for latitude.
-
-## Diagnostics and sensitivities
-
-Mandatory checks include use of the same observations in each model
-comparison; metric-specific sample flow; data coverage and transformation;
-stable model fitting, including whether random effects can be estimated;
-whether the selected probability distribution adequately describes the
-residuals, which are the differences between observed and fitted values;
-participant and site influence; leave-one-site-out latitude estimates,
-obtained by omitting each site in turn; within-site day-length variation;
-equal-site versus observed-sample averaging; and paired/common-sample placement
-comparisons.
-
-The all-outcome photoperiod adjustment is approved as the primary analysis
-because it preserves the manuscript-generating method. The narrower literal
-preregistration scope will be a named sensitivity. Material disagreement
-requires the H01 decision to be reviewed again.
-
-## Relation to the preregistration
-
-The signed H01 stated that site differences would be assessed after
-considering latitude and that photoperiod would be included for metrics with a
-day/night-duration component. The manuscript-generating method applied
-photoperiod to all seventeen outcomes and did not fit site and latitude
-jointly.
-
-The main method retains the manuscript-generating all-outcome photoperiod
-analysis as primary, records it as a preregistration adaptation, and runs the narrower
-registered scope as a sensitivity. The site-versus-latitude comparison is
-clarified as a comparison of two models fitted to the same observations---one
-using site and one using latitude---rather than a model containing both site
-and latitude.
-
-## Checks completed and approved decisions
-
-The review of predictor structure used only site, participant, placement, date,
-latitude, and day length. It verified 811 near-eye participant-days from 141
-participants at nine sites and 897 chest participant-days from 154
-participants at eight sites, with every row matched once to site and solar
-context.
-
-The author approved the following package before H01 fitting:
-
-1. fixed site plus centered photoperiod as the primary model;
-2. participant-mean photoperiod for participant-level IS and IV;
-3. a latitude model using the same participant-days and participant random
-   structure as the site model, with no random site intercept;
-4. a separate descriptive random-site model rather than using random site in
-   the latitude comparison;
-5. all-outcome photoperiod adjustment as primary and the narrower registered
-   scope as sensitivity;
-6. four separate 17-value Benjamini--Hochberg families, each containing one
-   preselected model-level test per metric, for site, photoperiod, latitude,
-   and the formal same-frame site-versus-latitude adequacy comparison;
-7. the hierarchical `emmeans` follow-up described above, with nine
-   equally weighted from-mean site contrasts adjusted together within each
-   metric and 95% confidence intervals for all estimates;
-8. the marginal, conditional, participant, and part-\(R^2\) approach described
-   above, with joint 95% bootstrap confidence intervals and a delta-method
-   sensitivity for Tweedie-model \(R^2\); and
-9. exact fitted-model sample sizes and supporting measurement hours overall
-   and by site, using the units described above; and
-10. the complete 17-metric response-family package described above; and
-11. wording about whether latitude summarizes the site pattern only after the
-   formal fourth family and its diagnostics have been evaluated.
-
 ```{r}
-#| label: setup-h01
-#| eval: false
+#| label: h01-setup
+#| include: false
+
+library(dplyr)
+library(gt)
+library(readr)
+library(stringr)
+library(tidyr)
 
 root <- normalizePath(
-  Sys.getenv("QUARTO_PROJECT_DIR"),
+  Sys.getenv(
+    "NATHEALTH_PROJECT_ROOT",
+    unset = Sys.getenv("QUARTO_PROJECT_DIR", unset = getwd())
+  ),
   winslash = "/",
   mustWork = TRUE
 )
-source(file.path(root, "scripts/pipeline/paths_io.R"))
-source(file.path(root, "scripts/pipeline/assertions.R"))
-source(file.path(root, "scripts/pipeline/multiplicity.R"))
+if (!file.exists(file.path(root, "renv.lock"))) {
+  stop("H01.qmd must execute from the project root", call. = FALSE)
+}
+if (!identical(as.character(getRversion()), "4.6.1")) {
+  stop("H01.qmd requires R 4.6.1", call. = FALSE)
+}
+
+source(file.path(root, "scripts/hypotheses/H01/h01_contract.R"))
+source(file.path(root, "scripts/pipeline/p_value_display.R"))
+
+table_root <- file.path(root, "artifacts/09_tables/H01/stage3")
+source_root <- file.path(root, "artifacts/11_source_data/H01/stage3")
+read_stage3 <- function(name) {
+  read_csv(
+    file.path(table_root, paste0(name, ".csv")),
+    show_col_types = FALSE,
+    progress = FALSE
+  )
+}
+read_source <- function(name) {
+  read_csv(
+    file.path(source_root, paste0(name, ".csv")),
+    show_col_types = FALSE,
+    progress = FALSE
+  )
+}
+
+metric_registry <- read_stage3("H01_stage3_metric_registry")
+model_results <- read_stage3("H01_stage3_model_results")
+primary_publication_summary <- read_stage3(
+  "H01_stage3_primary_publication_summary"
+)
+site_contrasts <- read_stage3("H01_stage3_site_contrasts")
+r2_table <- read_stage3("H01_stage3_r2_table")
+diagnostic_details <- read_stage3("H01_stage3_diagnostic_details")
+figure_display_registry <- read_stage3("H01_stage3_figure_display_registry")
+exact_samples <- read_stage3("H01_stage3_exact_samples")
+formula_manifest <- read_stage3("H01_stage3_formula_manifest")
+sensitivity_support <- read_stage3("H01_stage3_sensitivity_support")
+sensitivity_classification <- read_stage3(
+  "H01_stage3_sensitivity_classification"
+)
+paired_placement <- read_stage3("H01_stage3_paired_placement")
+l10_noon <- read_stage3("H01_stage3_l10_noon_sensitivity")
+period_sensitivity <- read_stage3("H01_stage3_exact_period_sensitivity")
+scope_sensitivity <- read_stage3("H01_stage3_scope_sensitivity")
+influence_summary <- read_stage3("H01_stage3_influence_summary")
+latitude_loo_summary <- read_stage3("H01_stage3_latitude_loo_summary")
+marginalization <- read_stage3("H01_stage3_marginalization")
+deviations <- read_stage3("H01_stage3_deviations")
+l10_noon_effects <- read_source("H01_stage3_l10_noon_effect_source")
+l10_noon_samples <- read_source("H01_stage3_l10_noon_sample_source")
+
+primary_run <- "main__glasses__all_available"
+chest_run <- "main__chest__all_available"
+
+category_order <- c(
+  "duration-based",
+  "dynamics-based",
+  "exposure-history-based",
+  "level-based",
+  "spectrum-based",
+  "timing-based",
+  "Grand average"
+)
+category_labels <- c(
+  `duration-based` = "Duration",
+  `dynamics-based` = "Dynamics",
+  `exposure-history-based` = "Exposure history",
+  `level-based` = "Level",
+  `spectrum-based` = "Spectrum",
+  `timing-based` = "Timing",
+  `Grand average` = "Grand average"
+)
+
+display_run <- function(run_id) {
+  recode(
+    run_id,
+    `main__glasses__all_available` = "Near eye — all available",
+    `main__chest__all_available` = "Chest — all available",
+    `main__glasses__paired_common_sample` = "Near eye — paired/common",
+    `main__chest__paired_common_sample` = "Chest — paired/common",
+    `manuscript_prepared_data__glasses__all_available` =
+      "Gap-timing-unaware dataset — near eye — all available",
+    `manuscript_prepared_data__chest__all_available` =
+      "Gap-timing-unaware dataset — chest — all available",
+    `manuscript_prepared_data__glasses__paired_common_sample` =
+      "Gap-timing-unaware dataset — near eye — paired/common",
+    `manuscript_prepared_data__chest__paired_common_sample` =
+      "Gap-timing-unaware dataset — chest — paired/common"
+  )
+}
+
+format_p <- function(value) {
+  nh_format_p_value(value)
+}
+
+format_number <- function(value, digits = 2) {
+  ifelse(
+    is.finite(value),
+    formatC(value, format = "f", digits = digits),
+    "—"
+  )
+}
+
+format_effect_ci <- function(
+  estimate,
+  conf_low,
+  conf_high,
+  effect_type,
+  display_unit
+) {
+  output <- rep("—", length(estimate))
+  finite <- is.finite(estimate) & is.finite(conf_low) & is.finite(conf_high)
+  multiplicative <- finite & effect_type %in% c("ratio", "odds_ratio")
+  output[multiplicative] <- paste0(
+    "×",
+    formatC(estimate[multiplicative], format = "f", digits = 2),
+    " [",
+    formatC(conf_low[multiplicative], format = "f", digits = 2),
+    "–",
+    formatC(conf_high[multiplicative], format = "f", digits = 2),
+    "]"
+  )
+  additive <- finite & !multiplicative
+  unit_suffix <- case_when(
+    display_unit[additive] == "clock time" ~ " h",
+    display_unit[additive] %in% c("h", "lx", "lx·h") ~
+      paste0(" ", display_unit[additive]),
+    TRUE ~ ""
+  )
+  output[additive] <- paste0(
+    formatC(estimate[additive], format = "f", digits = 2),
+    " [",
+    formatC(conf_low[additive], format = "f", digits = 2),
+    "–",
+    formatC(conf_high[additive], format = "f", digits = 2),
+    "]",
+    unit_suffix
+  )
+  output
+}
+
+format_r2 <- function(estimate, conf_low, conf_high) {
+  output <- rep("—", length(estimate))
+  finite_estimate <- is.finite(estimate)
+  finite_interval <- finite_estimate & is.finite(conf_low) & is.finite(conf_high)
+  output[finite_estimate] <- paste0(
+    formatC(100 * estimate[finite_estimate], format = "f", digits = 1),
+    "%"
+  )
+  output[finite_interval] <- paste0(
+    formatC(100 * estimate[finite_interval], format = "f", digits = 1),
+    "% [",
+    formatC(100 * conf_low[finite_interval], format = "f", digits = 1),
+    "–",
+    formatC(100 * conf_high[finite_interval], format = "f", digits = 1),
+    "]"
+  )
+  output
+}
+
+format_statistic <- function(statistic, df) {
+  paste0(
+    format_number(statistic),
+    " (df ",
+    format_number(df, digits = 0),
+    ")"
+  )
+}
+
+h01_gt <- function(data, ...) {
+  gt(data, ...) |>
+    opt_row_striping() |>
+    tab_options(
+      table.font.size = px(12),
+      data_row.padding = px(4),
+      heading.align = "left",
+      table.width = pct(100),
+      row_group.font.weight = "600",
+      source_notes.font.size = px(10)
+    )
+}
+
+formula_display <- function(formulas, model_unit = NULL) {
+  output <- tibble(
+    Model = str_to_sentence(str_replace_all(names(formulas), "_", " ")),
+    Formula = vapply(
+      formulas,
+      function(value) paste(deparse(value, width.cutoff = 500L), collapse = " "),
+      character(1)
+    )
+  )
+  if (!is.null(model_unit)) {
+    output <- output |>
+      mutate(`Model unit` = model_unit, .before = 1)
+  }
+  output
+}
+
+formula_gt <- function(data) {
+  data |>
+    h01_gt() |>
+    cols_width(
+      any_of("Model unit") ~ px(150),
+      Model ~ px(210),
+      Formula ~ px(700)
+    ) |>
+    tab_source_note(
+      md(
+        "These strings are produced directly from the evaluated R formula objects; the transient R environments are intentionally not printed."
+      )
+    )
+}
+
+model_test_display <- function(selected_run_id) {
+  model_results |>
+    filter(.data$run_id == .env$selected_run_id) |>
+    arrange(.data$metric_order) |>
+    transmute(
+      Category = recode(.data$manuscript_category, !!!category_labels),
+      Metric = .data$manuscript_name,
+      `Site statistic` = format_statistic(.data$site_statistic, .data$site_df),
+      `Site raw p` = format_p(.data$site_p_raw),
+      `Site BH-adjusted p` = format_p(.data$site_p_adjusted),
+      site_bold = !is.na(.data$site_p_adjusted) & .data$site_p_adjusted < 0.05,
+      `Photoperiod statistic` = format_statistic(
+        .data$photoperiod_statistic,
+        .data$photoperiod_df
+      ),
+      `Photoperiod raw p` = format_p(.data$photoperiod_p_raw.x),
+      `Photoperiod BH-adjusted p` = format_p(.data$photoperiod_p_adjusted),
+      photoperiod_bold = !is.na(.data$photoperiod_p_adjusted) &
+        .data$photoperiod_p_adjusted < 0.05,
+      `Latitude statistic` = format_statistic(
+        .data$latitude_statistic,
+        .data$latitude_df
+      ),
+      `Latitude raw p` = format_p(.data$latitude_p_raw.x),
+      `Latitude BH-adjusted p` = format_p(.data$latitude_p_adjusted),
+      latitude_bold = !is.na(.data$latitude_p_adjusted) &
+        .data$latitude_p_adjusted < 0.05,
+      `Adequacy statistic` = format_statistic(
+        .data$adequacy_statistic,
+        .data$adequacy_df
+      ),
+      `Adequacy raw p` = format_p(.data$adequacy_p_raw),
+      `Adequacy BH-adjusted p` = format_p(.data$adequacy_p_adjusted),
+      adequacy_bold = !is.na(.data$adequacy_p_adjusted) &
+        .data$adequacy_p_adjusted < 0.05
+    )
+}
+
+model_test_gt <- function(data) {
+  data |>
+    h01_gt(groupname_col = "Category", rowname_col = "Metric") |>
+    tab_spanner(
+      label = "Overall site",
+      columns = c(`Site statistic`, `Site raw p`, `Site BH-adjusted p`)
+    ) |>
+    tab_spanner(
+      label = "Photoperiod",
+      columns = c(
+        `Photoperiod statistic`, `Photoperiod raw p`,
+        `Photoperiod BH-adjusted p`
+      )
+    ) |>
+    tab_spanner(
+      label = "Latitude",
+      columns = c(`Latitude statistic`, `Latitude raw p`, `Latitude BH-adjusted p`)
+    ) |>
+    tab_spanner(
+      label = "Site versus linear latitude",
+      columns = c(`Adequacy statistic`, `Adequacy raw p`, `Adequacy BH-adjusted p`)
+    ) |>
+    cols_label(
+      `Site statistic` = "Statistic (df)",
+      `Site raw p` = "Raw p",
+      `Site BH-adjusted p` = "BH-adjusted p",
+      `Photoperiod statistic` = "Statistic (df)",
+      `Photoperiod raw p` = "Raw p",
+      `Photoperiod BH-adjusted p` = "BH-adjusted p",
+      `Latitude statistic` = "Statistic (df)",
+      `Latitude raw p` = "Raw p",
+      `Latitude BH-adjusted p` = "BH-adjusted p",
+      `Adequacy statistic` = "Statistic (df)",
+      `Adequacy raw p` = "Raw p",
+      `Adequacy BH-adjusted p` = "BH-adjusted p"
+    ) |>
+    cols_hide(columns = c("site_bold", "photoperiod_bold", "latitude_bold", "adequacy_bold")) |>
+    cols_align("center", columns = -Metric) |>
+    cols_width(Metric ~ px(240), everything() ~ px(105)) |>
+    tab_style(
+      style = cell_text(weight = "bold"),
+      locations = cells_body(columns = `Site BH-adjusted p`, rows = site_bold)
+    ) |>
+    tab_style(
+      style = cell_text(weight = "bold"),
+      locations = cells_body(
+        columns = `Photoperiod BH-adjusted p`,
+        rows = photoperiod_bold
+      )
+    ) |>
+    tab_style(
+      style = cell_text(weight = "bold"),
+      locations = cells_body(columns = `Latitude BH-adjusted p`, rows = latitude_bold)
+    ) |>
+    tab_style(
+      style = cell_text(weight = "bold"),
+      locations = cells_body(columns = `Adequacy BH-adjusted p`, rows = adequacy_bold)
+    ) |>
+    tab_source_note(
+      md(
+        "Bold BH-adjusted p-values meet the declared BH-adjusted p < 0.050 decision rule in their separate 17-test family. Raw p-values have no separate decision rule here and are not bold."
+      )
+    )
+}
+
+effect_display <- function(selected_run_id) {
+  model_results |>
+    filter(.data$run_id == .env$selected_run_id) |>
+    arrange(.data$metric_order) |>
+    transmute(
+      Category = recode(.data$manuscript_category, !!!category_labels),
+      Metric = .data$manuscript_name,
+      `Photoperiod effect (95% CI)` = format_effect_ci(
+        .data$photoperiod_estimate_practical,
+        .data$photoperiod_conf_low_practical,
+        .data$photoperiod_conf_high_practical,
+        .data$photoperiod_effect_type,
+        .data$display_unit
+      ),
+      `Photoperiod raw p` = format_p(.data$photoperiod_p_raw.y),
+      `Photoperiod BH-adjusted p` = format_p(.data$photoperiod_p_adjusted),
+      photoperiod_bold = !is.na(.data$photoperiod_p_adjusted) &
+        .data$photoperiod_p_adjusted < 0.05,
+      `Latitude effect per 10° (95% CI)` = format_effect_ci(
+        .data$latitude_estimate_practical,
+        .data$latitude_conf_low_practical,
+        .data$latitude_conf_high_practical,
+        .data$latitude_effect_type,
+        .data$display_unit
+      ),
+      `Latitude raw p` = format_p(.data$latitude_p_raw.y),
+      `Latitude BH-adjusted p` = format_p(.data$latitude_p_adjusted),
+      latitude_bold = !is.na(.data$latitude_p_adjusted) &
+        .data$latitude_p_adjusted < 0.05,
+      Participants = as.integer(.data$participants),
+      `Participant-days` = as.integer(.data$participant_days),
+      Observations = as.integer(.data$observations),
+      Sites = as.integer(.data$sites)
+    )
+}
+
+effect_gt <- function(data) {
+  data |>
+    h01_gt(groupname_col = "Category", rowname_col = "Metric") |>
+    tab_spanner(
+      label = "Photoperiod",
+      columns = c(
+        `Photoperiod effect (95% CI)`, `Photoperiod raw p`,
+        `Photoperiod BH-adjusted p`
+      )
+    ) |>
+    tab_spanner(
+      label = "Latitude",
+      columns = c(
+        `Latitude effect per 10° (95% CI)`, `Latitude raw p`,
+        `Latitude BH-adjusted p`
+      )
+    ) |>
+    tab_spanner(
+      label = "Exact fitted sample",
+      columns = c(Participants, `Participant-days`, Observations, Sites)
+    ) |>
+    cols_label(
+      `Photoperiod effect (95% CI)` = "Effect (95% CI)",
+      `Photoperiod raw p` = "Raw p",
+      `Photoperiod BH-adjusted p` = "BH-adjusted p",
+      `Latitude effect per 10° (95% CI)` = "Effect per 10° (95% CI)",
+      `Latitude raw p` = "Raw p",
+      `Latitude BH-adjusted p` = "BH-adjusted p"
+    ) |>
+    cols_hide(columns = c("photoperiod_bold", "latitude_bold")) |>
+    cols_align("center", columns = -Metric) |>
+    cols_width(Metric ~ px(235), everything() ~ px(115)) |>
+    tab_style(
+      style = cell_text(weight = "bold"),
+      locations = cells_body(
+        columns = `Photoperiod BH-adjusted p`,
+        rows = photoperiod_bold
+      )
+    ) |>
+    tab_style(
+      style = cell_text(weight = "bold"),
+      locations = cells_body(columns = `Latitude BH-adjusted p`, rows = latitude_bold)
+    ) |>
+    tab_source_note(
+      md(
+        paste0(
+          "Effects are differences for identity-scale outcomes, ratios for ",
+          "log-link or log-transformed outcomes, and odds ratios for ",
+          "logit-transformed outcomes; timing differences are hours. Bold ",
+          "BH-adjusted p-values meet the declared BH-adjusted p < 0.050 ",
+          "decision rule in the applicable 17-test family. Raw p-values have ",
+          "no separate decision rule here and are not bold."
+        )
+      )
+    )
+}
+
+primary_publication_display <- function() {
+  primary_publication_summary |>
+    arrange(.data$metric_order) |>
+    transmute(
+      Category = recode(.data$manuscript_category, !!!category_labels),
+      Metric = .data$manuscript_name,
+      `Overall site BH-adjusted p` = format_p(.data$site_p_adjusted),
+      site_bold = !is.na(.data$site_p_adjusted) & .data$site_p_adjusted < 0.05,
+      `Photoperiod effect (95% CI)` = format_effect_ci(
+        .data$photoperiod_estimate_practical,
+        .data$photoperiod_conf_low_practical,
+        .data$photoperiod_conf_high_practical,
+        .data$photoperiod_effect_type,
+        .data$display_unit
+      ),
+      `Photoperiod BH-adjusted p` = format_p(.data$photoperiod_p_adjusted),
+      photoperiod_bold = !is.na(.data$photoperiod_p_adjusted) &
+        .data$photoperiod_p_adjusted < 0.05,
+      `Latitude effect per 10° (95% CI)` = format_effect_ci(
+        .data$latitude_estimate_practical,
+        .data$latitude_conf_low_practical,
+        .data$latitude_conf_high_practical,
+        .data$latitude_effect_type,
+        .data$display_unit
+      ),
+      `Latitude BH-adjusted p` = format_p(.data$latitude_p_adjusted),
+      latitude_bold = !is.na(.data$latitude_p_adjusted) &
+        .data$latitude_p_adjusted < 0.05,
+      `Site-versus-latitude BH-adjusted p` = format_p(.data$adequacy_p_adjusted),
+      adequacy_bold = !is.na(.data$adequacy_p_adjusted) &
+        .data$adequacy_p_adjusted < 0.05,
+      `Exact fitted sample` = paste0(
+        as.integer(.data$participants), " participants; ",
+        as.integer(.data$participant_days), " participant-days; ",
+        as.integer(.data$observations), " observations; ",
+        as.integer(.data$sites), " sites"
+      )
+    )
+}
+
+primary_publication_gt <- function(data) {
+  data |>
+    h01_gt(groupname_col = "Category", rowname_col = "Metric") |>
+    tab_spanner(
+      label = "Photoperiod",
+      columns = c(`Photoperiod effect (95% CI)`, `Photoperiod BH-adjusted p`)
+    ) |>
+    tab_spanner(
+      label = "Latitude",
+      columns = c(
+        `Latitude effect per 10° (95% CI)`, `Latitude BH-adjusted p`
+      )
+    ) |>
+    cols_hide(
+      columns = c(
+        "site_bold", "photoperiod_bold", "latitude_bold", "adequacy_bold"
+      )
+    ) |>
+    cols_align("center", columns = -c(Metric, `Exact fitted sample`)) |>
+    cols_width(
+      Metric ~ px(230),
+      `Overall site BH-adjusted p` ~ px(105),
+      `Photoperiod effect (95% CI)` ~ px(175),
+      `Photoperiod BH-adjusted p` ~ px(105),
+      `Latitude effect per 10° (95% CI)` ~ px(175),
+      `Latitude BH-adjusted p` ~ px(105),
+      `Site-versus-latitude BH-adjusted p` ~ px(125),
+      `Exact fitted sample` ~ px(250)
+    ) |>
+    tab_style(
+      style = cell_text(weight = "bold"),
+      locations = cells_body(
+        columns = `Overall site BH-adjusted p`, rows = site_bold
+      )
+    ) |>
+    tab_style(
+      style = cell_text(weight = "bold"),
+      locations = cells_body(
+        columns = `Photoperiod BH-adjusted p`, rows = photoperiod_bold
+      )
+    ) |>
+    tab_style(
+      style = cell_text(weight = "bold"),
+      locations = cells_body(
+        columns = `Latitude BH-adjusted p`, rows = latitude_bold
+      )
+    ) |>
+    tab_style(
+      style = cell_text(weight = "bold"),
+      locations = cells_body(
+        columns = `Site-versus-latitude BH-adjusted p`, rows = adequacy_bold
+      )
+    ) |>
+    tab_source_note(
+      md(
+        paste0(
+          "This publication summary combines the model-level decisions, ",
+          "photoperiod and latitude effects, 95% confidence intervals, and ",
+          "exact fitted samples. Each displayed p-value is BH-adjusted within ",
+          "its explicitly labelled complete 17-test family; bold values meet ",
+          "the BH-adjusted p < 0.050 rule. Full raw p-values and test ",
+          "statistics remain in the detailed tables below."
+        )
+      )
+    )
+}
+
+site_contrast_display <- function(selected_run_id) {
+  site_contrasts |>
+    filter(.data$run_id == .env$selected_run_id) |>
+    arrange(.data$metric_order, .data$display_order) |>
+    transmute(
+      Metric = .data$manuscript_name,
+      Site = .data$display_name,
+      `Difference or ratio (95% CI)` = format_effect_ci(
+        .data$estimate_practical,
+        .data$conf_low_practical,
+        .data$conf_high_practical,
+        .data$effect_type,
+        .data$display_unit
+      ),
+      `Raw p` = format_p(.data$p_raw),
+      `Within-metric adjusted p` = format_p(.data$p_adjusted_within_metric),
+      adjusted_bold = !is.na(.data$p_adjusted_within_metric) &
+        .data$p_adjusted_within_metric < 0.05,
+      Supported = if_else(.data$supported_within_metric, "Yes", "No")
+    )
+}
+
+site_contrast_gt <- function(data) {
+  data |>
+    h01_gt(groupname_col = "Metric") |>
+    cols_hide(columns = "adjusted_bold") |>
+    cols_align("center", columns = -Site) |>
+    cols_width(
+      Site ~ px(170),
+      `Difference or ratio (95% CI)` ~ px(230),
+      everything() ~ px(160)
+    ) |>
+    tab_style(
+      style = cell_text(weight = "bold"),
+      locations = cells_body(
+        columns = `Within-metric adjusted p`,
+        rows = adjusted_bold
+      )
+    ) |>
+    tab_source_note(
+      md(
+        "Bold within-metric adjusted p-values meet the declared adjusted p < 0.050 decision rule. Raw p-values have no separate decision rule here and are not bold."
+      )
+    )
+}
+
+site_deviation_matrix_display <- function(selected_run_id) {
+  selected <- site_contrasts |>
+    filter(
+      .data$run_id == .env$selected_run_id,
+      .data$inferential_followup_supported,
+      is.finite(.data$overall_site_p_adjusted),
+      .data$overall_site_p_adjusted < 0.05
+    ) |>
+    arrange(.data$metric_order, .data$display_order)
+
+  site_levels <- selected |>
+    distinct(.data$display_order, .data$display_name) |>
+    arrange(.data$display_order) |>
+    pull(.data$display_name)
+
+  selected |>
+    mutate(
+      Site = factor(.data$display_name, levels = site_levels),
+      deviation = format_effect_ci(
+        .data$estimate_practical,
+        .data$conf_low_practical,
+        .data$conf_high_practical,
+        .data$effect_type,
+        .data$display_unit
+      ),
+      deviation = if_else(
+        .data$supported_within_metric,
+        paste0("**", .data$deviation, "**"),
+        .data$deviation
+      )
+    ) |>
+    transmute(
+      metric_order = .data$metric_order,
+      Metric = .data$manuscript_name,
+      Site = .data$Site,
+      deviation = .data$deviation
+    ) |>
+    pivot_wider(names_from = "Site", values_from = "deviation") |>
+    arrange(.data$metric_order) |>
+    select("metric_order", "Metric", all_of(site_levels))
+}
+
+site_deviation_matrix_gt <- function(data) {
+  site_columns <- setdiff(names(data), c("metric_order", "Metric"))
+
+  data |>
+    h01_gt(rowname_col = "Metric") |>
+    cols_hide(columns = "metric_order") |>
+    tab_spanner(
+      label = "Deviation from the equally weighted site mean (95% CI)",
+      columns = all_of(site_columns)
+    ) |>
+    fmt_markdown(columns = all_of(site_columns)) |>
+    cols_align("center", columns = all_of(site_columns)) |>
+    cols_width(
+      Metric ~ px(250),
+      everything() ~ px(135)
+    ) |>
+    tab_options(
+      table.font.size = px(11),
+      column_labels.font.size = px(11),
+      data_row.padding = px(4)
+    ) |>
+    tab_source_note(
+      md(
+        paste0(
+          "Rows are restricted to metrics with an overall-site BH-adjusted ",
+          "p < 0.050. Cells show the site deviation and 95% confidence ",
+          "interval: an ordinary difference for identity-scale responses and ",
+          "a ratio (×) for transformed or log-link responses. **Bold cells** ",
+          "meet the within-metric adjusted p < 0.050 rule. Sites retain the ",
+          "registered north-to-south order."
+        )
+      )
+    )
+}
+
+r2_display <- function(selected_run_id) {
+  r2_table |>
+    filter(.data$run_id == .env$selected_run_id) |>
+    select(
+      "row_type", "metric_order", "manuscript_category", "manuscript_name",
+      "measure", "estimate", "conf_low", "conf_high", "term_supported",
+      "supported_n", "unsupported_n"
+    ) |>
+    pivot_wider(
+      names_from = "measure",
+      values_from = c(
+        "estimate", "conf_low", "conf_high", "term_supported",
+        "supported_n", "unsupported_n"
+      )
+    ) |>
+    mutate(
+      Category = recode(.data$manuscript_category, !!!category_labels),
+      Metric = .data$manuscript_name,
+      `Model R²` = format_r2(
+        .data$estimate_conditional_r2,
+        .data$conf_low_conditional_r2,
+        .data$conf_high_conditional_r2
+      ),
+      `Fixed effects R²` = format_r2(
+        .data$estimate_marginal_r2,
+        .data$conf_low_marginal_r2,
+        .data$conf_high_marginal_r2
+      ),
+      `Participant-associated` = format_r2(
+        .data$estimate_participant_associated_share,
+        .data$conf_low_participant_associated_share,
+        .data$conf_high_participant_associated_share
+      ),
+      `Not represented` = format_r2(
+        .data$estimate_unrepresented_share,
+        .data$conf_low_unrepresented_share,
+        .data$conf_high_unrepresented_share
+      ),
+      `Site part R²` = format_r2(
+        .data$estimate_site_part_r2,
+        .data$conf_low_site_part_r2,
+        .data$conf_high_site_part_r2
+      ),
+      `Photoperiod part R²` = format_r2(
+        .data$estimate_photoperiod_part_r2,
+        .data$conf_low_photoperiod_part_r2,
+        .data$conf_high_photoperiod_part_r2
+      ),
+      `Latitude part R²` = format_r2(
+        .data$estimate_latitude_part_r2,
+        .data$conf_low_latitude_part_r2,
+        .data$conf_high_latitude_part_r2
+      ),
+      `Site part R²` = if_else(
+        .data$row_type == "Grand average",
+        paste0(
+          .data$`Site part R²`, " (",
+          .data$supported_n_site_part_r2, "/",
+          .data$unsupported_n_site_part_r2, ")"
+        ),
+        .data$`Site part R²`
+      ),
+      `Photoperiod part R²` = if_else(
+        .data$row_type == "Grand average",
+        paste0(
+          .data$`Photoperiod part R²`, " (",
+          .data$supported_n_photoperiod_part_r2, "/",
+          .data$unsupported_n_photoperiod_part_r2, ")"
+        ),
+        .data$`Photoperiod part R²`
+      ),
+      `Latitude part R²` = if_else(
+        .data$row_type == "Grand average",
+        paste0(
+          .data$`Latitude part R²`, " (",
+          .data$supported_n_latitude_part_r2, "/",
+          .data$unsupported_n_latitude_part_r2, ")"
+        ),
+        .data$`Latitude part R²`
+      ),
+      site_supported = .data$term_supported_site_part_r2,
+      photoperiod_supported = .data$term_supported_photoperiod_part_r2,
+      latitude_supported = .data$term_supported_latitude_part_r2
+    ) |>
+    arrange(.data$metric_order) |>
+    select(
+      "Category", "Metric", "Model R²", "Fixed effects R²",
+      "Participant-associated", "Not represented", "Site part R²",
+      "Photoperiod part R²", "Latitude part R²", "row_type",
+      "site_supported", "photoperiod_supported", "latitude_supported"
+    )
+}
+
+r2_gt <- function(data) {
+  data |>
+    h01_gt(groupname_col = "Category", rowname_col = "Metric") |>
+    tab_spanner(
+      label = "Complete model",
+      columns = c(`Model R²`, `Fixed effects R²`)
+    ) |>
+    tab_spanner(
+      label = "Variance partition",
+      columns = c(`Participant-associated`, `Not represented`)
+    ) |>
+    tab_spanner(
+      label = "Non-additive term summaries",
+      columns = c(`Site part R²`, `Photoperiod part R²`, `Latitude part R²`)
+    ) |>
+    cols_hide(
+      columns = c(
+        "row_type", "site_supported", "photoperiod_supported",
+        "latitude_supported"
+      )
+    ) |>
+    cols_align("center", columns = -Metric) |>
+    cols_width(Metric ~ px(240), everything() ~ px(145)) |>
+    tab_style(
+      style = list(
+        cell_fill(color = "#F2F2F2"),
+        cell_text(color = "#777777")
+      ),
+      locations = cells_body(
+        columns = `Site part R²`,
+        rows = row_type == "Metric" & !site_supported
+      )
+    ) |>
+    tab_style(
+      style = list(
+        cell_fill(color = "#F2F2F2"),
+        cell_text(color = "#777777")
+      ),
+      locations = cells_body(
+        columns = `Photoperiod part R²`,
+        rows = row_type == "Metric" & !photoperiod_supported
+      )
+    ) |>
+    tab_style(
+      style = list(
+        cell_fill(color = "#F2F2F2"),
+        cell_text(color = "#777777")
+      ),
+      locations = cells_body(
+        columns = `Latitude part R²`,
+        rows = row_type == "Metric" & !latitude_supported
+      )
+    ) |>
+    tab_style(
+      style = cell_text(weight = "bold"),
+      locations = cells_body(rows = row_type == "Grand average")
+    ) |>
+    tab_source_note(
+      md(
+        paste0(
+          "Metric rows are percentages with 95% percentile intervals from ",
+          "1,000 successful joint bootstrap refits per target. Grey term ",
+          "cells correspond to model-level BH-adjusted p ≥ 0.050. ",
+          "Grand-average term ",
+          "values are descriptive means over supported metrics only; ",
+          "parentheses give supported/unsupported counts. Term summaries ",
+          "are not additive."
+        )
+      )
+    )
+}
+
+exact_sample_display <- function(selected_run_id) {
+  exact_samples |>
+    filter(.data$run_id == .env$selected_run_id) |>
+    arrange(.data$metric_order) |>
+    transmute(
+      Metric = .data$manuscript_name,
+      Unit = .data$analysis_unit_label,
+      Participants = as.integer(.data$participants),
+      Days = as.integer(.data$participant_days),
+      Observations = as.integer(.data$observations),
+      `Support hours` = if_else(
+        is.finite(.data$derivation_support_hours),
+        formatC(.data$derivation_support_hours, format = "f", digits = 1),
+        "Unavailable"
+      ),
+      Sites = as.integer(.data$sites),
+      Status = str_to_sentence(str_replace_all(.data$sample_status, "_", " "))
+    )
+}
+
+exact_sample_gt <- function(data) {
+  data |>
+    h01_gt(rowname_col = "Metric") |>
+    cols_align("center", columns = everything()) |>
+    cols_width(
+      Metric ~ px(300),
+      Unit ~ px(130),
+      Participants ~ px(100),
+      Days ~ px(90),
+      Observations ~ px(110),
+      `Support hours` ~ px(130),
+      Sites ~ px(75),
+      Status ~ px(110)
+    ) |>
+    tab_source_note(
+      md(
+        paste0(
+          "Participant-level dynamics models have one fitted observation per ",
+          "participant; Days records the contributing repeated-day support. ",
+          "Unavailable support hours were not retained in the analytical rows ",
+          "and were not reconstructed."
+        )
+      )
+    )
+}
+
+diagnostic_example_display <- function() {
+  diagnostic_details |>
+    filter(
+      .data$run_id == primary_run,
+      .data$metric_id %in% c(
+        "daily_geometric_mean_medi",
+        "duration_below_10_pre_sleep",
+        "duration_above_250_wake",
+        "duration_below_1_sleep_environment"
+      )
+    ) |>
+    arrange(match(
+      .data$metric_id,
+      c(
+        "daily_geometric_mean_medi",
+        "duration_below_10_pre_sleep",
+        "duration_above_250_wake",
+        "duration_below_1_sleep_environment"
+      )
+    )) |>
+    transmute(
+      Metric = .data$manuscript_name,
+      Family = case_when(
+        .data$response_family == "tweedie_log" ~ "Tweedie, log link",
+        TRUE ~ "Gaussian"
+      ),
+      `Review signal` = .data$residual_assessment,
+      `Stored diagnostic values` = case_when(
+        .data$response_family == "gaussian" ~ paste0(
+          "Shapiro–Wilk p ", format_p(.data$shapiro_p),
+          "; residual-variance ratio ",
+          format_number(.data$residual_variance_ratio, 2),
+          "; |standardized residual| >3: ",
+          format_number(100 * .data$standardized_residual_over_3_fraction, 1),
+          "%"
+        ),
+        TRUE ~ paste0(
+          "DHARMa uniformity p ", format_p(.data$dharma_uniformity_p),
+          "; dispersion p ", format_p(.data$dharma_dispersion_p),
+          "; zero-inflation p ", format_p(.data$dharma_zero_inflation_p),
+          "; outlier p ", format_p(.data$dharma_outlier_p)
+        )
+      ),
+      `Prediction-bound check` = case_when(
+        .data$prediction_bound_status == "WARN_PREDICTED_BOUND" ~ paste0(
+          .data$predicted_above_bound_n,
+          " stored predictions above the physical upper bound"
+        ),
+        .data$prediction_bound_status == "UPPER_BOUND_UNAVAILABLE" ~
+          "No verified upper bound available",
+        TRUE ~ "Passed"
+      )
+    )
+}
+
+diagnostic_example_gt <- function(data) {
+  data |>
+    h01_gt(rowname_col = "Metric") |>
+    cols_width(
+      Metric ~ px(270),
+      Family ~ px(150),
+      `Review signal` ~ px(240),
+      `Stored diagnostic values` ~ px(470),
+      `Prediction-bound check` ~ px(250)
+    ) |>
+    tab_source_note(
+      md(
+        paste0(
+          "Diagnostic p-values are descriptive model-checking quantities, ",
+          "not the four H01 inferential families. They are shown without bold ",
+          "emphasis. The plots below are preserved point-model diagnostics; ",
+          "for Tweedie models the simulation-based DHARMa values in this table, ",
+          "rather than normality of the Q–Q panel, determine the formal review signal."
+        )
+      )
+    )
+}
+
+primary_support <- sensitivity_support |>
+  filter(.data$run_id == primary_run) |>
+  arrange(.data$question_order)
+chest_support <- sensitivity_support |>
+  filter(.data$run_id == chest_run) |>
+  arrange(.data$question_order)
+diagnostic_counts <- model_results |>
+  count(.data$placement_label, .data$assessment)
+
+primary_mean_medi <- primary_publication_summary |>
+  filter(.data$metric_id == "daily_geometric_mean_medi")
+primary_pre_sleep <- primary_publication_summary |>
+  filter(.data$metric_id == "duration_below_10_pre_sleep")
+primary_last_light <- primary_publication_summary |>
+  filter(.data$metric_id == "last_timing_above_250")
+
+primary_r2_metrics <- r2_table |>
+  filter(.data$run_id == primary_run, .data$row_type == "Metric")
+primary_r2_grand <- r2_table |>
+  filter(.data$run_id == primary_run, .data$row_type == "Grand average")
+fixed_r2_range <- range(
+  primary_r2_metrics$estimate[
+    primary_r2_metrics$measure == "marginal_r2"
+  ],
+  na.rm = TRUE
+)
+model_r2_range <- range(
+  primary_r2_metrics$estimate[
+    primary_r2_metrics$measure == "conditional_r2"
+  ],
+  na.rm = TRUE
+)
+supported_part_r2 <- primary_r2_grand |>
+  filter(.data$measure %in% c(
+    "site_part_r2", "photoperiod_part_r2", "latitude_part_r2"
+  )) |>
+  select(.data$measure, .data$estimate, .data$supported_n, .data$unsupported_n)
+
+paired_summary <- paired_placement |>
+  mutate(
+    same_side_of_null = sign(.data$near_estimate_practical - .data$null_value) ==
+      sign(.data$chest_estimate_practical - .data$null_value),
+    support_differs =
+      (.data$near_model_level_bh_adjusted_p < 0.05) !=
+      (.data$chest_model_level_bh_adjusted_p < 0.05)
+  ) |>
+  summarise(
+    estimands = dplyr::n(),
+    same_side = sum(.data$same_side_of_null, na.rm = TRUE),
+    support_switches = sum(.data$support_differs, na.rm = TRUE),
+    participant_min = min(.data$near_participants, na.rm = TRUE),
+    participant_max = max(.data$near_participants, na.rm = TRUE),
+    day_min = min(.data$near_participant_days, na.rm = TRUE),
+    day_max = max(.data$near_participant_days, na.rm = TRUE),
+    observation_min = min(.data$near_observations, na.rm = TRUE),
+    observation_max = max(.data$near_observations, na.rm = TRUE),
+    sites = unique(.data$near_sites)
+  )
+
+gap_primary_summary <- sensitivity_classification |>
+  filter(
+    .data$run_id ==
+      "manuscript_prepared_data__glasses__all_available"
+  )
+
+primary_category_support <- primary_publication_summary |>
+  group_by(.data$manuscript_category) |>
+  summarise(
+    metrics = dplyr::n(),
+    site = sum(.data$site_p_adjusted < 0.05, na.rm = TRUE),
+    photoperiod = sum(.data$photoperiod_p_adjusted < 0.05, na.rm = TRUE),
+    latitude = sum(.data$latitude_p_adjusted < 0.05, na.rm = TRUE),
+    adequacy = sum(.data$adequacy_p_adjusted < 0.05, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+photoperiod_supported_ratio_range <- primary_publication_summary |>
+  filter(
+    .data$photoperiod_p_adjusted < 0.05,
+    .data$photoperiod_effect_type == "ratio"
+  ) |>
+  summarise(
+    minimum = min(.data$photoperiod_estimate_practical, na.rm = TRUE),
+    maximum = max(.data$photoperiod_estimate_practical, na.rm = TRUE)
+  )
+
+participant_share_range <- range(
+  primary_r2_metrics$estimate[
+    primary_r2_metrics$measure == "participant_associated_share"
+  ],
+  na.rm = TRUE
+)
 ```
 
-Repeat this review if the site set, placement rule, included participant-days,
-photoperiod definition, latitude definition, metric set, model structure, set
-of tests adjusted together, or primary claim changes.
+## Hypothesis and analytical question
+
+The preregistered H1 hypothesis was:
+
+> “Personal light-exposure metrics differ across sites after accounting for latitude and photoperiod.”
+
+The scientific question is whether the 17 personal-light-exposure metrics show
+site, photoperiod, or latitude associations across the international study
+sites. Near-eye measurements are primary because they most closely represent
+light reaching the eyes during wear. Chest measurements provide complementary
+evidence and are not pooled with near-eye measurements.
+
+The analysis treats site and latitude as separate explanations. Each site has
+one latitude, so a fixed-site model and a linear-latitude model cannot be
+interpreted as independent covariates in one ordinary fixed-effects model.
+Instead, both models use the same observations and photoperiod adjustment, and
+their adequacy is compared on that common frame.
+
+::: {.callout-note title="Answer in brief"}
+After correction in four separate complete 17-test Benjamini--Hochberg
+families, the primary near-eye analysis supported
+`r primary_support$supported_metrics[primary_support$question_order == 1]`
+metrics for overall site,
+`r primary_support$supported_metrics[primary_support$question_order == 2]` for
+photoperiod, and
+`r primary_support$supported_metrics[primary_support$question_order == 3]` for
+latitude. Consequential examples per additional hour of photoperiod were a
+`r format_effect_ci(primary_mean_medi$photoperiod_estimate_practical, primary_mean_medi$photoperiod_conf_low_practical, primary_mean_medi$photoperiod_conf_high_practical, primary_mean_medi$photoperiod_effect_type, primary_mean_medi$display_unit)`
+ratio in mean melEDI, and
+`r format_effect_ci(primary_pre_sleep$photoperiod_estimate_practical, primary_pre_sleep$photoperiod_conf_low_practical, primary_pre_sleep$photoperiod_conf_high_practical, primary_pre_sleep$photoperiod_effect_type, primary_pre_sleep$display_unit)`
+less calendar-day cumulative time below 10 lx melEDI before sleep; last light
+above 250 lx melEDI occurred
+`r format_effect_ci(primary_last_light$photoperiod_estimate_practical, primary_last_light$photoperiod_conf_low_practical, primary_last_light$photoperiod_conf_high_practical, primary_last_light$photoperiod_effect_type, primary_last_light$display_unit)`
+later. Fixed effects represented
+`r formatC(100 * fixed_r2_range[[1]], format = "f", digits = 1)`--`r formatC(100 * fixed_r2_range[[2]], format = "f", digits = 1)`%
+of outcome variation across metrics, while complete models represented
+`r formatC(100 * model_r2_range[[1]], format = "f", digits = 1)`--`r formatC(100 * model_r2_range[[2]], format = "f", digits = 1)`%.
+Complementary chest evidence retained the broad geographic pattern; on the
+exact common samples, `r paired_summary$same_side` of
+`r paired_summary$estimands` matched photoperiod or latitude estimates lay on
+the same side of the null, although `r paired_summary$support_switches` support
+decisions differed, and the gap-timing-unaware near-eye sensitivity changed
+`r gap_primary_summary$support_switches` of
+`r gap_primary_summary$evaluated_cells` metric-question decisions.
+:::
+
+[How the H01 analysis was prepared](../../audit/hypotheses/H01/H01_analysis_preparation.html)
+
+### Deviations from the preregistered specification
+
+```{r}
+#| label: tbl-h01-deviations
+#| tbl-cap: "H01 deviations from the preregistered or otherwise expected specification."
+
+deviations |>
+  rename(
+    `Deviation ID` = deviation_ids,
+    Topic = topic,
+    `Preregistered or expected` = registered_or_expected,
+    `Analysis used` = analysis_used
+  ) |>
+  h01_gt() |>
+  cols_width(
+    `Deviation ID` ~ px(130),
+    Topic ~ px(180),
+    `Preregistered or expected` ~ px(390),
+    `Analysis used` ~ px(500)
+  ) |>
+  tab_source_note(
+    md(
+      "These deviations describe the complete H01 metric, model, multiplicity, placement, timing, support, and software specification used for the results below."
+    )
+  )
+```
+
+## What was analysed
+
+The response package contains 17 metrics spanning temporal dynamics, level,
+duration, exposure history, spectrum, and timing. Participant-day outcomes use
+a participant random intercept. Participant-level dynamics outcomes use
+ordinary Gaussian models because each participant contributes one analytical
+observation. Each response uses its declared Gaussian transformation or
+Tweedie log-link family; the same implementation is used for both data
+scenarios.
+
+The sensitivity analysis also uses a **gap-timing-unaware dataset**. It still
+passed the general 50%-per-hour and 80%-per-day coverage rules;
+“gap-timing-unaware” means that the timing of the remaining missing
+observations is not used for metric-specific adjustment. For this contrast
+only, the primary dataset can be understood as a **time-sensitive primary
+metric dataset**. Below, it is called simply the primary dataset, while the
+sensitivity scenario remains the gap-timing-unaware dataset.
+
+```{r}
+#| label: tbl-h01-metric-registry
+#| tbl-cap: "H01 response package and fitted response families."
+
+metric_registry |>
+  arrange(.data$metric_order) |>
+  transmute(
+    Category = recode(.data$manuscript_category, !!!category_labels),
+    Metric = .data$manuscript_name,
+    Unit = .data$display_unit,
+    `Model unit` = .data$analysis_unit_label,
+    `Response family` = .data$family_label
+  ) |>
+  h01_gt(groupname_col = "Category", rowname_col = "Metric") |>
+  cols_width(Metric ~ px(300), everything() ~ px(190))
+```
+
+## Statistical models
+
+Site, photoperiod, latitude, and site-versus-linear-latitude adequacy are four
+separate model-level questions. Their raw p-values are adjusted as four
+separate complete 17-test Benjamini–Hochberg families. A site-specific
+follow-up is made only when the corresponding overall site test has a
+BH-adjusted p < 0.050.
+That follow-up compares each site with the equally weighted overall site mean,
+reports a difference or ratio with a 95% confidence interval, and applies a
+within-metric multiplicity adjustment.
+
+Gaussian fixed-effect comparisons use maximum likelihood; final Gaussian
+participant-day fits use restricted maximum likelihood. Tweedie models use a
+log link and maximum likelihood throughout. The following evaluated R cells
+show the exact Wilkinson formula objects supplied to the fitted and comparison
+models.
+
+### Participant-level formula objects
+
+```{r}
+#| label: tbl-h01-participant-formulas
+#| tbl-cap: "Exact participant-level Wilkinson formulas used by the H01 implementation."
+#| echo: true
+#| code-fold: false
+
+participant_formulas <- h01_formula_set("participant")
+participant_formula_objects <- participant_formulas[c(
+  "site_full",
+  "no_site",
+  "no_photoperiod",
+  "latitude_full",
+  "random_site"
+)]
+formula_gt(formula_display(participant_formula_objects))
+```
+
+### Participant-day formula objects
+
+```{r}
+#| label: tbl-h01-participant-day-formulas
+#| tbl-cap: "Exact participant-day Wilkinson formulas used by the H01 implementation."
+#| echo: true
+#| code-fold: false
+
+participant_day_formulas <- h01_formula_set("participant_day")
+participant_day_formula_objects <- participant_day_formulas[c(
+  "site_full",
+  "no_site",
+  "no_photoperiod",
+  "latitude_full",
+  "random_site"
+)]
+formula_gt(formula_display(participant_day_formula_objects))
+```
+
+### Preregistered-scope sensitivity formula objects
+
+```{r}
+#| label: tbl-h01-preregistered-scope-formulas
+#| tbl-cap: "Exact Wilkinson formulas used in the preregistered-scope sensitivity."
+#| echo: true
+#| code-fold: false
+
+participant_scope_formulas <- h01_formula_set(
+  "participant",
+  preregistered_scope = TRUE
+)
+participant_day_scope_formulas <- h01_formula_set(
+  "participant_day",
+  preregistered_scope = TRUE
+)
+participant_scope_formula_objects <- participant_scope_formulas[c(
+    "site_full", "no_site", "no_photoperiod", "latitude_full", "random_site"
+  )]
+participant_day_scope_formula_objects <- participant_day_scope_formulas[c(
+    "site_full", "no_site", "no_photoperiod", "latitude_full", "random_site"
+  )]
+bind_rows(
+  formula_display(participant_scope_formula_objects, "Participant"),
+  formula_display(participant_day_scope_formula_objects, "Participant-day")
+) |>
+  formula_gt()
+```
+
+```{r}
+#| label: tbl-h01-formula-manifest
+#| tbl-cap: "Formula, engine, and estimation method recorded for every fitted and comparison model."
+
+formula_manifest |>
+  mutate(
+    `Model unit` = recode(
+      .data$analysis_unit,
+      participant = "Participant",
+      participant_day = "Participant-day"
+    ),
+    Model = str_replace_all(.data$model_name, "_", " "),
+    Stage = str_to_sentence(str_replace_all(.data$estimation_stage, "_", " ")),
+    Method = str_to_sentence(str_replace_all(.data$estimation_method, "_", " ")),
+    Family = paste(.data$family, .data$link, sep = " / ")
+  ) |>
+  select(
+    `Model unit`, Model, Stage, Formula = formula, Engine = engine,
+    Method, Family
+  ) |>
+  h01_gt(groupname_col = "Model unit") |>
+  cols_width(
+    Model ~ px(150),
+    Stage ~ px(100),
+    Formula ~ px(380),
+    Engine ~ px(90),
+    Method ~ px(190),
+    Family ~ px(150)
+  )
+```
+
+## Results overview
+
+In the primary near-eye analysis, the four complete correction families
+supported `r primary_support$supported_metrics[primary_support$question_order == 1]`
+metrics for overall site,
+`r primary_support$supported_metrics[primary_support$question_order == 2]` for
+photoperiod,
+`r primary_support$supported_metrics[primary_support$question_order == 3]` for
+latitude, and
+`r primary_support$supported_metrics[primary_support$question_order == 4]` for
+site-versus-linear-latitude adequacy. The complementary chest analysis
+supported `r chest_support$supported_metrics[chest_support$question_order == 1]`,
+`r chest_support$supported_metrics[chest_support$question_order == 2]`,
+`r chest_support$supported_metrics[chest_support$question_order == 3]`, and
+`r chest_support$supported_metrics[chest_support$question_order == 4]` metrics,
+respectively. This overview uses each placement's all-available sample, so it
+describes where each analysis retained support but does not by itself isolate
+a placement difference.
+
+![Benjamini–Hochberg support across the four 17-test families for the primary near-eye and complementary chest analyses. A check mark denotes BH-adjusted p below 0.050 and a dash denotes BH-adjusted p at least 0.050.](../../artifacts/10_figures/H01/stage3/H01_stage3_model_support.png){#fig-h01-model-support fig-alt="Two-panel matrix for near-eye and chest results. Rows are the 17 personal-light-exposure metrics and columns are overall site, photoperiod, latitude, and site-versus-linear-latitude adequacy. Blue cells with check marks indicate BH-adjusted p below 0.050; grey cells with dashes indicate BH-adjusted p at least 0.050." width="100%"}
+
+[Source data for @fig-h01-model-support](../../artifacts/11_source_data/H01/stage3/H01_stage3_model_support_figure_source.csv)
+
+### Matched near-eye and chest comparison
+
+The placement display below uses identical participants and participant-days
+for each near-eye/chest pair. Across the 30 comparable photoperiod and latitude
+estimands, `r paired_summary$same_side` point estimates lay on the same side of
+the null and `r paired_summary$support_switches` BH-adjusted support decisions
+differed between placements. The matched samples contained
+`r paired_summary$participant_min`--`r paired_summary$participant_max`
+participants, `r paired_summary$day_min`--`r paired_summary$day_max`
+participant-days and observations, and `r paired_summary$sites` sites,
+depending on metric. Proximity to the identity line describes agreement of
+point estimates; it is not an equivalence test and does not establish a causal
+sensor-placement effect.
+
+![Paired/common-sample near-eye and chest photoperiod and latitude estimands. Near-eye estimates are on the horizontal axis and chest estimates are on the vertical axis. Dashed diagonal lines show identity; dotted horizontal and vertical lines show the null.](../../artifacts/10_figures/H01/stage3/H01_stage3_paired_placement.png){#fig-h01-paired-placement fig-alt="Two-panel paired placement scatterplot. The difference panel has null lines at zero and the ratio panel has null lines at one. Near-eye estimates are on the horizontal axes and chest estimates on the vertical axes, with equal axis geometry within each panel. A grey dashed 45-degree line shows identity. Green circles mark photoperiod estimands and purple triangles mark latitude-per-10-degree estimands. Each point is labelled by metric abbreviation and predictor. Component 95 percent intervals and exact paired samples are reported in the adjacent table." width="100%"}
+
+[Source data for @fig-h01-paired-placement](../../artifacts/11_source_data/H01/stage3/H01_stage3_paired_placement_figure_source.csv)
+
+## Primary near-eye results
+
+### Publication summary
+
+```{r}
+#| label: tbl-h01-primary-publication-summary
+#| tbl-cap: "Publication summary of the primary near-eye H01 results."
+
+primary_publication_gt(primary_publication_display())
+```
+
+### Model-level tests
+
+```{r}
+#| label: tbl-h01-primary-tests
+#| tbl-cap: "Primary near-eye model-level tests with raw and vector-wide BH-adjusted p-values."
+
+model_test_gt(model_test_display(primary_run))
+```
+
+### Photoperiod and latitude effects
+
+```{r}
+#| label: tbl-h01-primary-effects
+#| tbl-cap: "Primary near-eye photoperiod and latitude effects, 95% confidence intervals, raw and BH-adjusted p-values, and exact fitted samples."
+
+effect_gt(effect_display(primary_run))
+```
+
+### Hierarchical site contrasts
+
+![Primary near-eye site differences or ratios relative to the equally weighted overall site mean. Only metrics with a supported overall site test are shown; horizontal lines are 95% confidence intervals.](../../artifacts/10_figures/H01/stage3/H01_stage3_site_contrasts_near_eye.png){#fig-h01-site-contrasts-near-eye fig-alt="Faceted forest plots for the eight near-eye metrics with a supported overall site test. Each panel displays the nine study sites in registered north-to-south order, with coloured points and horizontal 95 percent confidence intervals around differences or ratios relative to the equally weighted site mean. Dashed vertical lines mark zero for differences and one for ratios." width="100%"}
+
+[Source data for @fig-h01-site-contrasts-near-eye](../../artifacts/11_source_data/H01/stage3/H01_stage3_site_contrast_figure_source.csv)
+
+```{r}
+#| label: tbl-h01-primary-site-deviation-matrix
+#| tbl-cap: "Primary near-eye site-specific deviations for metrics with a supported overall site test."
+
+site_deviation_matrix_gt(site_deviation_matrix_display(primary_run))
+```
+
+```{r}
+#| label: tbl-h01-primary-site-contrasts
+#| tbl-cap: "Primary near-eye site contrasts after a supported overall site test."
+
+site_contrast_gt(site_contrast_display(primary_run))
+```
+
+### Variation represented
+
+Marginal R² represents the complete fixed-effect set; conditional R² represents
+fixed and participant random effects together. The participant-associated
+share is conditional minus marginal R² for participant-day models. Site and
+photoperiod part-R² values are non-overlapping model-reduction summaries within
+their own calculations, but they are not added because their information can
+overlap. Latitude part R² belongs to the separate latitude model.
+
+```{r}
+#| label: tbl-h01-primary-r2
+#| tbl-cap: "Primary near-eye R² and part-R² summaries with 95% joint-bootstrap intervals."
+
+r2_gt(r2_display(primary_run))
+```
+
+## Complementary chest results
+
+The chest analysis repeats the same 17-response package and model
+implementation. It is complementary evidence about light measured at the
+chest and is not interpreted as ocular exposure.
+
+### Model-level tests
+
+```{r}
+#| label: tbl-h01-chest-tests
+#| tbl-cap: "Complementary chest model-level tests with raw and vector-wide BH-adjusted p-values."
+
+model_test_gt(model_test_display(chest_run))
+```
+
+### Photoperiod and latitude effects
+
+```{r}
+#| label: tbl-h01-chest-effects
+#| tbl-cap: "Complementary chest photoperiod and latitude effects, 95% confidence intervals, raw and BH-adjusted p-values, and exact fitted samples."
+
+effect_gt(effect_display(chest_run))
+```
+
+### Hierarchical site contrasts
+
+![Complementary chest site differences or ratios relative to the equally weighted overall site mean. Only metrics with a supported overall site test are shown; horizontal lines are 95% confidence intervals.](../../artifacts/10_figures/H01/stage3/H01_stage3_site_contrasts_chest.png){#fig-h01-site-contrasts-chest fig-alt="Faceted forest plots for the 13 chest metrics with a supported overall site test. Each panel displays the available study sites in registered north-to-south order, with coloured points and horizontal 95 percent confidence intervals around differences or ratios relative to the equally weighted site mean. Dashed vertical lines mark zero for differences and one for ratios." width="100%"}
+
+[Source data for @fig-h01-site-contrasts-chest](../../artifacts/11_source_data/H01/stage3/H01_stage3_site_contrast_figure_source.csv)
+
+```{r}
+#| label: tbl-h01-chest-site-contrasts
+#| tbl-cap: "Complementary chest site contrasts after a supported overall site test."
+
+site_contrast_gt(site_contrast_display(chest_run))
+```
+
+### Variation represented
+
+```{r}
+#| label: tbl-h01-chest-r2
+#| tbl-cap: "Complementary chest R² and part-R² summaries with 95% joint-bootstrap intervals."
+
+r2_gt(r2_display(chest_run))
+```
+
+![Marginal R², conditional R², participant-associated share, and unrepresented share for near-eye and chest models. Points are estimates and horizontal lines are 95% intervals from 1,000 successful joint bootstrap refits.](../../artifacts/10_figures/H01/stage3/H01_stage3_r2_intervals.png){#fig-h01-r2-intervals fig-alt="Two-panel forest plot for near-eye and chest models. Rows are the 17 metrics; coloured symbols and horizontal intervals show marginal R squared, conditional R squared, participant-associated share, and unrepresented share. Intervals are based on 1,000 successful joint bootstrap refits per target." width="100%"}
+
+[Source data for @fig-h01-r2-intervals](../../artifacts/11_source_data/H01/stage3/H01_stage3_r2_figure_source.csv)
+
+The study-wide photoperiod and latitude distributions are shown once in the
+[descriptive results](../descriptives.qmd). The corresponding H01-specific
+coverage figures and source data remain preserved in the H01 reporting
+manifest but are not repeated here.
+
+## Exact fitted samples
+
+The tabs report exact participants, contributing participant-days,
+observations, measurement-support hours, and sites for all 136 run-metric
+combinations without forcing them into one 136-row table. Measurement-support
+hours were not retained in the analytical rows for the gap-timing-unaware
+dataset and therefore remain explicitly unavailable rather than being
+reconstructed.
+
+::: {.panel-tabset}
+
+### Primary near eye
+
+```{r}
+#| label: tbl-h01-samples-primary-near-eye
+#| tbl-cap: "Exact fitted samples: primary dataset, near eye, all available."
+
+exact_sample_gt(exact_sample_display("main__glasses__all_available"))
+```
+
+### Primary chest
+
+```{r}
+#| label: tbl-h01-samples-primary-chest
+#| tbl-cap: "Exact fitted samples: primary dataset, chest, all available."
+
+exact_sample_gt(exact_sample_display("main__chest__all_available"))
+```
+
+### Primary near eye — matched
+
+```{r}
+#| label: tbl-h01-samples-primary-near-eye-matched
+#| tbl-cap: "Exact fitted samples: primary dataset, near eye, paired/common sample."
+
+exact_sample_gt(exact_sample_display("main__glasses__paired_common_sample"))
+```
+
+### Primary chest — matched
+
+```{r}
+#| label: tbl-h01-samples-primary-chest-matched
+#| tbl-cap: "Exact fitted samples: primary dataset, chest, paired/common sample."
+
+exact_sample_gt(exact_sample_display("main__chest__paired_common_sample"))
+```
+
+### Gap-timing-unaware near eye
+
+```{r}
+#| label: tbl-h01-samples-gap-near-eye
+#| tbl-cap: "Exact fitted samples: gap-timing-unaware dataset, near eye, all available."
+
+exact_sample_gt(exact_sample_display(
+  "manuscript_prepared_data__glasses__all_available"
+))
+```
+
+### Gap-timing-unaware chest
+
+```{r}
+#| label: tbl-h01-samples-gap-chest
+#| tbl-cap: "Exact fitted samples: gap-timing-unaware dataset, chest, all available."
+
+exact_sample_gt(exact_sample_display(
+  "manuscript_prepared_data__chest__all_available"
+))
+```
+
+### Gap-timing-unaware near eye — matched
+
+```{r}
+#| label: tbl-h01-samples-gap-near-eye-matched
+#| tbl-cap: "Exact fitted samples: gap-timing-unaware dataset, near eye, paired/common sample."
+
+exact_sample_gt(exact_sample_display(
+  "manuscript_prepared_data__glasses__paired_common_sample"
+))
+```
+
+### Gap-timing-unaware chest — matched
+
+```{r}
+#| label: tbl-h01-samples-gap-chest-matched
+#| tbl-cap: "Exact fitted samples: gap-timing-unaware dataset, chest, paired/common sample."
+
+exact_sample_gt(exact_sample_display(
+  "manuscript_prepared_data__chest__paired_common_sample"
+))
+```
+
+:::
+
+## Model diagnostics
+
+All 34 primary and complementary point fits converged with positive-definite
+Hessians. A model is **acceptable** when no reviewed diagnostic is flagged,
+**acceptable with limitations** when optimization is valid but a residual,
+prediction-bound, construct, or clock-scale signal requires disclosure, and
+**not acceptable** when a required fit or hard diagnostic fails. None of the
+34 models is classified as not acceptable. A review signal is therefore not a
+convergence failure and does not by itself justify changing a response family.
+
+The diagnostic matrix evaluates:
+
+- convergence and Hessian validity, which indicate whether the numerical
+  optimum was obtained and locally identified;
+- random-effect singularity, which checks whether an estimated variance
+  component collapsed to its boundary;
+- residual distribution, which detects residual-shape, dispersion, zero-mass,
+  or outlier discrepancies;
+- prediction bounds, which check verified physical lower and upper limits;
+- the calendar-day cumulative construct audit for pre-sleep time; and
+- the strict-after-16:00 linearization check for clock outcomes.
+
+![Model diagnostic assessment for each primary near-eye and complementary chest metric. P denotes pass, R denotes review, and a dash denotes a non-applicable check.](../../artifacts/10_figures/H01/stage3/H01_stage3_diagnostic_assessment.png){#fig-h01-diagnostic-assessment fig-alt="Two-panel diagnostic matrix for near-eye and chest models. Rows are the 17 metrics and columns are convergence and Hessian, random-effect singularity, residual distribution, prediction bounds, construct audit, and clock-time cut. Blue P cells pass, yellow R cells require review, and grey dashes mark non-applicable checks. Convergence and Hessian checks pass throughout; review signals are concentrated in residual distribution and a small number of prediction-bound checks." width="100%"}
+
+[Source data for @fig-h01-diagnostic-assessment](../../artifacts/11_source_data/H01/stage3/H01_stage3_diagnostic_figure_source.csv)
+
+```{r}
+#| label: tbl-h01-diagnostic-assessment
+#| tbl-cap: "Overall diagnostic assessment for each primary near-eye and complementary chest model."
+
+model_results |>
+  arrange(.data$run_order, .data$metric_order) |>
+  transmute(
+    Placement = .data$placement_label,
+    Metric = .data$manuscript_name,
+    Assessment = .data$assessment,
+    `Residual check` = .data$residual_assessment,
+    `Prediction-bound check` = .data$bound_assessment
+  ) |>
+  h01_gt(groupname_col = "Placement", rowname_col = "Metric") |>
+  cols_width(
+    Metric ~ px(300),
+    Assessment ~ px(190),
+    `Residual check` ~ px(300),
+    `Prediction-bound check` ~ px(250)
+  ) |>
+  tab_style(
+    style = list(
+      cell_fill(color = "#FFF2CC"),
+      cell_text(color = "#6B5700")
+    ),
+    locations = cells_body(rows = Assessment == "Acceptable with limitations")
+  ) |>
+  tab_source_note(
+    md(
+      "Yellow rows require interpretation with the stated limitation but passed the required optimization and inferential-fit checks."
+    )
+  )
+```
+
+### Representative review examples
+
+The overview table identifies every model requiring review; the four examples
+below make the main warning types inspectable at ordinary report size. The
+Gaussian panels show residual structure and tail behaviour directly. For the
+Tweedie models, the plots are descriptive views of Pearson residuals; the
+formal review signal comes from the stored simulation-based values in the
+table, not from expecting Tweedie residuals to be normally distributed.
+
+```{r}
+#| label: tbl-h01-representative-diagnostics
+#| tbl-cap: "Stored diagnostic values for four representative primary near-eye review signals."
+
+diagnostic_example_gt(diagnostic_example_display())
+```
+
+::: {.panel-tabset}
+
+#### Mean melEDI
+
+![Residual-versus-fitted and normal Q–Q diagnostics for the primary near-eye mean melEDI Gaussian model.](../../artifacts/08_diagnostics/H01/main/glasses/all_available/daily_geometric_mean_medi_diagnostics.png){#fig-h01-diagnostic-mean-mel-edi fig-alt="Two diagnostic panels for the primary near-eye mean melEDI Gaussian model. The residual-versus-fitted panel shows a curved smooth and increasing residual spread at higher fitted values. The normal Q–Q panel shows departures in both tails, especially the upper tail." width="88%"}
+
+[Source data for @fig-h01-diagnostic-mean-mel-edi](../../artifacts/11_source_data/H01/main/glasses/all_available/daily_geometric_mean_medi_diagnostic_plot_data.csv)
+
+#### Time below 10 lx melEDI before sleep
+
+![Residual-versus-fitted and normal Q–Q diagnostics for the primary near-eye calendar-day cumulative time below 10 lx melEDI before sleep Gaussian model.](../../artifacts/08_diagnostics/H01/main/glasses/all_available/duration_below_10_pre_sleep_diagnostics.png){#fig-h01-diagnostic-pre-sleep fig-alt="Two diagnostic panels for the primary near-eye Gaussian model of calendar-day cumulative time below 10 lx melEDI before sleep. The residual-versus-fitted panel shows mild curvature and changing spread. The normal Q–Q panel shows modest departures in the tails." width="88%"}
+
+[Source data for @fig-h01-diagnostic-pre-sleep](../../artifacts/11_source_data/H01/main/glasses/all_available/duration_below_10_pre_sleep_diagnostic_plot_data.csv)
+
+#### Time above 250 lx melEDI during wake
+
+![Residual-versus-fitted and Q–Q diagnostics for the primary near-eye time above 250 lx melEDI during wake Tweedie model.](../../artifacts/08_diagnostics/H01/main/glasses/all_available/duration_above_250_wake_diagnostics.png){#fig-h01-diagnostic-wake-250 fig-alt="Two descriptive Pearson-residual panels for the primary near-eye Tweedie model of time above 250 lx melEDI during wake. The residual-versus-fitted panel shows residual structure across the fitted range. The Q–Q panel shows tail departures; the formal review decision uses the stored simulation diagnostics in the adjacent table." width="88%"}
+
+[Source data for @fig-h01-diagnostic-wake-250](../../artifacts/11_source_data/H01/main/glasses/all_available/duration_above_250_wake_diagnostic_plot_data.csv)
+
+#### Time below 1 lx melEDI during sleep
+
+![Residual-versus-fitted and Q–Q diagnostics for the primary near-eye time below 1 lx melEDI during sleep Tweedie model.](../../artifacts/08_diagnostics/H01/main/glasses/all_available/duration_below_1_sleep_environment_diagnostics.png){#fig-h01-diagnostic-sleep-below-1 fig-alt="Two descriptive Pearson-residual panels for the primary near-eye Tweedie model of time below 1 lx melEDI during sleep. Residual structure and upper-tail departures are visible. The stored simulation diagnostics show the strong review signal, and some fitted predictions crossed the verified physical upper bound." width="88%"}
+
+[Source data for @fig-h01-diagnostic-sleep-below-1](../../artifacts/11_source_data/H01/main/glasses/all_available/duration_below_1_sleep_environment_diagnostic_plot_data.csv)
+
+:::
+
+## Sensitivity analyses
+
+At the individual metric-by-family support level, the battery is
+**qualitatively sensitive**, although the broad geographic pattern remains.
+Relative to the primary near-eye analysis, support switches occur in both the
+gap-timing-unaware dataset and paired/common-sample analyses and are most
+frequent for the complementary chest placement. Photoperiod support is
+comparatively stable; site and latitude support vary more with placement and
+sample definition.
+
+```{r}
+#| label: tbl-h01-sensitivity-classification
+#| tbl-cap: "Support-level sensitivity classification relative to the primary near-eye analysis."
+
+sensitivity_classification |>
+  transmute(
+    Scenario = display_run(.data$run_id),
+    `Metric-family cells` = as.integer(.data$evaluated_cells),
+    `Non-estimable cells` = as.integer(.data$nonestimable_cells),
+    `Support switches` = as.integer(.data$support_switches),
+    Classification = .data$classification
+  ) |>
+  h01_gt() |>
+  cols_align("center", columns = -Scenario) |>
+  tab_source_note(
+    md(
+      "A support switch means that BH-adjusted p < 0.050 in exactly one of the two compared analyses. Non-estimable cells are reported separately."
+    )
+  )
+```
+
+### Same-model scenario and paired/common-sample results
+
+```{r}
+#| label: tbl-h01-sensitivity-support
+#| tbl-cap: "Supported metrics in each complete 17-test family across placement, data, and common-sample analyses."
+
+sensitivity_support |>
+  arrange(.data$run_order, .data$question_order) |>
+  transmute(
+    Scenario = display_run(.data$run_id),
+    Question = .data$question_label,
+    `Planned tests` = as.integer(.data$planned_tests),
+    `Supported metrics` = as.integer(.data$supported_metrics),
+    `Not estimable` = as.integer(.data$nonestimable_metrics),
+    Status = str_to_sentence(str_to_lower(.data$family_status))
+  ) |>
+  h01_gt(groupname_col = "Scenario") |>
+  cols_align("center", columns = -Question) |>
+  cols_width(Question ~ px(260), everything() ~ px(140))
+```
+
+### Paired near-eye and chest estimands
+
+The matched visual and its interpretation are shown in
+@fig-h01-paired-placement in the results overview. The table below retains the
+component 95% confidence intervals and exact common sample for every plotted
+estimand. The two participant-level dynamics metrics are not estimable in the
+paired sample and are omitted.
+
+```{r}
+#| label: tbl-h01-paired-placement
+#| tbl-cap: "Matched paired/common-sample near-eye and chest estimands with component 95% confidence intervals and exact samples."
+
+paired_placement |>
+  arrange(.data$effect_scale, .data$metric_order, .data$predictor_order) |>
+  transmute(
+    Scale = .data$effect_scale,
+    Metric = .data$manuscript_name,
+    Predictor = .data$predictor,
+    `Near-eye estimate (95% CI)` = format_effect_ci(
+      .data$near_estimate_practical,
+      .data$near_conf_low_practical,
+      .data$near_conf_high_practical,
+      .data$near_effect_type,
+      .data$display_unit
+    ),
+    `Chest estimate (95% CI)` = format_effect_ci(
+      .data$chest_estimate_practical,
+      .data$chest_conf_low_practical,
+      .data$chest_conf_high_practical,
+      .data$chest_effect_type,
+      .data$display_unit
+    ),
+    Participants = as.integer(.data$near_participants),
+    `Participant-days` = as.integer(.data$near_participant_days),
+    Observations = as.integer(.data$near_observations),
+    Sites = as.integer(.data$near_sites)
+  ) |>
+  h01_gt(groupname_col = "Scale") |>
+  cols_align("center", columns = -c(Metric, Predictor)) |>
+  cols_width(
+    Metric ~ px(280),
+    Predictor ~ px(150),
+    `Near-eye estimate (95% CI)` ~ px(210),
+    `Chest estimate (95% CI)` ~ px(210),
+    everything() ~ px(110)
+  ) |>
+  tab_source_note(
+    md(
+      "The figure omits intervals for legibility; this table reports both placement-specific 95% confidence intervals. The display compares separately fitted matched estimands and does not pool placements."
+    )
+  )
+```
+
+### Darkest-10-hour midpoint clock cut
+
+The primary midpoint conversion subtracts 24 hours only for clock values
+strictly after 16:00. The registered same-row sensitivity uses a noon cut. Both
+use the same Gaussian linear model implementation and identical fitted rows.
+
+```{r}
+#| label: tbl-h01-l10-noon-support
+#| tbl-cap: "Primary strict-after-16:00 and noon-cut sensitivity for the darkest-10-hour midpoint."
+
+l10_noon |>
+  arrange(.data$run_order, .data$variant, .data$question_order) |>
+  transmute(
+    Scenario = display_run(.data$run_id),
+    Conversion = recode(
+      .data$variant,
+      `Primary strict-after-16:00 conversion` = "Strictly after 16:00",
+      `Noon-cut sensitivity` = "Strictly after 12:00"
+    ),
+    Question = .data$question_label,
+    `Raw p` = format_p(.data$p_raw),
+    `BH-adjusted p` = format_p(.data$adjusted_p),
+    adjusted_bold = !is.na(.data$adjusted_p) & .data$adjusted_p < 0.05,
+    Multiplicity = .data$multiplicity
+  ) |>
+  h01_gt(groupname_col = "Scenario") |>
+  cols_hide(columns = "adjusted_bold") |>
+  cols_width(
+    Conversion ~ px(180),
+    Question ~ px(240),
+    everything() ~ px(150)
+  ) |>
+  tab_style(
+    style = cell_text(weight = "bold"),
+    locations = cells_body(columns = `BH-adjusted p`, rows = adjusted_bold)
+  ) |>
+  tab_source_note(
+    md(
+      "Bold BH-adjusted p-values meet the declared BH-adjusted p < 0.050 rule. Raw p-values have no separate decision rule here and are not bold."
+    )
+  )
+```
+
+```{r}
+#| label: tbl-h01-l10-noon-effects
+#| tbl-cap: "Photoperiod and latitude effects under the darkest-10-hour midpoint clock-cut sensitivity."
+
+l10_noon_effects |>
+  left_join(
+    metric_registry |>
+      select("metric_id", "display_unit"),
+    by = "metric_id",
+    relationship = "many-to-one"
+  ) |>
+  arrange(.data$run_id, .data$term) |>
+  transmute(
+    Scenario = display_run(.data$run_id),
+    Conversion = "Strictly after 12:00",
+    Term = recode(
+      .data$term,
+      photoperiod_centered_hours = "Photoperiod",
+      absolute_latitude_10deg_centered = "Latitude per 10°"
+    ),
+    `Effect (95% CI)` = format_effect_ci(
+      .data$estimate_practical,
+      .data$conf_low_practical,
+      .data$conf_high_practical,
+      .data$effect_type,
+      .data$display_unit
+    ),
+    `Raw p` = format_p(.data$p_raw)
+  ) |>
+  h01_gt(groupname_col = "Scenario") |>
+  cols_width(Conversion ~ px(180), Term ~ px(160), everything() ~ px(200)) |>
+  tab_source_note(
+    md("Raw p-values are reported descriptively and have no separate bolding rule in this table.")
+  )
+```
+
+### Exactly identified continuous periods
+
+The continuous-period sensitivity excludes censored periods and retains only
+exactly identified periods. It uses the same response-family implementation
+as the corresponding main model.
+
+```{r}
+#| label: tbl-h01-period-sensitivity
+#| tbl-cap: "Exactly identified continuous-period sensitivity for the longest period above 250 lx melEDI."
+
+period_sensitivity |>
+  arrange(.data$run_order) |>
+  transmute(
+    Scenario = display_run(.data$run_id),
+    `Excluded censored rows` = as.integer(.data$excluded_censored_rows),
+    Participants = as.integer(.data$participants),
+    `Participant-days` = as.integer(.data$participant_days),
+    Observations = as.integer(.data$observations),
+    Sites = as.integer(.data$sites),
+    `Overall site raw p` = format_p(.data$p_raw),
+    `Fit status` = str_to_sentence(str_replace_all(.data$comparison_status, "_", " ")),
+    `Diagnostic assessment` = case_when(
+      .data$diagnostic_status == "PASS" ~ "Acceptable",
+      .data$diagnostic_status == "WARN_REVIEW" ~
+        "Acceptable with limitations",
+      TRUE ~ "Not acceptable"
+    )
+  ) |>
+  h01_gt() |>
+  cols_align("center", columns = -Scenario) |>
+  cols_width(Scenario ~ px(260), everything() ~ px(145)) |>
+  tab_source_note(
+    md("The raw p-value is reported descriptively and has no separate bolding rule in this sensitivity table.")
+  )
+```
+
+### Preregistered photoperiod scope
+
+The main implementation adjusts all 17 metrics for photoperiod. The
+preregistered-scope sensitivity restricts photoperiod adjustment to the
+duration metrics declared for that purpose.
+
+```{r}
+#| label: tbl-h01-scope-sensitivity
+#| tbl-cap: "Preregistered-scope sensitivity with raw and BH-adjusted p-values."
+
+scope_sensitivity |>
+  arrange(.data$run_order, .data$metric_order, .data$question_order) |>
+  transmute(
+    Scenario = display_run(.data$run_id),
+    Metric = .data$manuscript_name,
+    Question = .data$question_label,
+    `Raw p` = format_p(.data$p_raw),
+    `BH-adjusted p` = format_p(.data$p_adjusted),
+    adjusted_bold = !is.na(.data$p_adjusted) & .data$p_adjusted < 0.05,
+    Status = str_to_sentence(str_replace_all(.data$comparison_status, "_", " "))
+  ) |>
+  h01_gt(groupname_col = "Scenario") |>
+  cols_hide(columns = "adjusted_bold") |>
+  cols_width(
+    Metric ~ px(280),
+    Question ~ px(230),
+    everything() ~ px(145)
+  ) |>
+  tab_style(
+    style = cell_text(weight = "bold"),
+    locations = cells_body(columns = `BH-adjusted p`, rows = adjusted_bold)
+  ) |>
+  tab_source_note(
+    md(
+      "Bold BH-adjusted p-values meet the declared BH-adjusted p < 0.050 rule. Raw p-values have no separate decision rule here and are not bold."
+    )
+  )
+```
+
+### Marginalization, participant influence, and latitude leverage
+
+Equal-site marginalization gives every site equal weight; observed-sample
+marginalization weights sites by their fitted analytical sample. Participant
+deletion assesses whether one participant dominates a coefficient, while
+leave-one-site-out latitude refits assess the structural leverage of individual
+sites on the latitude estimate.
+
+```{r}
+#| label: tbl-h01-marginalization
+#| tbl-cap: "Equal-site and observed-sample marginalization for primary and complementary models."
+
+marginalization |>
+  arrange(.data$run_order, .data$metric_order) |>
+  transmute(
+    Placement = .data$placement_label,
+    Metric = .data$manuscript_name,
+    `Equal-site estimate` = format_number(.data$equal_site_estimate_practical),
+    `Observed-sample estimate` = format_number(
+      .data$observed_sample_estimate_practical
+    ),
+    Difference = format_number(.data$practical_difference)
+  ) |>
+  h01_gt(groupname_col = "Placement", rowname_col = "Metric") |>
+  cols_align("center", columns = -Metric) |>
+  cols_width(Metric ~ px(300), everything() ~ px(190))
+```
+
+```{r}
+#| label: tbl-h01-influence
+#| tbl-cap: "Participant-deletion influence summary for primary and complementary models."
+
+influence_summary |>
+  arrange(.data$run_order, .data$metric_order) |>
+  transmute(
+    Placement = .data$placement_label,
+    Metric = .data$manuscript_name,
+    Refits = as.integer(.data$refits),
+    `Successful refits` = as.integer(.data$successful_refits),
+    `Maximum |DFBETA|` = format_number(.data$maximum_absolute_dfbeta, 3),
+    `Most influential participant` = .data$most_influential_participant,
+    Term = .data$maximum_dfbeta_term
+  ) |>
+  h01_gt(groupname_col = "Placement", rowname_col = "Metric") |>
+  cols_align("center", columns = -Metric) |>
+  cols_width(Metric ~ px(300), everything() ~ px(175))
+```
+
+```{r}
+#| label: tbl-h01-latitude-loo
+#| tbl-cap: "Leave-one-site-out latitude sensitivity for primary and complementary models."
+
+latitude_loo_summary |>
+  arrange(.data$run_order, .data$metric_order) |>
+  transmute(
+    Placement = .data$placement_label,
+    Metric = .data$manuscript_name,
+    `Site omissions` = as.integer(.data$omitted_site_refits),
+    `Successful refits` = as.integer(.data$successful_refits),
+    `Minimum effect` = format_number(.data$minimum_estimate),
+    `Maximum effect` = format_number(.data$maximum_estimate),
+    `Range crosses null` = if_else(.data$range_crosses_null, "Yes", "No")
+  ) |>
+  h01_gt(groupname_col = "Placement", rowname_col = "Metric") |>
+  cols_align("center", columns = -Metric) |>
+  cols_width(Metric ~ px(300), everything() ~ px(170))
+```
+
+## Interpretation
+
+The primary results support the hypothesis that personal light exposure
+differs geographically, but they do not reduce that pattern to one universal
+site ordering or one latitude effect. After the four separate 17-test
+Benjamini--Hochberg corrections, overall site was supported for
+`r primary_support$supported_metrics[primary_support$question_order == 1]` of
+17 metrics, photoperiod for
+`r primary_support$supported_metrics[primary_support$question_order == 2]`,
+latitude for
+`r primary_support$supported_metrics[primary_support$question_order == 3]`,
+and site-versus-linear-latitude adequacy for
+`r primary_support$supported_metrics[primary_support$question_order == 4]`.
+The two dynamics metrics retained none of these associations. In contrast,
+the three level metrics retained site, photoperiod, and latitude support for
+`r with(filter(primary_category_support, manuscript_category == "level-based"), paste(site, photoperiod, latitude, sep = ", "))`
+metrics, respectively; the five duration metrics retained
+`r with(filter(primary_category_support, manuscript_category == "duration-based"), paste(site, photoperiod, latitude, sep = ", "))`;
+and the five timing metrics retained
+`r with(filter(primary_category_support, manuscript_category == "timing-based"), paste(site, photoperiod, latitude, sep = ", "))`.
+Thus geography appeared most consistently in light level and timing, whereas
+duration responses were more consistently related to photoperiod.
+
+Among supported ratio-scale photoperiod effects, an additional hour of day
+length corresponded to approximately
+`r formatC(100 * (photoperiod_supported_ratio_range$minimum - 1), format = "f", digits = 0)`--`r formatC(100 * (photoperiod_supported_ratio_range$maximum - 1), format = "f", digits = 0)`%
+higher responses, depending on metric. Examples include mean melEDI at
+`r format_effect_ci(primary_mean_medi$photoperiod_estimate_practical, primary_mean_medi$photoperiod_conf_low_practical, primary_mean_medi$photoperiod_conf_high_practical, primary_mean_medi$photoperiod_effect_type, primary_mean_medi$display_unit)`,
+calendar-day cumulative pre-sleep time below 10 lx melEDI at
+`r format_effect_ci(primary_pre_sleep$photoperiod_estimate_practical, primary_pre_sleep$photoperiod_conf_low_practical, primary_pre_sleep$photoperiod_conf_high_practical, primary_pre_sleep$photoperiod_effect_type, primary_pre_sleep$display_unit)`,
+and last light above 250 lx melEDI at
+`r format_effect_ci(primary_last_light$photoperiod_estimate_practical, primary_last_light$photoperiod_conf_low_practical, primary_last_light$photoperiod_conf_high_practical, primary_last_light$photoperiod_effect_type, primary_last_light$display_unit)`.
+Hierarchical site contrasts then identify which sites differ from the
+equally weighted site mean, but only for metrics with a supported overall site
+test; their varying directions rule out a single north-to-south site ranking.
+
+The R² summaries distinguish complete-model variation, participant-associated
+variation, and term-level part R². They should not be interpreted as an
+additive decomposition: site and photoperiod can contain overlapping
+information, and latitude belongs to a separate same-frame model. Across the
+17 primary metrics, fixed effects represented
+`r formatC(100 * fixed_r2_range[[1]], format = "f", digits = 1)`--`r formatC(100 * fixed_r2_range[[2]], format = "f", digits = 1)`%
+and complete models represented
+`r formatC(100 * model_r2_range[[1]], format = "f", digits = 1)`--`r formatC(100 * model_r2_range[[2]], format = "f", digits = 1)`%.
+For participant-day outcomes, the participant-associated share ranged from
+`r formatC(100 * participant_share_range[[1]], format = "f", digits = 1)` to
+`r formatC(100 * participant_share_range[[2]], format = "f", digits = 1)`%.
+When averaged only over metrics whose corresponding model-level test was
+supported, term part R² was
+`r formatC(100 * supported_part_r2$estimate[supported_part_r2$measure == "site_part_r2"], format = "f", digits = 1)`%
+for site (`r supported_part_r2$supported_n[supported_part_r2$measure == "site_part_r2"]`
+metrics),
+`r formatC(100 * supported_part_r2$estimate[supported_part_r2$measure == "photoperiod_part_r2"], format = "f", digits = 1)`%
+for photoperiod (`r supported_part_r2$supported_n[supported_part_r2$measure == "photoperiod_part_r2"]`
+metrics), and
+`r formatC(100 * supported_part_r2$estimate[supported_part_r2$measure == "latitude_part_r2"], format = "f", digits = 1)`%
+for latitude (`r supported_part_r2$supported_n[supported_part_r2$measure == "latitude_part_r2"]`
+metrics).
+
+The complementary chest analysis reproduced the broad geographic signal, but
+the placement-specific all-available heatmap is not a test of placement. In
+the exact common samples, `r paired_summary$same_side` of
+`r paired_summary$estimands` comparable photoperiod and latitude point
+estimates were on the same side of the null and
+`r paired_summary$support_switches` BH-adjusted support decisions differed.
+This indicates material metric-level placement sensitivity without implying
+equivalence, a formal placement effect, or that one placement can substitute
+for the other. The gap-timing-unaware near-eye sensitivity changed
+`r gap_primary_summary$support_switches` of
+`r gap_primary_summary$evaluated_cells` support decisions, so individual
+metric claims remain conditional on the timing-aware metric preparation even
+though the broad geographic conclusion persists.
+
+## Limitations
+
+- The design is observational; associations with site, photoperiod, and
+  latitude are not causal effects.
+- Site and latitude are structurally linked because every site has one
+  latitude. Separate same-frame models address estimability but cannot remove
+  all geographic confounding.
+- Many models are acceptable with limitations because residual-shape or
+  prediction-bound checks require review. The representative plots and stored
+  diagnostic values make the main warning types inspectable and should temper
+  tail-sensitive interpretation.
+- Near-eye and chest sensors measure related but different exposure
+  environments. Chest measurements are complementary and must not be relabelled
+  as ocular exposure.
+- Rows from the gap-timing-unaware dataset do not retain measurement-support
+  hours, so those hours remain unavailable.
+- The calendar-day cumulative pre-sleep outcome can include more than one
+  diary-defined pre-sleep interval. Values strictly above six hours are audited
+  but are not capped.
+
+## Figure and table source data
+
+Each plotted figure has a paired CSV, and the publication tables are read from
+the corresponding H01 result CSVs without refitting or resampling.
+
+- [Model-support figure source](../../artifacts/11_source_data/H01/stage3/H01_stage3_model_support_figure_source.csv)
+- [Site-contrast figure source](../../artifacts/11_source_data/H01/stage3/H01_stage3_site_contrast_figure_source.csv)
+- [R² figure source](../../artifacts/11_source_data/H01/stage3/H01_stage3_r2_figure_source.csv)
+- [Diagnostic figure source](../../artifacts/11_source_data/H01/stage3/H01_stage3_diagnostic_figure_source.csv)
+- [Matched placement figure source](../../artifacts/11_source_data/H01/stage3/H01_stage3_paired_placement_figure_source.csv)
+- [Mean melEDI diagnostic source](../../artifacts/11_source_data/H01/main/glasses/all_available/daily_geometric_mean_medi_diagnostic_plot_data.csv)
+- [Pre-sleep diagnostic source](../../artifacts/11_source_data/H01/main/glasses/all_available/duration_below_10_pre_sleep_diagnostic_plot_data.csv)
+- [Wake-time diagnostic source](../../artifacts/11_source_data/H01/main/glasses/all_available/duration_above_250_wake_diagnostic_plot_data.csv)
+- [Sleep-environment diagnostic source](../../artifacts/11_source_data/H01/main/glasses/all_available/duration_below_1_sleep_environment_diagnostic_plot_data.csv)
+- [Primary and complementary model results](../../artifacts/09_tables/H01/stage3/H01_stage3_model_results.csv)
+- [Primary publication summary](../../artifacts/09_tables/H01/stage3/H01_stage3_primary_publication_summary.csv)
+- [Hierarchical site contrasts](../../artifacts/09_tables/H01/stage3/H01_stage3_site_contrasts.csv)
+- [R² table source](../../artifacts/09_tables/H01/stage3/H01_stage3_r2_table.csv)
+- [Detailed diagnostic source](../../artifacts/09_tables/H01/stage3/H01_stage3_diagnostic_details.csv)
+- [Exact fitted samples](../../artifacts/09_tables/H01/stage3/H01_stage3_exact_samples.csv)
+- [Figure display registry](../../artifacts/09_tables/H01/stage3/H01_stage3_figure_display_registry.csv)
+- [Reporting artifact manifest](../../artifacts/12_manifests/H01_stage3_reporting_artifacts.csv)

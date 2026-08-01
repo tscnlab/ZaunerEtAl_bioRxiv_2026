@@ -1,0 +1,1070 @@
+---
+title: "H01: Site differences in personal light exposure"
+subtitle: "Audited analysis and comparison with the submitted V0 results"
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    code-fold: true
+    code-summary: "Show display code"
+    page-layout: full
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+```{r}
+#| label: h01-setup
+#| include: false
+
+library(dplyr)
+library(gt)
+library(readr)
+library(stringr)
+library(tidyr)
+
+root <- normalizePath(
+  Sys.getenv(
+    "NATHEALTH_PROJECT_ROOT",
+    unset = Sys.getenv("QUARTO_PROJECT_DIR", unset = getwd())
+  ),
+  winslash = "/",
+  mustWork = TRUE
+)
+if (!file.exists(file.path(root, "renv.lock"))) {
+  stop("H01.qmd must execute from the project root", call. = FALSE)
+}
+if (!identical(as.character(getRversion()), "4.6.1")) {
+  stop("H01.qmd requires R 4.6.1", call. = FALSE)
+}
+
+report_root <- file.path(root, "artifacts/09_tables/H01/reporting")
+read_report <- function(name) {
+  read_csv(
+    file.path(report_root, paste0(name, ".csv")),
+    show_col_types = FALSE,
+    progress = FALSE
+  )
+}
+
+model_overview <- read_report("H01_reporting_model_overview")
+site_followups <- read_report("H01_reporting_site_followups")
+exact_samples <- read_report("H01_reporting_exact_samples")
+r2_preview <- read_report("H01_reporting_r2_preview_wide")
+submitted_s2 <- read_report("H01_submitted_table_s2_exact_render")
+submitted_s3 <- read_report("H01_submitted_table_s3_exact_render")
+v0_new_tests <- read_report("H01_reporting_v0_new_tests")
+v0_new_r2 <- read_report("H01_reporting_v0_new_r2")
+scenario_support <- read_report("H01_reporting_scenario_support")
+claim_summary <- read_report("H01_reporting_claim_summary")
+pilot_summary <- read_report("H01_reporting_pilot_summary")
+production_bootstrap <- read_csv(
+  file.path(
+    root,
+    paste0(
+      "artifacts/08_diagnostics/H01/bootstrap_production/",
+      "response_family_change/",
+      "H01_response_family_bootstrap_production_provenance.csv"
+    )
+  ),
+  show_col_types = FALSE,
+  progress = FALSE
+)
+candidate_selection <- read_report("H01_reporting_candidate_selection")
+candidate_scorecard <- read_report("H01_reporting_candidate_scorecard")
+report_provenance <- read_csv(
+  file.path(
+    root,
+    "artifacts/08_diagnostics/H01/reporting/H01_reporting_provenance.csv"
+  ),
+  show_col_types = FALSE,
+  progress = FALSE
+)
+
+category_order <- c(
+  "duration-based",
+  "dynamics-based",
+  "exposure-history-based",
+  "level-based",
+  "spectrum-based",
+  "timing-based"
+)
+category_labels <- c(
+  `duration-based` = "Duration",
+  `dynamics-based` = "Dynamics",
+  `exposure-history-based` = "Exposure history",
+  `level-based` = "Level",
+  `spectrum-based` = "Spectrum",
+  `timing-based` = "Timing",
+  `Grand average` = "Grand average"
+)
+
+arrange_h01_metrics <- function(data) {
+  data |>
+    mutate(
+      manuscript_category = factor(
+        manuscript_category,
+        levels = category_order
+      )
+    ) |>
+    arrange(manuscript_category, metric_order)
+}
+
+format_p <- function(value) {
+  case_when(
+    is.na(value) ~ "—",
+    value < 0.001 ~ formatC(value, format = "e", digits = 2),
+    TRUE ~ formatC(value, format = "f", digits = 3)
+  )
+}
+
+format_number <- function(value, digits = 2) {
+  ifelse(
+    is.finite(value),
+    formatC(value, format = "f", digits = digits),
+    "—"
+  )
+}
+
+format_clock <- function(value) {
+  output <- rep("—", length(value))
+  finite <- is.finite(value)
+  minutes <- round((value[finite] %% 24) * 60) %% (24 * 60)
+  output[finite] <- sprintf("%02d:%02d", minutes %/% 60, minutes %% 60)
+  output
+}
+
+format_estimate_ci <- function(
+  estimate,
+  conf_low,
+  conf_high,
+  unit,
+  effect_type = "difference"
+) {
+  output <- rep("—", length(estimate))
+  finite <- is.finite(estimate) & is.finite(conf_low) & is.finite(conf_high)
+  clock <- finite & unit == "clock time" & effect_type == "mean"
+  output[clock] <- paste0(
+    format_clock(estimate[clock]),
+    " [",
+    format_clock(conf_low[clock]),
+    "–",
+    format_clock(conf_high[clock]),
+    "]"
+  )
+  numeric <- finite & !clock
+  suffix <- ifelse(
+    unit[numeric] %in% c("h", "lx", "lx·h"),
+    paste0(" ", unit[numeric]),
+    ""
+  )
+  prefix <- ifelse(effect_type[numeric] %in% c("ratio", "odds_ratio"), "×", "")
+  output[numeric] <- paste0(
+    prefix,
+    formatC(estimate[numeric], format = "f", digits = 2),
+    " [",
+    formatC(conf_low[numeric], format = "f", digits = 2),
+    "–",
+    formatC(conf_high[numeric], format = "f", digits = 2),
+    "]",
+    suffix
+  )
+  output
+}
+
+format_r2 <- function(estimate, conf_low, conf_high) {
+  output <- rep("—", length(estimate))
+  finite_estimate <- is.finite(estimate)
+  finite_interval <- finite_estimate & is.finite(conf_low) & is.finite(conf_high)
+  output[finite_estimate] <- paste0(
+    formatC(100 * estimate[finite_estimate], format = "f", digits = 1),
+    "%"
+  )
+  output[finite_interval] <- paste0(
+    formatC(100 * estimate[finite_interval], format = "f", digits = 1),
+    "% [",
+    formatC(100 * conf_low[finite_interval], format = "f", digits = 1),
+    "–",
+    formatC(100 * conf_high[finite_interval], format = "f", digits = 1),
+    "]"
+  )
+  output
+}
+
+h01_gt <- function(data, ...) {
+  gt(data, ...) |>
+    tab_options(
+      table.font.size = px(12),
+      data_row.padding = px(4),
+      heading.align = "left",
+      table.width = pct(100),
+      row_group.font.weight = "600"
+    )
+}
+
+preview_active <- any(r2_preview$preview_only)
+```
+
+```{r}
+#| label: h01-status-callout
+#| results: asis
+
+if (preview_active) {
+  cat(paste0(
+    "::: {.callout-warning}\n",
+    "## Production approval checkpoint\n\n",
+    "The point-model baseline is established, but this rendered page is an ",
+    "explicit presentation preview. The preserved bootstrap results for 120 ",
+    "unchanged targets use 1,000 successful joint refits. The eight targets ",
+    "for time below 10 lx melEDI before sleep use the separately stored ",
+    "50-refit pilot and are labelled **PILOT — NOT FOR INFERENCE OR ",
+    "MANUSCRIPT REPORTING**. They will be replaced only after explicit author ",
+    "approval of this layout and the projected production cost. No other ",
+    "bootstrap target needs to be repeated.\n",
+    ":::"
+  ))
+} else {
+  cat(paste0(
+    "::: {.callout-important}\n",
+    "## Production calculation baseline complete\n\n",
+    "Every estimable H01 target has at least 1,000 successful joint ",
+    "bootstrap refits. The tables below therefore use production intervals ",
+    "throughout.\n",
+    ":::"
+  ))
+}
+```
+
+## Result in brief
+
+The audited near-eye analysis retains the familiar 17-metric H01 package.
+Each metric is fitted with its declared response family, participant-day
+outcomes include a participant random intercept, and the four model-wide
+questions—site, photoperiod, latitude, and same-frame site-versus-latitude
+adequacy—are adjusted as four separate 17-test Benjamini–Hochberg families.
+
+The response-family review changed only one metric: calendar-day cumulative
+time below 10 lx melEDI before sleep now uses a Gaussian identity model and is
+reported as an ordinary difference. The submitted-style Tweedie/log model was
+retained for time below 1 lx melEDI during sleep, and the shifted-log Gaussian
+model was retained for darkest-10-hour mean melEDI because no common
+alternative cleared the predefined diagnostic rule in both data scenarios and
+placements.
+
+```{r}
+#| label: tbl-h01-claim-summary
+#| tbl-cap: "Numbers of metrics supported after correction in the submitted V0 analysis and the audited main near-eye analysis."
+
+claim_summary |>
+  transmute(
+    Question = question_label,
+    `V0 supported` = submitted_supported_n,
+    `Audited supported` = current_supported_n,
+    `Newly supported` = newly_supported_metrics,
+    `No longer supported` = no_longer_supported_metrics
+  ) |>
+  h01_gt() |>
+  cols_align("center", columns = c(`V0 supported`, `Audited supported`)) |>
+  cols_width(
+    Question ~ px(130),
+    `V0 supported` ~ px(105),
+    `Audited supported` ~ px(120),
+    everything() ~ px(270)
+  ) |>
+  tab_source_note(
+    md(
+      "Support means *q* < 0.05 within the applicable 17-test vector-wide BH family."
+    )
+  )
+```
+
+The additional support relative to V0 is concentrated in time above 250 lx
+melEDI during wake for site and latitude, and in the L10 midpoint for
+photoperiod. These are model-wide results, not nine separate site contrasts.
+The hierarchical site comparisons appear only for the eight metrics whose
+overall site test is supported.
+
+## Response-family decision
+
+The candidate comparison used the identical implementation and model rows for
+the main and manuscript-prepared scenarios. Selection required the declared
+hard screens, common diagnostics, and all inferential fits to pass; descriptive
+random-site singularity was reported but was not allowed to redefine
+inferential eligibility.
+
+```{r}
+#| label: tbl-h01-family-selection
+#| tbl-cap: "Response-family decisions for the three metrics that reopened the post-bootstrap gate."
+
+candidate_selection |>
+  transmute(
+    Metric = manuscript_name,
+    `Selected family` = selected_candidate_label,
+    `Current retained` = if_else(current_candidate_retained, "Yes", "No"),
+    `Common diagnostic screen` = selected_common_diagnostic_status,
+    Rationale = selection_reason
+  ) |>
+  h01_gt() |>
+  cols_width(
+    Metric ~ px(220),
+    `Selected family` ~ px(180),
+    `Current retained` ~ px(90),
+    `Common diagnostic screen` ~ px(190),
+    Rationale ~ px(430)
+  ) |>
+  tab_style(
+    style = cell_text(weight = "bold"),
+    locations = cells_body(columns = `Selected family`)
+  ) |>
+  tab_source_note(
+    md(
+      "The alternative was selected only when it performed better under the fixed diagnostic rule in all required data scenarios and placements."
+    )
+  )
+```
+
+![Diagnostic status of all candidate response families across the eight required H01 runs.](../../artifacts/10_figures/H01/response_family_candidates/H01_response_family_diagnostic_status.png){#fig-h01-family-diagnostics fig-alt="A faceted diagnostic status plot compares three candidate response families for darkest-10-hour mean melEDI, time below 10 lx melEDI before sleep, and time below 1 lx melEDI during sleep across both data scenarios, near-eye and chest placements, and all-available and paired samples. Only the identity-scale Gaussian model for pre-sleep time has no strong diagnostic warning in any run." width="90%"}
+
+The selected pre-sleep Gaussian model converged in all eight required runs,
+had no strong residual warning, and stayed inside the 24-hour physical bound.
+For the main near-eye fit its residual-variance ratio was 1.66. The calendar-
+day cumulative construct is not truncated: observations strictly above six
+hours remain valid and are reported as an audit warning.
+
+## Gate A and Gate B outcome checks
+
+Gate A retains the calendar-day cumulative estimand for time below 10 lx
+melEDI before sleep. A calendar date can legitimately contain parts of two
+diary-defined three-hour pre-sleep intervals; therefore values are not capped
+at three hours. Values strictly above six hours trigger review without being
+removed or truncated.
+
+Gate B retains a linear clock model. The primary conversion subtracts 24 hours
+only from L10 midpoint values strictly later than 16:00; the noon cut is the
+same-row, same-family sensitivity. These are bell-shaped linear responses in
+the fitted range, so no circular model is introduced.
+
+::: {#fig-h01-l10-gate layout-ncol=2}
+
+![Primary strict-after-16:00 conversion.](../../artifacts/10_figures/H01/gates/H01_l10_midpoint_primary_16h_conversion_histogram.png){fig-alt="Histogram of the primary strict-after-16:00 L10 midpoint conversion. The distribution is unimodal and approximately bell-shaped on its linear scale, with the nighttime cluster away from the conversion cut."}
+
+![Noon-cut sensitivity.](../../artifacts/10_figures/H01/gates/H01_l10_midpoint_noon_conversion_sensitivity_histogram.png){fig-alt="Histogram of the noon-cut L10 midpoint sensitivity using the same observations and model. The distribution remains a linear clock-time sensitivity rather than a circular response."}
+
+Primary strict-after-16:00 conversion (left) and the predefined noon-cut
+sensitivity (right).
+
+:::
+
+## Reconstructed Table S2
+
+The submitted Table S2 combined model tests, fixed effects, nine site
+deviations, and random-effect summaries in one very wide bitmap. The faithful
+reconstruction below preserves its metric categories and questions but splits
+the content into three semantic tables: model-wide tests, effect estimates,
+and hierarchical site follow-ups. This allows 95% confidence intervals and
+both raw and adjusted p-values to remain readable.
+
+### Model-wide tests: audited analysis versus V0
+
+```{r}
+#| label: tbl-h01-s2-tests
+#| tbl-cap: "Reconstructed Table S2A: model-wide tests in the audited main near-eye analysis and the submitted V0 analysis."
+
+s2_tests <- model_overview |>
+  arrange_h01_metrics() |>
+  transmute(
+    Category = recode(
+      as.character(manuscript_category),
+      !!!category_labels
+    ),
+    Metric = manuscript_name,
+    `Site: audited` = paste0(
+      "p=", format_p(site_p_raw), "; q=", format_p(site_p_adjusted)
+    ),
+    `Site: V0 q` = format_p(site_p_adjusted_v0),
+    `Photoperiod: audited` = paste0(
+      "p=", format_p(photoperiod_p_raw),
+      "; q=", format_p(photoperiod_p_adjusted)
+    ),
+    `Photoperiod: V0 q` = format_p(photoperiod_p_adjusted_v0),
+    `Latitude: audited` = paste0(
+      "p=", format_p(latitude_p_raw),
+      "; q=", format_p(latitude_p_adjusted)
+    ),
+    `Latitude: V0 q` = format_p(latitude_p_adjusted_v0),
+    `Site vs latitude adequacy` = paste0(
+      "p=", format_p(adequacy_p_raw),
+      "; q=", format_p(adequacy_p_adjusted)
+    )
+  )
+
+s2_tests |>
+  h01_gt(groupname_col = "Category", rowname_col = "Metric") |>
+  tab_spanner(
+    label = "Overall site",
+    columns = c(`Site: audited`, `Site: V0 q`)
+  ) |>
+  tab_spanner(
+    label = "Photoperiod",
+    columns = c(`Photoperiod: audited`, `Photoperiod: V0 q`)
+  ) |>
+  tab_spanner(
+    label = "Latitude",
+    columns = c(`Latitude: audited`, `Latitude: V0 q`)
+  ) |>
+  cols_label(
+    `Site: audited` = "Audited p; q",
+    `Site: V0 q` = "V0 q",
+    `Photoperiod: audited` = "Audited p; q",
+    `Photoperiod: V0 q` = "V0 q",
+    `Latitude: audited` = "Audited p; q",
+    `Latitude: V0 q` = "V0 q",
+    `Site vs latitude adequacy` = "Site vs latitude p; q"
+  ) |>
+  cols_align("center", columns = -Metric) |>
+  cols_width(
+    Metric ~ px(260),
+    everything() ~ px(128)
+  ) |>
+  tab_source_note(
+    md(
+      "Each audited q-value belongs to one complete 17-test BH family. V0 columns reproduce the submitted adjusted values; V0 did not report the same-frame adequacy family."
+    )
+  )
+```
+
+### Effect estimates and exact primary samples
+
+```{r}
+#| label: tbl-h01-s2-effects
+#| tbl-cap: "Reconstructed Table S2B: audited main near-eye effect estimates with 95% confidence intervals and exact fitted samples."
+
+s2_effects <- model_overview |>
+  arrange_h01_metrics() |>
+  mutate(
+    overall_display = format_estimate_ci(
+      overall_estimate,
+      overall_conf_low,
+      overall_conf_high,
+      display_unit,
+      "mean"
+    ),
+    photoperiod_display = format_estimate_ci(
+      photoperiod_estimate_practical,
+      photoperiod_conf_low_practical,
+      photoperiod_conf_high_practical,
+      if_else(display_unit == "clock time", "h", display_unit),
+      photoperiod_effect_type
+    ),
+    latitude_display = format_estimate_ci(
+      latitude_estimate_practical,
+      latitude_conf_low_practical,
+      latitude_conf_high_practical,
+      if_else(display_unit == "clock time", "h", display_unit),
+      latitude_effect_type
+    ),
+    support_display = if_else(
+      derivation_support_status == "available",
+      paste0(formatC(derivation_support_hours, format = "f", digits = 1), " h"),
+      "Unavailable"
+    )
+  ) |>
+  transmute(
+    Category = recode(
+      as.character(manuscript_category),
+      !!!category_labels
+    ),
+    Metric = manuscript_name,
+    Family = family_label,
+    `Equal-site mean [95% CI]` = overall_display,
+    `Photoperiod per hour [95% CI]` = photoperiod_display,
+    `Latitude per 10° [95% CI]` = latitude_display,
+    Participants = participants,
+    `Participant-days` = participant_days,
+    Observations = observations,
+    `Support hours` = support_display,
+    Diagnostics = diagnostic_status
+  )
+
+s2_effects |>
+  h01_gt(groupname_col = "Category", rowname_col = "Metric") |>
+  cols_align(
+    "center",
+    columns = c(
+      Participants,
+      `Participant-days`,
+      Observations,
+      `Support hours`,
+      Diagnostics
+    )
+  ) |>
+  fmt_integer(columns = c(Participants, `Participant-days`, Observations)) |>
+  cols_width(
+    Metric ~ px(250),
+    Family ~ px(210),
+    `Equal-site mean [95% CI]` ~ px(170),
+    `Photoperiod per hour [95% CI]` ~ px(170),
+    `Latitude per 10° [95% CI]` ~ px(170),
+    everything() ~ px(95)
+  ) |>
+  tab_source_note(
+    md(
+      "Ratios are prefixed ×; linear effects are differences in the displayed unit. Participant-days are the model observations for participant-day outcomes. Support hours describe the measurements used to derive each response, not additional model rows."
+    )
+  )
+```
+
+### Hierarchical site follow-ups
+
+Only metrics with a supported overall site test enter this table. Every row is
+a comparison of one site with the equally weighted overall site mean. The raw
+p-value and the BH-adjusted p-value across the nine site comparisons for that
+metric are both shown.
+
+```{r}
+#| label: tbl-h01-site-followups
+#| tbl-cap: "Hierarchical site comparisons with the equally weighted overall site mean for metrics with a supported overall site test."
+
+site_display <- site_followups |>
+  mutate(
+    Category = recode(manuscript_category, !!!category_labels),
+    Metric = manuscript_name,
+    Site = site_display_name,
+    `Effect [95% CI]` = format_estimate_ci(
+      estimate_practical,
+      conf_low_practical,
+      conf_high_practical,
+      if_else(display_unit == "clock time", "h", display_unit),
+      effect_type
+    ),
+    `Raw p` = format_p(p_raw),
+    `Within-metric q` = format_p(p_adjusted_within_metric),
+    `Overall site q` = format_p(overall_site_p_adjusted),
+    metric_group = paste0(Category, " — ", Metric)
+  ) |>
+  arrange(metric_order, display_order) |>
+  select(
+    metric_group,
+    site,
+    Site,
+    `Effect [95% CI]`,
+    `Raw p`,
+    `Within-metric q`,
+    `Overall site q`
+  )
+
+site_gt <- site_display |>
+  h01_gt(groupname_col = "metric_group") |>
+  cols_hide(columns = site) |>
+  cols_align(
+    "center",
+    columns = c(`Effect [95% CI]`, `Raw p`, `Within-metric q`, `Overall site q`)
+  ) |>
+  cols_width(
+    Site ~ px(165),
+    `Effect [95% CI]` ~ px(220),
+    everything() ~ px(120)
+  )
+
+for (site_code in unique(site_display$site)) {
+  site_color <- site_followups$site_color[
+    match(site_code, site_followups$site)
+  ]
+  site_gt <- site_gt |>
+    tab_style(
+      style = list(
+        cell_fill(color = site_color, alpha = 0.22),
+        cell_text(weight = "bold")
+      ),
+      locations = cells_body(columns = Site, rows = site == site_code)
+    )
+}
+
+site_gt |>
+  tab_source_note(
+    md(
+      "Site names, visible order, and colours follow DISPLAY-001. The three German sites intentionally share the registered colour; their text labels distinguish them."
+    )
+  )
+```
+
+<details>
+<summary>Show the submitted V0 Table S2 bitmap</summary>
+
+![Submitted V0 Table S2 bitmap retained for direct visual comparison.](../../manuscript/R0_NatMed/Supplements/TableS2.png){#fig-h01-v0-table-s2 fig-alt="The submitted wide bitmap table lists 17 personal light-exposure metrics by category, adjusted site p-values, overall and nine site coefficients, photoperiod effects, participant and residual standard deviations, latitude effects, and random-site standard deviations." width="100%"}
+
+</details>
+
+## Reconstructed Table S3: variation represented
+
+Marginal R² represents the complete fixed-effect set; conditional R² represents
+fixed and participant random effects together. The participant-associated
+share is conditional minus marginal R² for participant-day models. Site and
+photoperiod part R² values are term-specific reductions in fixed-effect
+prediction variance and are deliberately not added because their information
+can overlap. Latitude part R² belongs to the separate latitude model.
+
+```{r}
+#| label: tbl-h01-s3-r2
+#| tbl-cap: "Reconstructed Table S3: audited R² and part-R² summaries with 95% joint-bootstrap intervals."
+
+r2_display <- r2_preview |>
+  mutate(
+    category_sort = if_else(metric_order == 0, -1, match(manuscript_category, category_order)),
+    Category = if_else(
+      metric_order == 0,
+      "Grand average",
+      recode(manuscript_category, !!!category_labels)
+    ),
+    Metric = if_else(
+      preview_only & metric_order > 0,
+      paste0(manuscript_name, " †"),
+      manuscript_name
+    ),
+    `Model R²` = format_r2(
+      conditional_r2_estimate,
+      conditional_r2_conf_low,
+      conditional_r2_conf_high
+    ),
+    `Fixed effects R²` = format_r2(
+      marginal_r2_estimate,
+      marginal_r2_conf_low,
+      marginal_r2_conf_high
+    ),
+    `Site part R²` = format_r2(
+      site_part_r2_estimate,
+      site_part_r2_conf_low,
+      site_part_r2_conf_high
+    ),
+    `Photoperiod part R²` = format_r2(
+      photoperiod_part_r2_estimate,
+      photoperiod_part_r2_conf_low,
+      photoperiod_part_r2_conf_high
+    ),
+    `Latitude part R²` = format_r2(
+      latitude_part_r2_estimate,
+      latitude_part_r2_conf_low,
+      latitude_part_r2_conf_high
+    ),
+    `Participant-associated` = format_r2(
+      participant_associated_share_estimate,
+      participant_associated_share_conf_low,
+      participant_associated_share_conf_high
+    ),
+    `Not represented` = format_r2(
+      unrepresented_share_estimate,
+      unrepresented_share_conf_low,
+      unrepresented_share_conf_high
+    ),
+    `Bootstrap evidence` = case_when(
+      metric_order == 0 & preview_only ~ "Preview mean",
+      metric_order == 0 ~ "Descriptive mean",
+      preview_only ~ "PILOT: 50",
+      TRUE ~ "Production: 1,000"
+    )
+  ) |>
+  arrange(category_sort, metric_order) |>
+  select(
+    Category,
+    Metric,
+    `Model R²`,
+    `Fixed effects R²`,
+    `Site part R²`,
+    `Photoperiod part R²`,
+    `Latitude part R²`,
+    `Participant-associated`,
+    `Not represented`,
+    `Bootstrap evidence`
+  )
+
+r2_gt <- r2_display |>
+  h01_gt(groupname_col = "Category", rowname_col = "Metric") |>
+  tab_spanner(
+    label = "Complete model",
+    columns = c(`Model R²`, `Fixed effects R²`)
+  ) |>
+  tab_spanner(
+    label = "Non-additive term summaries",
+    columns = c(`Site part R²`, `Photoperiod part R²`, `Latitude part R²`)
+  ) |>
+  cols_align("center", columns = -Metric) |>
+  cols_width(
+    Metric ~ px(245),
+    everything() ~ px(145)
+  ) |>
+  tab_source_note(
+    md(if (preview_active) {
+      paste0(
+        "Values are percentages with 95% percentile intervals. The grand ",
+        "average is descriptive and has no interval. † PILOT — NOT FOR ",
+        "INFERENCE OR MANUSCRIPT REPORTING."
+      )
+    } else {
+      paste0(
+        "Values are percentages with 95% percentile intervals from 1,000 ",
+        "successful joint bootstrap refits per target. The grand average is ",
+        "descriptive and has no interval."
+      )
+    })
+  )
+
+if (preview_active) {
+  r2_gt <- r2_gt |>
+    tab_style(
+      style = list(
+        cell_fill(color = "#FFF2CC"),
+        cell_text(weight = "bold")
+      ),
+      locations = cells_body(
+        rows = grepl("†$", Metric) | `Bootstrap evidence` == "Preview mean"
+      )
+    )
+}
+r2_gt
+```
+
+For direct comparison, the next table reproduces the exact percentages from
+the submitted rendered HTML. Blank submitted cells remain unavailable rather
+than being converted to zero.
+
+```{r}
+#| label: tbl-h01-s3-v0
+#| tbl-cap: "Exact submitted V0 Table S3 percentages extracted from the rendered H01 HTML."
+
+submitted_s3 |>
+  left_join(
+    model_overview |>
+      select(metric_id, manuscript_name, manuscript_category),
+    by = "metric_id"
+  ) |>
+  mutate(
+    manuscript_name = if_else(metric_id == "grand_average", "Grand average", manuscript_name),
+    manuscript_category = if_else(metric_id == "grand_average", "Grand average", manuscript_category),
+    Category = recode(manuscript_category, !!!category_labels),
+    `Model R²` = format_r2(conditional_r2, NA_real_, NA_real_),
+    `Fixed effects R²` = format_r2(marginal_r2, NA_real_, NA_real_),
+    `Site part R²` = format_r2(site_part_r2, NA_real_, NA_real_),
+    `Photoperiod part R²` = format_r2(photoperiod_part_r2, NA_real_, NA_real_),
+    `Latitude part R²` = format_r2(latitude_part_r2, NA_real_, NA_real_),
+    `Participant-associated` = format_r2(
+      participant_associated_share,
+      NA_real_,
+      NA_real_
+    ),
+    `Residual / not represented` = format_r2(
+      unrepresented_share,
+      NA_real_,
+      NA_real_
+    )
+  ) |>
+  arrange(metric_order) |>
+  select(
+    Category,
+    Metric = manuscript_name,
+    `Model R²`,
+    `Fixed effects R²`,
+    `Site part R²`,
+    `Photoperiod part R²`,
+    `Latitude part R²`,
+    `Participant-associated`,
+    `Residual / not represented`
+  ) |>
+  h01_gt(groupname_col = "Category", rowname_col = "Metric") |>
+  cols_align("center", columns = -Metric) |>
+  cols_width(Metric ~ px(245), everything() ~ px(145)) |>
+  tab_source_note(
+    md(
+      "These are exact rendered V0 strings converted from percentages to numeric values; they are not a re-estimation with the audited R² method."
+    )
+  )
+```
+
+<details>
+<summary>Show the submitted V0 Table S3 bitmap</summary>
+
+![Submitted V0 Table S3 bitmap retained for direct visual comparison.](../../manuscript/R0_NatMed/Supplements/TableS3.png){#fig-h01-v0-table-s3 fig-alt="The submitted table reports model, fixed-effect, site, photoperiod, latitude, participant, and residual percentages for the 17 H01 metrics and a grand average." width="100%"}
+
+</details>
+
+## Exact fitted samples
+
+Every model reports its exact participants, participant-days, observations,
+sites, and main-data measurement support where the metric producer retained
+exact support minutes. Participant-level IS and IV have one model observation
+per participant but retain the contributing participant-day count. In the main
+data, exact support hours are unavailable only for the M10 and L10 mean and
+midpoint metrics because their producer did not export exact support minutes;
+they are not imputed. The manuscript-prepared sensitivity lacks reconstructable
+metric-specific support records for every metric, so all of its support hours
+remain explicitly unavailable.
+
+```{r}
+#| label: tbl-h01-exact-samples
+#| tbl-cap: "Exact fitted samples for the main and manuscript-prepared near-eye scenarios."
+
+exact_samples |>
+  mutate(
+    Scenario = data_scenario,
+    Metric = manuscript_name,
+    `Analysis unit` = if_else(
+      analysis_unit == "participant_day",
+      "Participant-day",
+      "Participant"
+    ),
+    `Support hours` = if_else(
+      derivation_support_status == "available",
+      formatC(derivation_support_hours, format = "f", digits = 1),
+      if_else(
+        data_scenario_id == "main",
+        "Unavailable*",
+        "Unavailable†"
+      )
+    )
+  ) |>
+  arrange(Scenario, metric_order) |>
+  select(
+    Scenario,
+    Metric,
+    `Analysis unit`,
+    Participants = participants,
+    `Participant-days` = participant_days,
+    Observations = observations,
+    Sites = sites,
+    `Support hours`
+  ) |>
+  h01_gt(groupname_col = "Scenario", rowname_col = "Metric") |>
+  fmt_integer(columns = c(Participants, `Participant-days`, Observations, Sites)) |>
+  cols_align(
+    "center",
+    columns = c(
+      `Analysis unit`,
+      Participants,
+      `Participant-days`,
+      Observations,
+      Sites,
+      `Support hours`
+    )
+  ) |>
+  cols_width(Metric ~ px(280), everything() ~ px(115)) |>
+  tab_source_note(
+    md(
+      "Support hours are derivation support, not additional model observations. * Main M10/L10 producer did not export exact support minutes. † Manuscript-prepared support records are unavailable. Neither is imputed."
+    )
+  )
+```
+
+## Sensitivity and complementary analyses
+
+The identical implementation is applied to the manuscript-prepared data.
+Near-eye remains primary, paired/common-sample analyses separate placement
+from availability, and chest remains complementary rather than pooled. The
+table summarizes how many of the 17 metrics are supported in each declared
+family; the full metric-level p-values remain in the linked source CSV.
+
+```{r}
+#| label: tbl-h01-sensitivity-support
+#| tbl-cap: "Supported metrics in each 17-test BH family across all declared data, placement, and common-sample runs."
+
+run_order <- c(
+  "Main near-eye — primary",
+  "Main near-eye — paired/common sample",
+  "Main chest — complementary",
+  "Main chest — paired/common sample",
+  "Manuscript-prepared near-eye — sensitivity",
+  "Manuscript-prepared near-eye — paired/common sample",
+  "Manuscript-prepared chest — complementary",
+  "Manuscript-prepared chest — paired/common sample"
+)
+
+scenario_support |>
+  mutate(
+    run_label = factor(run_label, levels = run_order),
+    display = paste0(supported_metrics, " / ", tests)
+  ) |>
+  select(run_label, family_label, display) |>
+  pivot_wider(names_from = family_label, values_from = display) |>
+  arrange(run_label) |>
+  rename(Run = run_label) |>
+  h01_gt() |>
+  cols_align("center", columns = -Run) |>
+  cols_width(Run ~ px(320), everything() ~ px(175)) |>
+  tab_source_note(
+    md(
+      "Cells show supported metrics / 17. The table reports stability of model-wide support, not similarity of effect magnitude."
+    )
+  )
+```
+
+Additional required checks are retained outside the four primary families:
+the noon-cut L10 analysis uses the same rows and Gaussian model, the longest-
+period analysis is repeated using only exactly identified bouts, latitude is
+refitted after omitting each site in turn, and participant influence is
+assessed by leave-one-participant-out refits. These sensitivity p-values do not
+enter the primary multiplicity families.
+
+## Figure S10: photoperiod and latitude
+
+The reconstruction applies the submitted Figure S10 visual grammar to the new
+audited data: the original square layout, density ridges, vertically jittered
+points, black masks outside the theoretical civil-photoperiod envelope,
+in-panel legend, and white annotation are retained. The registered site order,
+names, and colours are unchanged. All points use the submitted circular
+symbol; sites sharing a colour remain distinguishable by their fixed
+north-to-south placement. The coloured observations and density ribbons are
+drawn in front of the black impossible-photoperiod masks.
+
+::: {#fig-h01-s10-comparison layout-ncol=2}
+
+![Submitted V0 Figure S10.](../../manuscript/R0_NatMed/Supplements/FigureS10.png){fig-alt="Submitted V0 Figure S10. Coloured site ridges and vertically jittered points are arranged by absolute latitude. Black masks delimit the possible civil-photoperiod region, with an in-panel site legend and a white arrow annotation."}
+
+![Audited Figure S10 in the submitted style.](../../artifacts/10_figures/H01/reporting/H01_figure_s10_photoperiod_latitude.png){fig-alt="Audited Figure S10 in the submitted style. Nine site distributions are shown in the registered order and colours from north to south against absolute latitude. Circular points and coloured density ribbons appear in front of black regions outside the theoretical 2025 civil-photoperiod envelope."}
+
+Submitted V0 figure (left) and original-style audited reconstruction (right).
+The audited panel contains 816 main near-eye participant-days. Civil
+photoperiod is the time between a solar depression of 6° at dawn and dusk.
+Black regions fall outside the theoretical 2025 range.
+
+:::
+
+## Bootstrap execution record
+
+```{r}
+#| label: tbl-h01-bootstrap-pilot
+#| tbl-cap: "COMPUTE-001 pilot and completed production bootstrap for the eight changed-family targets."
+
+bootstrap_execution <- bind_rows(
+  pilot_summary |>
+    transmute(
+      Stage = "Pilot",
+      Status = inference_status,
+      Targets = targets,
+      `Attempted refits` = attempted_refits,
+      `Successful attempts` = successful_refits,
+      `Retained refits` = retained_refits,
+      Failures = failed_refits,
+      Warnings = warning_refits,
+      `Preserved targets` = NA_integer_,
+      Workers = requested_parallel_workers,
+      `Wall time` = paste0(
+        formatC(total_wall_seconds, format = "f", digits = 1),
+        " s"
+      ),
+      Checkpoint = checkpoint_status
+    ),
+  production_bootstrap |>
+    transmute(
+      Stage = "Production",
+      Status = inference_status,
+      Targets = completed_targets,
+      `Attempted refits` = total_attempted_refits,
+      `Successful attempts` = total_successful_refits,
+      `Retained refits` = total_used_refits,
+      Failures = total_failed_refits,
+      Warnings = total_warning_refits,
+      `Preserved targets` = preserved_targets,
+      Workers = requested_parallel_workers,
+      `Wall time` = paste0(
+        formatC(total_wall_seconds, format = "f", digits = 1),
+        " s"
+      ),
+      Checkpoint = checkpoint_granularity
+    )
+)
+
+bootstrap_execution |>
+  h01_gt() |>
+  sub_missing(columns = `Preserved targets`, missing_text = "—") |>
+  cols_align(
+    "center",
+    columns = c(
+      Stage,
+      Targets,
+      `Attempted refits`,
+      `Successful attempts`,
+      `Retained refits`,
+      Failures,
+      Warnings,
+      `Preserved targets`,
+      Workers,
+      `Wall time`
+    )
+  ) |>
+  cols_width(
+    Status ~ px(250),
+    Checkpoint ~ px(240),
+    everything() ~ px(105)
+  ) |>
+  tab_style(
+    style = list(
+      cell_fill(color = "#FFF2CC"),
+      cell_text(weight = "bold")
+    ),
+    locations = cells_body(columns = Status, rows = Stage == "Pilot")
+  ) |>
+  tab_style(
+    style = list(
+      cell_fill(color = "#D9EAD3"),
+      cell_text(weight = "bold")
+    ),
+    locations = cells_body(columns = Status, rows = Stage == "Production")
+  ) |>
+  tab_source_note(
+    md(
+      "The pilot remains separate and is not used for inference. Production retains 1,000 successful joint refits for each changed target; the 120 unchanged target files were reused byte-for-byte."
+    )
+  )
+```
+
+The pilot used four parallel workers, one BLAS/OpenMP thread per worker, wrote
+all eight completed target checkpoints, and produced no failed or warning
+refit. The subsequently approved production run completed all eight changed
+targets in 310.9 seconds. Of 12,000 attempted refits, 11,996 succeeded and
+8,000 were retained; four failed attempts were replaced before each target
+reached 1,000 successful joint refits. All 120 unchanged target draw hashes
+remained unchanged.
+
+## Claim consequences and unresolved items
+
+The submitted broad conclusion that site differences are concentrated in
+level- and timing-based outcomes remains recognizable, but it needs revision:
+the audited analysis additionally supports an overall site effect for time
+above 250 lx melEDI during wake. The same duration metric also gains support
+for a latitude gradient. Photoperiod remains widely associated with duration,
+level, dose, spectrum, and selected timing metrics, and the L10 midpoint joins
+the supported photoperiod set. First light timing above 250 lx melEDI remains
+unsupported for site.
+
+The site-versus-latitude adequacy family is new and must not be equated with a
+separate residual site effect after latitude adjustment. Site and latitude are
+competing fixed-effect representations of the same site-level structure in
+identical model frames.
+
+The submitted R² percentages cannot be carried forward as additive variance
+contributions. The repaired marginal, conditional, participant-associated,
+and term-level part-R² summaries remain separate; site and photoperiod part R²
+are not summed. No response-family or bootstrap major-change gate remains
+open. Diagnostic `WARN_REVIEW` rows remain visible for model-level review and
+do not silently redefine the approved response families.
+
+## Reproducibility and source data
+
+The reporting layer reads only audited upstream R objects. It does not refit
+models during rendering. Publication tables use `gt`, Quarto owns their labels
+and captions, and every plotted figure has paired CSV source data.
+
+- Reporting manifest: `artifacts/12_manifests/H01_reporting_artifacts.csv`
+- Model-result manifest: `artifacts/12_manifests/H01_model_results_artifacts.csv`
+- V0 extraction manifest: `artifacts/12_manifests/H01_v0_extraction_artifacts.csv`
+- Candidate-family manifest: `artifacts/12_manifests/H01_response_family_candidate_artifacts.csv`
+- Pilot manifest: `artifacts/12_manifests/H01_response_family_bootstrap_pilot_artifacts.csv`
+- Production-bootstrap manifest: `artifacts/12_manifests/H01_response_family_bootstrap_production_artifacts.csv`
+- Figure S10 observed source: `artifacts/11_source_data/H01/reporting/H01_figure_s10_observed_photoperiod_source.csv`
+- Figure S10 theoretical envelope: `artifacts/11_source_data/H01/reporting/H01_figure_s10_theoretical_bounds_source.csv`
+- Exact current/V0 test comparison: `artifacts/09_tables/H01/reporting/H01_reporting_v0_new_tests.csv`
+- Exact current/V0 R² comparison: `artifacts/09_tables/H01/reporting/H01_reporting_v0_new_r2.csv`
+
+The reporting environment is R `r report_provenance$r_version`, `gt`
+`r report_provenance$gt_version`, and Quarto
+`r report_provenance$quarto_version`. The current lockfile SHA-256 is
+`r report_provenance$renv_lock_sha256`.

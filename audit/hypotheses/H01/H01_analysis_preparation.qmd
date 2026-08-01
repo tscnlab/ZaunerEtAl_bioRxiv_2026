@@ -1,0 +1,1272 @@
+---
+title: "H01 analysis preparation and provenance"
+subtitle: "From verified personal light-exposure metrics to reported results"
+date: last-modified
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    code-fold: true
+    code-summary: "Show the R code used for this display"
+    code-tools: true
+    page-layout: full
+execute:
+  echo: true
+  warning: false
+  message: false
+  error: false
+fig-cap-location: bottom
+tbl-cap-location: top
+---
+
+```{r}
+#| label: setup
+#| include: false
+
+suppressPackageStartupMessages({
+  library(dplyr)
+  library(ggplot2)
+  library(gt)
+  library(readr)
+  library(scales)
+  library(stringr)
+  library(tibble)
+  library(tidyr)
+})
+
+root_candidates <- unique(c(
+  normalizePath(getwd(), winslash = "/", mustWork = TRUE),
+  normalizePath(file.path(getwd(), "../../.."), winslash = "/", mustWork = FALSE)
+))
+is_project_root <- vapply(
+  root_candidates,
+  function(path) {
+    file.exists(file.path(path, "renv.lock")) &&
+      file.exists(file.path(path, "scripts/hypotheses/H01/h01_contract.R"))
+  },
+  logical(1)
+)
+stopifnot(any(is_project_root))
+root <- root_candidates[which(is_project_root)[1L]]
+knitr::opts_knit$set(root.dir = root)
+
+source(file.path(root, "scripts/pipeline/paths_io.R"))
+source(file.path(root, "scripts/pipeline/p_value_display.R"))
+source(file.path(root, "scripts/hypotheses/H01/h01_contract.R"))
+
+if (!identical(as.character(getRversion()), "4.6.1")) {
+  stop("H01 preparation requires R 4.6.1", call. = FALSE)
+}
+
+read_h01_csv <- function(path) {
+  readr::read_csv(file.path(root, path), show_col_types = FALSE, progress = FALSE)
+}
+
+relative_path <- function(path) {
+  sub(
+    paste0("^", gsub("([][{}()+*^$|\\\\?.])", "\\\\\\1", root), "/"),
+    "",
+    normalizePath(path, winslash = "/", mustWork = TRUE)
+  )
+}
+
+prep_gt <- function(table) {
+  table |>
+    gt::opt_row_striping() |>
+    gt::tab_options(
+      table.width = gt::pct(100),
+      table.font.size = gt::px(12),
+      data_row.padding = gt::px(4),
+      column_labels.font.weight = "bold",
+      source_notes.font.size = gt::px(10)
+    )
+}
+
+format_count <- function(value) {
+  ifelse(
+    is.finite(value),
+    format(value, big.mark = ",", scientific = FALSE, trim = TRUE),
+    "Unavailable"
+  )
+}
+
+format_range <- function(lower, upper, suffix = "") {
+  ifelse(
+    is.finite(lower) & is.finite(upper),
+    paste0(format_count(lower), "–", format_count(upper), suffix),
+    "Unavailable"
+  )
+}
+
+verify_artifact_manifest <- function(path) {
+  manifest <- read_h01_csv(path)
+  stopifnot(all(c("path", "sha256") %in% names(manifest)))
+  files <- file.path(root, manifest$path)
+  stopifnot(all(file.exists(files)))
+  observed <- unname(vapply(files, artifact_sha256, character(1)))
+  stopifnot(identical(observed, unname(manifest$sha256)))
+  manifest
+}
+
+input_contract <- h01_input_contract(root)
+metric_registry <- h01_metric_registry()
+family_registry <- h01_family_registry()
+run_registry <- h01_run_registry()
+invisible(h01_validate_registry(metric_registry))
+
+main_manifest_path <- "artifacts/12_manifests/H01_model_data_artifacts.csv"
+gap_manifest_path <-
+  "artifacts/12_manifests/H01_manuscript_prepared_data_artifacts.csv"
+bootstrap_manifest_path <- paste0(
+  "artifacts/12_manifests/",
+  "H01_response_family_bootstrap_production_artifacts.csv"
+)
+stage3_manifest_path <-
+  "artifacts/12_manifests/H01_stage3_reporting_artifacts.csv"
+
+stopifnot(
+  identical(
+    artifact_sha256(file.path(root, main_manifest_path)),
+    input_contract$main$manifest_sha256
+  ),
+  identical(
+    artifact_sha256(file.path(root, gap_manifest_path)),
+    input_contract$manuscript_prepared_data$manifest_sha256
+  )
+)
+
+main_manifest <- verify_artifact_manifest(main_manifest_path)
+gap_manifest <- verify_artifact_manifest(gap_manifest_path)
+bootstrap_manifest <- verify_artifact_manifest(bootstrap_manifest_path)
+stage3_manifest <- verify_artifact_manifest(stage3_manifest_path)
+
+main_rows <- read_h01_csv("artifacts/06_model_data/H01/model_rows.csv")
+main_sample_flow <- read_h01_csv("artifacts/06_model_data/H01/sample_flow.csv")
+main_exclusions <- read_h01_csv("artifacts/06_model_data/H01/exclusion_reasons.csv")
+metric_contract <- read_h01_csv("artifacts/06_model_data/H01/metric_contract.csv")
+exact_samples <- read_h01_csv(
+  "artifacts/09_tables/H01/stage3/H01_stage3_exact_samples.csv"
+)
+exact_samples_by_site <- read_h01_csv(
+  "artifacts/09_tables/H01/H01_exact_samples_by_site.csv"
+)
+formula_manifest <- read_h01_csv(
+  "artifacts/09_tables/H01/stage3/H01_stage3_formula_manifest.csv"
+)
+diagnostics <- read_h01_csv(
+  "artifacts/08_diagnostics/H01/H01_model_diagnostics.csv"
+)
+bootstrap_audit <- read_h01_csv(
+  "artifacts/08_diagnostics/H01/H01_r2_bootstrap_audit.csv"
+)
+site_registry <- read_h01_csv("config/site_display_registry.csv") |>
+  arrange(.data$display_order)
+
+primary_near_id <- "main__glasses__all_available"
+primary_chest_id <- "main__chest__all_available"
+placement_labels <- c(glasses = "Near eye", chest = "Chest")
+placement_colors <- c("Near eye" = "#0072B2", "Chest" = "#D55E00")
+placement_shapes <- c("Near eye" = 16, "Chest" = 17)
+
+source_dir <- file.path(root, "artifacts/11_source_data/H01/preparation")
+dir.create(source_dir, recursive = TRUE, showWarnings = FALSE)
+```
+
+::: {.callout-note title="About this analysis record"}
+This page explains how verified personal light-exposure metrics were turned
+into the H01 results. It describes the analytical samples, transformations,
+response families, model implementation, diagnostics, sensitivity branches,
+and the connection between code and stored outputs. The companion
+[H01 results report](../../../notebooks/hypotheses/H01.html) presents the
+scientific findings.
+
+Rendering verifies bounded file identities and calculates descriptive
+summaries from the H01-specific model rows and sample-flow records. It does
+**not** call `lm()`, `lmer()`, `glmmTMB()`, `emmeans()`, `predict()`, or
+`simulate()`, refit any model, regenerate predictions, or rerun a bootstrap.
+Model estimates, 95% confidence intervals, diagnostics, influence results,
+and bootstrap summaries are read from the stored outputs named below.
+:::
+
+## Purpose
+
+H01 asks whether personal light exposure differs among study sites. The
+analysis treats near-eye measurements as primary and chest measurements as
+complementary evidence. It evaluates 17 prespecified light-exposure metrics,
+while distinguishing an overall site effect from photoperiod and absolute
+latitude.
+
+This record explains **which data and code produced those results, why each
+operation was needed, what it contributed, and what evidence shows that it
+behaved as intended**. The sections follow the data-to-result sequence.
+
+## Analysis map
+
+```{mermaid}
+flowchart TD
+  A["Verified near-eye and chest metric data"] --> B["Input identity, schema, key,<br/>unit, and construct checks"]
+  B --> C["Eight H01 model-row scenarios<br/>preparation × placement × sample"]
+  C --> D["Seventeen response-specific<br/>model frames"]
+  D --> E["One shared model implementation<br/>for both preparation rules"]
+  E --> F["Site, photoperiod, latitude,<br/>and adequacy tests"]
+  E --> G["From-mean site contrasts<br/>and 95% intervals"]
+  E --> H["R² summaries and<br/>joint bootstrap intervals"]
+  E --> I["Diagnostics, influence,<br/>and sensitivity branches"]
+  F --> J["Stored tables, figures,<br/>source data, and manifests"]
+  G --> J
+  H --> J
+  I --> J
+  J --> K["H01 results report"]
+  L["Automated identity and structure checks"] -. verify .-> B
+  L -. verify .-> E
+  L -. verify .-> J
+```
+
+The arrows show dependencies. They do not imply that this page repeats the
+fitting, prediction, or resampling operations.
+
+## What is calculated when this page opens
+
+```{r}
+#| label: tbl-h01-prep-boundary
+#| tbl-cap: "Calculations performed when this page is rendered."
+
+tibble::tribble(
+  ~Category, ~Calculated_on_render, ~Explanation,
+  "File verification", "Yes", "Checks the current H01 input, production-bootstrap, and reporting files against their recorded SHA-256 identities.",
+  "Descriptive sample summaries", "Yes", "Summarises already prepared H01 model rows, fitted samples, and sample retention without changing membership.",
+  "Model fitting and comparison", "No", "Reads stored model records and inferential tables.",
+  "Predictions and marginal means", "No", "Reads stored estimates and contrasts produced by the model workflow.",
+  "Bootstrap uncertainty", "No", "Reads production draws, audit records, and 95% interval summaries.",
+  "Diagnostics and influence", "No", "Reads stored residual, prediction-bound, participant-influence, and leave-one-site-out outputs."
+) |>
+  gt::gt() |>
+  gt::cols_width(
+    Category ~ gt::pct(22),
+    Calculated_on_render ~ gt::pct(17),
+    Explanation ~ gt::pct(61)
+  ) |>
+  prep_gt()
+```
+
+## 1. Data entering the analysis
+
+### Verified inputs
+
+Two prepared datasets enter the analysis. The primary dataset could be
+interpreted as a **time-sensitive primary metric dataset** because the timing
+of remaining missing observations is used where it matters for the metric.
+The predefined sensitivity is the **gap-timing-unaware dataset**. It still
+passed the general 50%-per-hour and 80%-per-day coverage rules, but the timing
+of remaining missing observations was not used for an additional
+metric-specific adjustment. This name does not mean that gaps, missingness,
+or coverage were ignored.
+
+```{r}
+#| label: tbl-h01-prep-inputs
+#| tbl-cap: "Verified model-data inputs entering the H01 implementation."
+
+input_summary <- tibble::tribble(
+  ~Input, ~Path, ~Manifest, ~Manifest_sha256, ~Status,
+  "Primary dataset", relative_path(input_contract$main$path), main_manifest_path, input_contract$main$manifest_sha256, "PASS",
+  "Gap-timing-unaware dataset", relative_path(input_contract$manuscript_prepared_data$path), gap_manifest_path, input_contract$manuscript_prepared_data$manifest_sha256, "PASS"
+) |>
+  mutate(`SHA-256 prefix` = substr(.data$Manifest_sha256, 1L, 16L)) |>
+  select(.data$Input, .data$Path, .data$Manifest, .data$`SHA-256 prefix`, .data$Status)
+
+input_summary |>
+  gt::gt() |>
+  gt::cols_width(
+    Input ~ gt::pct(20),
+    Path ~ gt::pct(34),
+    Manifest ~ gt::pct(31),
+    `SHA-256 prefix` ~ gt::pct(11),
+    Status ~ gt::pct(4)
+  ) |>
+  gt::tab_source_note(
+    "Both manifests were checked row by row against the current files during rendering."
+  ) |>
+  prep_gt()
+```
+
+<details>
+<summary>Show the complete pinned manifest identities</summary>
+
+- Primary model-data manifest:
+  `r input_contract$main$manifest_sha256`
+- Gap-timing-unaware model-data manifest:
+  `r input_contract$manuscript_prepared_data$manifest_sha256`
+- Shared H01 implementation contract:
+  `r input_contract$implementation_contract_sha256`
+- Shared implementation source:
+  `r input_contract$shared_implementation_sha256`
+
+</details>
+
+### What these files contain
+
+Each H01 data bundle contains the 17-metric contract, long model rows, sample
+flow, exclusions, predictor centres, scenario availability, a variable
+dictionary, and input provenance. The primary long table contains
+`r format_count(nrow(main_rows))` rows and 50 named fields. Its composite key
+is scenario, placement, sample definition, metric, site, participant, and—when
+the outcome is daily—local date. The construction code verifies uniqueness
+within the appropriate analytical unit before a model frame is written.
+
+The model rows retain the original metric value and units, the response
+construct, the metric-specific support denominator when available, site and
+participant identifiers, photoperiod, latitude, and the centred predictors
+supplied to the models. Missing support is never converted to zero exposure.
+
+### Why prepared records did not enter every model frame
+
+The same metric-availability rules are applied before the site and latitude
+models are constructed. The table counts primary-dataset records excluded
+from each placement's all-available frame; it lists each record once by using
+the site-plus-photoperiod frame, because the corresponding latitude frame
+applies the same outcome-availability screen.
+
+```{r}
+#| label: tbl-h01-prep-exclusions
+#| tbl-cap: "Reasons prepared primary-dataset records did not enter an all-available fitted model frame."
+
+exclusion_labels <- c(
+  below_light_profile_support = "Insufficient illuminance-profile support",
+  below_medi_profile_support = "Insufficient melEDI-profile support",
+  incomplete_state_domain = "Incomplete required state domain",
+  insufficient_days = "Too few contributing days",
+  insufficient_relevance_support = "Insufficient metric-relevant support",
+  insufficient_state_support = "Insufficient state-specific support",
+  low_relevance_coverage = "Low metric-relevant coverage",
+  no_state_window = "Required state window unavailable",
+  no_threshold_event = "Required threshold event unavailable"
+)
+
+primary_exclusion_summary <- main_exclusions |>
+  filter(
+    .data$data_scenario_id == "main",
+    .data$scenario == "all_available",
+    .data$model_question == "site_and_photoperiod"
+  ) |>
+  mutate(
+    reason_id = sub("^metric_not_estimable:", "", .data$exclusion_reason),
+    Reason = unname(exclusion_labels[.data$reason_id]),
+    Placement = unname(placement_labels[.data$placement])
+  ) |>
+  group_by(.data$Placement, .data$Reason) |>
+  summarise(
+    `Excluded records` = sum(.data$rows),
+    `Affected metrics` = n_distinct(.data$metric_id),
+    .groups = "drop"
+  ) |>
+  arrange(
+    factor(.data$Placement, c("Near eye", "Chest")),
+    desc(.data$`Excluded records`),
+    .data$Reason
+  )
+
+stopifnot(!anyNA(primary_exclusion_summary$Reason))
+
+primary_exclusion_summary |>
+  gt::gt(groupname_col = "Placement") |>
+  gt::fmt_number(
+    columns = c(`Excluded records`, `Affected metrics`),
+    decimals = 0,
+    use_seps = TRUE
+  ) |>
+  gt::cols_width(
+    Reason ~ gt::pct(58),
+    `Excluded records` ~ gt::pct(23),
+    `Affected metrics` ~ gt::pct(19)
+  ) |>
+  gt::tab_source_note(
+    "Counts are outcome-specific and therefore are not unique participants or participant-days across metrics."
+  ) |>
+  prep_gt()
+```
+
+## 2. The 17-metric response package
+
+```{r}
+#| label: tbl-h01-prep-metric-contract
+#| tbl-cap: "Outcome contract applied to the 17 H01 metrics."
+
+metric_registry |>
+  left_join(
+    metric_contract |>
+      select(
+        .data$metric_id,
+        .data$manuscript_name,
+        .data$manuscript_category,
+        .data$display_unit
+      ),
+    by = "metric_id"
+  ) |>
+  transmute(
+    Order = .data$metric_order,
+    Category = str_to_sentence(str_replace_all(.data$manuscript_category, "-", " ")),
+    Metric = .data$manuscript_name,
+    `Model unit` = recode(
+      .data$analysis_unit,
+      participant = "Participant",
+      participant_day = "Participant-day"
+    ),
+    Transformation = recode(
+      .data$response_transform,
+      logit = "Logit",
+      identity = "Identity",
+      log10_offset_0.1 = "log10(value + 0.1)",
+      clock_hours = "Linear clock hours",
+      clock_hours_midnight_after_16 = "Linear clock hours; subtract 24 strictly after 16:00"
+    ),
+    Family = recode(
+      .data$response_family,
+      gaussian = "Gaussian",
+      tweedie_log = "Tweedie with log link"
+    ),
+    `Reported effect` = recode(
+      .data$effect_scale,
+      difference = "Difference",
+      ratio = "Ratio",
+      odds_ratio = "Odds ratio"
+    )
+  ) |>
+  gt::gt(groupname_col = "Category", rowname_col = "Metric") |>
+  gt::cols_hide(columns = "Order") |>
+  gt::cols_width(
+    Metric ~ gt::pct(27),
+    `Model unit` ~ gt::pct(13),
+    Transformation ~ gt::pct(25),
+    Family ~ gt::pct(20),
+    `Reported effect` ~ gt::pct(15)
+  ) |>
+  prep_gt()
+```
+
+### Construct-specific rules
+
+```{r}
+#| label: tbl-h01-prep-construct-rules
+#| tbl-cap: "Metric-specific rules needed to preserve the intended response constructs."
+
+tibble::tribble(
+  ~Metric, ~Rule, ~Why_it_is_needed, ~Audit_evidence,
+  "Time below 10 lx melEDI before sleep", "Calendar-day cumulative duration; values strictly above six hours trigger an audit warning but are not truncated", "Two separate three-hour pre-sleep windows can contribute to one calendar day when sleep timing changes", "H01_gate_a_pre_sleep_calendar_day.csv",
+  "Midpoint of the darkest 10 hours", "Subtract 24 hours only from values strictly after 16:00", "Places the observed nighttime midpoint distribution on a continuous linear scale without a noon discontinuity", "H01_gate_b_l10_conversion.csv",
+  "Longest continuous period above 250 lx melEDI", "Retain the prepared period definition; repeat the analysis using exactly identified periods", "Distinguishes the primary duration construct from uncertainty at period boundaries", "Stored exactly-identified-period sensitivity outputs",
+  "Timing metrics", "Model on a prespecified continuous linear clock scale", "The observed distributions are unimodal on the selected cut and do not require a circular likelihood", "Stored timing-range and residual diagnostics"
+) |>
+  gt::gt() |>
+  gt::cols_width(
+    Metric ~ gt::pct(23),
+    Rule ~ gt::pct(30),
+    Why_it_is_needed ~ gt::pct(34),
+    Audit_evidence ~ gt::pct(13)
+  ) |>
+  prep_gt()
+```
+
+## 3. Model-frame and sample construction
+
+### Eight analysis scenarios
+
+The same implementation creates two placements × two prepared datasets × two
+sample definitions. The all-available near-eye primary dataset is the primary
+analysis. Chest is fitted separately. Placement-matched samples retain the
+same participants and participant-days at both placements for direct
+near-eye–chest comparison; they are not pooled models.
+
+```{r}
+#| label: tbl-h01-prep-scenarios
+#| tbl-cap: "H01 model-row scenarios created before fitting."
+
+scenario_summary <- exact_samples |>
+  group_by(
+    .data$run_id,
+    .data$data_scenario_id,
+    .data$placement,
+    .data$sample_scenario
+  ) |>
+  summarise(
+    Metrics = n_distinct(.data$metric_id),
+    `Participants (range)` = format_range(
+      min(.data$participants, na.rm = TRUE),
+      max(.data$participants, na.rm = TRUE)
+    ),
+    `Participant-days (range)` = format_range(
+      min(.data$participant_days, na.rm = TRUE),
+      max(.data$participant_days, na.rm = TRUE)
+    ),
+    Sites = max(.data$sites, na.rm = TRUE),
+    .groups = "drop"
+  ) |>
+  mutate(
+    Dataset = recode(
+      .data$data_scenario_id,
+      main = "Primary dataset",
+      manuscript_prepared_data = "Gap-timing-unaware dataset"
+    ),
+    Placement = unname(placement_labels[.data$placement]),
+    Sample = recode(
+      .data$sample_scenario,
+      all_available = "All available",
+      paired_common_sample = "Placement-matched"
+    )
+  ) |>
+  arrange(
+    factor(.data$Dataset, c("Primary dataset", "Gap-timing-unaware dataset")),
+    factor(.data$Placement, c("Near eye", "Chest")),
+    factor(.data$Sample, c("All available", "Placement-matched"))
+  ) |>
+  select(
+    .data$Dataset,
+    .data$Placement,
+    .data$Sample,
+    .data$Metrics,
+    .data$`Participants (range)`,
+    .data$`Participant-days (range)`,
+    .data$Sites
+  )
+
+scenario_summary |>
+  gt::gt(groupname_col = "Dataset") |>
+  gt::cols_width(
+    Placement ~ gt::pct(14),
+    Sample ~ gt::pct(20),
+    Metrics ~ gt::pct(9),
+    `Participants (range)` ~ gt::pct(22),
+    `Participant-days (range)` ~ gt::pct(25),
+    Sites ~ gt::pct(10)
+  ) |>
+  prep_gt()
+```
+
+### Exact primary fitted samples
+
+Participant-level dynamics models have one fitted outcome per participant;
+their participant-day count records the days contributing to that summary.
+Participant-day models have one fitted outcome per retained participant-day.
+Support hours are reported only when the stored preparation carries a valid
+metric-specific denominator.
+
+```{r}
+#| label: prepare-h01-sample-source
+#| include: false
+
+primary_sample_source <- exact_samples |>
+  filter(.data$run_id %in% c(primary_near_id, primary_chest_id)) |>
+  transmute(
+    run_id = .data$run_id,
+    placement = unname(placement_labels[.data$placement]),
+    metric_order = .data$metric_order,
+    metric_id = .data$metric_id,
+    metric = .data$manuscript_name,
+    analysis_unit = .data$analysis_unit_label,
+    participants = .data$participants,
+    participant_days = .data$participant_days,
+    observations = .data$observations,
+    support_hours = .data$derivation_support_hours,
+    sites = .data$sites,
+    status = .data$sample_status
+  ) |>
+  arrange(.data$metric_order, factor(.data$placement, c("Near eye", "Chest")))
+
+readr::write_csv(
+  primary_sample_source,
+  file.path(source_dir, "H01_preparation_fitted_sample_support.csv")
+)
+
+primary_sample_table <- function(placement_name) {
+  primary_sample_source |>
+    filter(.data$placement == .env$placement_name) |>
+    transmute(
+      Metric = .data$metric,
+      `Model unit` = .data$analysis_unit,
+      Participants = .data$participants,
+      `Participant-days` = .data$participant_days,
+      Observations = .data$observations,
+      `Support hours` = if_else(
+        is.finite(.data$support_hours),
+        formatC(.data$support_hours, format = "f", digits = 1, big.mark = ","),
+        "Unavailable"
+      ),
+      Sites = .data$sites
+    )
+}
+```
+
+::: {.panel-tabset}
+
+#### Near eye
+
+```{r}
+#| label: tbl-h01-prep-primary-near-samples
+#| tbl-cap: "Exact fitted sample for each primary near-eye outcome."
+
+primary_sample_table("Near eye") |>
+  gt::gt(rowname_col = "Metric") |>
+  gt::fmt_number(
+    columns = c(Participants, `Participant-days`, Observations, Sites),
+    decimals = 0,
+    use_seps = TRUE
+  ) |>
+  gt::cols_width(
+    Metric ~ gt::pct(34),
+    `Model unit` ~ gt::pct(14),
+    Participants ~ gt::pct(11),
+    `Participant-days` ~ gt::pct(13),
+    Observations ~ gt::pct(11),
+    `Support hours` ~ gt::pct(12),
+    Sites ~ gt::pct(5)
+  ) |>
+  prep_gt()
+```
+
+#### Chest
+
+```{r}
+#| label: tbl-h01-prep-primary-chest-samples
+#| tbl-cap: "Exact fitted sample for each complementary chest outcome."
+
+primary_sample_table("Chest") |>
+  gt::gt(rowname_col = "Metric") |>
+  gt::fmt_number(
+    columns = c(Participants, `Participant-days`, Observations, Sites),
+    decimals = 0,
+    use_seps = TRUE
+  ) |>
+  gt::cols_width(
+    Metric ~ gt::pct(34),
+    `Model unit` ~ gt::pct(14),
+    Participants ~ gt::pct(11),
+    `Participant-days` ~ gt::pct(13),
+    Observations ~ gt::pct(11),
+    `Support hours` ~ gt::pct(12),
+    Sites ~ gt::pct(5)
+  ) |>
+  prep_gt()
+```
+
+:::
+
+```{r}
+#| label: fig-h01-prep-sample-support
+#| fig-cap: "Contributing participant-days for each primary near-eye and complementary chest model. Participant-level dynamics outcomes use all contributing days to form one fitted observation per participant."
+#| fig-alt: "A horizontal dot plot shows contributing participant-days for all 17 metrics. Near-eye values range from 655 to 816 days and chest values from 743 to 902 days, with lower support for several sleep, wake, and timing metrics."
+#| fig-width: 10.5
+#| fig-height: 7.8
+
+sample_plot <- primary_sample_source |>
+  mutate(
+    metric = factor(.data$metric, levels = rev(unique(.data$metric))),
+    placement = factor(.data$placement, levels = c("Near eye", "Chest"))
+  )
+
+ggplot(
+  sample_plot,
+  aes(
+    x = .data$participant_days,
+    y = .data$metric,
+    colour = .data$placement,
+    shape = .data$placement
+  )
+) +
+  geom_point(size = 2.7, position = position_dodge(width = 0.45)) +
+  scale_colour_manual(values = placement_colors) +
+  scale_shape_manual(values = placement_shapes) +
+  scale_x_continuous(labels = label_number(big.mark = ",")) +
+  labs(
+    x = "Contributing participant-days",
+    y = NULL,
+    colour = "Placement",
+    shape = "Placement"
+  ) +
+  theme_minimal(base_size = 11.5) +
+  theme(
+    legend.position = "bottom",
+    panel.grid.minor = element_blank(),
+    axis.text.y = element_text(size = 9)
+  )
+```
+
+[Source data for @fig-h01-prep-sample-support](H01_analysis_preparation_files/source-data/H01_preparation_fitted_sample_support.csv)
+
+### Retention from prepared rows to fitted rows
+
+```{r}
+#| label: prepare-h01-retention-source
+#| include: false
+
+retention_source <- main_sample_flow |>
+  filter(
+    .data$data_scenario_id == "main",
+    .data$scenario == "all_available",
+    .data$scope == "overall",
+    .data$stage %in% c("prepared_rows", "site_photoperiod_model"),
+    .data$status == "AVAILABLE"
+  ) |>
+  select(
+    .data$placement,
+    .data$metric_order,
+    .data$metric_id,
+    .data$stage,
+    .data$model_observations
+  ) |>
+  pivot_wider(names_from = .data$stage, values_from = .data$model_observations) |>
+  left_join(
+    metric_contract |>
+      select(.data$metric_id, metric = .data$manuscript_name),
+    by = "metric_id"
+  ) |>
+  mutate(
+    placement = unname(placement_labels[.data$placement]),
+    retention = .data$site_photoperiod_model / .data$prepared_rows
+  ) |>
+  arrange(.data$metric_order, factor(.data$placement, c("Near eye", "Chest")))
+
+readr::write_csv(
+  retention_source,
+  file.path(source_dir, "H01_preparation_model_frame_retention.csv")
+)
+```
+
+```{r}
+#| label: fig-h01-prep-model-frame-retention
+#| fig-cap: "Percentage of prepared metric rows retained in the complete site-plus-photoperiod model frame. Losses reflect outcome-specific availability and complete-case predictors; they are not post-fit exclusions."
+#| fig-alt: "A horizontal dot plot shows model-frame retention for all 17 outcomes. Many outcomes retain all prepared rows, while sleep, wake, dose, and timing metrics retain smaller percentages. Near-eye and chest patterns are similar but not identical."
+#| fig-width: 10.5
+#| fig-height: 7.8
+
+retention_plot <- retention_source |>
+  mutate(
+    metric = factor(.data$metric, levels = rev(unique(.data$metric))),
+    placement = factor(.data$placement, levels = c("Near eye", "Chest"))
+  )
+
+ggplot(
+  retention_plot,
+  aes(
+    x = .data$retention,
+    y = .data$metric,
+    colour = .data$placement,
+    shape = .data$placement
+  )
+) +
+  geom_vline(xintercept = 1, colour = "grey55", linetype = "dashed") +
+  geom_point(size = 2.7, position = position_dodge(width = 0.45)) +
+  scale_colour_manual(values = placement_colors) +
+  scale_shape_manual(values = placement_shapes) +
+  scale_x_continuous(
+    labels = label_percent(accuracy = 1),
+    limits = c(0.75, 1.005),
+    breaks = seq(0.75, 1, by = 0.05)
+  ) +
+  labs(
+    x = "Prepared rows retained in fitted model",
+    y = NULL,
+    colour = "Placement",
+    shape = "Placement"
+  ) +
+  theme_minimal(base_size = 11.5) +
+  theme(
+    legend.position = "bottom",
+    panel.grid.minor = element_blank(),
+    axis.text.y = element_text(size = 9)
+  )
+```
+
+[Source data for @fig-h01-prep-model-frame-retention](H01_analysis_preparation_files/source-data/H01_preparation_model_frame_retention.csv)
+
+### Site-specific support
+
+The complete per-metric, per-site sample record is stored in
+[`H01_exact_samples_by_site.csv`](../../../artifacts/09_tables/H01/H01_exact_samples_by_site.csv).
+The compact table below shows the range across the 17 outcomes without hiding
+that some outcome-specific model frames are smaller.
+
+```{r}
+#| label: tbl-h01-prep-site-sample-ranges
+#| tbl-cap: "Range of fitted sample support across the 17 primary-dataset outcomes at each site."
+
+site_sample_ranges <- exact_samples_by_site |>
+  filter(.data$run_id %in% c(primary_near_id, primary_chest_id)) |>
+  left_join(
+    site_registry |>
+      select(.data$site, .data$display_name, .data$display_order),
+    by = "site"
+  ) |>
+  group_by(.data$placement, .data$display_order, .data$display_name) |>
+  summarise(
+    Metrics = n_distinct(.data$metric_id),
+    `Participants (range)` = format_range(
+      min(.data$participants, na.rm = TRUE),
+      max(.data$participants, na.rm = TRUE)
+    ),
+    `Participant-days (range)` = format_range(
+      min(.data$participant_days, na.rm = TRUE),
+      max(.data$participant_days, na.rm = TRUE)
+    ),
+    `Observations (range)` = format_range(
+      min(.data$observations, na.rm = TRUE),
+      max(.data$observations, na.rm = TRUE)
+    ),
+    .groups = "drop"
+  ) |>
+  mutate(Placement = unname(placement_labels[.data$placement])) |>
+  arrange(factor(.data$Placement, c("Near eye", "Chest")), .data$display_order) |>
+  select(
+    .data$Placement,
+    Site = .data$display_name,
+    .data$Metrics,
+    .data$`Participants (range)`,
+    .data$`Participant-days (range)`,
+    .data$`Observations (range)`
+  )
+
+site_sample_ranges |>
+  gt::gt(groupname_col = "Placement", rowname_col = "Site") |>
+  gt::cols_width(
+    Site ~ gt::pct(22),
+    Metrics ~ gt::pct(10),
+    `Participants (range)` ~ gt::pct(22),
+    `Participant-days (range)` ~ gt::pct(24),
+    `Observations (range)` ~ gt::pct(22)
+  ) |>
+  prep_gt()
+```
+
+## 4. Model construction
+
+### Exact formula set
+
+The implementation uses ordinary Gaussian linear models for participant-level
+outcomes and Gaussian linear mixed models or Tweedie generalized mixed models
+for participant-day outcomes. Participant-day models include a participant
+random intercept. Site and latitude models are fitted separately so that a
+nine-level site factor is never interpreted as a single latitude coefficient.
+
+```{r}
+#| label: tbl-h01-prep-formulas
+#| tbl-cap: "Exact Wilkinson formulas supplied to the H01 fitted and comparison models."
+
+formula_manifest |>
+  distinct(.data$analysis_unit, .data$model_name, .data$formula) |>
+  mutate(
+    `Model unit` = recode(
+      .data$analysis_unit,
+      participant = "Participant",
+      participant_day = "Participant-day"
+    ),
+    Model = str_to_sentence(str_replace_all(.data$model_name, "_", " ")),
+    Formula = paste0("`", str_squish(.data$formula), "`")
+  ) |>
+  select(.data$`Model unit`, .data$Model, .data$Formula) |>
+  gt::gt(groupname_col = "Model unit") |>
+  gt::fmt_markdown(columns = "Formula") |>
+  gt::cols_width(Model ~ gt::pct(22), Formula ~ gt::pct(78)) |>
+  prep_gt()
+```
+
+The complete site model estimates site and photoperiod jointly. The reduced
+site model removes site; the reduced photoperiod model removes photoperiod.
+The latitude model substitutes centred absolute latitude, expressed per 10°,
+for the site factor while retaining the same photoperiod term. All comparison
+fits use maximum likelihood; final Gaussian mixed models are refitted with
+restricted maximum likelihood for coefficient and variance reporting.
+
+### Central settings
+
+```{r}
+#| label: tbl-h01-prep-model-settings
+#| tbl-cap: "Model settings shared across the H01 analysis scenarios."
+
+tibble::tribble(
+  ~Setting, ~Value, ~Contribution,
+  "Primary placement", "Near eye", "Keeps measurements nearer the eye primary; chest remains separate complementary evidence.",
+  "Predictor centres", "Recorded separately within the permitted analysis frame", "Makes zero correspond to the recorded analysis-specific mean while preserving original photoperiod and latitude fields.",
+  "Participant-level engine", "lm, maximum likelihood", "Fits one outcome per participant without a redundant participant random effect.",
+  "Gaussian participant-day engine", "lmer; ML for comparisons, REML for final estimates", "Accounts for repeated participant-days with a participant random intercept.",
+  "Tweedie participant-day engine", "glmmTMB, log link, maximum likelihood", "Handles non-negative continuous outcomes with a mass at zero without silently changing the response family.",
+  "Site marginalisation", "Equal weight for every represented site", "Defines the overall site mean and prevents large sites from dominating the site contrasts.",
+  "Confidence level", "95%", "Used for model effects, site contrasts, R² summaries, and sensitivity estimates.",
+  "Bootstrap target", "At least 1,000 successful joint refits per estimable run and metric", "Propagates joint refit uncertainty into marginal R², conditional R², participant-associated share, and term part-R².",
+  "Model implementation", input_contract$model_implementation_id, "The identical implementation is used for the primary and gap-timing-unaware datasets."
+) |>
+  gt::gt() |>
+  gt::cols_width(
+    Setting ~ gt::pct(22),
+    Value ~ gt::pct(32),
+    Contribution ~ gt::pct(46)
+  ) |>
+  prep_gt()
+```
+
+## 5. Estimands, uncertainty, and multiplicity
+
+```{r}
+#| label: tbl-h01-prep-estimands
+#| tbl-cap: "H01 estimands and the operation that produces each reported quantity."
+
+tibble::tribble(
+  ~Question, ~Estimand, ~Comparison, ~Reported_scale,
+  "Overall site", "Joint contribution of the represented site factor conditional on photoperiod", "Complete site model versus model without site", "One model-level p-value per metric",
+  "Photoperiod", "Change per hour of photoperiod conditional on site", "Complete site model versus model without photoperiod", "Difference, ratio, or odds ratio with 95% CI",
+  "Latitude", "Change per 10° absolute latitude conditional on photoperiod", "Latitude model versus model without latitude", "Difference, ratio, or odds ratio with 95% CI",
+  "Site versus latitude adequacy", "Whether the site factor retains information beyond a linear absolute-latitude term in the same frame", "Complete site model versus latitude model", "One model-level p-value per metric",
+  "Site-specific deviation", "Each site minus or divided by the equally weighted overall site mean", "Hierarchical emmeans follow-up only after a supported overall site test", "Difference or ratio with 95% CI and within-metric adjustment",
+  "Variation represented", "Marginal R², conditional R², participant-associated share, and non-overlapping term part-R²", "Stored joint bootstrap refits", "Estimate with 95% bootstrap interval"
+) |>
+  gt::gt() |>
+  gt::cols_width(
+    Question ~ gt::pct(19),
+    Estimand ~ gt::pct(34),
+    Comparison ~ gt::pct(29),
+    Reported_scale ~ gt::pct(18)
+  ) |>
+  prep_gt()
+```
+
+The four model-level questions form four separate complete 17-test
+Benjamini–Hochberg families. Adjustment is never performed over only the
+metrics that happened to have small raw p-values.
+
+```{r}
+#| label: tbl-h01-prep-multiplicity
+#| tbl-cap: "Multiplicity families fixed for the H01 response package."
+
+family_registry |>
+  transmute(
+    Order = .data$family_order,
+    Family = .data$family_label,
+    Comparison = str_to_sentence(str_replace_all(.data$comparison, "_", " ")),
+    Method = .data$adjustment_method,
+    Tests = .data$family_n
+  ) |>
+  gt::gt() |>
+  gt::fmt_number(columns = c(Order, Tests), decimals = 0) |>
+  gt::cols_width(
+    Order ~ gt::pct(8),
+    Family ~ gt::pct(28),
+    Comparison ~ gt::pct(39),
+    Method ~ gt::pct(12),
+    Tests ~ gt::pct(13)
+  ) |>
+  prep_gt()
+```
+
+## 6. Bootstrap, diagnostics, and influence
+
+### Production joint refits
+
+```{r}
+#| label: tbl-h01-prep-bootstrap-audit
+#| tbl-cap: "Stored production-bootstrap audit across the eight H01 analysis scenarios."
+
+bootstrap_audit |>
+  group_by(.data$run_id) |>
+  summarise(
+    Metrics = n_distinct(.data$metric_id),
+    `Minimum successful refits` = min(.data$successful_refits, na.rm = TRUE),
+    `Maximum failed refits` = max(.data$failed_refits, na.rm = TRUE),
+    `Maximum warning refits` = max(.data$warning_refits, na.rm = TRUE),
+    Status = if_else(all(.data$status == "PASS"), "PASS", "CHECK"),
+    .groups = "drop"
+  ) |>
+  left_join(
+    run_registry |>
+      select(.data$run_id, .data$data_scenario_id, .data$placement, .data$sample_scenario),
+    by = "run_id"
+  ) |>
+  mutate(
+    Dataset = recode(
+      .data$data_scenario_id,
+      main = "Primary dataset",
+      manuscript_prepared_data = "Gap-timing-unaware dataset"
+    ),
+    Placement = unname(placement_labels[.data$placement]),
+    Sample = recode(
+      .data$sample_scenario,
+      all_available = "All available",
+      paired_common_sample = "Placement-matched"
+    )
+  ) |>
+  arrange(
+    factor(.data$Dataset, c("Primary dataset", "Gap-timing-unaware dataset")),
+    factor(.data$Placement, c("Near eye", "Chest")),
+    factor(.data$Sample, c("All available", "Placement-matched"))
+  ) |>
+  select(
+    .data$Dataset,
+    .data$Placement,
+    .data$Sample,
+    .data$Metrics,
+    .data$`Minimum successful refits`,
+    .data$`Maximum failed refits`,
+    .data$`Maximum warning refits`,
+    .data$Status
+  ) |>
+  gt::gt(groupname_col = "Dataset") |>
+  gt::fmt_number(
+    columns = c(
+      Metrics,
+      `Minimum successful refits`,
+      `Maximum failed refits`,
+      `Maximum warning refits`
+    ),
+    decimals = 0,
+    use_seps = TRUE
+  ) |>
+  gt::cols_width(
+    Placement ~ gt::pct(13),
+    Sample ~ gt::pct(18),
+    Metrics ~ gt::pct(8),
+    `Minimum successful refits` ~ gt::pct(19),
+    `Maximum failed refits` ~ gt::pct(15),
+    `Maximum warning refits` ~ gt::pct(16),
+    Status ~ gt::pct(11)
+  ) |>
+  prep_gt()
+```
+
+The refit draws are stored separately for every run and metric. They are not
+recreated for table or figure revisions. The bootstrap outputs and the
+production execution record are covered by
+`H01_response_family_bootstrap_production_artifacts.csv` and the larger model
+result manifest.
+
+### Diagnostic and influence chain
+
+```{r}
+#| label: tbl-h01-prep-diagnostic-map
+#| tbl-cap: "Stored diagnostic outputs and the question each addresses."
+
+tibble::tribble(
+  ~Output, ~Question_answered, ~Interpretive_limit,
+  "H01_model_diagnostics.csv", "Did each fit converge, pass its family-specific residual checks, and respect physical prediction bounds?", "Flags require response-specific interpretation; a warning is not automatically a failed model.",
+  "Metric-specific diagnostic plot data and PNG files", "What residual shape, fitted-value pattern, and simulated-diagnostic behaviour produced a model-level assessment?", "Representative plots illustrate the stored fit and do not re-estimate it.",
+  "H01_participant_influence.csv", "How much did fixed-effect estimates change when each participant was omitted and the model refitted?", "A large dfbeta indicates sensitivity to a participant, not necessarily data error.",
+  "H01_latitude_leave_one_site_out.csv", "Did the latitude estimate depend strongly on one represented site?", "Only eight or nine sites are available, so leave-one-site-out changes both range and leverage.",
+  "H01_r2_bootstrap_audit.csv", "Were the required successful joint refits obtained for every estimable target?", "Assesses execution and interval support, not whether the model is scientifically correct.",
+  "Final response-family diagnostic evidence", "Did the retained final response families satisfy the common diagnostic screen in both prepared datasets and placements?", "Documents the final response-family decision; it is not a new fit during rendering."
+) |>
+  gt::gt() |>
+  gt::cols_width(
+    Output ~ gt::pct(28),
+    Question_answered ~ gt::pct(40),
+    Interpretive_limit ~ gt::pct(32)
+  ) |>
+  prep_gt()
+```
+
+The results report shows the corresponding diagnostic assessments and
+representative plots. This page records where those assessments came from.
+For the two primary all-available placements, the stored diagnostic table
+contains `r nrow(diagnostics |> filter(.data$run_id %in% c(primary_near_id, primary_chest_id)))`
+metric-level records.
+
+## 7. Sensitivity branches
+
+```{r}
+#| label: tbl-h01-prep-sensitivity-map
+#| tbl-cap: "H01 sensitivity analyses and what each branch changes."
+
+tibble::tribble(
+  ~Branch, ~Changed, ~Held_constant, ~Stored_evidence,
+  "Complementary chest", "Measurement placement", "Metric definitions, response-family registry, formulas, multiplicity, and reporting scales", "Chest models, tables, diagnostics, and source data",
+  "Placement-matched sample", "Restricts each metric to observations available for both near-eye and chest placement", "Separate placement-specific models and identical model structure", "Paired/common-sample models and paired placement table/figure",
+  "Gap-timing-unaware dataset", "Metric preparation does not use the timing of remaining gaps for an additional metric-specific adjustment", "General 50%-per-hour and 80%-per-day coverage, implementation, formulas, and multiplicity", "Eight same-model sensitivity runs",
+  "Noon cut for darkest-10-hour midpoint", "Subtracts 24 hours strictly after noon rather than strictly after 16:00", "Outcome records, model implementation, and response family", "Stored noon-cut model frames, estimates, and support decisions",
+  "Exactly identified light periods", "Restricts the longest continuous period metric to exactly identified periods", "Response family, predictors, model implementation, and reporting scale", "Stored period sensitivity models and comparison table",
+  "Preregistered predictor scope", "Omits the added photoperiod covariate where it was not in the preregistered formula", "Metric frames, site coding, latitude coding, response families", "Stored scope-sensitivity models and comparison table",
+  "Equal-site marginalisation", "Uses equal rather than observed site weights", "Fitted models and contrasts", "Stored marginalisation comparison",
+  "Participant and site influence", "Deletes one participant or one site at a time", "Outcome and model specification", "Stored dfbeta and leave-one-site-out results"
+) |>
+  gt::gt() |>
+  gt::cols_width(
+    Branch ~ gt::pct(21),
+    Changed ~ gt::pct(30),
+    Held_constant ~ gt::pct(31),
+    Stored_evidence ~ gt::pct(18)
+  ) |>
+  prep_gt()
+```
+
+## 8. Code map and execution order
+
+### Reusable modules
+
+```{r}
+#| label: tbl-h01-prep-module-map
+#| tbl-cap: "H01 function modules used by the executable analysis scripts."
+
+tibble::tribble(
+  ~Module, ~Responsibility, ~Why_separate,
+  "h01_contract.R", "Seventeen-metric registry, four multiplicity families, eight-run registry, pinned inputs, exact formulas, and reproducible seeds", "Provides one declared contract to every H01 operation.",
+  "h01_modeling.R", "Response transformation, model-frame construction, lm/lmer/glmmTMB fitting, comparisons, emmeans contrasts, diagnostics, influence, and R² extraction", "Applies the same scientific implementation to every dataset, placement, and sample.",
+  "paths_io.R", "Atomic artifact writing and SHA-256 calculation", "Keeps file identity and scientific modelling responsibilities distinct.",
+  "p_value_display.R", "Three-decimal reader-facing p-value formatting", "Separates display formatting from full-precision inference."
+) |>
+  gt::gt() |>
+  gt::cols_width(
+    Module ~ gt::pct(21),
+    Responsibility ~ gt::pct(47),
+    Why_separate ~ gt::pct(32)
+  ) |>
+  prep_gt()
+```
+
+### Executable entry points
+
+```{r}
+#| label: tbl-h01-prep-script-map
+#| tbl-cap: "Executable H01 scripts in analytical order."
+
+tibble::tribble(
+  ~Order, ~Entry_point, ~Contribution, ~Main_outputs, ~Run_when_page_renders,
+  1, "run_h01_models.R", "Reads the verified H01 bundles, constructs response-specific frames, fits the declared model set, runs diagnostics and registered sensitivities, and writes model/result artifacts.", "Models, diagnostics, exact samples, effects, contrasts, R² draws, and model-results manifest", "No",
+  2, "assess_h01_response_family_candidates.R", "Applies the common diagnostic screen to the response-family review and records the final response-family selection evidence.", "Response-family evidence and selection records", "No",
+  3, "archive_h01_pre_sleep_tweedie_baseline.R", "Preserves the replaced pre-sleep response-family outputs before the selected identity-scale implementation is written.", "Checksummed superseded-output archive", "No",
+  4, "run_h01_response_family_bootstrap_production.R", "Completes the production joint-refit bootstrap for the selected pre-sleep response family without changing unaffected draw files.", "Production draws, checkpoints, audit, provenance, and manifest", "No",
+  5, "build_h01_reporting_inputs.R", "Assembles audited model results into stable reporting tables and source data.", "Reporting tables, figures, source data, and manifest", "No",
+  6, "build_h01_stage3_reporting_inputs.R", "Builds the standalone result-report tables, diagnostic displays, paired-placement display, and accessibility metadata from stored outputs.", "Reader tables, figures, source data, and reporting manifest", "No",
+  7, "notebooks/hypotheses/H01.qmd", "Assembles the standalone H01 scientific results report from verified reporting artifacts.", "H01.html", "No",
+  8, "H01_analysis_preparation.qmd", "Explains and displays the data-to-result chain shown on this page.", "H01_analysis_preparation.html and two descriptive source-data CSVs", "Yes",
+  9, "build_h01_preparation_report_manifest.R", "Records source, rendered output, displayed dependencies, and environment identities.", "H01_preparation_report_artifacts.csv", "No",
+  10, "build_h01_worker_manifest.R", "Builds the final non-circular H01 file inventory.", "H01_worker_artifacts.csv", "No"
+) |>
+  gt::gt() |>
+  gt::cols_width(
+    Order ~ gt::pct(6),
+    Entry_point ~ gt::pct(23),
+    Contribution ~ gt::pct(36),
+    Main_outputs ~ gt::pct(26),
+    Run_when_page_renders ~ gt::pct(9)
+  ) |>
+  prep_gt()
+```
+
+### Commands
+
+The principal commands were run from the repository root in fresh R 4.6.1
+sessions using the activated project library. They are shown for
+reproducibility; this page does not execute the computationally intensive
+commands.
+
+```bash
+Rscript --vanilla scripts/hypotheses/H01/run_h01_models.R
+Rscript --vanilla scripts/hypotheses/H01/assess_h01_response_family_candidates.R
+Rscript --vanilla scripts/hypotheses/H01/archive_h01_pre_sleep_tweedie_baseline.R
+Rscript --vanilla scripts/hypotheses/H01/run_h01_response_family_bootstrap_production.R
+Rscript --vanilla scripts/hypotheses/H01/build_h01_reporting_inputs.R
+Rscript --vanilla scripts/hypotheses/H01/build_h01_stage3_reporting_inputs.R
+quarto --profile nathealth render notebooks/hypotheses/H01.qmd --to html
+quarto --profile nathealth render \
+  audit/hypotheses/H01/H01_analysis_preparation.qmd --to html
+Rscript --vanilla scripts/hypotheses/H01/build_h01_preparation_report_manifest.R
+Rscript --vanilla scripts/environment/run_renv_status_safe.R <project-root> 60 true
+Rscript --vanilla scripts/hypotheses/H01/build_h01_worker_manifest.R
+```
+
+## 9. Output provenance and file identities
+
+The manifest chain records output paths, SHA-256 identities, byte sizes,
+producing code, and R version. The table verifies the manifests that lead from
+the H01 data bundles to the standalone report. The final H01 inventory is
+built after the reader-facing pages so that it can contain their final
+identities without creating a circular checksum dependency.
+
+```{r}
+#| label: tbl-h01-prep-manifests
+#| tbl-cap: "Manifests linking H01 code to stored scientific and reporting outputs."
+
+manifest_registry <- tibble::tribble(
+  ~Component, ~Path,
+  "Primary model-data bundle", main_manifest_path,
+  "Gap-timing-unaware model-data bundle", gap_manifest_path,
+  "Complete model and diagnostic output inventory", "artifacts/12_manifests/H01_model_results_artifacts.csv",
+  "Production response-family bootstrap", bootstrap_manifest_path,
+  "Audited reporting inputs", "artifacts/12_manifests/H01_reporting_artifacts.csv",
+  "Standalone results-report inputs", stage3_manifest_path
+) |>
+  rowwise() |>
+  mutate(
+    Rows = nrow(read_h01_csv(.data$Path)),
+    `Manifest SHA-256 prefix` = substr(
+      artifact_sha256(file.path(root, .data$Path)),
+      1L,
+      16L
+    )
+  ) |>
+  ungroup()
+
+manifest_registry |>
+  gt::gt() |>
+  gt::fmt_number(columns = "Rows", decimals = 0, use_seps = TRUE) |>
+  gt::cols_width(
+    Component ~ gt::pct(31),
+    Path ~ gt::pct(48),
+    Rows ~ gt::pct(8),
+    `Manifest SHA-256 prefix` ~ gt::pct(13)
+  ) |>
+  prep_gt()
+```
+
+## 10. How to examine or reproduce H01
+
+A reader can inspect the chain in four passes:
+
+1. compare `h01_contract.R` with the two pinned model-data manifests to confirm
+   the 17 responses, eight runs, transformations, and formulas;
+2. compare the sample and retention displays above with `model_rows.csv`,
+   `sample_flow.csv`, and `H01_exact_samples_by_site.csv`;
+3. follow the producing script and SHA-256 identity in each manifest, using
+   the stored model, bootstrap, diagnostic, table, and source-data files; and
+4. read the [H01 results report](../../../notebooks/hypotheses/H01.html)
+   alongside its full-precision source tables rather than inferring numeric
+   values from figure pixels.
+
+Changes to shared metric preparation must be made upstream and propagated to
+every affected hypothesis. A display-only change can instead be made from the
+stored reporting objects without refitting the models or repeating the
+bootstrap.
+
+::: {.callout-tip title="Reader takeaway"}
+The H01 result comes from two verified model-data bundles, a single declared
+17-response implementation, exact response-specific model frames, four
+complete multiplicity families, stored joint-refit bootstrap draws, and
+separate diagnostic and sensitivity records. This page connects those pieces
+without changing the scientific result.
+:::
+
+## Environment
+
+```{r}
+#| label: tbl-h01-prep-environment
+#| tbl-cap: "Environment used to render this page."
+
+quarto_version <- tryCatch(
+  system2("quarto", "--version", stdout = TRUE, stderr = FALSE)[1L],
+  error = function(error) "Recorded by render command"
+)
+
+tibble::tibble(
+  Component = c(
+    "R", "dplyr", "ggplot2", "gt", "lme4", "glmmTMB", "emmeans",
+    "Quarto", "renv.lock SHA-256 prefix"
+  ),
+  Version = c(
+    as.character(getRversion()),
+    as.character(packageVersion("dplyr")),
+    as.character(packageVersion("ggplot2")),
+    as.character(packageVersion("gt")),
+    as.character(packageVersion("lme4")),
+    as.character(packageVersion("glmmTMB")),
+    as.character(packageVersion("emmeans")),
+    quarto_version,
+    substr(artifact_sha256(file.path(root, "renv.lock")), 1L, 16L)
+  )
+) |>
+  gt::gt() |>
+  gt::cols_width(Component ~ gt::pct(65), Version ~ gt::pct(35)) |>
+  prep_gt()
+```
