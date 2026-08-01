@@ -1,0 +1,1396 @@
+---
+title: "H05 Stage 1: audit and proposed analysis"
+subtitle: "Nature Health analysis audit — author gate"
+date: last-modified
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    code-fold: true
+    code-summary: "Show audit code"
+    code-tools: true
+    embed-resources: true
+    df-print: paged
+execute:
+  echo: true
+  warning: false
+  message: false
+  error: false
+  freeze: false
+---
+
+```{r}
+#| label: setup
+#| include: false
+
+options(
+  stringsAsFactors = FALSE,
+  scipen = 999,
+  width = 120,
+  dplyr.summarise.inform = FALSE
+)
+
+library(dplyr)
+library(tidyr)
+library(purrr)
+library(tibble)
+library(emmeans)
+
+find_project_root <- function(start = getwd()) {
+  candidate <- normalizePath(start, winslash = "/", mustWork = TRUE)
+  repeat {
+    if (file.exists(file.path(candidate, "renv.lock"))) {
+      return(candidate)
+    }
+    parent <- dirname(candidate)
+    if (identical(parent, candidate)) {
+      stop("Could not locate the project root from: ", start)
+    }
+    candidate <- parent
+  }
+}
+
+project_root <- Sys.getenv(
+  "H05_PROJECT_ROOT",
+  unset = Sys.getenv("QUARTO_PROJECT_DIR", unset = "")
+)
+if (!nzchar(project_root) || !file.exists(file.path(project_root, "renv.lock"))) {
+  project_root <- find_project_root()
+}
+project_root <- normalizePath(project_root, winslash = "/", mustWork = TRUE)
+
+audit_dir <- file.path(project_root, "audit/hypotheses/H05")
+dir.create(audit_dir, recursive = TRUE, showWarnings = FALSE)
+stopifnot(
+  identical(
+    normalizePath(audit_dir, winslash = "/", mustWork = TRUE),
+    file.path(project_root, "audit/hypotheses/H05")
+  )
+)
+
+write_audit_csv <- function(data, filename) {
+  output <- file.path(audit_dir, filename)
+  utils::write.csv(data, output, row.names = FALSE, na = "")
+  invisible(output)
+}
+
+format_p <- function(x) {
+  ifelse(x < 0.001, format(x, scientific = TRUE, digits = 3), sprintf("%.4f", x))
+}
+
+site_registry <- read.csv(
+  file.path(project_root, "config/site_display_registry.csv"),
+  check.names = FALSE
+) |>
+  arrange(display_order)
+
+metric_display <- read.csv(
+  file.path(project_root, "config/metric_display_registry.csv"),
+  check.names = FALSE
+)
+
+site_levels <- site_registry$site
+```
+
+## Stage 1 verdict
+
+**H05 is not decision-ready and Stage 2 remains blocked.** The submitted
+analysis (hereafter **V0**) crossed four LEBA scores with 17 light-exposure
+metrics, yielding 68 pooled participant-level correlations per placement. V0
+did not fit the registered site-adjusted outcome model. It displayed
+Spearman coefficients with Pearson-test p-values and applied BH adjustment to
+each association p-value separately rather than to a 68-value vector.
+
+On the frozen V0 near-eye inputs, reconstructing a consistent two-sided
+Spearman test and a single 68-value BH vector still retains the two displayed
+F2 associations. This calculation is diagnostic only: the submitted claims
+remain reopened because site adjustment is absent, participant support was
+not carried into the output, and the repaired metric pipeline changes the
+analysis inputs and some metric definitions. The chest V0 result does not
+survive the consistent Spearman/vector-BH reconstruction.
+
+This document is an audit and an author-facing specification. It does **not**
+fit any proposed H05 model, inspect candidate H05 results, bootstrap an
+interval, run a sensitivity battery, edit a production notebook, or change a
+shared decision or ledger.
+
+### Meaning of V0
+
+Throughout this audit, **V0** means the analysis implementation and artifacts
+that produced the submitted manuscript result: the H05 blocks in
+`RQ2.qmd`/`RQ2_chest.qmd`, their saved H01 metric workspaces, and the submitted
+H05 figures and prose. It does not mean the audit-approved main analysis.
+
+## Preregistered contract
+
+The signed AsPredicted record states, exactly:
+
+> H5: LEBA questionnaire factors correlate with selected personal light exposure metrics.
+
+— `preregistration/AsPredicted #273407.pdf`, PDF p. 1.
+
+The registered method on PDF p. 2 is:
+
+```text
+H5; Correlation matrices + linear models: Metric ~ LEBA + (1|Site)
+```
+
+The supporting analysis-plan DOCX names the four factors but gives the
+ambiguous model phrase `Correlation ~ (1|Site)`. The signed PDF controls. It
+requires both correlation matrices and a site-adjusted metric model, but does
+not state which is primary and does not enumerate the selected metrics. Those
+two ambiguities are the open H05-G1 and DEV-029 author gates.
+
+### Contract-source verification
+
+| Source | Verification | Stage 1 use |
+|---|---|---|
+| `preregistration/AsPredicted #273407.pdf` | SHA-256 `fce192c88676602b72013e4872a03b535a2f4ef59d34de3a9e1c47527742b7ad`; two searchable pages; exact query hits verified on pp. 1–2 | Controlling H05 wording and registered formula |
+| `preregistration/MeLiDos_ZaunerEtAl_analysis_plan.docx` | SHA-256 `6e56766c18c476826c9c798799aa925752f11e5278f196797a583a13cc61ddf8`; text extracted without altering the source | Factor labels and documentation of the formula ambiguity |
+| `audit/evidence/preregistration_contract.md` | Read-only project contract | Cross-check of signed record |
+
+## Frozen inputs and exact V0 reconstruction
+
+```{r}
+#| label: frozen-input-contract
+
+input_contract <- tibble::tribble(
+  ~role, ~relative_path, ~sha256,
+  "Near-eye V0 metric workspace", "data/H1_results.RData",
+  "d274865818cc4a0364dae9a444b9be44be02424daa8ad74b9452840f3115b3dc",
+  "Chest V0 metric workspace", "data/H1_results_chest.RData",
+  "01f91db675d1aa6ae96b6aa7bbc45b2f86445e851a37020d1fe5335d802de9b5",
+  "Normalized LEBA input", "artifacts/06_model_data/normalized_inputs/leba.rds",
+  "71882566d4665dde757a13b18e56c1f7308e855ea22bced4384e91254e64e636"
+)
+
+input_contract <- input_contract |>
+  mutate(
+    observed_sha256 = vapply(
+      file.path(project_root, relative_path),
+      digest::digest,
+      character(1),
+      algo = "sha256",
+      file = TRUE
+    ),
+    hash_verified = observed_sha256 == sha256
+  )
+
+stopifnot(all(input_contract$hash_verified))
+knitr::kable(input_contract, caption = "Frozen V0 analysis inputs verified at render time.")
+```
+
+The H05 code loads the H01 fitted-result workspaces only to recover metric
+tables, retains rows with a non-missing H01 `response`, and therefore creates
+an unnecessary dependency on upstream fitted-result objects. Stage 2 should
+consume a hypothesis-specific model-data artifact instead.
+
+### LEBA scale recovery and verification
+
+```{r}
+#| label: leba-scale-audit
+
+leba_raw <- readRDS(file.path(
+  project_root,
+  "artifacts/06_model_data/normalized_inputs/leba.rds"
+))
+
+factor_contract <- tibble::tribble(
+  ~factor_id, ~factor_label, ~first_item, ~last_item,
+  ~possible_min, ~possible_max, ~reverse_item,
+  "leba_f2", "Spending time outdoors", 4L, 9L, 6L, 30L, "leba_f2_04",
+  "leba_f3", "Using phones and smartwatches in bed before sleep", 10L, 14L, 5L, 25L, NA_character_,
+  "leba_f4", "Controlling and using ambient light before bedtime", 15L, 18L, 4L, 20L, NA_character_,
+  "leba_f5", "Using light in the morning and during daytime", 19L, 23L, 5L, 25L, NA_character_
+)
+
+expected_levels <- c("Never", "Rarely", "Sometimes", "Often", "Always")
+
+item_value <- function(x) {
+  stopifnot(is.factor(x), identical(levels(x), expected_levels))
+  as.integer(x)
+}
+
+score_from_items <- function(factor_id) {
+  contract <- factor_contract |> filter(.data$factor_id == !!factor_id)
+  item_ids <- sprintf(
+    "%s_%02d", factor_id, seq.int(contract$first_item, contract$last_item)
+  )
+  item_matrix <- vapply(leba_raw[item_ids], item_value, integer(nrow(leba_raw)))
+  if (!is.na(contract$reverse_item)) {
+    item_matrix[, contract$reverse_item] <- 6L - item_matrix[, contract$reverse_item]
+  }
+  rowSums(item_matrix)
+}
+
+score_audit <- factor_contract |>
+  rowwise() |>
+  mutate(
+    calculated = list(score_from_items(factor_id)),
+    stored = list(leba_raw[[factor_id]]),
+    participants = nrow(leba_raw),
+    score_missing_n = sum(is.na(stored)),
+    observed_min = min(stored, na.rm = TRUE),
+    observed_max = max(stored, na.rm = TRUE),
+    mismatch_n = sum(calculated != stored, na.rm = TRUE),
+    score_verified = mismatch_n == 0L
+  ) |>
+  ungroup() |>
+  select(
+    factor_id, factor_label, participants, first_item, last_item,
+    reverse_item, possible_min, possible_max, observed_min, observed_max,
+    score_missing_n, mismatch_n, score_verified
+  )
+
+item_audit <- map_dfr(seq_len(nrow(factor_contract)), function(i) {
+  contract <- factor_contract[i, ]
+  item_ids <- sprintf(
+    "%s_%02d",
+    contract$factor_id,
+    seq.int(contract$first_item, contract$last_item)
+  )
+  map_dfr(item_ids, function(item_id) {
+    x <- leba_raw[[item_id]]
+    tibble(
+      factor_id = contract$factor_id,
+      factor_label = contract$factor_label,
+      item_id = item_id,
+      item_label = attr(x, "label"),
+      reverse_coded = identical(item_id, contract$reverse_item),
+      ordered_levels = paste(levels(x), collapse = " < "),
+      missing_n = sum(is.na(x)),
+      observed_min = min(as.integer(x), na.rm = TRUE),
+      observed_max = max(as.integer(x), na.rm = TRUE)
+    )
+  })
+})
+
+stopifnot(
+  nrow(leba_raw) == 184L,
+  n_distinct(paste(leba_raw$site, leba_raw$Id, sep = "::")) == 184L,
+  nrow(item_audit) == 20L,
+  all(score_audit$score_verified),
+  all(item_audit$missing_n == 0L)
+)
+
+write_audit_csv(item_audit, "h05_stage1_leba_factor_audit.csv")
+knitr::kable(score_audit, caption = "Recovered and independently verified LEBA score construction.")
+```
+
+All 20 items use the ordered coding
+`Never = 1 < Rarely = 2 < Sometimes = 3 < Often = 4 < Always = 5`.
+F2 is the sum of items 04–09 after reversing only item 04 (`6 - item 04`);
+F3, F4, and F5 are direct sums. All 184 stored scores reproduce exactly and
+there are no missing item or factor values. Higher values indicate more of
+the named behaviour. For F4 this means more frequent light/screen-control or
+light-reduction behaviours before sleep, not generically “more ambient
+light.” Factor 1 (filtered/tinted glasses) was not administered because the
+study spectacles had no optical filters.
+
+```{r}
+#| label: leba-site-support
+
+leba_site_support <- leba_raw |>
+  select(site, Id, all_of(factor_contract$factor_id)) |>
+  pivot_longer(
+    cols = all_of(factor_contract$factor_id),
+    names_to = "factor_id",
+    values_to = "score"
+  ) |>
+  group_by(site, factor_id) |>
+  summarise(
+    participants = n_distinct(Id),
+    complete_scores = sum(!is.na(score)),
+    missing_scores = sum(is.na(score)),
+    observed_min = min(score, na.rm = TRUE),
+    observed_max = max(score, na.rm = TRUE),
+    .groups = "drop"
+  ) |>
+  left_join(select(factor_contract, factor_id, factor_label), by = "factor_id") |>
+  left_join(site_registry, by = "site") |>
+  arrange(display_order, factor_id) |>
+  select(
+    site, display_name, display_order, color_hex, factor_id, factor_label,
+    participants, complete_scores, missing_scores, observed_min, observed_max
+  )
+
+write_audit_csv(leba_site_support, "h05_stage1_leba_site_support.csv")
+
+leba_site_support |>
+  distinct(site, display_name, display_order, color_hex, participants) |>
+  arrange(display_order) |>
+  knitr::kable(caption = "LEBA participants by submitted site order and display convention.")
+```
+
+### Exact V0 metric manifest
+
+```{r}
+#| label: v0-metric-manifest
+
+factor_labels <- setNames(factor_contract$factor_label, factor_contract$factor_id)
+
+metric_map <- tibble::tribble(
+  ~v0_order, ~v0_name, ~metric_id, ~manuscript_name,
+  1L, "interdaily_stability", "interdaily_stability", "Interdaily stability",
+  2L, "intradaily_variability", "intradaily_variability", "Intradaily variability",
+  3L, "Mean", "daily_geometric_mean_medi", "Mean melEDI",
+  4L, "brightest_10h_mean", "m10_mean_medi", "Brightest 10 h mean",
+  5L, "brightest_10h_midpoint", "m10_midpoint", "Midpoint of the brightest 10 hours",
+  6L, "darkest_10h_mean", "l10_mean_medi", "Darkest 10 h mean",
+  7L, "darkest_10h_midpoint", "l10_midpoint", "Midpoint of the darkest 10 hours",
+  8L, "duration_above_1000", "duration_above_1000", "Time above 1,000 lx melEDI",
+  9L, "period_above_250", "longest_bout_above_250", "Longest continuous period above 250 lx melEDI",
+  10L, "mean_timing_above_250", "mean_timing_above_250", "Mean timing of exposure above 250 lx melEDI",
+  11L, "first_timing_above_250", "first_timing_above_250", "First light timing above 250 lx melEDI",
+  12L, "last_timing_above_250", "last_timing_above_250", "Last light timing above 250 lx melEDI",
+  13L, "dose", "dose_observed_medi", "melEDI dose",
+  14L, "MDER", "mder_ratio_of_integrals", "Melanopic daylight efficacy ratio",
+  15L, "duration_below_10_pre-sleep", "duration_below_10_pre_sleep", "Time below 10 lx melEDI before sleep",
+  16L, "duration_below_1_sleep", "duration_below_1_sleep_environment", "Time below 1 lx melEDI during sleep",
+  17L, "duration_above_250_wake", "duration_above_250_wake", "Time above 250 lx melEDI during wake"
+)
+
+stopifnot(nrow(metric_map) == 17L, nrow(factor_contract) == 4L)
+
+metric_map |>
+  mutate(planned_associations = nrow(factor_contract)) |>
+  select(v0_order, v0_name, manuscript_name, metric_id, planned_associations) |>
+  knitr::kable(caption = "The exact 17-member V0 metric set (17 × 4 = 68 associations per placement).")
+```
+
+M10/L10 onset and offset variables are not in this 17-member set and remain
+excluded under approved decision METRIC-009. The full-day “Time above 250 lx
+melEDI” outcome is also not an H05 member; only the distinct wake-state
+outcome “Time above 250 lx melEDI during wake” is included.
+
+### Participant aggregation, pair counts, and correlations
+
+```{r}
+#| label: reproduce-v0
+
+load_metric_workspace <- function(relative_path) {
+  workspace <- new.env(parent = emptyenv())
+  load(file.path(project_root, relative_path), envir = workspace)
+  if (!exists("metrics", envir = workspace, inherits = FALSE)) {
+    stop("The V0 workspace does not contain `metrics`: ", relative_path)
+  }
+  workspace$metrics
+}
+
+reproduce_placement <- function(relative_path, placement) {
+  metrics <- load_metric_workspace(relative_path) |>
+    filter(!is.na(response)) |>
+    inner_join(metric_map, by = c("name" = "v0_name")) |>
+    arrange(v0_order)
+
+  stopifnot(
+    nrow(metrics) == 17L,
+    identical(metrics$v0_order, seq_len(17L))
+  )
+
+  participant_summaries <- pmap(
+    list(
+      metrics$data, metrics$name, metrics$type, metrics$metric_id,
+      metrics$manuscript_name, metrics$v0_order
+    ),
+    function(data, name, type, metric_id, manuscript_name, v0_order) {
+      participant <- data |>
+        group_by(site, Id) |>
+        summarise(
+          metric_summary = mean(metric, na.rm = TRUE),
+          contributing_rows = n(),
+          contributing_days = if (type == "participant") {
+            NA_integer_
+          } else {
+            n_distinct(Date[!is.na(metric)])
+          },
+          nonmissing_metric_rows = sum(!is.na(metric)),
+          .groups = "drop"
+        )
+
+      # IS and IV are participant-level in V0. Their represented-day support
+      # is recovered from the colocated daily Mean registry and is explicitly
+      # labelled as a proxy rather than an input to their calculation.
+      if (type == "participant") {
+        mean_position <- match("Mean", metrics$name)
+        day_source <- metrics$data[[mean_position]] |>
+          group_by(site, Id) |>
+          summarise(
+            represented_days_proxy = n_distinct(Date[!is.na(metric)]),
+            .groups = "drop"
+          )
+        participant <- participant |>
+          left_join(day_source, by = c("site", "Id")) |>
+          mutate(contributing_days = represented_days_proxy) |>
+          select(-represented_days_proxy)
+      }
+
+      participant |>
+        mutate(
+          placement = placement,
+          v0_order = v0_order,
+          v0_name = name,
+          metric_id = metric_id,
+          manuscript_name = manuscript_name,
+          analysis_unit = type,
+          .before = 1
+        )
+    }
+  ) |>
+    list_rbind()
+
+  association_frame <- participant_summaries |>
+    left_join(
+      select(leba_raw, site, Id, all_of(factor_contract$factor_id)),
+      by = c("site", "Id")
+    ) |>
+    pivot_longer(
+      cols = all_of(factor_contract$factor_id),
+      names_to = "factor_id",
+      values_to = "factor_score"
+    ) |>
+    filter(is.finite(metric_summary), !is.na(factor_score))
+
+  associations <- association_frame |>
+    group_by(
+      placement, v0_order, metric_id, manuscript_name, analysis_unit,
+      factor_id
+    ) |>
+    summarise(
+      spearman_rho = cor(metric_summary, factor_score, method = "spearman"),
+      v0_pearson_raw_p = cor.test(
+        metric_summary, factor_score, method = "pearson"
+      )$p.value,
+      consistent_spearman_raw_p = cor.test(
+        metric_summary, factor_score, method = "spearman", exact = FALSE
+      )$p.value,
+      participants = n_distinct(paste(site, Id, sep = "::")),
+      sites = n_distinct(site),
+      represented_days_total = sum(contributing_days),
+      days_per_participant_min = min(contributing_days),
+      days_per_participant_median = median(contributing_days),
+      days_per_participant_max = max(contributing_days),
+      .groups = "drop"
+    ) |>
+    mutate(
+      factor_label = unname(factor_labels[factor_id]),
+      # This deliberately reproduces V0: p.adjust receives one scalar inside
+      # every metric-by-factor group, with n forced to 68.
+      v0_scalar_bh_p = vapply(
+        v0_pearson_raw_p,
+        function(p) p.adjust(p, method = "BH", n = 68L),
+        numeric(1)
+      ),
+      # Audit-only consistency check on the frozen V0 summaries.
+      consistent_spearman_vector_bh_p = p.adjust(
+        consistent_spearman_raw_p, method = "BH"
+      ),
+      v0_display_flag = v0_scalar_bh_p <= 0.05,
+      consistent_spearman_vector_bh_flag =
+        consistent_spearman_vector_bh_p <= 0.05
+    ) |>
+    arrange(v0_order, factor_id)
+
+  metric_support <- participant_summaries |>
+    group_by(
+      placement, v0_order, metric_id, manuscript_name, analysis_unit
+    ) |>
+    summarise(
+      participant_summaries = n(),
+      finite_participant_summaries = sum(is.finite(metric_summary)),
+      represented_days_total = sum(contributing_days),
+      days_per_participant_min = min(contributing_days),
+      days_per_participant_median = median(contributing_days),
+      days_per_participant_max = max(contributing_days),
+      source_rows = sum(contributing_rows),
+      nonmissing_source_rows = sum(nonmissing_metric_rows),
+      sites = n_distinct(site),
+      .groups = "drop"
+    ) |>
+    arrange(v0_order)
+
+  pair_counts_by_site <- association_frame |>
+    group_by(
+      placement, v0_order, metric_id, manuscript_name, factor_id, site
+    ) |>
+    summarise(
+      participants = n_distinct(Id),
+      represented_days_total = sum(contributing_days),
+      days_per_participant_min = min(contributing_days),
+      days_per_participant_median = median(contributing_days),
+      days_per_participant_max = max(contributing_days),
+      .groups = "drop"
+    ) |>
+    left_join(site_registry, by = "site") |>
+    left_join(select(factor_contract, factor_id, factor_label), by = "factor_id") |>
+    arrange(v0_order, factor_id, display_order) |>
+    select(
+      placement, v0_order, metric_id, manuscript_name, factor_id,
+      factor_label, site, display_name, display_order, color_hex,
+      participants, represented_days_total, days_per_participant_min,
+      days_per_participant_median, days_per_participant_max
+    )
+
+  list(
+    metric_registry = metrics,
+    participant_summaries = participant_summaries,
+    association_frame = association_frame,
+    associations = associations,
+    metric_support = metric_support,
+    pair_counts_by_site = pair_counts_by_site
+  )
+}
+
+near_eye <- reproduce_placement("data/H1_results.RData", "near-eye")
+chest <- reproduce_placement("data/H1_results_chest.RData", "chest")
+
+v0_associations <- bind_rows(near_eye$associations, chest$associations)
+v0_metric_support <- bind_rows(near_eye$metric_support, chest$metric_support)
+v0_pair_counts_by_site <- bind_rows(
+  near_eye$pair_counts_by_site,
+  chest$pair_counts_by_site
+)
+
+stopifnot(
+  nrow(near_eye$associations) == 68L,
+  nrow(chest$associations) == 68L,
+  nrow(v0_associations) == 136L
+)
+
+write_audit_csv(v0_associations, "h05_stage1_v0_associations.csv")
+write_audit_csv(v0_metric_support, "h05_stage1_v0_metric_support.csv")
+write_audit_csv(
+  v0_pair_counts_by_site,
+  "h05_stage1_v0_pair_counts_by_site.csv"
+)
+
+placement_overview <- tibble::tribble(
+  ~placement, ~participants, ~represented_days, ~sites,
+  "near-eye", 141L, 811L, 9L,
+  "chest", 154L, 897L, 8L
+)
+
+knitr::kable(
+  placement_overview,
+  caption = "V0 placement-wide source support before metric-specific pairwise deletion."
+)
+```
+
+V0 takes an arithmetic mean of every daily metric within `site × Id`, uses
+IS/IV directly, requires no minimum number of days, left-joins the four LEBA
+scores, and drops missing pairs cell by cell. This includes arithmetic means
+of clock-valued metrics. The exact 136 placement × metric × factor rows and
+their site-resolved pair counts are persisted as audit CSVs rather than
+hidden in a plot.
+
+```{r}
+#| label: metric-support-table
+
+v0_metric_support |>
+  mutate(
+    days_per_participant = paste0(
+      days_per_participant_min, "/",
+      days_per_participant_median, "/",
+      days_per_participant_max
+    )
+  ) |>
+  select(
+    placement, manuscript_name, analysis_unit,
+    finite_participant_summaries, represented_days_total,
+    days_per_participant, sites
+  ) |>
+  knitr::kable(
+    caption = paste(
+      "Exact V0 metric support; days/person is minimum/median/maximum.",
+      "For IS/IV, represented days are the colocated daily-Mean proxy."
+    )
+  )
+```
+
+Near-eye timing summaries have 778 contributing participant-days; MDER has
+725 days and 140 finite participant summaries; pre-sleep has 780 days; sleep
+has 790 days; and wake-state time above 250 lx melEDI has 755 days and 140
+finite participant summaries. Chest timing summaries have 867 days; MDER 729;
+pre-sleep 867; sleep 878; and the wake-state duration 839 days with 153 finite
+participant summaries. The complete audit table above preserves the exact
+metric-level denominators.
+
+### V0 questionnaire-by-site screen
+
+```{r}
+#| label: reproduce-v0-site-screen
+
+leba_scores <- leba_raw |>
+  select(site, Id, all_of(factor_contract$factor_id)) |>
+  mutate(site = factor(site, levels = site_levels))
+
+site_screen_objects <- map(factor_contract$factor_id, function(factor_id) {
+  fit <- lm(reformulate("site", response = factor_id), data = leba_scores)
+  marginal <- emmeans(fit, ~site)
+  omnibus <- as.data.frame(joint_tests(marginal)) |>
+    filter(.data[["model term"]] == "site")
+  contrasts <- as.data.frame(contrast(marginal))
+  list(fit = fit, marginal = marginal, omnibus = omnibus, contrasts = contrasts)
+})
+names(site_screen_objects) <- factor_contract$factor_id
+
+v0_site_screen <- map_dfr(names(site_screen_objects), function(factor_id) {
+  object <- site_screen_objects[[factor_id]]
+  tibble(
+    factor_id = factor_id,
+    factor_label = factor_labels[[factor_id]],
+    participants = stats::nobs(object$fit),
+    sites = nlevels(leba_scores$site),
+    df1 = object$omnibus$df1,
+    df2 = object$omnibus$df2,
+    f_ratio = object$omnibus$F.ratio,
+    raw_p = object$omnibus$p.value
+  )
+}) |>
+  # Exact code semantics: after unnesting, p.adjust sees all four values.
+  mutate(
+    v0_vector_bh_p = p.adjust(raw_p, method = "BH", n = 4L),
+    passes_v0_screen = v0_vector_bh_p <= 0.05
+  )
+
+v0_site_contrasts <- map_dfr(
+  v0_site_screen$factor_id[v0_site_screen$passes_v0_screen],
+  function(factor_id) {
+    current_factor_id <- factor_id
+    current_factor_label <- unname(factor_labels[[current_factor_id]])
+    site_screen_objects[[factor_id]]$contrasts |>
+      as_tibble() |>
+      mutate(
+        factor_id = current_factor_id,
+        factor_label = current_factor_label
+      )
+  }
+) |>
+  filter(p.value <= 0.05) |>
+  select(factor_id, factor_label, contrast, estimate, SE, df, t.ratio, p.value)
+
+write_audit_csv(v0_site_screen, "h05_stage1_v0_site_screen.csv")
+write_audit_csv(v0_site_contrasts, "h05_stage1_v0_site_contrasts.csv")
+
+v0_site_screen |>
+  mutate(across(c(raw_p, v0_vector_bh_p), format_p)) |>
+  knitr::kable(caption = "Reproduced V0 four-factor questionnaire site screen.")
+
+v0_site_contrasts |>
+  mutate(p.value = format_p(p.value)) |>
+  knitr::kable(
+    digits = 3,
+    caption = "Effect contrasts retained by the V0 screen and default emmeans adjustment."
+  )
+```
+
+The exact R evaluation shows that the four omnibus site-screen p-values were
+adjusted together after `unnest()`: F2 adjusted p = 0.0076 and F5 adjusted
+p = 0.0164. This corrects the migration map’s description of this particular
+step as four scalar adjustments. The two retained effect contrasts are UCR
+for F2 (estimate −2.703, adjusted p = 0.0002) and BAUA for F5 (estimate
+−2.239, adjusted p = 0.0250), both relative to the unweighted site mean.
+
+That implementation correction does **not** rescue the inferential logic.
+Questionnaire-by-site tests are diagnostics; they are not the registered
+outcome model, non-rejection for F3/F4 is not evidence of no confounding, and
+site adjustment cannot be selected by this screen. A scoped shared-change
+request accompanies this audit so the migration map can be corrected without
+editing it here.
+
+### Coefficient, test, and multiplicity reconstruction
+
+```{r}
+#| label: highlighted-v0-results
+
+highlighted_v0 <- v0_associations |>
+  filter(
+    placement == "near-eye",
+    factor_id == "leba_f2",
+    metric_id %in% c("dose_observed_medi", "duration_above_1000")
+  ) |>
+  select(
+    manuscript_name, spearman_rho, v0_pearson_raw_p, v0_scalar_bh_p,
+    consistent_spearman_raw_p, consistent_spearman_vector_bh_p,
+    participants, sites, represented_days_total
+  )
+
+highlighted_v0 |>
+  mutate(
+    spearman_rho = round(spearman_rho, 3),
+    across(contains("_p"), format_p)
+  ) |>
+  knitr::kable(
+    caption = paste(
+      "The two V0 near-eye highlights: submitted computation versus",
+      "a consistent Spearman/vector-BH audit on the same frozen summaries."
+    )
+  )
+```
+
+V0 computes `cor(..., method = "spearman")` but calls `cor.test()` without a
+method, which defaults to Pearson. Inside each metric-by-factor group it then
+passes that one Pearson p-value to `p.adjust(..., n = 68)`. This is not a
+68-value BH adjustment; for one scalar it is multiplication by 68, truncated
+at one.
+
+On the same frozen near-eye participant summaries, the consistent Spearman
+raw/vector-BH results are ρ = 0.272, raw p = 0.00111, adjusted p = 0.0377 for
+melEDI dose and ρ = 0.290, raw p = 0.000478, adjusted p = 0.0325 for time
+above 1,000 lx melEDI. Their persistence here must not be read as the final
+H05 result because no site-adjusted model or repaired metric input has been
+evaluated.
+
+```{r}
+#| label: chest-v0-result
+
+chest_v0_flags <- v0_associations |>
+  filter(v0_display_flag | consistent_spearman_vector_bh_flag) |>
+  select(
+    placement, manuscript_name, factor_id, spearman_rho,
+    v0_pearson_raw_p, v0_scalar_bh_p,
+    consistent_spearman_raw_p, consistent_spearman_vector_bh_p,
+    v0_display_flag, consistent_spearman_vector_bh_flag,
+    participants, sites, represented_days_total
+  ) |>
+  mutate(
+    spearman_rho = round(spearman_rho, 3),
+    across(contains("_p"), format_p)
+  )
+
+knitr::kable(
+  chest_v0_flags,
+  caption = "All V0 or consistent-Spearman/vector-BH flagged cells across placements."
+)
+```
+
+The chest V0 figure highlights F2 with dose (ρ = 0.202; displayed p = 0.042).
+The consistent Spearman raw p-value is 0.0119 and the chest-specific
+68-value BH result is 0.204, so no chest cell remains flagged. The chest H05
+prose is copied from the near-eye interpretation and therefore does not
+describe the chest result.
+
+### Outcome-name and interpretation audit
+
+The two near-eye highlights are **melEDI dose** and **Time above 1,000 lx
+melEDI**. The V0 figure and `index.qmd` identify the threshold as 1,000 lx;
+the final sentence of the `RQ2.qmd` H05 interpretation instead says “Duration
+above 250 lx melanopic EDI.” That phrase is wrong. It cannot refer to the
+full-day 250-lx outcome because that outcome is absent from the 17-member H05
+set, and it cannot silently substitute the distinct wake-state 250-lx metric.
+
+V0 also squares Spearman’s rho and describes the result as variance explained.
+For a rank correlation, ρ² is not an ordinary proportion of outcome variance
+explained. Any future claim should report the association estimate and
+uncertainty on its declared scale without causal or variance-explanation
+language.
+
+### V0 paired-placement support
+
+```{r}
+#| label: v0-paired-support
+
+paired_support_one <- function(v0_order, v0_name, metric_id, manuscript_name) {
+  near_row <- near_eye$metric_registry |> filter(.data$v0_order == !!v0_order)
+  chest_row <- chest$metric_registry |> filter(.data$v0_order == !!v0_order)
+  stopifnot(nrow(near_row) == 1L, nrow(chest_row) == 1L)
+
+  analysis_unit <- near_row$type[[1]]
+  stopifnot(identical(analysis_unit, chest_row$type[[1]]))
+
+  if (analysis_unit == "participant") {
+    near_keys <- near_eye$participant_summaries |>
+      filter(.data$v0_order == !!v0_order, is.finite(metric_summary)) |>
+      select(site, Id)
+    chest_keys <- chest$participant_summaries |>
+      filter(.data$v0_order == !!v0_order, is.finite(metric_summary)) |>
+      select(site, Id)
+    common <- inner_join(near_keys, chest_keys, by = c("site", "Id"))
+    return(tibble(
+      v0_order = v0_order,
+      metric_id = metric_id,
+      manuscript_name = manuscript_name,
+      analysis_unit = analysis_unit,
+      paired_participants = nrow(common),
+      common_participant_days = NA_integer_,
+      sites = n_distinct(common$site)
+    ))
+  }
+
+  near_days <- near_row$data[[1]] |>
+    filter(is.finite(metric)) |>
+    select(site, Id, Date) |>
+    distinct()
+  chest_days <- chest_row$data[[1]] |>
+    filter(is.finite(metric)) |>
+    select(site, Id, Date) |>
+    distinct()
+  common <- inner_join(near_days, chest_days, by = c("site", "Id", "Date"))
+
+  tibble(
+    v0_order = v0_order,
+    metric_id = metric_id,
+    manuscript_name = manuscript_name,
+    analysis_unit = analysis_unit,
+    paired_participants = n_distinct(paste(common$site, common$Id, sep = "::")),
+    common_participant_days = nrow(common),
+    sites = n_distinct(common$site)
+  )
+}
+
+v0_paired_support <- pmap_dfr(metric_map, paired_support_one) |>
+  arrange(v0_order)
+
+stopifnot(
+  all(v0_paired_support$paired_participants <= 112L),
+  all(v0_paired_support$sites == 8L)
+)
+
+write_audit_csv(v0_paired_support, "h05_stage1_v0_paired_support.csv")
+knitr::kable(
+  v0_paired_support,
+  caption = "Exact V0 common near-eye/chest support by metric."
+)
+```
+
+There are 112 participants shared across placements and eight sites. For most
+daily metrics the exact common support is 640 participant-days; timing
+metrics have 603; MDER 476 days/111 participants; pre-sleep 615; sleep 621;
+and wake-state time above 250 lx melEDI 592 days/111 participants. IS/IV have
+112 paired participants. These are V0 denominators only and must not be mixed
+with the repaired main-pipeline paired-day manifest used in Stage 2.
+
+## Finding register
+
+```{r}
+#| label: finding-register
+
+h05_findings <- tibble::tribble(
+  ~finding_id, ~severity, ~status, ~finding, ~evidence, ~required_resolution,
+  "H05-S1-001", "major", "open_author_gate",
+  "The registered site-adjusted Metric ~ LEBA + (1|Site) analysis is absent; V0 reports pooled correlations.",
+  "AsPredicted p. 2; RQ2.qmd:1578–1720; RQ2_chest.qmd:1579–1721; DEV-028",
+  "Choose H05-G1 before any proposed model is fitted.",
+  "H05-S1-002", "major", "confirmed",
+  "V0 displays Spearman rho but obtains each p-value from the default Pearson cor.test().",
+  "RQ2.qmd H05 summarize block; frozen-input R reconstruction",
+  "Use one correlation method for coefficient, test, and interval.",
+  "H05-S1-003", "major", "confirmed",
+  "Each association p-value is BH-adjusted as a scalar with n = 68; no 68-value vector is assembled.",
+  "RQ2.qmd H05 grouped summarize block; IMP-001",
+  "Assemble the complete declared family first, then call p.adjust once.",
+  "H05-S1-004", "major", "confirmed",
+  "The preliminary LEBA-by-site screen cannot justify omitting site from the outcome model.",
+  "Four lm(factor ~ site) screens; DEV-028",
+  "Treat the screen as a diagnostic only and retain the approved site structure.",
+  "H05-S1-005", "moderate", "confirmed",
+  "V0 gives every participant equal weight after arithmetic averaging, requires no minimum days, and does not persist metric-specific support.",
+  "Exact V0 preparation and reconstructed support tables",
+  "Approve the Stage 2 analysis unit and persist exact model frames and denominators.",
+  "H05-S1-006", "major", "confirmed",
+  "Clock metrics are arithmetically averaged in V0 without an unwrap/support rule.",
+  "V0 mean(metric, na.rm = TRUE) for all daily metrics",
+  "Apply the approved clock rules; do not default all clock variables to circular summaries.",
+  "H05-S1-007", "major", "confirmed",
+  "The RQ2 interpretation misnames the highlighted 1,000-lx outcome as duration above 250 lx.",
+  "RQ2.qmd:1720 versus Fig6 and index.qmd:337–339",
+  "Use Time above 1,000 lx melEDI; keep the distinct wake-state 250-lx metric separate.",
+  "H05-S1-008", "moderate", "confirmed",
+  "V0 describes squared Spearman rho as variance explained.",
+  "RQ2.qmd H05 interpretation",
+  "Report rho or model-scale effect estimates and intervals without variance-explanation language.",
+  "H05-S1-009", "major", "confirmed",
+  "Chest prose duplicates the near-eye interpretation and is inconsistent with the chest V0 matrix.",
+  "RQ2_chest.qmd H05 interpretation and chest Fig6",
+  "Generate placement-specific prose only from verified result rows.",
+  "H05-S1-010", "major", "open_author_gate",
+  "The registration does not enumerate the four-factor × 17-metric family or its primary/secondary relation.",
+  "AsPredicted pp. 1–2; DEV-029",
+  "Approve the exact factor, metric, scenario, and multiplicity manifest.",
+  "H05-S1-011", "moderate", "shared_change_requested",
+  "The migration map says the four site-screen p-values were scalar-adjusted, but source-level R evaluation shows one four-value adjustment after unnesting.",
+  "RQ2.qmd H05 site block and exact R reproduction in this document",
+  "Correct the shared migration description; do not alter the separate association-level scalar-BH finding."
+)
+
+write_audit_csv(h05_findings, "h05_stage1_findings.csv")
+knitr::kable(h05_findings, caption = "H05 Stage 1 findings and required disposition.")
+```
+
+The relevant open governance records are DEV-028 (site-adjusted model) and
+DEV-029 (metric/factor family). IMP-006 is the coefficient/test mismatch and
+IMP-001 is the association-level scalar adjustment. No ledger status is
+changed by this worker deliverable.
+
+## H05-G1 options and recommendation
+
+### Option A — registered site-adjusted primary (**recommended**)
+
+Use the registered, metric-appropriate site-adjusted LEBA model as the
+primary inferential analysis. Keep the participant-summary Spearman matrix as
+descriptive continuity output, reporting estimates, intervals, exact pair
+counts, ties, and support without a second significance screen. This option
+most closely preserves the signed contract, retains repeated participant-day
+information for 15 daily outcomes, and avoids using a predictor-only site
+screen to decide the outcome model.
+
+For each of four LEBA factors and 17 metrics, compare a full and reduced model
+on the identical complete-case model frame. The factor score is centered on
+its participant mean. Report the slope per one raw score point and also
+rescaled per one participant-level SD; do not z-transform separately within
+site. The response transformation and family follow the already approved H01
+metric registry. No causal language is permitted.
+
+### Option B — participant-correlation primary
+
+Retain 68 two-sided participant-level Spearman correlations as the primary
+inferential estimand for continuity, with a single 68-value BH family. The
+registered site-adjusted models then become a named sensitivity/deviation.
+This option requires explicit approval of the deviation from the registered
+model and an approved metric-specific participant-summary rule, especially
+for clock metrics and unequal day support.
+
+### Recommendation rationale
+
+Choose Option A. Site is a design feature and a plausible common cause of
+both habitual behaviour scores and light exposure. With only nine sites, the
+site random-effect estimate may be fragile, so the registered random-site
+form and a fixed-site sensitivity should both be reported. That limitation is
+a reason for transparent diagnostics, not for deleting site from the model.
+
+## Proposed formula and test contract — not fitted
+
+The following code creates and prints the exact formula objects. It is
+intentionally evaluated and unfolded so that the operational contract is
+machine-visible. No model is fitted in Stage 1.
+
+```{r}
+#| label: h05-formula-contract
+#| code-fold: false
+#| code-summary: "Formula contract (always shown)"
+
+h05_formula <- function(response = "response_value", fixed, random = character()) {
+  right_hand_side <- c(fixed, random)
+  if (length(right_hand_side) == 0L) {
+    right_hand_side <- "1"
+  }
+  stats::as.formula(paste(response, "~", paste(right_hand_side, collapse = " + ")))
+}
+
+h05_formulas <- list(
+  registered_exact = stats::as.formula(
+    "response_value ~ leba_centered + (1 | site)"
+  ),
+  participant_day_full = h05_formula(
+    fixed = "leba_centered",
+    random = c("(1 | site)", "(1 | site:participant)")
+  ),
+  participant_day_reduced = h05_formula(
+    fixed = character(),
+    random = c("(1 | site)", "(1 | site:participant)")
+  ),
+  participant_full = h05_formula(
+    fixed = "leba_centered",
+    random = "(1 | site)"
+  ),
+  participant_reduced = h05_formula(
+    fixed = character(),
+    random = "(1 | site)"
+  ),
+  fixed_site_participant_day_full = h05_formula(
+    fixed = c("site", "leba_centered"),
+    random = "(1 | site:participant)"
+  ),
+  fixed_site_participant_day_reduced = h05_formula(
+    fixed = "site",
+    random = "(1 | site:participant)"
+  ),
+  fixed_site_participant_full = h05_formula(
+    fixed = c("site", "leba_centered")
+  ),
+  fixed_site_participant_reduced = h05_formula(
+    fixed = "site"
+  ),
+  v0_questionnaire_site_screen = stats::as.formula(
+    "leba_score ~ site"
+  ),
+  v0_correlation_pairing_only = stats::as.formula(
+    "metric_summary ~ leba_score"
+  )
+)
+
+formula_contract <- enframe(h05_formulas, name = "formula_id", value = "formula") |>
+  mutate(formula = vapply(formula, function(x) paste(deparse(x), collapse = " "), character(1)))
+
+knitr::kable(formula_contract, caption = "Evaluated H05 formula objects; none are fitted here.")
+```
+
+The signed formula is the `registered_exact` row. Adding
+`(1 | site:participant)` for participant-day outcomes is the proposed
+operational refinement needed for repeated days and requires author approval
+at H05-G1. IS and IV remain participant-level and therefore use no participant
+intercept. In every inferential test, the reduced model removes only the LEBA
+term; response transformation, family/link, random effects, and analysis rows
+must otherwise be identical. Gaussian full/reduced comparisons use maximum
+likelihood; a final descriptive full-model refit may use REML. Tweedie-log
+comparisons use maximum likelihood.
+
+The fixed-site sensitivity uses the submitted site order and sum-to-zero site
+contrasts. LEBA is numeric and has no contrast coding. Reference handling,
+centering constants, participant-level SDs, model-frame hashes, optimizer,
+and package versions must be persisted.
+
+### Proposed response-family package
+
+```{r}
+#| label: h05-response-family-contract
+
+h01_contract_env <- new.env(parent = globalenv())
+sys.source(
+  file.path(project_root, "scripts/hypotheses/H01/h01_contract.R"),
+  envir = h01_contract_env
+)
+future_metric_contract <- h01_contract_env$h01_metric_registry() |>
+  left_join(
+    select(metric_display, metric_id, manuscript_name, display_unit),
+    by = "metric_id"
+  ) |>
+  arrange(metric_order) |>
+  select(
+    metric_order, metric_id, manuscript_name, analysis_unit, display_unit,
+    response_family, response_transform, effect_scale, diagnostic_note
+  )
+
+stopifnot(nrow(future_metric_contract) == 17L)
+knitr::kable(
+  future_metric_contract,
+  caption = "Proposed H05 response families inherited unchanged from the approved H01 metric contract."
+)
+```
+
+This future 17-member contract uses the corrected time-sensitive melEDI dose
+(`dose_time_sensitive_corrected_medi`), not V0’s observed-duration dose. It
+also uses MDER as a ratio of paired-channel integrals. Those metric repairs
+reopen the V0 results; they are not estimated here.
+
+### Clock-valued outcomes
+
+Clock time is not automatically circular. The proposed rules are:
+
+1. M10 midpoint and threshold timing outcomes use the approved numeric clock
+   representation only when support occupies one continuous, scientifically
+   coherent range without a midnight split.
+2. L10 midpoint subtracts 24 hours from values **strictly later than 16:00**
+   before analysis. The approved noon-boundary conversion is a same-row,
+   same-model sensitivity.
+3. If a clock outcome violates the continuous-range condition, do not force a
+   linear model or silently substitute a circular summary. Stop at a metric
+   gate and approve the representation.
+4. Under recommended Option A, the daily clock value is the response; there
+   is no V0-style participant averaging in the primary model. A descriptive
+   participant correlation must use a predeclared representation consistent
+   with these same rules and must report its support.
+
+M10/L10 onset and offset variables remain excluded; only their supported
+levels and midpoints are eligible.
+
+## Multiplicity contract for approval
+
+Under recommended Option A:
+
+- **H05-F1-primary:** the 68 near-eye full-versus-reduced LEBA tests form one
+  complete vector and receive one BH adjustment. A planned but non-estimable
+  member remains in the manifest with an NA p-value and reason; the family is
+  not shortened after inspecting results.
+- **H05-F1-MPD:** the approved manuscript-prepared-data scenario repeats the
+  same logical 68-member family and is adjusted within that scenario.
+- The participant-level Spearman matrix reports rho, a declared 95% interval,
+  pair count, site count, ties, and represented days without inferential
+  p-values or a significance screen.
+- The paired/common chest analysis is complementary. If inferential p-values
+  are retained, its 68 tests form a separate, explicitly labelled BH family;
+  otherwise report estimates and intervals only.
+- Paired-sample near-eye, fixed-site, leave-one-site-out, coverage, and
+  response-family checks are stability diagnostics without additional
+  significance screens. If p-values are desired for any of them, each family
+  must be declared in full before fitting.
+- The four questionnaire site tests are diagnostics and never choose H05
+  covariates, outcomes, or family members.
+
+Under Option B, the 68 two-sided Spearman tests are H05-F1-primary and receive
+one vector-wide BH adjustment. If the site-adjusted models also report
+inferential p-values, their 68 values form the separate H05-F2-secondary
+family. Scalar calls to `p.adjust()` are prohibited in both options.
+
+Raw p-values, family identifier, planned family size, available rank,
+adjusted p-value, non-estimability reason, and scenario must be retained in
+the result table.
+
+## Placement and common-sample contract
+
+Near-eye measurement is the main placement, following the approved placement
+decision. Chest measurement is complementary and uses the exact paired/common
+sample:
+
+- participant-day outcomes pair on `site × participant × local date` after
+  the same metric-specific admissibility rules in each placement;
+- IS/IV pair on `site × participant`;
+- the same approved formula, response family, scaling, and diagnostic rules
+  are fitted separately by placement; placements are not pooled as independent
+  observations;
+- the near-eye model is rerun on the paired/common sample so that a near-eye
+  versus chest difference can be separated from a sample-composition change;
+- report estimate differences, 95% intervals, signs, and stability, with exact
+  participant/day/site counts; and
+- an all-available chest analysis is contextual only and requires explicit
+  approval if it is to receive inferential p-values.
+
+The V0 common-sample counts above are provenance checks, not the future
+repaired-sample manifest.
+
+## Required Stage 2 diagnostics
+
+These checks are specifications, not analyses performed in Stage 1.
+
+### Questionnaire and join integrity
+
+- Assert one row per `site × participant`, the four approved factor IDs, the
+  20-item key, factor ranges, reverse coding, missing-item rule, and score
+  reproduction.
+- Report factor distributions, ties, floor/ceiling frequencies, and
+  within-site support using the submitted site names, order, and colours.
+- Assert one-to-one LEBA joins and preserve participants with no eligible
+  metric row in a reason-coded flow table.
+- Persist centering means, raw-scale SDs, and exact factor direction text.
+
+### Metric and model-frame integrity
+
+- Start from the audited H05 metric-data producer, not H01 fitted results.
+- For every placement × scenario × metric × factor row, persist eligible
+  participants, participant-days, sites, missing LEBA, missing outcome,
+  support failures, and the exact model-frame hash.
+- Apply approved coverage Rule A in the main analysis and retain Rules B/C as
+  named sensitivities. Preserve the exact all-zero-day exclusion and its
+  inclusive sensitivity.
+- Verify state-specific denominators, the longest-bout identifiability flag,
+  MDER paired-channel support, time-sensitive dose inputs, units, bounds, and
+  clock transformations before fitting.
+- Full and reduced models must have identical observations in identical order.
+
+### Model diagnostics and failure rules
+
+- Record convergence code, warnings, optimizer, gradient/Hessian checks,
+  random-effect variances, singularity, and failed refits.
+- With only nine sites, examine random-site stability and the predeclared
+  fixed-site/leave-one-site-out results. Do not delete the site effect because
+  its estimated variance is small or a screen is non-significant.
+- Check Gaussian residual shape, scale, heteroskedasticity, tail influence,
+  fitted bounds, and participant/date residual dependence.
+- For Tweedie-log outcomes, check zero mass, dispersion/power, tails, fitted
+  physical bounds, and numerical stability.
+- For transformed outcomes, report effects on both model and reader-facing
+  scales. Preserve the exact transformation and offset.
+- Flag influential participants and sites using rules fixed before inspecting
+  H05 significance. Report stability rather than mechanically deleting them.
+- A failed/non-estimable member stays in the 68-row registry with a reason.
+  Any family/link switch, altered outcome definition, or undeclared row
+  deletion reopens the author gate.
+
+### Correlation diagnostics
+
+- Use the same two-sided Spearman definition for rho and any p-value.
+- Record ties and the interval method; show the bivariate rank/scatter pattern
+  with site and participant influence visible.
+- Report site-stratified and leave-one-site-out rho as diagnostics.
+- A correlation interval requiring participant resampling is computation-heavy
+  and must use the project’s pilot/runtime policy after the CI method and
+  resampling count are approved. No bootstrap is run in this document.
+
+## Predeclared sensitivity menu for author approval
+
+Only the approved subset should be implemented in Stage 2. The candidates are:
+
+1. registered random-site versus fixed-site model;
+2. leave-one-site-out stability;
+3. near-eye all-available versus paired/common-sample near-eye and chest;
+4. approved coverage Rules B/C on the same scientific metric definitions;
+5. all-zero-inclusive and relaxed native-epoch scenarios;
+6. MDER support thresholds 0.70/0.90, two-device-day support, and waking-only
+   variants;
+7. state/timing support thresholds 0.70/0.90;
+8. longest-bout exactly-identifiable-only rows;
+9. L10 strict-after-16:00 primary rule versus the noon conversion;
+10. corrected time-sensitive dose versus V0 observed-duration dose;
+11. approved metric-specific response-family alternatives on the identical
+    model frame; and
+12. the manuscript-prepared-data scenario as its own complete 68-member
+    analysis.
+
+Sensitivity outputs should be classified by sign, practical magnitude,
+interval overlap/width, convergence, and influence. They do not become new
+confirmatory screens by accumulating p-values.
+
+## V0-to-future claim disposition
+
+| V0 statement or artifact | Stage 1 disposition | Condition for future use |
+|---|---|---|
+| “Only two of 68 comparisons were significant” | Reopened | Replace only from the approved complete primary 68-row family |
+| Positive F2–melEDI-dose association | Provisional V0 reconstruction only | Requires approved corrected-dose input, site-adjusted result, diagnostics, multiplicity, and placement comparison |
+| Positive F2–time-above-1,000-lx association | Provisional V0 reconstruction only | Same requirements; retain the 1,000-lx name |
+| “Duration above 250 lx” as the highlighted threshold | Incorrect | Remove; do not substitute the distinct wake-state 250-lx outcome |
+| ρ² as variance explained | Unsupported interpretation | Replace with estimate/interval language on the declared scale |
+| LEBA can be analysed independent of site | Unsupported | Site screen remains descriptive; use the approved model structure |
+| Near-eye interpretation copied into chest output | Incorrect | Generate placement-specific text from verified result rows |
+| Broad habitual behaviour is less informative than immediate context | Overextended | At most a cautious observational comparison after complete, stable H05 results; no causal ranking |
+
+No manuscript or figure edit is authorized at Stage 1. The current
+`assets/Fig6.png` is an exact copy of the near-eye V0 figure, not a durable
+source-data producer.
+
+```{r}
+#| label: v0-figure-provenance
+
+v0_figure_provenance <- tibble(
+  relative_path = c(
+    "figures/Fig6.png",
+    "figures/chest/Fig6.png",
+    "assets/Fig6.png"
+  )
+) |>
+  mutate(
+    sha256 = vapply(
+      file.path(project_root, relative_path),
+      digest::digest,
+      character(1),
+      algo = "sha256",
+      file = TRUE
+    ),
+    placement = c("near-eye", "chest", "near-eye copy in manuscript assets")
+  )
+
+stopifnot(v0_figure_provenance$sha256[1] == v0_figure_provenance$sha256[3])
+knitr::kable(v0_figure_provenance, caption = "V0 H05 raster-artifact provenance.")
+```
+
+## Author decisions required before Stage 2
+
+Stage 2 is blocked until the author records all of the following decisions:
+
+1. **H05-G1 primary estimand:** approve Option A (recommended) or Option B.
+2. **Factor manifest:** approve LEBA F2–F5, their item keys, reverse coding,
+   direction, ranges, and complete-score rule; confirm Factor 1 exclusion.
+3. **Metric manifest:** approve the exact 17 members, including corrected
+   dose, ratio-of-integrals MDER, the two participant-level dynamics metrics,
+   the five clock outcomes, exclusion of M10/L10 onset/offset, and exclusion
+   of full-day time above 250 lx melEDI.
+4. **Analysis unit and model hierarchy:** approve participant-day models for
+   15 metrics, participant models for IS/IV, and the added nested participant
+   intercept for daily rows.
+5. **Response package:** approve the inherited H01 family, transform, link,
+   effect scale, and any diagnostic-triggered alternatives.
+6. **LEBA scaling:** approve mean-centered raw scores, effects per raw point
+   and per one participant-level SD, with no within-site standardization.
+7. **Site handling:** approve registered random-site primary plus fixed-site
+   and leave-one-site-out diagnostics, including sum-to-zero fixed-site
+   contrasts and the submitted site order.
+8. **Multiplicity:** approve the exact primary 68-member family, the
+   manuscript-prepared-data family, whether any complementary chest p-values
+   are reported, and the no-secondary-screen rule for descriptive
+   correlations/sensitivities.
+9. **Clock rules:** approve the continuous-range requirement, strict
+   after-16:00 L10 unwrap, noon sensitivity, and stop rule if support crosses
+   the boundary incompatibly.
+10. **Placement/sample strategy:** approve near-eye all-available as main,
+    paired/common chest as complementary, paired-sample near-eye comparator,
+    and whether all-available chest is shown contextually.
+11. **Intervals:** approve interval methods for mixed-model effects and
+    descriptive Spearman rho, including any participant-resampling policy.
+12. **Diagnostics, sensitivity set, and failure rules:** approve the menu
+    above, practical stability criteria, non-estimability handling, and which
+    diagnostic triggers reopen the response/metric gate.
+13. **Claim gate:** confirm that both named V0 associations, the “only two”
+    statement, the chest interpretation, and the broader behavioural claim
+    remain withdrawn until the approved Stage 2 outputs are verified.
+
+**Author gate:** no proposed H05 model, bootstrap, sensitivity analysis,
+candidate-result read, notebook implementation, or manuscript revision may
+proceed until these decisions are approved and logged by the coordinator.
+
+## Reproducibility assertions and environment
+
+```{r}
+#| label: audit-assertions
+
+near_flags <- v0_associations |> filter(placement == "near-eye")
+chest_flags <- v0_associations |> filter(placement == "chest")
+
+stopifnot(
+  all(input_contract$hash_verified),
+  all(score_audit$score_verified),
+  all(item_audit$missing_n == 0L),
+  nrow(metric_map) == 17L,
+  nrow(factor_contract) == 4L,
+  nrow(near_flags) == 68L,
+  nrow(chest_flags) == 68L,
+  sum(near_flags$v0_display_flag) == 2L,
+  sum(chest_flags$v0_display_flag) == 1L,
+  sum(near_flags$consistent_spearman_vector_bh_flag) == 2L,
+  sum(chest_flags$consistent_spearman_vector_bh_flag) == 0L,
+  nrow(v0_site_screen) == 4L,
+  sum(v0_site_screen$passes_v0_screen) == 2L,
+  nrow(v0_site_contrasts) == 2L,
+  nrow(v0_paired_support) == 17L,
+  all(v0_paired_support$sites == 8L)
+)
+
+assertion_summary <- tibble::tribble(
+  ~assertion, ~result,
+  "Frozen input hashes match", TRUE,
+  "184 unique LEBA site-participant rows", TRUE,
+  "All four stored scores reproduce from 20 items", TRUE,
+  "17 metrics × 4 factors × 2 placements = 136 audited cells", TRUE,
+  "Exact pair counts persisted by placement, cell, and site", TRUE,
+  "V0 and consistent-method flag counts reproduce", TRUE,
+  "No proposed H05 model or bootstrap fitted", TRUE
+)
+
+knitr::kable(assertion_summary, caption = "Stage 1 execution assertions.")
+```
+
+```{r}
+#| label: audit-provenance
+
+package_names <- c("dplyr", "tidyr", "purrr", "tibble", "emmeans", "digest", "knitr")
+environment_table <- tibble(
+  component = c("R", "Quarto", package_names),
+  version = c(
+    R.version.string,
+    Sys.getenv("QUARTO_VERSION", unset = "recorded by render log"),
+    vapply(package_names, function(x) as.character(packageVersion(x)), character(1))
+  )
+)
+
+audit_csvs <- list.files(
+  audit_dir,
+  pattern = "^h05_stage1_.*[.]csv$",
+  full.names = TRUE
+)
+csv_inventory <- tibble(
+  artifact = basename(audit_csvs),
+  rows = vapply(audit_csvs, function(x) nrow(read.csv(x, check.names = FALSE)), integer(1)),
+  sha256 = vapply(
+    audit_csvs, digest::digest, character(1), algo = "sha256", file = TRUE
+  )
+) |>
+  arrange(artifact)
+
+knitr::kable(environment_table, caption = "Analytical execution environment.")
+knitr::kable(csv_inventory, caption = "Scoped H05 Stage 1 machine-readable audit artifacts.")
+```
+
+All scientific calculations in this document are performed in R against the
+frozen inputs named above. The PDF lookup is a structural, page-cited text
+retrieval; it does not calculate a scientific result. The source files,
+production notebooks, shared configuration, ledgers, and manuscript remain
+unchanged.

@@ -1,43 +1,1353 @@
 ---
-title: "H05: Light Exposure Behaviour Assessment and personal light exposure"
-params:
-  placement: glasses
-  scenario: primary
+title: "H05: Habitual light-related behaviour and personal light exposure"
+subtitle: "Associations between LEBA questionnaire factors and 17 light-exposure metrics"
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    code-tools: false
+execute:
+  echo: false
+  warning: false
+  message: false
 ---
 
-## What this notebook checks
+```{r}
+#| label: setup-h05-reader
 
-Specify the four Light Exposure Behaviour Assessment (LEBA) factor scores and
-the full set of exposure metrics before testing them. Report missing data.
-Calculate each correlation coefficient and its \(p\)-value using the same
-method, then apply one Benjamini--Hochberg correction to the complete
-predefined group of tests. The Benjamini--Hochberg procedure limits the
-expected proportion of false discoveries among the results treated as
-statistically supported.
+suppressPackageStartupMessages({
+  library(dplyr)
+  library(gt)
+  library(readr)
+  library(tibble)
+  library(tidyr)
+})
 
-## What this notebook uses and produces
+root <- normalizePath(
+  Sys.getenv("QUARTO_PROJECT_DIR", unset = getwd()),
+  winslash = "/",
+  mustWork = TRUE
+)
+knitr::opts_knit$set(
+  root.dir = file.path(root, "notebooks", "hypotheses")
+)
+source(file.path(root, "scripts", "pipeline", "p_value_display.R"))
 
-- Uses: the prepared H05 dataset in `artifacts/06_model_data/H05.rds`.
-- Produces: every planned LEBA--exposure comparison, adjusted \(p\)-values,
-  effect sizes in interpretable units with 95% confidence intervals, model
-  checks, the exact participants, observations, and sites used for each
-  comparison, together with missing LEBA factors and exposure outcomes;
-  tables, figures, and source data.
-- Fixed rule: the H05 metric set is chosen before inspecting H01 results.
-- Data sensitivity: fit this identical H05 implementation to the
-  manuscript-prepared dataset and compare exact samples, estimates, 95%
-  confidence intervals, adjusted results, diagnostics, and conclusions.
-- Formula display: whenever H05 uses fitted models rather than a direct
-  correlation, the completed audit must contain a visible evaluated code cell
-  printing the exact Wilkinson formulas for the selected and comparison
-  models.
+read_h05 <- function(...) {
+  readr::read_csv(file.path(root, ...), show_col_types = FALSE)
+}
+
+near_results <- read_h05(
+  "artifacts", "11_source_data", "H05",
+  "H05_reader_near_eye_results.csv"
+)
+chest_results <- read_h05(
+  "artifacts", "11_source_data", "H05",
+  "H05_reader_chest_results.csv"
+)
+near_samples <- read_h05(
+  "artifacts", "11_source_data", "H05",
+  "H05_reader_near_eye_samples.csv"
+)
+chest_samples <- read_h05(
+  "artifacts", "11_source_data", "H05",
+  "H05_reader_chest_samples.csv"
+)
+master <- read_h05(
+  "artifacts", "09_tables", "H05", "H05_model_results_master.csv"
+)
+diagnostics <- read_h05(
+  "artifacts", "08_diagnostics", "H05", "H05_model_diagnostics.csv"
+)
+formula_registry <- read_h05(
+  "artifacts", "06_model_data", "H05", "H05_formula_registry.csv"
+)
+factor_registry <- read_h05(
+  "artifacts", "06_model_data", "H05", "H05_factor_registry.csv"
+)
+metric_registry <- read_h05(
+  "artifacts", "06_model_data", "H05", "H05_metric_registry.csv"
+)
+family_audit <- read_h05(
+  "artifacts", "09_tables", "H05", "H05_family_audit.csv"
+)
+site_evidence <- read_h05(
+  "artifacts", "06_model_data", "H05", "H05_site_structure_evidence.csv"
+)
+random_site <- read_h05(
+  "artifacts", "09_tables", "H05", "H05_random_site_sensitivity.csv"
+)
+leave_one_site_out <- read_h05(
+  "artifacts", "09_tables", "H05", "H05_leave_one_site_out_summary.csv"
+)
+paired <- read_h05(
+  "artifacts", "09_tables", "H05", "H05_paired_placement_comparison.csv"
+)
+paired_display <- read_h05(
+  "artifacts", "11_source_data", "H05",
+  "H05_paired_effect_comparison_data.csv"
+)
+preparation_sensitivity <- read_h05(
+  "artifacts", "09_tables", "H05", "H05_manuscript_prepared_comparison.csv"
+)
+exact_period <- read_h05(
+  "artifacts", "09_tables", "H05",
+  "H05_exactly_identified_longest_bout_sensitivity.csv"
+)
+descriptive_spearman <- read_h05(
+  "artifacts", "09_tables", "H05", "H05_descriptive_spearman.csv"
+)
+
+near_id <- "main__glasses__all_available"
+chest_id <- "main__chest__all_available"
+paired_near_id <- "main__glasses__paired_common_sample"
+paired_chest_id <- "main__chest__paired_common_sample"
+preparation_id <- "manuscript_prepared_data__glasses__all_available"
+
+factor_code <- function(factor_id) {
+  toupper(sub("leba_", "", factor_id))
+}
+
+format_number <- function(value, digits = 3L) {
+  formatC(value, digits = digits, format = "f", big.mark = ",")
+}
+
+format_p <- function(value) {
+  nh_format_p_value(value)
+}
+
+format_p_cell <- function(value, significant) {
+  display <- nh_p_value_display(value, significant = significant)
+  if (display$p_bold[[1L]]) {
+    paste0("**", display$p_display[[1L]], "**")
+  } else {
+    display$p_display[[1L]]
+  }
+}
+
+format_effect <- function(estimate, low, high, type, unit, digits = 3L) {
+  if (type == "odds_ratio") {
+    return(paste0(
+      "OR ", format_number(estimate, digits), " (",
+      format_number(low, digits), "–", format_number(high, digits), ")"
+    ))
+  }
+  if (type == "ratio") {
+    return(paste0(
+      "×", format_number(estimate, digits), " (",
+      format_number(low, digits), "–", format_number(high, digits), ")"
+    ))
+  }
+  suffix <- if (unit %in% c("h", "clock time")) " h" else ""
+  paste0(
+    sprintf(paste0("%+.", digits, "f"), estimate), suffix, " (",
+    sprintf(paste0("%+.", digits, "f"), low), "–",
+    sprintf(paste0("%+.", digits, "f"), high), suffix, ")"
+  )
+}
+
+h05_gt <- function(table, font_size = 13) {
+  table |>
+    gt::opt_row_striping() |>
+    gt::sub_missing(missing_text = "—") |>
+    gt::tab_options(
+      table.width = gt::pct(100),
+      table.font.size = gt::px(font_size),
+      data_row.padding = gt::px(5),
+      column_labels.font.weight = "600",
+      source_notes.font.size = gt::px(11)
+    )
+}
+
+metric_group <- function(metric_order) {
+  dplyr::case_when(
+    metric_order <= 5 ~ "Stability and light level",
+    metric_order <= 10 ~ "Duration and continuous periods",
+    metric_order <= 15 ~ "Timing",
+    TRUE ~ "Exposure history and spectrum"
+  )
+}
+
+sample_table <- function(data) {
+  data |>
+    mutate(
+      Group = metric_group(.data$metric_order),
+      Metric = .data$manuscript_name,
+      `Analysis level` = if_else(
+        .data$analysis_unit == "participant",
+        "Participant",
+        "Participant-day"
+      ),
+      `Model rows` = .data$observations,
+      Participants = .data$participants,
+      `Participant-days` = .data$participant_days,
+      `Represented days` = .data$represented_days,
+      Sites = .data$sites
+    ) |>
+    select(
+      .data$Group,
+      .data$Metric,
+      .data$`Analysis level`,
+      .data$`Model rows`,
+      .data$Participants,
+      .data$`Participant-days`,
+      .data$`Represented days`,
+      .data$Sites
+    ) |>
+    gt::gt(rowname_col = "Metric", groupname_col = "Group") |>
+    gt::fmt_integer(
+      columns = c(
+        `Model rows`, Participants, `Participant-days`,
+        `Represented days`, Sites
+      )
+    ) |>
+    gt::cols_width(
+      `Analysis level` ~ gt::pct(17),
+      `Model rows` ~ gt::pct(12),
+      Participants ~ gt::pct(12),
+      `Participant-days` ~ gt::pct(14),
+      `Represented days` ~ gt::pct(14),
+      Sites ~ gt::pct(8)
+    ) |>
+    h05_gt(12)
+}
+
+result_matrix <- function(data, metric_orders) {
+  data |>
+    filter(.data$metric_order %in% .env$metric_orders) |>
+    left_join(
+      metric_registry |>
+        select(.data$metric_id, .data$display_unit),
+      by = "metric_id",
+      relationship = "many-to-one"
+    ) |>
+    rowwise() |>
+    mutate(
+      Metric = .data$manuscript_name,
+      Factor = factor_code(.data$factor_id),
+      Result = if_else(
+        .data$reader_inference_status == "unfit_for_inference",
+        paste0(
+          "**Unfit for inference**<br><small>Estimate and p-values ",
+          "suppressed from the reader display</small>"
+        ),
+        paste0(
+          format_effect(
+            .data$estimate_practical_per_sd,
+            .data$conf_low_practical_per_sd,
+            .data$conf_high_practical_per_sd,
+            .data$effect_type,
+            .data$display_unit
+          ),
+          "<br><small>Raw p = ",
+          format_p_cell(.data$p_raw, FALSE),
+          "; BH-adjusted p = ",
+          format_p_cell(.data$p_adjusted, .data$p_adjusted <= 0.05),
+          "</small>"
+        )
+      )
+    ) |>
+    ungroup() |>
+    select(.data$metric_order, .data$Metric, .data$Factor, .data$Result) |>
+    tidyr::pivot_wider(names_from = .data$Factor, values_from = .data$Result) |>
+    arrange(.data$metric_order) |>
+    select(-.data$metric_order) |>
+    gt::gt(rowname_col = "Metric") |>
+    gt::fmt_markdown(columns = c(F2, F3, F4, F5)) |>
+    gt::cols_width(
+      F2 ~ gt::pct(18), F3 ~ gt::pct(18),
+      F4 ~ gt::pct(18), F5 ~ gt::pct(18)
+    ) |>
+    gt::tab_source_note(
+      source_note = paste(
+        "Effects are per participant SD of the LEBA score with 95% Wald",
+        "confidence intervals. Raw p has no separate bolding rule;",
+        "BH-adjusted p is bold only at alpha = 0.050 across all 68 tests.",
+        "Sleep-environment cells are unfit for inference and suppressed."
+      )
+    ) |>
+    h05_gt(11)
+}
+
+adequacy_count_table <- function(data) {
+  data |>
+    mutate(
+      reader_assessment = if_else(
+        .data$reader_inference_status == "unfit_for_inference",
+        "unfit_for_inference",
+        .data$model_adequacy
+      )
+    ) |>
+    count(.data$reader_assessment, name = "Models") |>
+    mutate(
+      Assessment = recode(
+        .data$reader_assessment,
+        acceptable = "Acceptable",
+        acceptable_with_specified_limitations =
+          "Acceptable with specified limitations",
+        unfit_for_inference = "Unfit for inference",
+        not_acceptable = "Not acceptable"
+      )
+    ) |>
+    select(.data$Assessment, .data$Models) |>
+    gt::gt(rowname_col = "Assessment") |>
+    gt::fmt_integer(columns = Models) |>
+    h05_gt()
+}
+
+limitation_count_table <- function(data) {
+  data |>
+    mutate(
+      Limitation = case_when(
+        is.na(.data$specified_limitations) ~ "None specified",
+        grepl("WARN_STRONG_TWEEDIE_MISFIT", .data$specified_limitations) ~
+          "Unfit sleep-environment model: simulated-residual and response-support failure",
+        grepl("WARN_TWEEDIE_DIAGNOSTIC", .data$specified_limitations) ~
+          "Ordinary Tweedie simulation-diagnostic warning",
+        grepl("WARN_GAUSSIAN_DIAGNOSTIC", .data$specified_limitations) ~
+          "Ordinary Gaussian residual warning",
+        TRUE ~ .data$specified_limitations
+      )
+    ) |>
+    count(.data$Limitation, name = "Models") |>
+    arrange(desc(.data$Models)) |>
+    gt::gt(rowname_col = "Limitation") |>
+    gt::fmt_integer(columns = Models) |>
+    h05_gt()
+}
+
+sleep_diagnostic_table <- function(run_id) {
+  diagnostics |>
+    filter(
+      .data$run_id == .env$run_id,
+      .data$metric_id == "duration_below_1_sleep_environment"
+    ) |>
+    transmute(
+      Factor = factor_code(.data$factor_id),
+      `Uniformity raw p` = nh_format_p_value(.data$dharma_uniformity_p),
+      `Zero-mass raw p` = nh_format_p_value(.data$dharma_zero_inflation_p),
+      `Outlier raw p` = nh_format_p_value(.data$dharma_outlier_p),
+      `Observed zero fraction` = .data$observed_zero_fraction,
+      `Simulated zero fraction` = .data$simulated_zero_fraction,
+      `Predictions above support` = .data$predicted_above_bound_n
+    ) |>
+    gt::gt(rowname_col = "Factor") |>
+    gt::fmt_number(
+      columns = c(`Observed zero fraction`, `Simulated zero fraction`),
+      decimals = 4
+    ) |>
+    gt::fmt_integer(columns = `Predictions above support`) |>
+    gt::tab_source_note(
+      source_note = paste(
+        "These are raw simulation-diagnostic p-values. No standalone alpha",
+        "or bolding rule is applied; they are interpreted jointly with the",
+        "response-support failures that make these models unfit for inference."
+      )
+    ) |>
+    h05_gt(12)
+}
+
+paired_component_table <- function(factor_id) {
+  paired_display |>
+    filter(.data$factor_id == .env$factor_id) |>
+    arrange(.data$metric_order) |>
+    rowwise() |>
+    transmute(
+      Metric = .data$manuscript_name,
+      `Near-eye model-scale estimate (95% CI)` = paste0(
+        format_number(.data$estimate_model_per_sd__glasses), " (",
+        format_number(.data$conf_low_model_per_sd__glasses), "–",
+        format_number(.data$conf_high_model_per_sd__glasses), ")"
+      ),
+      `Chest model-scale estimate (95% CI)` = paste0(
+        format_number(.data$estimate_model_per_sd__chest), " (",
+        format_number(.data$conf_low_model_per_sd__chest), "–",
+        format_number(.data$conf_high_model_per_sd__chest), ")"
+      ),
+      `Exact matched sample` = if_else(
+        .data$analysis_unit__near_eye == "participant",
+        paste0(
+          .data$participants__near_eye,
+          " participants (",
+          .data$observations__near_eye,
+          " rows); ",
+          .data$sites__near_eye,
+          " sites"
+        ),
+        paste0(
+          .data$participants__near_eye,
+          " participants; ",
+          .data$participant_days__near_eye,
+          " participant-days; ",
+          .data$sites__near_eye,
+          " sites"
+        )
+      )
+    ) |>
+    ungroup() |>
+    gt::gt(rowname_col = "Metric") |>
+    gt::cols_width(
+      `Near-eye model-scale estimate (95% CI)` ~ gt::pct(24),
+      `Chest model-scale estimate (95% CI)` ~ gt::pct(24),
+      `Exact matched sample` ~ gt::pct(25)
+    ) |>
+    gt::tab_source_note(
+      source_note = paste(
+        "These are the component 95% confidence intervals for the exact",
+        "matched estimands plotted above. The identity display describes",
+        "concordance and is not an equivalence analysis."
+      )
+    ) |>
+    h05_gt(11)
+}
+
+near_top <- near_results |>
+  filter(
+    .data$factor_id == "leba_f2",
+    .data$metric_id %in% c(
+      "duration_above_1000",
+      "dose_time_sensitive_corrected_medi"
+    )
+  ) |>
+  arrange(.data$metric_order)
+near_duration <- near_top |>
+  filter(.data$metric_id == "duration_above_1000")
+near_dose <- near_top |>
+  filter(.data$metric_id == "dose_time_sensitive_corrected_medi")
+
+chest_duration <- chest_results |>
+  filter(
+    .data$factor_id == "leba_f2",
+    .data$metric_id == "duration_above_1000"
+  )
+chest_dose <- chest_results |>
+  filter(
+    .data$factor_id == "leba_f2",
+    .data$metric_id == "dose_time_sensitive_corrected_medi"
+  )
+
+near_adequacy <- near_results |> count(.data$model_adequacy)
+chest_adequacy <- chest_results |> count(.data$model_adequacy)
+
+paired_near <- master |>
+  filter(.data$run_id == paired_near_id)
+paired_chest <- master |>
+  filter(.data$run_id == paired_chest_id)
+preparation_results <- master |>
+  filter(.data$run_id == preparation_id)
+
+leading_sensitivity <- bind_rows(
+  near_top |> mutate(Scenario = "Primary near eye"),
+  paired_near |>
+    filter(
+      .data$factor_id == "leba_f2",
+      .data$metric_id %in% near_top$metric_id
+    ) |>
+    mutate(Scenario = "Common-sample near eye"),
+  paired_chest |>
+    filter(
+      .data$factor_id == "leba_f2",
+      .data$metric_id %in% near_top$metric_id
+    ) |>
+    mutate(Scenario = "Common-sample chest"),
+  preparation_results |>
+    filter(
+      .data$factor_id == "leba_f2",
+      .data$metric_id %in% near_top$metric_id
+    ) |>
+    mutate(Scenario = "Gap-timing-unaware dataset")
+) |>
+  left_join(
+    metric_registry |> select(.data$metric_id, .data$display_unit),
+    by = "metric_id",
+    relationship = "many-to-one"
+  ) |>
+  rowwise() |>
+  mutate(
+    `Effect per LEBA SD (95% CI)` = format_effect(
+      .data$estimate_practical_per_sd,
+      .data$conf_low_practical_per_sd,
+      .data$conf_high_practical_per_sd,
+      .data$effect_type,
+      .data$display_unit
+    ),
+    `Fitted sample` = paste0(
+      .data$participants, " participants; ",
+      if_else(
+        is.na(.data$participant_days),
+        paste0(.data$observations, " participant rows"),
+        paste0(.data$participant_days, " participant-days")
+      ),
+      "; ", .data$sites, " sites"
+    )
+  ) |>
+  ungroup() |>
+  select(
+    .data$Scenario,
+    Metric = .data$manuscript_name,
+    .data$`Fitted sample`,
+    .data$`Effect per LEBA SD (95% CI)`
+  )
+
+random_summary <- random_site |>
+  count(.data$placement, .data$random_site_status, name = "Models") |>
+  mutate(
+    Placement = recode(.data$placement, glasses = "Near eye", chest = "Chest"),
+    Status = recode(
+      .data$random_site_status,
+      DESCRIPTIVE_PASS = "Fit passed",
+      DESCRIPTIVE_UNSTABLE = "Fit unstable"
+    )
+  ) |>
+  select(.data$Placement, .data$Status, .data$Models)
+
+loo_summary <- leave_one_site_out |>
+  count(.data$stability_class, name = "Associations") |>
+  mutate(
+    Classification = recode(
+      .data$stability_class,
+      stable = "Stable",
+      direction_stable_magnitude_sensitive = "Direction stable; magnitude sensitive",
+      direction_unstable = "Direction changed after omitting at least one site"
+    )
+  ) |>
+  select(.data$Classification, .data$Associations)
+
+descriptive_top <- descriptive_spearman |>
+  filter(
+    .data$run_id == near_id,
+    .data$factor_id == "leba_f2",
+    .data$metric_id %in% near_top$metric_id
+  ) |>
+  transmute(
+    Metric = .data$manuscript_name,
+    `Spearman rho (95% CI)` = paste0(
+      format_number(.data$spearman_rho, 3), " (",
+      format_number(.data$conf_low, 3), "–",
+      format_number(.data$conf_high, 3), ")"
+    ),
+    Participants = .data$pairs,
+    Sites = .data$sites,
+    `Represented days` = .data$represented_days
+  )
+
+stopifnot(
+  nrow(near_results) == 68L,
+  nrow(chest_results) == 68L,
+  nrow(near_samples) == 17L,
+  nrow(chest_samples) == 17L,
+  all(family_audit$registry_rows == 68L),
+  all(family_audit$vector_bh_verified),
+  sum(near_results$p_adjusted <= 0.05) == 0L,
+  sum(chest_results$p_adjusted <= 0.05) == 0L,
+  sum(
+    near_results$reader_inference_status == "unfit_for_inference"
+  ) == 4L,
+  sum(
+    chest_results$reader_inference_status == "unfit_for_inference"
+  ) == 4L,
+  nrow(paired_display) == 68L,
+  all(paired_display$exact_sample_match),
+  sum(near_results$model_adequacy == "not_acceptable") == 0L,
+  sum(chest_results$model_adequacy == "not_acceptable") == 0L,
+  nrow(exact_period) == 4L,
+  all(exact_period$sign_concordant),
+  sum(random_site$random_site_status == "DESCRIPTIVE_UNSTABLE") == 15L,
+  sum(leave_one_site_out$successful_refits) == 612L
+)
+```
+
+## Question
+
+The preregistered hypothesis was:
+
+> “H5: LEBA questionnaire factors correlate with selected personal light exposure metrics.”
+
+The Light Exposure Behaviour Assessment (LEBA) asks about habitual
+light-related behaviours. This analysis tests whether four LEBA factor scores
+are associated with 17 personal light-exposure metrics after accounting for
+study site. Higher scores mean that the behaviour described by a factor was
+reported more often.
+
+::: {.callout-tip title="Answer in brief"}
+None of the 68 primary near-eye associations remained statistically supported
+after the complete Benjamini--Hochberg correction. The two largest positive
+F2 estimates—time above 1,000 lx melEDI and melEDI dose—were consistent across
+several sensitivity analyses, but their adjusted values were both
+BH-adjusted *p* = `r format_p(near_duration$p_adjusted)`. They are therefore
+descriptive, not multiplicity-retained findings. Separately, the four planned
+H05 sleep-environment models are unfit for inference and support no estimate
+or claim under this response definition and model structure.
+:::
+
+The exact data preparation, model construction, diagnostic sequence, and
+output lineage are documented in the companion
+[H05 analysis preparation and provenance](../../audit/hypotheses/H05/H05_analysis_preparation.html).
+
+## What was analysed
+
+Near-eye measurements are primary because they more closely represent light
+near the eyes. All available chest measurements are analysed separately as
+complementary evidence. A common-sample analysis then fits near-eye and chest
+models to the same participants and participant-days, so placement differences
+are not confused with differences in who contributed data. The placements are
+never pooled as independent observations.
+
+A predefined sensitivity uses the **gap-timing-unaware dataset**. It still
+passed the general 50%-per-hour and 80%-per-day coverage rules. The term means
+that the timing of the remaining missing observations is not used for an
+additional metric-specific adjustment; it does not mean that gaps,
+missingness, or coverage were ignored. For this contrast only, the approved
+primary preparation could be interpreted as a **time-sensitive primary metric
+dataset**, because it uses the timing of remaining missing observations where
+that timing is relevant to the metric. Below, it is called simply the primary
+dataset.
 
 ```{r}
-#| label: setup-h05
-#| eval: false
+#| label: tbl-h05-factors
+#| tbl-cap: "The four analysed LEBA factors and their score interpretation."
 
-root <- normalizePath(Sys.getenv("QUARTO_PROJECT_DIR"), winslash = "/", mustWork = TRUE)
-source(file.path(root, "scripts/pipeline/paths_io.R"))
-source(file.path(root, "scripts/pipeline/assertions.R"))
-source(file.path(root, "scripts/pipeline/multiplicity.R"))
+factor_registry |>
+  transmute(
+    Factor = factor_code(.data$factor_id),
+    Behaviour = .data$factor_label,
+    `Possible score` = paste0(.data$possible_min, "–", .data$possible_max),
+    Interpretation = .data$direction_text
+  ) |>
+  gt::gt(rowname_col = "Factor") |>
+  gt::cols_width(
+    Behaviour ~ gt::pct(27),
+    `Possible score` ~ gt::pct(14),
+    Interpretation ~ gt::pct(48)
+  ) |>
+  h05_gt()
+```
+
+F2 includes one reverse-coded item; F3--F5 are sums of their ordered items.
+Every factor score was complete. Within each exact model sample, the score was
+centred and expressed both per raw point and per participant-level standard
+deviation. The report uses the latter so estimates can be compared across the
+four differently ranged factor scores.
+
+### Deviations and operational clarifications
+
+The preregistration gives the broad model `Metric ~ LEBA + (1|Site)` but does
+not fully define the repeated-measure structure, response families, metric
+set, multiplicity family, clock handling, or placement roles. The following
+choices make those elements explicit.
+
+```{r}
+#| label: tbl-h05-model-deviations
+#| tbl-cap: "H05 model and inferential deviations or operational clarifications."
+
+tibble::tribble(
+  ~Aspect, ~Preregistered_or_unspecified, ~Analysis, ~Why_it_matters,
+  "Site adjustment",
+  "Random site intercept",
+  "Submitted-order fixed site effects; registered random-site model retained as a sensitivity",
+  "The fixed-site structure was more reliably estimable with nine sites.",
+  "Repeated observations",
+  "Not operationally specified",
+  "Participant-day responses for 15 metrics with a participant random intercept; participant responses for IS and IV",
+  "Daily information is retained without treating days from one person as independent.",
+  "Response model",
+  "Generic linear model",
+  "Metric-specific Gaussian or Tweedie model and approved response transform",
+  "The outcome scale and support differ across the 17 metrics.",
+  "LEBA scale",
+  "Not specified",
+  "Centred score; effects reported per one participant-level SD",
+  "This retains the continuous score while giving a comparable effect unit.",
+  "Inference and multiplicity",
+  "Correlation matrices plus linear models; adjustment family not operationalized",
+  "Full-versus-reduced LEBA comparison and one complete 68-test BH family per inferential placement/scenario",
+  "All four factors and 17 metrics remain in the correction."
+) |>
+  gt::gt(rowname_col = "Aspect") |>
+  gt::cols_label(
+    Preregistered_or_unspecified = "Preregistered or unspecified",
+    Analysis = "Analysed",
+    Why_it_matters = "Why it matters"
+  ) |>
+  gt::cols_width(
+    Preregistered_or_unspecified ~ gt::pct(24),
+    Analysis ~ gt::pct(34),
+    Why_it_matters ~ gt::pct(30)
+  ) |>
+  h05_gt(12)
+```
+
+```{r}
+#| label: tbl-h05-data-deviations
+#| tbl-cap: "H05 metric, clock, placement, and descriptive-output clarifications."
+
+tibble::tribble(
+  ~Aspect, ~Preregistered_or_unspecified, ~Analysis, ~Why_it_matters,
+  "Metric set",
+  "Selected metrics not enumerated",
+  "Seventeen prespecified metrics, including corrected dose and ratio-of-integrals MDER",
+  "The 17 × 4 cross-product fixes the 68 tests before inference.",
+  "Primary placement",
+  "Not specified in H5",
+  "All-available near eye primary; all-available chest complementary; common-sample placements as sensitivity",
+  "Separates the scientific measurement role from sample composition.",
+  "Clock outcomes",
+  "Not operationally specified",
+  "Continuous supported ranges; darkest-10-hour midpoint values strictly after 16:00 are shifted to the preceding clock scale",
+  "Avoids averaging across an artificial midnight discontinuity.",
+  "Longest period",
+  "No identifiability rule stated",
+  "All-available value treated as an observed lower bound; an exactly identified period is a sensitivity",
+  "Gaps cannot be mistaken for a continuously observed period.",
+  "Participant correlations",
+  "Correlation matrices requested",
+  "Spearman coefficients and intervals are descriptive only, without a second significance screen",
+  "The site-adjusted model family remains the inferential analysis."
+) |>
+  gt::gt(rowname_col = "Aspect") |>
+  gt::cols_label(
+    Preregistered_or_unspecified = "Preregistered or unspecified",
+    Analysis = "Analysed",
+    Why_it_matters = "Why it matters"
+  ) |>
+  gt::cols_width(
+    Preregistered_or_unspecified ~ gt::pct(24),
+    Analysis ~ gt::pct(34),
+    Why_it_matters ~ gt::pct(30)
+  ) |>
+  h05_gt(12)
+```
+
+## Models
+
+For participant-day outcomes, the full model asks whether LEBA improves the
+site-adjusted description while accounting for repeated days from the same
+participant. The reduced model removes only LEBA. Interdaily stability (IS)
+and intradaily variability (IV) have one response per participant, so they do
+not use a participant random intercept. Fixed site effects use the registered
+site order and sum-to-zero contrasts; the LEBA coefficient is therefore
+adjusted for site without being tied to one reference site.
+
+The following evaluated cell reads and prints the exact formula objects used
+for the full, reduced, and registered random-site sensitivity models.
+
+```{r}
+#| label: tbl-h05-formulas
+#| tbl-cap: "Exact evaluated formulas supplied to the H05 full, reduced, and random-site sensitivity models."
+#| echo: true
+#| code-fold: false
+
+registered_formula <- function(analysis_unit, formula_id) {
+  row <- formula_registry |>
+    dplyr::filter(
+      .data$analysis_unit == .env$analysis_unit,
+      .data$formula_id == .env$formula_id
+    )
+  stopifnot(nrow(row) == 1L)
+  stats::as.formula(row$formula[[1L]])
+}
+
+h05_formulas <- list(
+  participant_day_full = registered_formula("participant_day", "fixed_full"),
+  participant_day_reduced = registered_formula("participant_day", "fixed_reduced"),
+  participant_full = registered_formula("participant", "fixed_full"),
+  participant_reduced = registered_formula("participant", "fixed_reduced"),
+  participant_day_random_site = registered_formula("participant_day", "random_site"),
+  participant_random_site = registered_formula("participant", "random_site")
+)
+
+tibble::tibble(
+  Model = c(
+    "Participant-day primary full",
+    "Participant-day primary reduced",
+    "Participant primary full",
+    "Participant primary reduced",
+    "Participant-day random-site sensitivity",
+    "Participant random-site sensitivity"
+  ),
+  `Exact Wilkinson formula` = paste0(
+    "`",
+    vapply(h05_formulas, deparse1, character(1)),
+    "`"
+  )
+) |>
+  gt::gt(rowname_col = "Model") |>
+  gt::fmt_markdown(columns = `Exact Wilkinson formula`) |>
+  gt::cols_width(`Exact Wilkinson formula` ~ gt::pct(67)) |>
+  gt::tab_source_note(
+    source_note = paste(
+      "The table is evaluated directly from the registered formula objects;",
+      "the reduced model removes only LEBA from the corresponding full model."
+    )
+  ) |>
+  h05_gt(12)
+```
+
+Gaussian full and reduced models were compared using maximum likelihood.
+Tweedie models used a log link and maximum likelihood. Effects and 95% Wald
+confidence intervals are then presented on a practical response scale: ratios
+for log-scale and Tweedie outcomes, an odds ratio for IS, and differences for
+identity-scale outcomes. The response specifications are listed below.
+
+```{r}
+#| label: tbl-h05-response-specifications
+#| tbl-cap: "Metric-specific analysis level, response model, transform, and reported effect scale."
+
+metric_registry |>
+  mutate(
+    Group = metric_group(.data$metric_order),
+    Metric = .data$manuscript_name,
+    Level = recode(
+      .data$analysis_unit,
+      participant = "Participant",
+      participant_day = "Participant-day"
+    ),
+    Model = recode(
+      .data$response_family,
+      gaussian = "Gaussian",
+      tweedie_log = "Tweedie, log link"
+    ),
+    Transform = recode(
+      .data$response_transform,
+      logit = "Logit",
+      identity = "None",
+      log10_offset_0.1 = "log10(value + 0.1)",
+      clock_hours = "Continuous clock hours",
+      clock_hours_midnight_after_16 = "Clock hours; strict after-16:00 shift"
+    ),
+    `Reported effect` = recode(
+      .data$effect_scale,
+      odds_ratio = "Odds ratio",
+      difference = "Difference",
+      ratio = "Ratio"
+    )
+  ) |>
+  select(.data$Group, .data$Metric, .data$Level, .data$Model, .data$Transform, .data$`Reported effect`) |>
+  gt::gt(rowname_col = "Metric", groupname_col = "Group") |>
+  gt::cols_width(
+    Level ~ gt::pct(16), Model ~ gt::pct(17),
+    Transform ~ gt::pct(27), `Reported effect` ~ gt::pct(16)
+  ) |>
+  h05_gt(12)
+```
+
+## Primary near-eye result
+
+Depending on the metric, the primary models used 139--141 participants,
+655--816 participant-days for participant-day outcomes, and all nine sites.
+IS and IV used 141 participant rows and represented 816 observed days. Exact
+metric-specific samples are shown below.
+
+```{r}
+#| label: tbl-h05-near-samples
+#| tbl-cap: "Exact fitted near-eye sample for each light-exposure metric."
+
+sample_table(near_samples)
+```
+
+The exact sample table is available as
+[source data](../../artifacts/11_source_data/H05/H05_reader_near_eye_samples.csv).
+
+### Complete association pattern
+
+```{r}
+#| label: fig-h05-near-effects
+#| fig-cap: "Near-eye effects per participant SD of each LEBA factor. Grey sleep-environment cells are unfit for inference and their estimates are suppressed."
+#| fig-alt: "Heatmap with 17 light-exposure metrics as rows and LEBA factors F2 to F5 as columns. Cells show practical-scale effects per participant standard deviation, except four grey sleep-environment cells labelled unfit. No cell is marked as retained after the 68-test adjustment."
+#| out-width: "96%"
+#| fig-align: center
+
+knitr::include_graphics(file.path(
+  root, "artifacts", "10_figures", "H05", "H05_reader_near_eye_effects.png"
+))
+```
+
+The heatmap colours show the signed effect on each model's fitted scale, while
+the printed value is on the practical response scale. Colours therefore show
+direction and relative within-outcome magnitude, not a common physical unit
+across all 17 rows. The tables provide every estimate, 95% confidence
+interval, Raw p, and BH-adjusted p.
+
+```{r}
+#| label: tbl-h05-near-results-a
+#| tbl-cap: "Near-eye associations for stability, light level, duration, and continuous-period metrics."
+
+result_matrix(near_results, 1:10)
+```
+
+```{r}
+#| label: tbl-h05-near-results-b
+#| tbl-cap: "Near-eye associations for timing, exposure-history, and spectrum metrics."
+
+result_matrix(near_results, 11:17)
+```
+
+Across the complete planned family, zero of 68 BH-adjusted p-values were at or
+below 0.050. The four sleep-environment models remain in that archived family
+so the correction is not changed after seeing the diagnostics, but they are
+unfit for inference and their estimates and p-values are suppressed from the
+reader-facing matrices.
+The two smallest raw values were both for F2, spending time outdoors:
+
+- time above 1,000 lx melEDI increased by a factor of
+  `r format_number(near_duration$estimate_practical_per_sd)` per participant
+  SD (95% CI `r format_number(near_duration$conf_low_practical_per_sd)`–`r format_number(near_duration$conf_high_practical_per_sd)`),
+  Raw *p* = `r format_p(near_duration$p_raw)`, BH-adjusted
+  *p* = `r format_p(near_duration$p_adjusted)`; and
+- melEDI dose increased by a factor of
+  `r format_number(near_dose$estimate_practical_per_sd)` (95% CI
+  `r format_number(near_dose$conf_low_practical_per_sd)`–`r format_number(near_dose$conf_high_practical_per_sd)`),
+  Raw *p* = `r format_p(near_dose$p_raw)`, BH-adjusted
+  *p* = `r format_p(near_dose$p_adjusted)`.
+
+These estimates remain useful for describing magnitude and uncertainty, but
+neither is a multiplicity-retained result.
+
+Complete near-eye numerical results and figure data are available as
+[result source data](../../artifacts/11_source_data/H05/H05_reader_near_eye_results.csv)
+and [figure source data](../../artifacts/11_source_data/H05/H05_reader_near_eye_effect_figure_data.csv).
+
+### Near-eye model assessment
+
+```{r}
+#| label: fig-h05-near-adequacy
+#| fig-cap: "Near-eye model-adequacy classifications for all 68 associations."
+#| fig-alt: "Heatmap of model assessments for 17 near-eye metrics and four LEBA factors. Nineteen cells are green for acceptable, 45 are orange for acceptable with specified limitations, and the four sleep-environment cells are red for unfit for inference."
+#| out-width: "94%"
+#| fig-align: center
+
+knitr::include_graphics(file.path(
+  root, "artifacts", "10_figures", "H05", "H05_reader_near_eye_adequacy.png"
+))
+```
+
+```{r}
+#| label: tbl-h05-near-adequacy-counts
+#| tbl-cap: "Near-eye model-adequacy counts."
+
+adequacy_count_table(near_results)
+```
+
+```{r}
+#| label: tbl-h05-near-limitations
+#| tbl-cap: "Specified near-eye diagnostic limitations."
+
+limitation_count_table(near_results)
+```
+
+All fixed-site fits completed, and all applicable Hessian checks were positive
+definite. That numerical completion does not make every response model
+scientifically defensible. Nineteen models were acceptable, 45 were acceptable
+with a specified limitation, and the four sleep-environment models were
+classified **unfit for inference**. Most retained limitations were ordinary
+Gaussian residual warnings. They qualify how closely the working residual
+distribution represents these data but do not indicate numerical fit failure.
+
+The following representative screens show F2 for the two leading estimates
+and the sleep-environment outcome. The smooth line in the
+residual-versus-fitted plot helps reveal fitted-dependent residual structure; the quantile
+plot compares standardized residuals with a normal reference. For the
+Tweedie sleep model, the simulation-based tests in the subsequent table—not
+the normal-reference plot—govern the assessment.
+
+```{r}
+#| label: fig-h05-near-residual-fitted
+#| fig-cap: "Selected near-eye standardized residuals against fitted values."
+#| fig-alt: "Three vertically stacked residual-versus-fitted plots for F2 models of time above 1,000 lx melEDI, melEDI dose, and time below 1 lx melEDI during sleep. Points show standardized Pearson residuals and blue smooths show their average pattern."
+#| out-width: "88%"
+#| fig-align: center
+
+knitr::include_graphics(file.path(
+  root, "artifacts", "10_figures", "H05",
+  "H05_reader_near_eye_residual_fitted.png"
+))
+```
+
+```{r}
+#| label: fig-h05-near-residual-qq
+#| fig-cap: "Selected near-eye residual quantile checks."
+#| fig-alt: "Three vertically stacked normal-reference quantile plots for the same F2 models. The Gaussian melEDI-dose model has tail departures, while simulation diagnostics and response-support failures make the Tweedie sleep model unfit for inference."
+#| out-width: "88%"
+#| fig-align: center
+
+knitr::include_graphics(file.path(
+  root, "artifacts", "10_figures", "H05",
+  "H05_reader_near_eye_residual_qq.png"
+))
+```
+
+#### H05 sleep-environment models are unfit for inference
+
+The four models for time below 1 lx melEDI during sleep require a stronger
+qualification than the ordinary residual warnings. Their simulated residuals
+showed pronounced non-uniformity, zero-mass disagreement, and outlier
+evidence. They also produced 183--187 fitted values above the
+participant-specific response support. These models are retained because the
+prespecified response-family assessment did not identify an adequate common
+replacement. They are therefore shown for audit completeness but classified
+**unfit for inference**: their estimates, confidence intervals, and p-values
+are not used to support any scientific claim.
+
+This classification is specific to this H05 sleep-environment response and
+the model structure used here. It does not determine whether the underlying
+metric can be analysed in another hypothesis that uses a different response
+variable or model structure.
+
+```{r}
+#| label: tbl-h05-near-sleep-diagnostics
+#| tbl-cap: "Diagnostic evidence for classifying the near-eye sleep-environment models as unfit for inference."
+
+sleep_diagnostic_table(near_id)
+```
+
+The near-eye family supports the overall null conclusion through the 64
+reader-interpretable cells: 19 are acceptable and 45 have specified residual
+limitations. The four additional planned sleep-environment cells remain in
+the archived multiplicity family but are unfit for inference.
+
+Exact source data for the selected diagnostic figures are available
+[here](../../artifacts/11_source_data/H05/H05_reader_near_eye_selected_diagnostics.csv).
+The model-assessment heatmap has its own
+[paired source data](../../artifacts/11_source_data/H05/H05_reader_near_eye_adequacy_figure_data.csv).
+
+## Complementary chest result
+
+The chest analysis repeats the same factor scores, metric definitions,
+response models, fixed-site adjustment, effect scaling, and 68-test
+correction. Depending on the metric, it used 153--154 participants, 743--902
+participant-days for daily outcomes, and eight sites. IS and IV used 153
+participant rows and represented 900 observed days.
+
+```{r}
+#| label: tbl-h05-chest-samples
+#| tbl-cap: "Exact fitted chest sample for each light-exposure metric."
+
+sample_table(chest_samples)
+```
+
+The exact chest sample table is available as
+[source data](../../artifacts/11_source_data/H05/H05_reader_chest_samples.csv).
+
+```{r}
+#| label: fig-h05-chest-effects
+#| fig-cap: "Chest effects per participant SD of each LEBA factor. Grey sleep-environment cells are unfit for inference and their estimates are suppressed."
+#| fig-alt: "Heatmap with 17 chest light-exposure metrics as rows and LEBA factors F2 to F5 as columns. Cells show practical-scale effects per participant standard deviation, except four grey sleep-environment cells labelled unfit. No cell is retained after the chest-specific 68-test adjustment."
+#| out-width: "96%"
+#| fig-align: center
+
+knitr::include_graphics(file.path(
+  root, "artifacts", "10_figures", "H05", "H05_reader_chest_effects.png"
+))
+```
+
+```{r}
+#| label: tbl-h05-chest-results-a
+#| tbl-cap: "Chest associations for stability, light level, duration, and continuous-period metrics."
+
+result_matrix(chest_results, 1:10)
+```
+
+```{r}
+#| label: tbl-h05-chest-results-b
+#| tbl-cap: "Chest associations for timing, exposure-history, and spectrum metrics."
+
+result_matrix(chest_results, 11:17)
+```
+
+Zero of 68 planned chest associations remained after its separate correction;
+the smallest value was BH-adjusted *p* =
+`r format_p(min(chest_results$p_adjusted))`. The F2 estimates for time above
+1,000 lx melEDI and melEDI dose were again positive—ratios
+`r format_number(chest_duration$estimate_practical_per_sd)` and
+`r format_number(chest_dose$estimate_practical_per_sd)`, respectively—but
+neither was multiplicity-retained.
+
+Complete chest numerical results and figure data are available as
+[result source data](../../artifacts/11_source_data/H05/H05_reader_chest_results.csv)
+and [figure source data](../../artifacts/11_source_data/H05/H05_reader_chest_effect_figure_data.csv).
+
+### Chest model assessment
+
+```{r}
+#| label: fig-h05-chest-adequacy
+#| fig-cap: "Chest model-adequacy classifications for all 68 associations."
+#| fig-alt: "Heatmap of model assessments for 17 chest metrics and four LEBA factors. Fourteen cells are green for acceptable, 50 are orange for acceptable with specified limitations, and the four sleep-environment cells are red for unfit for inference."
+#| out-width: "94%"
+#| fig-align: center
+
+knitr::include_graphics(file.path(
+  root, "artifacts", "10_figures", "H05", "H05_reader_chest_adequacy.png"
+))
+```
+
+```{r}
+#| label: tbl-h05-chest-adequacy-counts
+#| tbl-cap: "Chest model-adequacy counts."
+
+adequacy_count_table(chest_results)
+```
+
+```{r}
+#| label: tbl-h05-chest-limitations
+#| tbl-cap: "Specified chest diagnostic limitations."
+
+limitation_count_table(chest_results)
+```
+
+Fourteen chest models were acceptable and 50 were acceptable with specified
+limitations. The four chest sleep-environment models were **unfit for
+inference**. They show the same material problem as near eye, with 241--244
+predictions above participant-specific support and strong simulated-residual
+disagreement; their estimates and p-values are suppressed from the
+reader-facing matrices.
+
+```{r}
+#| label: tbl-h05-chest-sleep-diagnostics
+#| tbl-cap: "Diagnostic evidence for classifying the chest sleep-environment models as unfit for inference."
+
+sleep_diagnostic_table(chest_id)
+```
+
+The 64 reader-interpretable chest cells provide complementary evidence for the
+overall null result, subject to their residual warnings. The four additional
+planned sleep-environment cells remain in the archived family but are unfit
+for inference.
+
+The chest model-assessment heatmap has
+[paired source data](../../artifacts/11_source_data/H05/H05_reader_chest_adequacy_figure_data.csv).
+
+## Sensitivity analyses
+
+### Common near-eye and chest sample
+
+Every plotted point compares the same metric, factor, response definition,
+model, transformation, and exact sample at both placements. Participant-day
+metrics used 110--112 participants and 505--643 matched participant-days at
+eight sites; IS and IV used the same 112 participant rows at eight sites.
+Fifty-nine of 68 associations had the same direction at both placements and
+overlapping component intervals; nine differed in direction but still had
+overlapping component intervals.
+Because no participant-cluster interval was calculated for the direct
+chest-minus-near-eye difference, these are component comparisons rather than formal
+tests of placement differences.
+
+```{r}
+#| label: fig-h05-paired-placement
+#| fig-cap: "Exact common-sample model-scale effects, with near eye on x and chest on y. The dashed identity line describes concordance, grey lines mark the null, and equal x/y geometry preserves the 45-degree comparison. Samples contain 110–112 participants, 505–643 matched participant-days, and eight sites; IS and IV use 112 participant rows. Component 95% confidence intervals are in the adjacent tables. This is not an equivalence analysis."
+#| fig-alt: "Four equal-axis scatterplot panels, one per LEBA factor, compare 17 exactly matched estimands with near-eye effects on the horizontal axis and chest effects on the vertical axis. A dashed 45-degree identity line and grey horizontal and vertical null lines are visible. Samples contain 110 to 112 participants, 505 to 643 matched participant-days, and eight sites; IS and IV use 112 participant rows. Most points have the same sign, while nine cross an axis; proximity to identity does not establish equivalence."
+#| out-width: "90%"
+#| fig-align: center
+
+knitr::include_graphics(file.path(
+  root, "artifacts", "10_figures", "H05", "H05_paired_placement_effects.png"
+))
+```
+
+The component estimates and 95% confidence intervals corresponding to every
+plotted point are shown below.
+
+::: {.panel-tabset}
+
+### F2 — spending time outdoors
+
+```{r}
+#| label: tbl-h05-paired-f2
+#| tbl-cap: "Exact paired/common near-eye and chest component estimates for F2."
+
+paired_component_table("leba_f2")
+```
+
+### F3 — devices in bed
+
+```{r}
+#| label: tbl-h05-paired-f3
+#| tbl-cap: "Exact paired/common near-eye and chest component estimates for F3."
+
+paired_component_table("leba_f3")
+```
+
+### F4 — ambient light before bedtime
+
+```{r}
+#| label: tbl-h05-paired-f4
+#| tbl-cap: "Exact paired/common near-eye and chest component estimates for F4."
+
+paired_component_table("leba_f4")
+```
+
+### F5 — morning/daytime light use
+
+```{r}
+#| label: tbl-h05-paired-f5
+#| tbl-cap: "Exact paired/common near-eye and chest component estimates for F5."
+
+paired_component_table("leba_f5")
+```
+
+:::
+
+Paired figure source data are available
+[here](../../artifacts/11_source_data/H05/H05_paired_effect_comparison_data.csv).
+
+### Stability of the two leading F2 estimates
+
+```{r}
+#| label: tbl-h05-leading-sensitivities
+#| tbl-cap: "The two leading F2 estimates across placement, sample, and preparation sensitivities."
+
+leading_sensitivity |>
+  gt::gt(rowname_col = "Scenario", groupname_col = "Metric") |>
+  gt::cols_width(
+    `Fitted sample` ~ gt::pct(32),
+    `Effect per LEBA SD (95% CI)` ~ gt::pct(30)
+  ) |>
+  h05_gt(12)
+```
+
+Both leading F2 directions remain positive on the common near-eye and chest
+sample and in the gap-timing-unaware dataset. These checks support the
+stability of the descriptive pattern; they do not create a new significance
+screen.
+
+As a direct participant-level description, the Spearman coefficients were:
+
+```{r}
+#| label: tbl-h05-descriptive-spearman
+#| tbl-cap: "Descriptive participant-level F2 rank correlations for the two leading metrics."
+
+descriptive_top |>
+  gt::gt(rowname_col = "Metric") |>
+  gt::fmt_integer(columns = c(Participants, Sites, `Represented days`)) |>
+  gt::tab_source_note(
+    source_note = paste(
+      "No p-values or significance screen are attached to these descriptive",
+      "correlations. Intervals use participant resampling."
+    )
+  ) |>
+  h05_gt(12)
+```
+
+### Site adjustment and site influence
+
+Fixed site was selected as primary because the inherited 17-metric
+site-structure evaluation fitted all fixed-site models successfully, whereas
+the corresponding random-site descriptions included two unstable, two
+non-estimable, and two singular fits. In the H05 sensitivity itself, 15 of 136
+main all-available random-site fits were unstable—seven near eye and eight
+chest—while 121 passed. This instability is why random site is a sensitivity
+rather than the primary adjustment.
+
+```{r}
+#| label: tbl-h05-random-site-summary
+#| tbl-cap: "Random-site sensitivity fit status across near-eye and chest associations."
+
+random_summary |>
+  gt::gt(rowname_col = "Status", groupname_col = "Placement") |>
+  gt::fmt_integer(columns = Models) |>
+  h05_gt()
+```
+
+All 612 required leave-one-site-out refits completed. Twenty-one associations
+were stable, 27 retained direction but were magnitude-sensitive, and 20
+changed direction after at least one site was omitted. The two leading F2
+associations had no site-omission sign reversal and were classified stable.
+The broader pattern confirms that some small, near-zero estimates depend on
+which of the nine sites is represented, reinforcing the restrained
+family-wide interpretation.
+
+```{r}
+#| label: tbl-h05-leave-site-summary
+#| tbl-cap: "Primary leave-one-site-out stability classifications."
+
+loo_summary |>
+  gt::gt(rowname_col = "Classification") |>
+  gt::fmt_integer(columns = Associations) |>
+  h05_gt()
+```
+
+### Gap-timing-unaware dataset
+
+The same model implementation was applied to the gap-timing-unaware dataset,
+with only confirmed data errors corrected. This sensitivity gave no
+multiplicity-retained association; its smallest value was BH-adjusted *p* =
+`r format_p(min(preparation_results$p_adjusted, na.rm = TRUE))`. Sixty-four of
+68 estimates retained their sign and had overlapping component intervals;
+four changed sign, also with overlapping component intervals. The main null
+conclusion is unchanged.
+
+### Exactly identified longest period
+
+The all-available longest continuous period above 250 lx melEDI is an
+observed lower bound because a data gap can interrupt identifiability. The
+strict sensitivity retained only participant-days whose longest period was
+exactly identified: 500 participant-days from 132 participants at all nine
+sites. All four factor directions agreed with the all-available analysis.
+
+```{r}
+#| label: tbl-h05-exact-period
+#| tbl-cap: "Exactly identified longest-period sensitivity."
+
+exact_period |>
+  transmute(
+    Factor = factor_code(.data$factor_id),
+    `All-available ratio` = format_number(
+      .data$all_available_estimate_practical_per_sd, 3
+    ),
+    `Exactly identified ratio (95% CI)` = paste0(
+      format_number(.data$estimate_practical_per_sd, 3), " (",
+      format_number(.data$conf_low_practical_per_sd, 3), "–",
+      format_number(.data$conf_high_practical_per_sd, 3), ")"
+    ),
+    Participants = .data$participants,
+    `Participant-days` = .data$participant_days,
+    Sites = .data$sites,
+    `Direction retained` = if_else(.data$sign_concordant, "Yes", "No")
+  ) |>
+  gt::gt(rowname_col = "Factor") |>
+  gt::fmt_integer(columns = c(Participants, `Participant-days`, Sites)) |>
+  h05_gt(12)
+```
+
+For F2, the ratio attenuated from 1.117 to 1.046 (95% CI 0.930--1.175),
+supporting the decision not to promote this lower-bound metric as a positive
+association.
+
+Complete sensitivity sources are available for the
+[common-sample placement comparison](../../artifacts/09_tables/H05/H05_paired_placement_comparison.csv),
+[random-site models](../../artifacts/09_tables/H05/H05_random_site_sensitivity.csv),
+[leave-one-site-out analysis](../../artifacts/09_tables/H05/H05_leave_one_site_out_summary.csv),
+[gap-timing-unaware dataset](../../artifacts/11_source_data/H05/H05_gap_timing_unaware_dataset.csv),
+and [exactly identified longest-period analysis](../../artifacts/09_tables/H05/H05_exactly_identified_longest_bout_sensitivity.csv).
+
+## Interpretation
+
+The strongest defensible conclusion is that, after fixed-site adjustment and
+one complete 68-test Benjamini--Hochberg correction, these data provide no
+multiplicity-retained evidence that any of the four LEBA factors is associated
+with the 17 selected personal light-exposure metrics.
+
+The positive F2 estimates for time above 1,000 lx melEDI and melEDI dose are
+consistent across the principal stability checks. Their confidence intervals
+describe non-zero associations before multiplicity adjustment, but their
+adjusted values do not support confirmatory claims. They should be treated as
+descriptive patterns that may motivate future work, not as established
+effects of spending time outdoors.
+
+This is an observational association analysis. LEBA scores are self-reported,
+site adjustment cannot remove all person-level confounding, only nine sites
+contribute to the primary analysis, and several small estimates are sensitive
+to site omission. Near-eye and chest measurements also represent related but
+non-identical light fields. Finally, the sleep-environment Tweedie models are
+unfit for inference because of material response-support and
+simulated-residual failures; their estimates and p-values are suppressed from
+the reader-facing results and cannot support a claim in H05. This judgment is
+specific to the response variable and model structure used here and does not
+preclude analysing the metric in another hypothesis with a different response
+or model.
+
+```{r}
+#| label: session-info-h05-reader
+#| include: false
+
+sessionInfo()
 ```
