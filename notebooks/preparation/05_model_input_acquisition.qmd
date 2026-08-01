@@ -1,116 +1,965 @@
 ---
-title: "Preparation 05: Download fixed participant and site data"
+title: "Preparation 05: Acquire fixed questionnaire and diary inputs"
+subtitle: "From site-specific data releases to locally verified analysis inputs"
+date: last-modified
+engine: knitr
+format:
+  html:
+    toc: true
+    code-fold: true
+    code-summary: "Show supporting R code"
+execute:
+  echo: false
+  warning: false
+  message: false
+  error: false
+tbl-cap-location: top
 ---
 
-## Purpose
-
-This notebook downloads the exact questionnaire, diary, and site-data versions
-needed for the analysis. It records where each file came from and which
-variables it contains. It does not clean, recalculate, filter, or combine
-scientific variables.
-
-## What this step uses, produces, and checks
-
-- Inputs: `config/site_sources.csv`,
-  `config/model_input_availability.csv`, and the verified Preparation 01
-  inventory of exact downloaded files.
-- Outputs: separate local copies of the model inputs, checks of the object and
-  columns stored in each file, and
-  `artifacts/12_manifests/model_input_acquisition.csv`.
-- Required checks: all 63 expected combinations of site and data type remain
-  visible; download addresses contain the complete commit identifier and never
-  `/main/`; paths to local copies are recorded relative to the project; each
-  source file contains exactly its declared single object; and the nine
-  sleep-diary files are reused only after their Preparation 01 download
-  address, commit, SHA-256 digital fingerprint, and byte size are independently
-  rechecked. A SHA-256 digital fingerprint confirms that a file has not
-  changed.
-
-The file inventory can also record an expected missing source and its reason,
-although every source in the current release is expected to be present.
-
-## Setup
-
 ```{r}
-#| label: setup-model-input-acquisition
-#| eval: false
+#| label: setup-preparation-05
+#| include: false
+
+library(digest)
+library(dplyr)
+library(gt)
+library(readr)
+library(scales)
+library(tibble)
+library(tidyr)
 
 root <- normalizePath(
   Sys.getenv("QUARTO_PROJECT_DIR"),
   winslash = "/",
   mustWork = TRUE
 )
-source(file.path(root, "scripts/pipeline/paths_io.R"))
-source(file.path(root, "scripts/pipeline/assertions.R"))
-source(file.path(root, "scripts/pipeline/import_sources.R"))
-source(file.path(root, "scripts/pipeline/model_input_acquisition.R"))
-source(file.path(root, "scripts/pipeline/build_model_input_acquisition.R"))
-source(file.path(root, "scripts/pipeline/verify_model_input_acquisition.R"))
-```
-
-## Download and save the exact inputs
-
-This is the only step that connects to the network. Later hypothesis notebooks
-use the checked local R data files (`.rds`) and do not download source data.
-Use `cache_policy = "refresh"` for the first complete download and whenever an
-interrupted run has left local files without a complete file inventory. Use
-`cache_policy = "reuse"` only after the file inventory has passed the
-independent check; the notebook then stops if a download address, commit,
-digital fingerprint, byte size, or path differs.
-
-```{r}
-#| label: acquire-model-inputs
-#| eval: false
-
-model_input_acquisition <- build_model_input_acquisition(
-  root = root,
-  cache_policy = "refresh"
+stopifnot(
+  getRversion() >= numeric_version("4.6.1"),
+  getRversion() < numeric_version("4.7.0")
 )
-```
 
-## Check downloaded files and their recorded sources
+absolute_path <- function(path) {
+  ifelse(grepl("^/", path), path, file.path(root, path))
+}
 
-```{r}
-#| label: verify-model-input-acquisition
-#| eval: false
+relative_path <- function(path) {
+  sub(paste0("^", root, "/"), "", path)
+}
 
-model_input_verification <- verify_model_input_acquisition(root = root)
-stopifnot(identical(model_input_verification$status, "PASS"))
-knitr::kable(
-  data.frame(
-    Check = c(
-      "Overall verification status",
-      "Expected source files",
-      "Present source files",
-      "Expected missing source files",
-      "Sleep diaries reused from Preparation 01",
-      "Fixed source versions",
-      "Files downloaded in this run",
-      "Source-version inventory fingerprint",
-      "Downloaded-file inventory fingerprint",
-      "Object check fingerprint",
-      "Column check fingerprint"
+read_stored_csv <- function(path) {
+  full_path <- absolute_path(path)
+  stopifnot(file.exists(full_path))
+  readr::read_csv(full_path, show_col_types = FALSE, progress = FALSE)
+}
+
+assert_columns <- function(data, required, label) {
+  missing_columns <- setdiff(required, names(data))
+  if (length(missing_columns) > 0L) {
+    stop(
+      label,
+      " is missing required columns: ",
+      paste(missing_columns, collapse = ", ")
+    )
+  }
+  invisible(data)
+}
+
+prep_gt <- function(data, source_note = NULL, groupname_col = NULL) {
+  output <- gt::gt(data, groupname_col = groupname_col) |>
+    gt::opt_row_striping() |>
+    gt::sub_missing(missing_text = "—") |>
+    gt::tab_options(
+      table.font.size = gt::px(13),
+      table.width = gt::pct(100),
+      data_row.padding = gt::px(4),
+      heading.align = "left",
+      source_notes.font.size = gt::px(11)
+    )
+  if (!is.null(source_note)) {
+    output <- output |>
+      gt::tab_source_note(gt::md(source_note))
+  }
+  output
+}
+
+wrap_provenance_path <- function(path) {
+  gsub("/", "/<wbr>", path, fixed = TRUE)
+}
+
+wrap_hash <- function(value) {
+  gsub("(.{8})", "\\1\u200b", value, perl = TRUE)
+}
+
+modality_labels <- c(
+  demographics = "Demographics",
+  chronotype = "Chronotype",
+  leba = "Light Exposure Behaviour Assessment (LEBA)",
+  vlsq8 = "Visual Light Sensitivity Questionnaire-8 (VLSQ-8)",
+  exercisediary = "Exercise diary",
+  lightexposurediary = "Light-exposure diary",
+  sleepdiaries = "Sleep diary"
+)
+
+modality_roles <- c(
+  demographics = paste(
+    "Participant characteristics such as age, sex, gender, and employment",
+    "status."
+  ),
+  chronotype = paste(
+    "Questionnaire-derived circadian preference and sleep-timing measures,",
+    "including sleep-corrected midsleep on free days."
+  ),
+  leba = "Habitual light-exposure behaviour scores and questionnaire items.",
+  vlsq8 = "Self-reported visual light sensitivity and component responses.",
+  exercisediary = "Repeated exercise and activity-context records.",
+  lightexposurediary = "Repeated self-reported lighting-context intervals.",
+  sleepdiaries = paste(
+    "Daily sleep timing and duration records; the same exact files were",
+    "already acquired in Preparation 01."
+  )
+)
+
+acquisition_manifest_path <- absolute_path(
+  "artifacts/12_manifests/model_input_acquisition.csv"
+)
+expected_acquisition_manifest_sha256 <-
+  "ac79a83c2d60dde1ac563f6e2cb09c58d4d7d3b06549d9b9262e4acd5a50a58b"
+expected_source_pin_registry_sha256 <-
+  "3fbf9f40125c60e1d0779d2b2d524e79534597586c60ec236a1ce16299e18831"
+expected_tum_exercise_commit <-
+  "618fda8521f3cf581661ceb2c026e3de7cd9ba82"
+expected_tum_exercise_sha256 <-
+  "0db56324e9826d427c42984fdfc43eb1e7487211365f222a1c0b2ecff618f1ef"
+acquisition_manifest_sha256 <- digest::digest(
+  file = acquisition_manifest_path,
+  algo = "sha256"
+)
+stopifnot(identical(
+  acquisition_manifest_sha256,
+  expected_acquisition_manifest_sha256
+))
+source_pin_registry_sha256 <- digest::digest(
+  file = absolute_path("config/model_input_source_pins.csv"),
+  algo = "sha256"
+)
+stopifnot(identical(
+  source_pin_registry_sha256,
+  expected_source_pin_registry_sha256
+))
+
+acquisition <- read_stored_csv(
+  "artifacts/12_manifests/model_input_acquisition.csv"
+)
+availability <- read_stored_csv("config/model_input_availability.csv")
+source_pins <- read_stored_csv("config/model_input_source_pins.csv")
+site_sources <- read_stored_csv("config/site_sources.csv")
+site_display <- read_stored_csv("config/site_display_registry.csv")
+preparation01_downloads <- read_stored_csv(
+  "artifacts/12_manifests/pinned_downloads.csv"
+)
+object_audit <- read_stored_csv(
+  "artifacts/01_imported/model_inputs/object_audit.csv"
+)
+column_audit <- read_stored_csv(
+  "artifacts/01_imported/model_inputs/column_audit.csv"
+)
+
+assert_columns(
+  acquisition,
+  c(
+    "site", "modality", "expected_status", "observed_status",
+    "repository", "commit", "doi", "relative_source_path",
+    "source_url", "object_name", "source_pin_applied",
+    "source_pin_reason_code", "expected_sha256", "expected_bytes",
+    "cache_path", "sha256", "bytes", "cache_origin", "downloaded"
+  ),
+  "model-input acquisition manifest"
+)
+assert_columns(
+  availability,
+  c("site", "modality", "expected_status", "absence_reason_code"),
+  "model-input availability registry"
+)
+assert_columns(
+  source_pins,
+  c(
+    "site", "modality", "repository", "commit", "doi",
+    "relative_source_path", "object_name", "expected_sha256",
+    "expected_bytes", "reason_code"
+  ),
+  "model-input source-pin registry"
+)
+assert_columns(
+  site_sources,
+  c("site", "repository", "commit", "doi", "timezone"),
+  "site-source registry"
+)
+assert_columns(
+  site_display,
+  c("site", "display_order", "display_name", "color_hex"),
+  "site display registry"
+)
+assert_columns(
+  preparation01_downloads,
+  c(
+    "site", "modality", "repository", "commit", "doi", "source_url",
+    "local_path", "sha256", "bytes"
+  ),
+  "Preparation 01 fixed-download inventory"
+)
+assert_columns(
+  object_audit,
+  c(
+    "site", "modality", "object_name", "object_class", "object_type",
+    "rows", "columns"
+  ),
+  "stored object audit"
+)
+assert_columns(
+  column_audit,
+  c(
+    "site", "modality", "column_order", "column_name", "column_class",
+    "column_type"
+  ),
+  "stored column audit"
+)
+
+cache_paths <- absolute_path(acquisition$cache_path)
+cache_present <- file.exists(cache_paths)
+cache_bytes <- rep(NA_real_, length(cache_paths))
+cache_sha256 <- rep(NA_character_, length(cache_paths))
+cache_bytes[cache_present] <- file.info(cache_paths[cache_present])$size
+cache_sha256[cache_present] <- vapply(
+  cache_paths[cache_present],
+  function(path) digest::digest(file = path, algo = "sha256"),
+  character(1)
+)
+
+expected_grid <- availability |>
+  dplyr::select(
+    .data$site,
+    .data$modality,
+    registered_status = .data$expected_status
+  )
+acquisition_grid <- acquisition |>
+  dplyr::select(
+    .data$site,
+    .data$modality,
+    acquired_status = .data$expected_status
+  )
+grid_check <- dplyr::full_join(
+  expected_grid,
+  acquisition_grid,
+  by = c("site", "modality")
+)
+
+site_release_check <- acquisition |>
+  dplyr::left_join(
+    site_sources |>
+      dplyr::select(
+        .data$site,
+        site_repository = .data$repository,
+        site_commit = .data$commit,
+        site_doi = .data$doi
+      ),
+    by = "site"
+  ) |>
+  dplyr::left_join(
+    source_pins |>
+      dplyr::select(
+        .data$site,
+        .data$modality,
+        pin_repository = .data$repository,
+        pin_commit = .data$commit,
+        pin_doi = .data$doi,
+        pin_sha256 = .data$expected_sha256,
+        pin_bytes = .data$expected_bytes
+      ),
+    by = c("site", "modality")
+  ) |>
+  dplyr::mutate(
+    expected_repository = dplyr::if_else(
+      .data$source_pin_applied,
+      .data$pin_repository,
+      .data$site_repository
     ),
-    Result = unlist(
-      model_input_verification[c(
-        "status",
-        "expected_sources",
-        "present_sources",
-        "expected_absences",
-        "preparation01_reused",
-        "source_pins",
-        "downloaded_in_manifest",
-        "source_pins_sha256",
-        "manifest_sha256",
-        "object_audit_sha256",
-        "column_audit_sha256"
-      )],
-      use.names = FALSE
+    expected_commit = dplyr::if_else(
+      .data$source_pin_applied,
+      .data$pin_commit,
+      .data$site_commit
+    ),
+    expected_doi = dplyr::if_else(
+      .data$source_pin_applied,
+      .data$pin_doi,
+      .data$site_doi
+    )
+  )
+
+sleep_acquisition <- acquisition |>
+  dplyr::filter(.data$modality == "sleepdiaries") |>
+  dplyr::select(
+    .data$site,
+    acquisition_repository = .data$repository,
+    acquisition_commit = .data$commit,
+    acquisition_doi = .data$doi,
+    acquisition_url = .data$source_url,
+    acquisition_path = .data$cache_path,
+    acquisition_sha256 = .data$sha256,
+    acquisition_bytes = .data$bytes
+  )
+sleep_preparation01 <- preparation01_downloads |>
+  dplyr::filter(.data$modality == "sleepdiaries") |>
+  dplyr::transmute(
+    .data$site,
+    preparation01_repository = .data$repository,
+    preparation01_commit = .data$commit,
+    preparation01_doi = .data$doi,
+    preparation01_url = .data$source_url,
+    preparation01_path = relative_path(.data$local_path),
+    preparation01_sha256 = .data$sha256,
+    preparation01_bytes = .data$bytes
+  )
+sleep_identity <- dplyr::inner_join(
+  sleep_acquisition,
+  sleep_preparation01,
+  by = "site"
+) |>
+  dplyr::mutate(
+    exact_match =
+      .data$acquisition_repository == .data$preparation01_repository &
+      .data$acquisition_commit == .data$preparation01_commit &
+      .data$acquisition_doi == .data$preparation01_doi &
+      .data$acquisition_url == .data$preparation01_url &
+      .data$acquisition_path == .data$preparation01_path &
+      .data$acquisition_sha256 == .data$preparation01_sha256 &
+      .data$acquisition_bytes == .data$preparation01_bytes
+  )
+
+stopifnot(
+  nrow(acquisition) == 63L,
+  nrow(availability) == 63L,
+  nrow(grid_check) == 63L,
+  all(grid_check$registered_status == grid_check$acquired_status),
+  all(acquisition$expected_status == "present"),
+  all(acquisition$observed_status %in% c("present_reused", "present_downloaded")),
+  all(cache_present),
+  all(cache_bytes == acquisition$bytes),
+  all(cache_sha256 == acquisition$sha256),
+  all(!grepl("/main/", acquisition$source_url, fixed = TRUE)),
+  all(nchar(acquisition$commit) == 40L),
+  all(mapply(
+    function(commit, url) grepl(commit, url, fixed = TRUE),
+    acquisition$commit,
+    acquisition$source_url,
+    USE.NAMES = FALSE
+  )),
+  all(!grepl("^/", acquisition$cache_path)),
+  all(acquisition$repository == site_release_check$expected_repository),
+  all(acquisition$commit == site_release_check$expected_commit),
+  all(acquisition$doi == site_release_check$expected_doi),
+  nrow(source_pins) == 1L,
+  source_pins$site == "TUM",
+  source_pins$modality == "exercisediary",
+  source_pins$commit == expected_tum_exercise_commit,
+  source_pins$expected_sha256 == expected_tum_exercise_sha256,
+  source_pins$expected_bytes == 2662,
+  sum(acquisition$source_pin_applied) == 1L,
+  nrow(sleep_identity) == 9L,
+  all(sleep_identity$exact_match),
+  nrow(object_audit) == 63L,
+  nrow(column_audit) == 963L,
+  nrow(dplyr::distinct(object_audit, .data$site, .data$modality)) == 63L,
+  nrow(dplyr::distinct(column_audit, .data$site, .data$modality,
+                       .data$column_order)) == 963L
+)
+
+object_manifest_check <- object_audit |>
+  dplyr::inner_join(
+    acquisition |>
+      dplyr::select(
+        .data$site,
+        .data$modality,
+        manifest_object_name = .data$object_name
+      ),
+    by = c("site", "modality")
+  )
+stopifnot(
+  nrow(object_manifest_check) == 63L,
+  all(object_manifest_check$object_name ==
+        object_manifest_check$manifest_object_name)
+)
+
+input_display <- tibble::tibble(
+  `Stored input registry` = c(
+    "config/site_sources.csv",
+    "config/model_input_availability.csv",
+    "config/model_input_source_pins.csv",
+    "artifacts/12_manifests/pinned_downloads.csv"
+  ),
+  `What it fixes before acquisition` = c(
+    paste(
+      "Nine site repositories, complete 40-character commit identifiers,",
+      "data-release DOIs, and time zones."
+    ),
+    paste(
+      "The expected 9-site × 7-modality grid. A declared absence could be",
+      "recorded with a reason, but all 63 entries are expected to be present."
+    ),
+    paste(
+      "A narrowly scoped release override for the corrected TUM exercise",
+      "diary, including its expected SHA-256 and byte size."
+    ),
+    paste(
+      "The exact sleep-diary files already acquired in Preparation 01, so",
+      "Preparation 05 can reuse rather than download them again."
+    )
+  )
+)
+
+site_release_display <- site_sources |>
+  dplyr::inner_join(site_display, by = "site") |>
+  dplyr::left_join(
+    acquisition |>
+      dplyr::count(.data$site, name = "available_files"),
+    by = "site"
+  ) |>
+  dplyr::arrange(.data$display_order) |>
+  dplyr::transmute(
+    Site = paste0(
+      "<span style=\"color:", .data$color_hex,
+      "\" aria-hidden=\"true\">●</span> ",
+      .data$display_name
+    ),
+    `Fixed release and acquired files` = paste0(
+      "**", .data$repository, "**<br>",
+      "Commit: ", wrap_hash(.data$commit), "<br>",
+      "[DOI ", .data$doi, "](https://doi.org/", .data$doi, ")<br>",
+      .data$available_files, " of 7 expected files present"
+    )
+  )
+
+modality_display <- object_audit |>
+  dplyr::group_by(.data$modality, .data$object_name) |>
+  dplyr::summarise(
+    Sites = dplyr::n_distinct(.data$site),
+    `Stored objects` = dplyr::n(),
+    `Rows across sites` = sum(.data$rows),
+    `Columns per object` = paste(sort(unique(.data$columns)), collapse = ", "),
+    .groups = "drop"
+  ) |>
+  dplyr::mutate(
+    Modality = unname(modality_labels[.data$modality]),
+    `Scientific role before normalization` = unname(
+      modality_roles[.data$modality]
+    )
+  ) |>
+  dplyr::select(
+    .data$Modality,
+    .data$`Scientific role before normalization`,
+    .data$Sites,
+    .data$`Stored objects`,
+    .data$`Rows across sites`,
+    .data$`Columns per object`
+  ) |>
+  dplyr::arrange(match(.data$Modality, unname(modality_labels)))
+
+acquisition_outcomes <- tibble::tibble(
+  `How the exact local file was obtained` = c(
+    "Reused from Preparation 01",
+    "Reused from the verified model-input cache",
+    "Downloaded from its fixed release"
+  ),
+  Files = c(
+    sum(acquisition$cache_origin == "preparation01"),
+    sum(acquisition$cache_origin == "model_input_cache"),
+    sum(acquisition$cache_origin == "model_input_download")
+  ),
+  `Why this was acceptable` = c(
+    paste(
+      "All nine sleep diaries matched the Preparation 01 repository, commit,",
+      "DOI, address, local path, SHA-256, and byte size."
+    ),
+    paste(
+      "The stored file already matched the exact fixed release and its",
+      "manifest fingerprint, so no network request was needed."
+    ),
+    paste(
+      "Only the corrected TUM exercise diary required acquisition in the",
+      "recorded run; its release, fingerprint, and byte size were fixed in",
+      "advance."
+    )
+  )
+)
+
+pin <- source_pins[1, , drop = FALSE]
+tum_pin <- tibble::tibble(
+  Item = c(
+    "Site and modality", "Repository", "Fixed commit", "DOI",
+    "Stored object", "Expected file SHA-256", "Expected bytes",
+    "Reason"
+  ),
+  Value = c(
+    paste(pin$site, "exercise diary"),
+    pin$repository,
+    wrap_hash(pin$commit),
+    paste0("[", pin$doi, "](https://doi.org/", pin$doi, ")"),
+    pin$object_name,
+    wrap_hash(pin$expected_sha256),
+    scales::comma(pin$expected_bytes),
+    paste(
+      "Use the corrected upstream participant identity; no local",
+      "identifier rewrite is applied."
+    )
+  )
+)
+
+script_map <- tibble::tibble(
+  `Step and producing code` = c(
+    paste0(
+      "**1. Resolve the expected files**<br>",
+      "scripts/pipeline/model_input_acquisition.R<br>",
+      "scripts/pipeline/import_sources.R"
+    ),
+    paste0(
+      "**2. Reuse or acquire the exact releases**<br>",
+      "scripts/pipeline/build_model_input_acquisition.R"
+    ),
+    paste0(
+      "**3. Record object and column structure**<br>",
+      "scripts/pipeline/model_input_acquisition.R"
+    ),
+    paste0(
+      "**4. Independently check the acquisition bundle**<br>",
+      "scripts/pipeline/verify_model_input_acquisition.R"
     )
   ),
-  caption = "Overall result of the independent file check."
+  `Reads, operation, separation, and output` = c(
+    paste(
+      "Reads the site-release, availability, and modality-specific pin",
+      "registries. It constructs all 63 expected site–modality records and",
+      "their commit-specific addresses before any network or cache decision.",
+      "This keeps intended availability separate from what happens to be",
+      "found locally."
+    ),
+    paste(
+      "Reads each fixed specification. Sleep diaries are reused only after",
+      "matching Preparation 01; another cached file is reused only when its",
+      "release identity and fingerprint match; otherwise the script retrieves",
+      "the commit-specific file. It writes the acquisition manifest and local",
+      "copies without cleaning or combining scientific variables."
+    ),
+    paste(
+      "Loads each acquired RData file in isolation during production, requires",
+      "the declared single object, and records object class, dimensions,",
+      "column order, names, classes, and storage types. Keeping this as an",
+      "audit prevents silent schema changes from reaching Preparation 06."
+    ),
+    paste(
+      "Reconstructs the 63-file specification, verifies fixed commits and",
+      "pins, rechecks every local fingerprint and byte size, confirms the nine",
+      "Preparation 01 reuses, and validates the object/column audits. The",
+      "stored verification record applies to the exact current manifest; this",
+      "report reads that record and does not rerun the verifier."
+    )
+  )
+)
+
+artifact_display <- tibble::tibble(
+  `Stored artifact` = c(
+    "63 fixed questionnaire and diary files",
+    "Object audit",
+    "Column audit",
+    "Acquisition manifest"
+  ),
+  `Exact path and content` = c(
+    paste(
+      "Exact site–modality paths are listed in",
+      "artifacts/12_manifests/model_input_acquisition.csv; 54 files are under",
+      "artifacts/01_imported/model_inputs/cache/ and nine sleep diaries remain",
+      "under artifacts/01_imported/cache/."
+    ),
+    paste(
+      "artifacts/01_imported/model_inputs/object_audit.csv — one row for each",
+      "site–modality object, including the declared object name, class, rows,",
+      "and columns."
+    ),
+    paste(
+      "artifacts/01_imported/model_inputs/column_audit.csv — 963 ordered",
+      "column records with name, class, and storage type."
+    ),
+    paste0(
+      "artifacts/12_manifests/model_input_acquisition.csv — the complete ",
+      "site–modality inventory (SHA-256 ",
+      wrap_hash(acquisition_manifest_sha256), ")."
+    )
+  ),
+  `What Preparation 06 receives` = c(
+    paste(
+      "The untouched local RData objects and their exact release provenance",
+      "for normalization."
+    ),
+    "A stored check of object identity and dimensions.",
+    "A stored check of the available schema before any variable interpretation.",
+    "The authoritative site–modality-to-file map and fingerprints."
+  )
+)
+
+validation_display <- tibble::tibble(
+  Check = c(
+    "Current acquisition-manifest identity",
+    "Expected and present site–modality files",
+    "Local file size and SHA-256 agreement",
+    "Fixed source addresses",
+    "Preparation 01 sleep-diary identity",
+    "Single declared objects",
+    "Recorded source columns",
+    "Modality-specific release pins"
+  ),
+  Result = c(
+    "PASS",
+    "63 / 63",
+    paste0(
+      sum(cache_present & cache_bytes == acquisition$bytes &
+            cache_sha256 == acquisition$sha256),
+      " / 63"
+    ),
+    paste0(
+      sum(nchar(acquisition$commit) == 40L),
+      " commit-specific; 0 use /main/"
+    ),
+    paste0(sum(sleep_identity$exact_match), " / 9"),
+    paste0(nrow(object_manifest_check), " / 63"),
+    scales::comma(nrow(column_audit)),
+    paste0(sum(acquisition$source_pin_applied), " / 1")
+  ),
+  `What the check establishes` = c(
+    paste0(
+      "The manifest SHA-256 is ",
+      wrap_hash(acquisition_manifest_sha256), "."
+    ),
+    "Every file declared in the 9 × 7 availability grid is present.",
+    "Each local file is byte-identical to the file recorded in the manifest.",
+    paste(
+      "Every address embeds a complete commit identifier rather than a",
+      "moving branch name."
+    ),
+    paste(
+      "Repository, commit, DOI, address, path, SHA-256, and bytes all match",
+      "the earlier acquisition."
+    ),
+    "Every site–modality file has the declared single object name.",
+    "The stored audit covers every ordered source column across 63 objects.",
+    "The corrected TUM exercise release is the only scoped override."
+  )
+)
+
+verification_evidence <- tibble::tibble(
+  `Stored verification evidence` = c(
+    "Focused acquisition and corruption tests",
+    "TUM source-transition test",
+    "Independent acquisition-to-normalization check",
+    "Scientific boundary"
+  ),
+  `Result tied to the current acquisition manifest` = c(
+    paste(
+      "Passed release resolution, cache reuse, absent-input, pin-expiry,",
+      "duplicate-pin, and manifest-tamper cases."
+    ),
+    paste(
+      "Confirmed the fixed TUM exercise object contains seven TUM_S001 dates,",
+      "no TUM_S101 row, and no duplicate participant-date key."
+    ),
+    paste(
+      "Under R 4.6.1, reconstructed all 963 source columns and confirmed exact",
+      "values, missingness, scores, factor levels, units, labels, release",
+      "provenance, and row traces. The recorded acquisition manifest is",
+      "ac79a83c2d60dde1ac563f6e2cb09c58d4d7d3b06549d9b9262e4acd5a50a58b."
+    ),
+    paste(
+      "These checks establish immutable acquisition and lossless hand-off.",
+      "They do not authorize a hypothesis-specific join, exclusion, recoding,",
+      "model, estimate, or claim."
+    )
+  )
 )
 ```
 
-Preparation 06 cleans and interprets variables, checks participant
-identifiers, and combines the files needed for each hypothesis.
+## Purpose and position in the preparation chain
+
+Preparation 05 obtains the fixed questionnaire and diary files needed for
+participant characteristics, chronotype, habitual light-exposure behaviour,
+visual light sensitivity, exercise, self-reported lighting context, and
+sleep. Each site's data release is identified by its repository, complete
+commit identifier, and DOI. The result is a local, checksummed copy of every
+expected file, plus stored descriptions of each object's rows and columns.
+
+This step does not clean variables, calculate scores, harmonize factor levels,
+interpret timestamps, join participants to light metrics, or filter a model
+sample. Preparation 06 performs those operations from the fixed files recorded
+here. The light-exposure metrics from Preparation 04 form a separate input
+branch into Preparation 06.
+
+```{mermaid}
+flowchart LR
+  S["Nine fixed site releases<br/>and one modality-specific pin"] --> A["Preparation 05<br/>acquire and fingerprint files"]
+  P1["Preparation 01<br/>nine verified sleep diaries"] --> A
+  A --> L["63 local questionnaire<br/>and diary objects"]
+  A --> U["Object and column audits"]
+  L --> P6["Preparation 06<br/>normalize and join inputs"]
+  U --> P6
+  P4["Preparation 04<br/>light-exposure metrics"] --> P6
+```
+
+::: {.callout-note title="What is calculated during this render?"}
+Rendering reads the stored registries, acquisition manifest, object audit, and
+column audit. It checks their schemas, hashes the 63 already local files,
+compares the nine sleep diaries with the Preparation 01 inventory, and
+calculates compact row and file totals. It does **not** connect to the network,
+open raw questionnaire values, run the acquisition builder or verifier,
+normalize a variable, construct a model input, or overwrite any stored
+artifact.
+:::
+
+## Exact inputs that fix the acquisition
+
+```{r}
+#| label: tbl-preparation05-inputs
+#| tbl-cap: "Stored registries that fix which questionnaire and diary files Preparation 05 acquires."
+
+prep_gt(
+  input_display,
+  source_note = paste(
+    "All four registries are read during rendering; none is modified."
+  )
+) |>
+  gt::fmt_markdown(columns = gt::everything()) |>
+  gt::cols_width(
+    `Stored input registry` ~ gt::pct(38),
+    `What it fixes before acquisition` ~ gt::pct(62)
+  )
+```
+
+The availability registry contains all 63 combinations of nine sites and
+seven modalities. Its explicit grid matters because a missing download cannot
+be mistaken for an intentionally unavailable questionnaire. The registry can
+carry a reason for an expected absence, although no current entry is absent.
+
+## Fixed source releases by site
+
+```{r}
+#| label: tbl-site-releases
+#| tbl-cap: "Site data releases in submitted-manuscript order and colours."
+
+prep_gt(
+  site_release_display,
+  source_note = paste(
+    "Every default release uses a complete 40-character commit identifier.",
+    "The TUM exercise-diary exception is shown separately below."
+  )
+) |>
+  gt::fmt_markdown(columns = gt::everything()) |>
+  gt::cols_width(
+    Site ~ gt::pct(32),
+    `Fixed release and acquired files` ~ gt::pct(68)
+  )
+```
+
+All download addresses embed the recorded commit. None contains `/main/` or
+another moving branch label. Consequently, revisiting the same address refers
+to the same repository state rather than whatever happens to be current at a
+later date.
+
+### Corrected TUM exercise source
+
+One file deliberately uses a modality-specific commit instead of the default
+TUM release. The upstream exercise diary corrects the participant identity at
+the source; Preparation 05 does not rewrite that identifier locally.
+
+```{r}
+#| label: tbl-tum-exercise-pin
+#| tbl-cap: "Exact fixed release for the corrected TUM exercise diary."
+
+prep_gt(
+  tum_pin,
+  source_note = paste(
+    "The release exception is restricted to one site and one modality; all",
+    "other TUM files retain the site-wide release shown above."
+  )
+) |>
+  gt::fmt_markdown(columns = gt::everything()) |>
+  gt::cols_width(
+    Item ~ gt::pct(38),
+    Value ~ gt::pct(62)
+  )
+```
+
+## What the acquired objects contain
+
+The acquisition audit records structure rather than displaying participant
+responses. Row counts below describe the unchanged objects across all nine
+sites. Preparation 06 later decides how columns are interpreted and which
+ones may enter an analysis.
+
+```{r}
+#| label: tbl-acquired-modalities
+#| tbl-cap: "Questionnaire and diary objects acquired at all nine sites."
+
+prep_gt(
+  modality_display,
+  source_note = paste(
+    "Rows are summed across nine site files. Column counts are identical",
+    "within each modality."
+  )
+) |>
+  gt::fmt_number(
+    columns = c(.data$Sites, .data$`Stored objects`, .data$`Rows across sites`),
+    decimals = 0,
+    use_seps = TRUE
+  ) |>
+  gt::cols_width(
+    Modality ~ gt::pct(24),
+    `Scientific role before normalization` ~ gt::pct(39),
+    Sites ~ gt::pct(7),
+    `Stored objects` ~ gt::pct(9),
+    `Rows across sites` ~ gt::pct(11),
+    `Columns per object` ~ gt::pct(10)
+  )
+```
+
+The 63 objects contain 963 recorded columns in total. That count is a schema
+audit, not a claim that all columns are suitable for analysis. In particular,
+raw free-text fields remain in the untouched source objects but are not shown
+here; Preparation 06 explicitly excludes them from analytical outputs.
+
+## How files were obtained in the recorded run
+
+```{r}
+#| label: tbl-acquisition-outcomes
+#| tbl-cap: "How the 63 exact local files were obtained without changing their scientific contents."
+
+prep_gt(acquisition_outcomes) |>
+  gt::fmt_number(columns = .data$Files, decimals = 0) |>
+  gt::cols_width(
+    `How the exact local file was obtained` ~ gt::pct(32),
+    Files ~ gt::pct(10),
+    `Why this was acceptable` ~ gt::pct(58)
+  )
+```
+
+The recorded run reused 62 files and downloaded one. The reused files comprise
+nine sleep diaries from Preparation 01 and 53 files from the verified
+model-input cache. Reuse is not based only on a filename: the release identity,
+local path, byte size, and SHA-256 must all agree. A SHA-256 is a digital
+fingerprint; changing even one byte changes the fingerprint with overwhelming
+probability.
+
+## Production sequence
+
+```{r}
+#| label: tbl-script-execution-map
+#| tbl-cap: "Producing scripts and modules in execution order; none is executed while this report renders."
+
+prep_gt(
+  script_map,
+  source_note = paste(
+    "The production acquisition may contact commit-specific network",
+    "addresses. This reader-facing render never does."
+  )
+) |>
+  gt::fmt_markdown(columns = gt::everything()) |>
+  gt::cols_width(
+    `Step and producing code` ~ gt::pct(38),
+    `Reads, operation, separation, and output` ~ gt::pct(62)
+  )
+```
+
+Separating the expected-file specification from cache or download decisions
+prevents local availability from defining the scientific input. Separating
+object/column inspection from later normalization likewise ensures that a
+changed upstream schema is visible before values are interpreted or joined.
+
+## Exact stored artifacts passed to Preparation 06
+
+```{r}
+#| label: tbl-acquisition-artifacts
+#| tbl-cap: "Stored Preparation 05 artifacts and their role in the next preparation step."
+
+prep_gt(
+  artifact_display,
+  source_note = paste(
+    "The acquisition manifest lists every exact local path, source release,",
+    "object name, SHA-256, and byte size."
+  )
+) |>
+  gt::fmt_markdown(columns = gt::everything()) |>
+  gt::cols_width(
+    `Stored artifact` ~ gt::pct(24),
+    `Exact path and content` ~ gt::pct(48),
+    `What Preparation 06 receives` ~ gt::pct(28)
+  )
+```
+
+The local RData objects remain separated by site and modality. Preparation 05
+does not combine sites, rename values, recalculate questionnaire scores,
+select categories, or discard incomplete intervals. The manifest and audits
+allow Preparation 06 to perform those operations against known, immutable
+inputs.
+
+## Checks tied to the current stored files
+
+```{r}
+#| label: tbl-current-acquisition-validation
+#| tbl-cap: "Bounded checks of the current acquisition manifest, files, and stored structural audits."
+
+prep_gt(
+  validation_display,
+  source_note = paste(
+    "File-identity and schema checks are performed during rendering from",
+    "already stored outputs; raw response values are not opened."
+  )
+) |>
+  gt::fmt_markdown(columns = gt::everything()) |>
+  gt::cols_width(
+    Check ~ gt::pct(31),
+    Result ~ gt::pct(20),
+    `What the check establishes` ~ gt::pct(49)
+  ) |>
+  gt::tab_style(
+    style = gt::cell_text(weight = "bold"),
+    locations = gt::cells_body(columns = .data$Result)
+  )
+```
+
+All 63 local files match the acquisition manifest with SHA-256
+`ac79a83c2d60dde1ac563f6e2cb09c58d4d7d3b06549d9b9262e4acd5a50a58b`.
+The nine sleep diaries also match the Preparation 01 inventory independently
+on repository, commit, DOI, address, local path, fingerprint, and bytes.
+
+### Stored independent verification
+
+```{r}
+#| label: tbl-stored-acquisition-verification
+#| tbl-cap: "Stored verification evidence associated with the current acquisition manifest."
+
+prep_gt(
+  verification_evidence,
+  source_note = paste(
+    "The verification results are read from the Preparation 05 provenance",
+    "finding and the Preparation 06 normalization gate. They are not rerun",
+    "during this render."
+  )
+) |>
+  gt::cols_width(
+    `Stored verification evidence` ~ gt::pct(36),
+    `Result tied to the current acquisition manifest` ~ gt::pct(64)
+  )
+```
+
+The exact-current verification record is documented in the
+[Preparation 05 input-provenance finding](../../audit/findings/preparation05_input_provenance_gaps.md)
+and the
+[Preparation 06 normalization gate](../../audit/reconciliation/preparation06/normalization_gate.md).
+The verifier is not rerun during this reader-facing render.
+It establishes that the fixed source objects reached normalization without an
+unrecorded release or schema change. It does not establish a hypothesis
+result, model sample, effect estimate, or scientific claim.

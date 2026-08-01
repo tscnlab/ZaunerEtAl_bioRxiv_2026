@@ -1,374 +1,1022 @@
 ---
-title: "Preparation 01: Import light data and align diary and wear periods"
+title: "Preparation 01: Import and align light, sleep, and wear data"
+subtitle: "From fixed site releases to checked one-minute measurement records"
+date: last-modified
+engine: knitr
+bibliography: ../../bibliography.bib
+format:
+  html:
+    toc: true
+    code-fold: true
+    code-summary: "Show supporting R code"
 execute:
-  echo: true
-  warning: true
-  message: true
+  echo: false
+  warning: false
+  message: false
   error: false
-  freeze: false
+fig-cap-location: bottom
+tbl-cap-location: top
 ---
 
-## What this step does
-
-This notebook imports the exact recorded version of each site's data, combines
-the original logger readings into one-minute values, and labels each minute
-using the sleep diary and wear log. Preparation 02 then checks hourly and daily
-data coverage.
-
-Two time variables are retained. `datetime_utc` records the actual instant and
-is used to order measurements and calculate elapsed time and gaps.
-`datetime_wall` records local clock time in a shared format, so 08:00 means
-08:00 local time at every site. During the autumn daylight-saving change,
-repeated local minutes remain separate observations in actual time.
-
-## Rules applied
-
-- Each site's source-file version is identified by repository revision, DOI,
-  download address and SHA-256 checksum. A SHA-256 checksum is a digital
-  fingerprint used to confirm that a file has not changed.
-- The logger's original recording interval is checked separately for every
-  site, participant and placement. A one-minute value is calculated only when
-  all readings expected within that minute are present and valid.
-- Sleep is defined by the diary interval from `sleepprep` to `wake`, with
-  the start included and the end excluded. Measurements during that interval
-  represent the bedside sleep environment and remain part of the intentional
-  hybrid 24-hour measurement.
-- Wear-log entries labelled `sleep` or `site_leave` are retained for
-  traceability. Only `off` outside diary-defined sleep is treated as true
-  non-wear. For those minutes, both melEDI and illuminance are excluded from
-  analysis.
-- The valid melanopic EDI operating range is strictly below
-  \(10^5\) lx melEDI. Values at or above 100,000 lx melEDI are retained in
-  `MEDI_raw`, flagged, and excluded from the analytical `MEDI` channel after
-  one-minute aggregation [@condor2023actlumus].
-
-## R code used on this page
-
 ```{r}
-#| label: setup-import-alignment
+#| label: setup-preparation-01
+#| include: false
 
-root_hint <- Sys.getenv("QUARTO_PROJECT_DIR", unset = getwd())
-source(file.path(root_hint, "scripts/pipeline/paths_io.R"))
-root <- project_root(root_hint)
+library(digest)
+library(dplyr)
+library(gt)
+library(readr)
+library(scales)
+library(tibble)
+library(tidyr)
 
-dependencies <- c(
-  "assertions.R",
-  "import_sources.R",
-  "time_axes.R",
-  "state_alignment.R",
-  "aggregation_coverage.R",
-  "build_import_alignment.R",
-  "verify_import_alignment_artifacts.R"
-)
-for (dependency in dependencies) {
-  source(file.path(root, "scripts", "pipeline", dependency))
-}
-
-site_argument <- Sys.getenv("NATHEALTH_IMPORT_SITES", unset = "")
-requested_sites <- if (nzchar(site_argument)) {
-  strsplit(site_argument, ",", fixed = TRUE)[[1L]]
-} else {
-  NULL
-}
-cache_policy <- Sys.getenv("NATHEALTH_CACHE_POLICY", unset = "reuse")
-```
-
-## Import and align the data
-
-```{r}
-#| label: build-import-alignment
-
-import_alignment <- build_import_alignment(
-  root = root,
-  requested_sites = requested_sites,
-  cache_policy = cache_policy,
-  saturation_threshold = 100000
+root <- normalizePath(
+  Sys.getenv("QUARTO_PROJECT_DIR"),
+  winslash = "/",
+  mustWork = TRUE
 )
 
-import_alignment_verification <- if (isTRUE(import_alignment$complete_run)) {
-  verify_import_alignment_artifacts(
-    root = root,
-    saturation_threshold = 100000,
-    expected_summary = tibble::tribble(
-      ~placement,
-      ~rows,
-      ~participants,
-      ~participant_days,
-      ~saturated_minutes,
-      ~saturated_participants,
-      ~saturated_participant_days,
-      "glasses", 1635960L, 143L, 1136L, 39L, 10L, 13L,
-      "chest", 1798560L, 157L, 1249L, 87L, 16L, 21L
+stopifnot(
+  getRversion() >= numeric_version("4.6.1"),
+  getRversion() < numeric_version("4.7.0")
+)
+
+absolute_path <- function(path) {
+  ifelse(grepl("^/", path), path, file.path(root, path))
+}
+
+read_stored_csv <- function(path) {
+  full_path <- absolute_path(path)
+  stopifnot(file.exists(full_path))
+  readr::read_csv(full_path, show_col_types = FALSE)
+}
+
+assert_columns <- function(data, required, label) {
+  missing_columns <- setdiff(required, names(data))
+  if (length(missing_columns) > 0L) {
+    stop(
+      label,
+      " is missing required columns: ",
+      paste(missing_columns, collapse = ", ")
+    )
+  }
+  invisible(data)
+}
+
+prep_gt <- function(data, source_note = NULL, groupname_col = NULL) {
+  output <- gt::gt(data, groupname_col = groupname_col) |>
+    gt::opt_row_striping() |>
+    gt::sub_missing(missing_text = "—") |>
+    gt::tab_options(
+      table.font.size = gt::px(13),
+      table.width = gt::pct(100),
+      data_row.padding = gt::px(4),
+      heading.align = "left",
+      source_notes.font.size = gt::px(11)
+    )
+
+  if (!is.null(source_note)) {
+    output <- output |>
+      gt::tab_source_note(gt::md(source_note))
+  }
+  output
+}
+
+wrap_provenance_path <- function(path) {
+  gsub("/", "/<wbr>", path, fixed = TRUE)
+}
+
+manifest_registry <- tibble::tribble(
+  ~Stage, ~Manifest,
+  "Imported and state-aligned measurements",
+  "artifacts/12_manifests/import_alignment_artifacts.csv",
+  "Prepared sleep and wear intervals",
+  "artifacts/12_manifests/state_interval_artifacts.csv"
+)
+
+manifest_checks <- vector("list", nrow(manifest_registry))
+manifest_objects <- vector("list", nrow(manifest_registry))
+
+for (index in seq_len(nrow(manifest_registry))) {
+  manifest <- read_stored_csv(manifest_registry$Manifest[index])
+  assert_columns(
+    manifest,
+    c("path", "sha256", "bytes"),
+    manifest_registry$Manifest[index]
+  )
+  listed_paths <- absolute_path(manifest$path)
+  exists <- file.exists(listed_paths)
+  observed_bytes <- rep(NA_real_, length(listed_paths))
+  observed_sha256 <- rep(NA_character_, length(listed_paths))
+  observed_bytes[exists] <- file.info(listed_paths[exists])$size
+  observed_sha256[exists] <- vapply(
+    listed_paths[exists],
+    digest::digest,
+    character(1),
+    algo = "sha256",
+    file = TRUE
+  )
+
+  manifest_checks[[index]] <- tibble::tibble(
+    Stage = manifest_registry$Stage[index],
+    `Files listed` = nrow(manifest),
+    `Files present` = sum(exists),
+    `Size checks` = sum(exists & observed_bytes == manifest$bytes),
+    `SHA-256 checks` = sum(
+      exists & observed_sha256 == manifest$sha256
+    ),
+    Check = ifelse(
+      all(
+        exists &
+          observed_bytes == manifest$bytes &
+          observed_sha256 == manifest$sha256
+      ),
+      "PASS",
+      "FAIL"
     )
   )
-} else {
-  list(
-    status = "NOT_RUN_FOR_SUBSET",
-    run_label = import_alignment$run_label
-  )
+  manifest_objects[[index]] <- manifest
 }
-```
 
-The run label is `r import_alignment$run_label`. A normal run processes all
-sites and writes the combined near-eye and chest files used in the main
-analysis. If specific sites are requested, the notebook labels the result as a
-test run and writes it separately, so it cannot replace the full dataset. The
-post-build check is
-`r import_alignment_verification$status`.
+manifest_summary <- dplyr::bind_rows(manifest_checks)
+stopifnot(all(manifest_summary$Check == "PASS"))
 
-## Exact input versions
+pinned_downloads <- read_stored_csv(
+  "artifacts/12_manifests/pinned_downloads.csv"
+)
+assert_columns(
+  pinned_downloads,
+  c(
+    "site", "modality", "local_path", "sha256", "bytes", "downloaded"
+  ),
+  "pinned source-file inventory"
+)
+source_paths <- absolute_path(pinned_downloads$local_path)
+source_exists <- file.exists(source_paths)
+source_bytes <- rep(NA_real_, length(source_paths))
+source_sha256 <- rep(NA_character_, length(source_paths))
+source_bytes[source_exists] <- file.info(source_paths[source_exists])$size
+source_sha256[source_exists] <- vapply(
+  source_paths[source_exists],
+  digest::digest,
+  character(1),
+  algo = "sha256",
+  file = TRUE
+)
+source_identity_check <- tibble::tibble(
+  `Source files listed` = nrow(pinned_downloads),
+  `Files present` = sum(source_exists),
+  `Size checks` = sum(source_exists & source_bytes == pinned_downloads$bytes),
+  `SHA-256 checks` = sum(
+    source_exists & source_sha256 == pinned_downloads$sha256
+  ),
+  `Retrieved during the accepted reuse run` = sum(
+    pinned_downloads$downloaded %in% TRUE
+  ),
+  Check = ifelse(
+    all(
+      source_exists &
+        source_bytes == pinned_downloads$bytes &
+        source_sha256 == pinned_downloads$sha256
+    ) && !any(pinned_downloads$downloaded %in% TRUE),
+    "PASS",
+    "FAIL"
+  )
+)
+stopifnot(source_identity_check$Check == "PASS")
+source_identity_display <- tibble::tibble(
+  `Identity check` = c(
+    "Fixed source files listed",
+    "Files present",
+    "Byte-size checks",
+    "SHA-256 checks",
+    "Files retrieved during the accepted reuse run",
+    "Overall result"
+  ),
+  `Stored outcome` = c(
+    source_identity_check$`Source files listed`,
+    source_identity_check$`Files present`,
+    source_identity_check$`Size checks`,
+    source_identity_check$`SHA-256 checks`,
+    source_identity_check$`Retrieved during the accepted reuse run`,
+    source_identity_check$Check
+  )
+)
 
-```{r}
-#| label: tbl-import-source-audit
-#| tbl-cap: "Exact source versions used in Preparation 01."
+site_registry <- read_stored_csv("config/site_display_registry.csv")
+assert_columns(
+  site_registry,
+  c("site", "display_order", "display_name", "color_hex"),
+  "site display registry"
+)
 
-source_summary <- import_alignment$audits$source_audit |>
-  dplyr::select(
+source_audit <- read_stored_csv("artifacts/02_aligned/source_audit.csv")
+key_audit <- read_stored_csv("artifacts/02_aligned/key_audit.csv")
+time_audit <- read_stored_csv("artifacts/02_aligned/time_audit.csv")
+stream_epoch_audit <- read_stored_csv(
+  "artifacts/02_aligned/stream_epoch_audit.csv"
+)
+join_audit <- read_stored_csv(
+  "artifacts/02_aligned/join_cardinality_audit.csv"
+)
+state_conflict_audit <- read_stored_csv(
+  "artifacts/02_aligned/state_conflict_audit.csv"
+)
+state_interval_summary <- read_stored_csv(
+  "artifacts/02_aligned/state_interval_summary.csv"
+)
+state_interval_audit <- read_stored_csv(
+  "artifacts/02_aligned/state_interval_audit.csv"
+)
+saturation_audit <- read_stored_csv(
+  "artifacts/02_aligned/saturation_audit.csv"
+)
+sample_audit <- read_stored_csv("artifacts/02_aligned/sample_audit.csv")
+dst_fold_audit <- read_stored_csv("artifacts/02_aligned/dst_fold_audit.csv")
+
+assert_columns(
+  source_audit,
+  c(
+    "site", "location", "modality", "commit", "doi", "source_rows",
+    "source_participants", "source_start_utc", "source_end_utc"
+  ),
+  "source audit"
+)
+assert_columns(
+  sample_audit,
+  c(
+    "site", "placement", "stage", "rows", "participants",
+    "participant_days", "finite_medi", "finite_light",
+    "finite_medi_light_pairs", "complete_native_minute_schedules"
+  ),
+  "sample audit"
+)
+
+source_identity <- source_audit |>
+  dplyr::group_by(
     .data$site,
     .data$location,
-    .data$modality,
     .data$commit,
-    .data$source_rows,
-    .data$source_participants,
-    .data$source_start_utc,
-    .data$source_end_utc
+    .data$doi
+  ) |>
+  dplyr::summarise(
+    `Files imported` = dplyr::n(),
+    `Light placements` = paste(
+      dplyr::recode(
+        sort(.data$modality[grepl("^light_", .data$modality)]),
+        light_glasses = "Near-eye",
+        light_chest = "Chest"
+      ),
+      collapse = ", "
+    ),
+    .groups = "drop"
+  ) |>
+  dplyr::left_join(site_registry, by = "site", relationship = "one-to-one") |>
+  dplyr::arrange(.data$display_order) |>
+  dplyr::transmute(
+    Site = .data$display_name,
+    `Recorded location` = .data$location,
+    `Fixed release` = paste0(
+      "**DOI:** ", .data$doi,
+      "<br>**Revision:** ", substr(.data$commit, 1L, 10L)
+    ),
+    .data$`Files imported`,
+    .data$`Light placements`
   )
-knitr::kable(
-  source_summary,
-  col.names = c(
-    "Site",
-    "Location",
-    "Data type",
-    "Source revision",
-    "Rows",
-    "Participants",
-    "First measurement (UTC)",
-    "Last measurement (UTC)"
+
+aggregation_regimes <- stream_epoch_audit |>
+  dplyr::group_by(
+    .data$stream_epoch_seconds,
+    .data$expected_subepochs_per_minute
+  ) |>
+  dplyr::summarise(
+    `Participant-device streams` = dplyr::n(),
+    Sites = dplyr::n_distinct(.data$site),
+    `One-minute rows` = sum(.data$minute_rows),
+    .groups = "drop"
+  ) |>
+  dplyr::arrange(.data$stream_epoch_seconds) |>
+  dplyr::transmute(
+    `Original recording interval` = paste0(
+      .data$stream_epoch_seconds,
+      " s"
+    ),
+    `Expected readings per minute` = .data$expected_subepochs_per_minute,
+    .data$`Participant-device streams`,
+    .data$Sites,
+    .data$`One-minute rows`
   )
-)
-```
 
-The complete source addresses, file sizes and digital fingerprints are stored
-in [`source_audit.csv`](../../artifacts/02_aligned/source_audit.csv).
+aligned_sample <- sample_audit |>
+  dplyr::filter(.data$stage == "state_aligned_one_minute")
 
-## Check identifiers and time
+placement_summary <- aligned_sample |>
+  dplyr::group_by(.data$placement) |>
+  dplyr::summarise(
+    Participants = sum(.data$participants),
+    `Participant-days` = sum(.data$participant_days),
+    `One-minute grid rows` = sum(.data$rows),
+    `Grid hours` = sum(.data$rows) / 60,
+    `Valid melEDI minutes` = sum(.data$finite_medi),
+    `Valid illuminance minutes` = sum(.data$finite_light),
+    .groups = "drop"
+  ) |>
+  dplyr::mutate(
+    Placement = dplyr::recode(
+      .data$placement,
+      glasses = "Near-eye",
+      chest = "Chest"
+    )
+  ) |>
+  dplyr::select(.data$Placement, dplyr::everything(), -.data$placement)
 
-```{r}
-#| label: tbl-import-key-audit
-#| tbl-cap: "Checks for duplicate or missing participant-time identifiers before and after conversion to one-minute data."
+placement_summary_display <- placement_summary |>
+  tidyr::pivot_longer(
+    cols = -Placement,
+    names_to = "Measure",
+    values_to = "Value"
+  ) |>
+  tidyr::pivot_wider(names_from = Placement, values_from = Value)
 
-knitr::kable(
-  import_alignment$audits$key_audit,
-  col.names = c(
-    "Site",
-    "Placement",
-    "Preparation stage",
-    "Identifier",
-    "Rows",
-    "Participants",
-    "Rows missing an identifier",
-    "Rows duplicated beyond expectation",
-    "Identifier is unique"
-  )
-)
-```
-
-```{r}
-#| label: tbl-import-time-audit
-#| tbl-cap: "Checks of actual time, original recording intervals, and repeated local clock times."
-
-time_summary <- import_alignment$audits$time_audit |>
+site_sample <- aligned_sample |>
   dplyr::select(
     .data$site,
     .data$placement,
-    .data$source_rows,
-    .data$minute_rows,
     .data$participants,
-    .data$native_epoch_seconds,
-    .data$expected_subepochs_per_minute,
-    .data$minutes_with_incomplete_native_schedule,
-    .data$wall_minutes_with_multiple_real_instants
+    .data$participant_days,
+    minute_rows = .data$rows
+  ) |>
+  tidyr::pivot_wider(
+    names_from = .data$placement,
+    values_from = c(
+      .data$participants,
+      .data$participant_days,
+      .data$minute_rows
+    ),
+    names_glue = "{placement}_{.value}"
+  ) |>
+  dplyr::left_join(site_registry, by = "site", relationship = "one-to-one") |>
+  dplyr::arrange(.data$display_order) |>
+  dplyr::transmute(
+    Site = .data$display_name,
+    `Near-eye participants` = .data$glasses_participants,
+    `Near-eye participant-days` = .data$glasses_participant_days,
+    `Near-eye minutes` = .data$glasses_minute_rows,
+    `Chest participants` = .data$chest_participants,
+    `Chest participant-days` = .data$chest_participant_days,
+    `Chest minutes` = .data$chest_minute_rows
   )
-knitr::kable(
-  time_summary,
-  col.names = c(
-    "Site",
-    "Placement",
-    "Original readings",
-    "One-minute rows",
-    "Participants",
-    "Original recording interval (seconds)",
-    "Expected readings per minute",
-    "Minutes missing an expected reading",
-    "Local minutes occurring twice"
+
+state_interval_display <- state_interval_summary |>
+  dplyr::left_join(site_registry, by = "site", relationship = "one-to-one") |>
+  dplyr::arrange(.data$display_order) |>
+  dplyr::transmute(
+    Site = .data$display_name,
+    `Sleep intervals` = .data$sleep_intervals,
+    `Sleep participants` = .data$sleep_participants,
+    `Sleep entries reviewed` = .data$sleep_audit_rows,
+    `Wear intervals` = .data$wear_intervals,
+    `Wear participants` = .data$wear_participants,
+    `Wear entries reviewed` = .data$wear_audit_rows
+  )
+
+state_outcomes <- state_conflict_audit |>
+  dplyr::group_by(.data$placement) |>
+  dplyr::summarise(
+    `One-minute rows` = sum(.data$rows),
+    `Diary-defined sleep` = sum(.data$diary_sleep_minutes),
+    `Sleep without a wear-log label` = sum(
+      .data$diary_sleep_without_wear_label
+    ),
+    `Wear log says off during sleep` = sum(
+      .data$wear_off_during_diary_sleep
+    ),
+    `Wear log says off while awake` = sum(
+      .data$wear_off_outside_diary_sleep
+    ),
+    `Minutes without a wear-log label` = sum(.data$wear_state_missing),
+    `Bedside sleep minutes retained` = sum(
+      .data$retained_bedside_sleep_minutes
+    ),
+    .groups = "drop"
+  ) |>
+  dplyr::mutate(
+    Placement = dplyr::recode(
+      .data$placement,
+      glasses = "Near-eye",
+      chest = "Chest"
+    )
+  ) |>
+  dplyr::select(.data$Placement, dplyr::everything(), -.data$placement)
+
+state_outcomes_display <- state_outcomes |>
+  tidyr::pivot_longer(
+    cols = -Placement,
+    names_to = "Stored outcome",
+    values_to = "Minutes"
+  ) |>
+  tidyr::pivot_wider(names_from = Placement, values_from = Minutes)
+
+saturation_summary <- saturation_audit |>
+  dplyr::group_by(.data$placement) |>
+  dplyr::summarise(
+    `Minutes at or above 100,000 lx melEDI` = sum(.data$saturated_minutes),
+    `Affected participants` = sum(.data$affected_participants),
+    `Affected participant-days` = sum(.data$affected_participant_days),
+    `Lowest affected melEDI` = min(
+      .data$minimum_saturated_medi,
+      na.rm = TRUE
+    ),
+    `Highest affected melEDI` = max(
+      .data$maximum_saturated_medi,
+      na.rm = TRUE
+    ),
+    .groups = "drop"
+  ) |>
+  dplyr::mutate(
+    Placement = dplyr::recode(
+      .data$placement,
+      glasses = "Near-eye",
+      chest = "Chest"
+    )
+  ) |>
+  dplyr::select(.data$Placement, dplyr::everything(), -.data$placement)
+
+validation_summary <- tibble::tribble(
+  ~Check, ~`Stored outcome`, ~Evidence,
+  "Source-file identity",
+  paste0(
+    nrow(pinned_downloads),
+    " of ",
+    nrow(pinned_downloads),
+    " local source files matched their recorded size and SHA-256; none was retrieved during the accepted reuse run"
+  ),
+  "artifacts/12_manifests/pinned_downloads.csv",
+  "Participant-time identifiers",
+  paste0(
+    sum(key_audit$key_is_unique),
+    " of ",
+    nrow(key_audit),
+    " stage-by-stream keys were unique; ",
+    sum(key_audit$missing_key_rows),
+    " rows lacked a key"
+  ),
+  "artifacts/02_aligned/key_audit.csv",
+  "Native recording schedules",
+  paste0(
+    sum(stream_epoch_audit$incomplete_native_minute_schedules),
+    " one-minute schedules lacked an expected original reading"
+  ),
+  "artifacts/02_aligned/stream_epoch_audit.csv",
+  "Sleep and wear matching",
+  paste0(
+    sum(join_audit$cardinality_preserved),
+    " of ",
+    nrow(join_audit),
+    " site-placement joins retained every light row"
+  ),
+  "artifacts/02_aligned/join_cardinality_audit.csv",
+  "Repeated local clock times",
+  paste0(
+    nrow(dst_fold_audit),
+    " repeated wall-clock minutes were retained as distinct UTC instants"
+  ),
+  "artifacts/02_aligned/dst_fold_audit.csv",
+  "State intervals requiring review",
+  paste0(
+    nrow(state_interval_audit),
+    " sleep-derived interval records were excluded from interval use and listed with a reason; no wear interval required review"
+  ),
+  "artifacts/02_aligned/state_interval_audit.csv",
+  "Accepted artifact identities",
+  paste0(
+    sum(manifest_summary$`Files listed`),
+    " manifest entries passed existence, size, and SHA-256 checks"
+  ),
+  "artifacts/12_manifests/import_alignment_artifacts.csv and state_interval_artifacts.csv"
+)
+
+state_rules <- tibble::tribble(
+  ~`Recorded information`, ~`Rule applied`,
+  ~`Effect on the analytical signal`,
+  "Sleep diary",
+  "The interval from sleep preparation to wake is treated as sleep, with the start included and the end excluded.",
+  "The measurement describes the bedside sleep environment and is retained.",
+  "Wear log: off during diary-defined sleep",
+  "The diary-defined sleep interval takes precedence for the measurement context.",
+  "The bedside sleep measurement is retained.",
+  "Wear log: off while awake",
+  "This is treated as true non-wear.",
+  "melEDI and illuminance are unavailable for analysis during that minute.",
+  "Wear log: sleep or site leave while awake",
+  "The label is retained as provenance but does not by itself define non-wear.",
+  "The recorded light values remain available if otherwise valid.",
+  "No wear-log label",
+  "Missing wear information is not converted into an off-body assumption.",
+  "The recorded light values remain available if otherwise valid.",
+  "melEDI at or above 100,000 lx",
+  "The raw value and operating-limit flag are retained.",
+  "The analytical melEDI value is unavailable; illuminance is not removed solely by this rule."
+)
+
+script_map <- tibble::tribble(
+  ~Step, ~Producing_code, ~Reads_operation_and_output,
+  1L,
+  "scripts/pipeline/build_import_alignment.R<br>scripts/pipeline/import_sources.R",
+  "Reads `config/site_sources.csv`, resolves each fixed repository revision and DOI, checks the local source-file fingerprint, and loads the named object. This is separate so source identity is established before any time or state transformation. **Outputs:** cached fixed source files plus `artifacts/02_aligned/source_audit.csv`.",
+  2L,
+  "scripts/pipeline/time_axes.R<br>scripts/pipeline/aggregation_coverage.R",
+  "Reads the original logger records, preserves UTC as actual time and local clock time as wall time, infers each participant-device recording interval, and creates a one-minute value only when every expected original reading is present and finite. This is separate so temporal completeness is checked before diary or wear information can affect validity. **Outputs:** `artifacts/01_imported/minute/` and the time and recording-interval audits.",
+  3L,
+  "scripts/pipeline/state_alignment.R",
+  "Reads the fixed sleep diaries and wear logs, checks interval bounds and overlap, and stores valid half-open intervals. Unusable entries are recorded rather than silently repaired. **Outputs:** `artifacts/02_aligned/state_intervals/`, `state_interval_audit.csv`, and `state_interval_summary.csv`.",
+  4L,
+  "scripts/pipeline/state_alignment.R<br>scripts/pipeline/state_interval_projection.R",
+  "Matches the checked intervals to one-minute light rows without changing row cardinality, derives bedside-sleep, worn, and true non-wear contexts, and applies the melEDI operating limit. Kept separate from interval preparation so matching can be audited independently. **Outputs:** per-site and combined files under `artifacts/02_aligned/` plus state, join, saturation, and sample audits.",
+  5L,
+  "scripts/pipeline/verify_import_alignment_artifacts.R",
+  "Reads the completed outputs and independently checks manifest identity, source-fingerprint propagation, unique keys, signal-validity flags, and the accepted placement totals. It does not rebuild data. **Output:** a pass/fail verification result; no scientific artifact is written."
+) |>
+  dplyr::mutate(
+    `Step and producing code` = paste0(
+      "**", .data$Step, "**<br>",
+      wrap_provenance_path(.data$Producing_code)
+    )
+  ) |>
+  dplyr::select(
+    .data$`Step and producing code`,
+    `Reads, operation, separation, and output` =
+      .data$Reads_operation_and_output
+  )
+
+handoff_artifacts <- tibble::tribble(
+  ~Stored_artifact, ~Exact_path, ~Use_in_Preparation_02,
+  "Combined near-eye one-minute data",
+  "artifacts/02_aligned/light_glasses_aligned.rds",
+  "Construct complete participant-day grids and assess coverage",
+  "Combined chest one-minute data",
+  "artifacts/02_aligned/light_chest_aligned.rds",
+  "Construct the complementary-placement grids and assess coverage separately",
+  "Site-specific sleep and wear intervals",
+  "artifacts/02_aligned/state_intervals/",
+  "Assign known states to explicitly inserted missing-minute rows before calculating coverage",
+  "Preparation 01 audits",
+  "artifacts/02_aligned/*.csv",
+  "Trace source identity, time handling, joins, state decisions, operating-limit exclusions, and sample accounting",
+  "Artifact inventories",
+  "artifacts/12_manifests/import_alignment_artifacts.csv and state_interval_artifacts.csv",
+  "Confirm the exact files and digital fingerprints passed forward"
+)
+
+environment_summary <- tibble::tibble(
+  Component = c(
+    "R",
+    "Quarto profile",
+    "Table package",
+    "Identity check",
+    "Scientific recomputation during render"
+  ),
+  Value = c(
+    paste(R.version$major, R.version$minor, sep = "."),
+    "nathealth (HTML review render)",
+    paste0("gt ", as.character(utils::packageVersion("gt"))),
+    "File size and SHA-256 with digest",
+    "None"
   )
 )
 ```
 
-The exact inferred epoch and completeness requirement for every participant
-stream is exported in `stream_epoch_audit.csv`. The compact regime count is:
+## Purpose and position in the analysis chain
+
+Preparation 01 establishes the measurement record that all later preparation
+steps use. The production workflow reads the fixed light-logger, sleep-diary,
+and wear-log releases from nine study sites. It checks their identities,
+converts the logger observations to complete one-minute values, preserves both
+actual and local clock time, and assigns a measurement context to each minute.
+Its outputs enter Preparation 02, where hourly and daily coverage is assessed.
+
+The exact inputs are the 35 fixed local source files recorded in
+[`pinned_downloads.csv`](../../artifacts/12_manifests/pinned_downloads.csv).
+Their repository revisions, DOIs, URLs, byte sizes, and SHA-256 digital
+fingerprints are propagated to
+[`source_audit.csv`](../../artifacts/02_aligned/source_audit.csv). A SHA-256
+fingerprint is used here to establish file identity; it does not describe the
+scientific contents of the file.
+
+::: {.callout-note appearance="simple" title="What is calculated during this render?"}
+This report reads already stored CSV manifests and audits. During rendering it
+checks the existence, byte size, and SHA-256 fingerprint of every listed
+Preparation 01 artifact and fixed source file; checks the columns needed for
+the displays; and calculates only compact descriptive totals from stored audit
+rows. It does not retrieve a source file, import logger data, aggregate a
+minute, align a diary or wear period, replace a signal value, rebuild an
+artifact, or run the production verifier.
+:::
+
+```{mermaid}
+%%| label: fig-preparation01-chain
+%%| fig-cap: "Position of Preparation 01 in the data-to-analysis chain. The report reads the stored outputs of these operations but does not execute them."
+%%| fig-alt: "Flow diagram from fixed site releases through source-identity checks, one-minute aggregation, sleep and wear interval preparation, and state alignment to the one-minute files used for coverage assessment in Preparation 02."
+flowchart LR
+  A["Fixed site releases<br/>light, sleep diary, wear log"] --> B["Verify source identity<br/>revision, DOI, SHA-256"]
+  B --> C["Retain actual and<br/>local clock time"]
+  C --> D["Require complete original<br/>readings for each minute"]
+  A --> E["Prepare checked sleep<br/>and wear intervals"]
+  D --> F["Align measurement context<br/>and validity flags"]
+  E --> F
+  F --> G["Stored one-minute files<br/>Preparation 02 coverage checks"]
+```
+
+## 1. Establish the exact source files
+
+The production import uses one recorded release per site. Table
+@tbl-preparation01-source-identity shows the human-readable site names in the
+submitted-manuscript order. The source audit contains four inputs per site
+(sleep diary, wear log, near-eye light, and chest light), except Tübingen,
+where no chest logger file is part of the study input.
 
 ```{r}
-#| label: tbl-import-epoch-regimes
-#| tbl-cap: "Participant-device data streams by original recording interval and expected readings per minute."
+#| label: tbl-preparation01-source-identity
+#| tbl-cap: "Fixed source releases used for the Preparation 01 production build. The displayed revision is shortened for readability; the stored audit retains the complete revision, URL, byte size, and SHA-256 fingerprint."
 
-epoch_regimes <- import_alignment$audits$stream_epoch_audit |>
-  dplyr::count(
-    .data$site,
-    .data$position,
-    .data$stream_epoch_seconds,
-    .data$expected_subepochs_per_minute,
-    name = "participant_streams"
+source_identity |>
+  prep_gt(
+    source_note = paste0(
+      "Complete source identities: ",
+      "[artifacts/02_aligned/source_audit.csv]",
+      "(../../artifacts/02_aligned/source_audit.csv)."
+    )
+  ) |>
+  gt::fmt_markdown(columns = `Fixed release`) |>
+  gt::cols_label(
+    `Files imported` = "Files",
+    `Light placements` = "Light measurements"
+  ) |>
+  gt::cols_width(
+    Site ~ gt::pct(16),
+    `Recorded location` ~ gt::pct(22),
+    `Fixed release` ~ gt::pct(30),
+    `Files imported` ~ gt::pct(8),
+    `Light placements` ~ gt::pct(24)
   )
-knitr::kable(
-  epoch_regimes,
-  col.names = c(
-    "Site",
-    "Placement",
-    "Original recording interval (seconds)",
-    "Expected readings per minute",
-    "Participant-device streams"
-  )
-)
-```
-
-Repeated wall-clock minutes, if present, are recorded with both true instants
-and offsets in `dst_fold_audit.csv`. No repeated hour is discarded or averaged
-in the real-time representation.
-
-## Add sleep and wear information
-
-```{r}
-#| label: tbl-import-join-audit
-#| tbl-cap: "Checks that each light record matched the expected number of sleep-diary and wear-log intervals."
-
-knitr::kable(
-  import_alignment$audits$join_cardinality_audit,
-  col.names = c(
-    "Site",
-    "Placement",
-    "Light rows before matching",
-    "Rows after adding sleep diary",
-    "Rows after adding wear log",
-    "Rows matched to a sleep period",
-    "Rows matched to a wear period",
-    "No rows duplicated or lost"
-  )
-)
 ```
 
 ```{r}
-#| label: tbl-import-state-conflicts
-#| tbl-cap: "Agreement between sleep diary and wear log, and retained bedside sleep measurements."
+#| label: tbl-preparation01-source-file-check
+#| tbl-cap: "Identity check for the fixed local source files."
 
-knitr::kable(
-  import_alignment$audits$state_conflict_audit,
-  col.names = c(
-    "Site",
-    "Placement",
-    "One-minute rows",
-    "Diary-defined sleep minutes",
-    "Sleep minutes without a wear-log label",
-    "Wear log says sleep outside the diary sleep period",
-    "Wear log says off during diary-defined sleep",
-    "Wear log says off while awake",
-    "Minutes without a wear-log label",
-    "Retained bedside sleep minutes"
+source_identity_display |>
+  prep_gt(
+    source_note = paste0(
+      "The accepted production run reused the already stored fixed files; ",
+      "rendering also reads them only for identity checks."
+    )
+  ) |>
+  gt::cols_width(
+    `Identity check` ~ gt::pct(68),
+    `Stored outcome` ~ gt::pct(32)
   )
-)
 ```
 
-Diary or wear entries that cannot define a valid interval are listed with the
-participant, source rows, start and end, and reason in
-`state_interval_audit.csv`; they are not silently repaired.
+## 2. Preserve actual time and local clock time
 
-The valid sleep and wear intervals are saved for each site under
-`artifacts/02_aligned/state_intervals/`, together with their source version and
-digital fingerprint. Preparation 02 applies these intervals to every minute,
-including explicitly inserted missing-minute rows, before coverage is
-calculated. This ensures that missing readings inside a known sleep, wake or
-non-wear period are counted in the correct time window.
+Two time coordinates are retained because they answer different questions.
+`datetime_utc` identifies the actual instant and is used to order readings and
+measure elapsed time. `datetime_wall` represents the local clock reading, so
+08:00 has the same time-of-day meaning at every site. At an autumn clock
+change, one local minute can correspond to two actual instants. The stored
+audit contains 360 such participant-level wall-clock minutes—120 for Madrid
+near-eye data, 120 for Madrid chest data, and 120 for Tübingen near-eye data.
+They remain distinct in UTC and are not discarded or averaged at this stage.
+
+The original logger interval is inferred separately for each participant and
+placement. A one-minute value is retained only when all expected original
+readings in that minute are present and finite. Table
+@tbl-preparation01-aggregation-regimes shows the resulting regimes; the
+production audits recorded no incomplete original-reading schedule.
 
 ```{r}
-#| label: tbl-import-interval-audit
-#| tbl-cap: "Prepared sleep and wear intervals, including records that could not be used and why."
+#| label: tbl-preparation01-aggregation-regimes
+#| tbl-cap: "Original logger recording intervals and the completeness requirement used to create one-minute values."
 
-knitr::kable(
-  import_alignment$audits$state_interval_summary,
-  col.names = c(
-    "Site",
-    "Usable sleep intervals",
-    "Participants with a usable sleep interval",
-    "Sleep entries listed for review",
-    "Usable wear intervals",
-    "Participants with a usable wear interval",
-    "Wear entries listed for review"
+aggregation_regimes |>
+  prep_gt(
+    source_note = paste0(
+      "Stored stream-level evidence: ",
+      "[stream_epoch_audit.csv]",
+      "(../../artifacts/02_aligned/stream_epoch_audit.csv)."
+    )
+  ) |>
+  gt::fmt_integer(
+    columns = c(
+      `Expected readings per minute`,
+      `Participant-device streams`,
+      Sites,
+      `One-minute rows`
+    ),
+    use_seps = TRUE
+  ) |>
+  gt::cols_width(
+    `Original recording interval` ~ gt::pct(23),
+    `Expected readings per minute` ~ gt::pct(22),
+    `Participant-device streams` ~ gt::pct(23),
+    Sites ~ gt::pct(12),
+    `One-minute rows` ~ gt::pct(20)
   )
-)
 ```
 
-## Operating limit and sample accounting
+## 3. Prepare sleep and wear periods
+
+The sleep diary defines the interval from sleep preparation to wake. Its start
+is included and its end is excluded. These measurements characterize the
+bedside sleep environment and remain part of the intended hybrid 24-hour
+record. The wear log supplies additional context. An `off` label while awake
+is treated as true non-wear; `sleep` and `site_leave` labels are retained for
+provenance but do not independently remove a light value.
 
 ```{r}
-#| label: tbl-import-saturation-audit
-#| tbl-cap: "One-minute melEDI observations at or above the 100,000 lx melEDI operating limit."
+#| label: tbl-preparation01-state-rules
+#| tbl-cap: "Rules used to translate sleep-diary and wear-log information into measurement context and signal availability."
 
-knitr::kable(
-  import_alignment$audits$saturation_audit,
-  col.names = c(
-    "Site",
-    "Placement",
-    "Operating limit (lx melEDI)",
-    "Minutes at or above the limit",
-    "Affected participants",
-    "Affected participant-days",
-    "Lowest affected value (lx melEDI)",
-    "Highest affected value (lx melEDI)"
+state_rules |>
+  prep_gt() |>
+  gt::cols_width(
+    `Recorded information` ~ gt::pct(22),
+    `Rule applied` ~ gt::pct(36),
+    `Effect on the analytical signal` ~ gt::pct(42)
   )
-)
+```
+
+Valid intervals are stored for later projection onto complete participant-day
+grids. Twenty-two sleep-derived records could not define a supported wake
+interval and are listed with participant, source rows, bounds, and reason in
+[`state_interval_audit.csv`](../../artifacts/02_aligned/state_interval_audit.csv).
+They were not silently repaired. No wear-log interval required review.
+
+```{r}
+#| label: tbl-preparation01-state-intervals
+#| tbl-cap: "Usable sleep and wear periods stored for each study site, with source entries retained for review."
+
+state_interval_display |>
+  prep_gt(
+    source_note = paste0(
+      "Exact reviewed entries: ",
+      "[state_interval_audit.csv]",
+      "(../../artifacts/02_aligned/state_interval_audit.csv)."
+    )
+  ) |>
+  gt::tab_spanner(
+    label = "Sleep diary",
+    columns = c(
+      `Sleep intervals`,
+      `Sleep participants`,
+      `Sleep entries reviewed`
+    )
+  ) |>
+  gt::tab_spanner(
+    label = "Wear log",
+    columns = c(
+      `Wear intervals`,
+      `Wear participants`,
+      `Wear entries reviewed`
+    )
+  ) |>
+  gt::fmt_integer(columns = -Site, use_seps = TRUE) |>
+  gt::cols_label(
+    `Sleep intervals` = "Periods",
+    `Sleep participants` = "Participants",
+    `Sleep entries reviewed` = "Reviewed",
+    `Wear intervals` = "Periods",
+    `Wear participants` = "Participants",
+    `Wear entries reviewed` = "Reviewed"
+  ) |>
+  gt::cols_width(
+    Site ~ gt::pct(18),
+    gt::everything() ~ gt::pct(13.7)
+  )
+```
+
+## 4. Align measurement context without losing rows
+
+Sleep and wear periods are matched to each one-minute light record using
+participant and actual time. All 17 site-placement joins retained their input
+row count. A missing wear-log label is not interpreted as non-wear. Table
+@tbl-preparation01-state-outcomes therefore reports missing wear information
+as provenance, not as an automatic exclusion.
+
+```{r}
+#| label: tbl-preparation01-state-outcomes
+#| tbl-cap: "Stored sleep and wear outcomes after alignment to one-minute light records. Counts are minutes."
+
+state_outcomes_display |>
+  prep_gt(
+    source_note = paste0(
+      "These categories document how the two state sources overlap; they are ",
+      "not competing estimates of sleep."
+    )
+  ) |>
+  gt::fmt_integer(columns = c(`Near-eye`, Chest), use_seps = TRUE) |>
+  gt::cols_width(
+    `Stored outcome` ~ gt::pct(60),
+    `Near-eye` ~ gt::pct(20),
+    Chest ~ gt::pct(20)
+  )
+```
+
+## 5. Apply the melEDI operating limit
+
+The valid melanopic equivalent daylight illuminance operating range is
+strictly below 100,000 lx melEDI [@condor2023actlumus]. Values at or above
+that boundary remain in the stored raw channel and receive an explicit flag,
+but the analytical melEDI channel is unavailable for that minute. The rule
+does not remove illuminance solely because melEDI reached its limit.
+
+```{r}
+#| label: tbl-preparation01-saturation
+#| tbl-cap: "One-minute values at or above the 100,000 lx melEDI operating limit."
+
+saturation_summary |>
+  prep_gt(
+    source_note = paste0(
+      "No hour or participant-day is removed in Preparation 01; coverage is ",
+      "assessed in Preparation 02."
+    )
+  ) |>
+  gt::fmt_integer(
+    columns = c(
+      `Minutes at or above 100,000 lx melEDI`,
+      `Affected participants`,
+      `Affected participant-days`
+    ),
+    use_seps = TRUE
+  ) |>
+  gt::fmt_number(
+    columns = c(`Lowest affected melEDI`, `Highest affected melEDI`),
+    decimals = 0,
+    use_seps = TRUE
+  ) |>
+  gt::cols_label(
+    `Minutes at or above 100,000 lx melEDI` = "Affected minutes",
+    `Lowest affected melEDI` = "Lowest melEDI (lx)",
+    `Highest affected melEDI` = "Highest melEDI (lx)"
+  ) |>
+  gt::cols_width(
+    Placement ~ gt::pct(15),
+    gt::everything() ~ gt::pct(17)
+  )
+```
+
+## 6. Stored sample after import and alignment
+
+The result is a complete set of one-minute grid rows for every imported
+participant stream. A grid row can contain an unavailable signal because of
+missing original data, non-wear, or the melEDI operating limit; therefore grid
+rows and valid signal minutes are reported separately.
+
+```{r}
+#| label: tbl-preparation01-placement-sample
+#| tbl-cap: "Overall measurement sample stored after one-minute aggregation and state alignment."
+
+placement_summary_display |>
+  prep_gt() |>
+  gt::fmt_integer(
+    columns = c(`Near-eye`, Chest),
+    use_seps = TRUE
+  ) |>
+  gt::cols_width(
+    Measure ~ gt::pct(60),
+    `Near-eye` ~ gt::pct(20),
+    Chest ~ gt::pct(20)
+  )
 ```
 
 ```{r}
-#| label: tbl-import-sample-audit
-#| tbl-cap: "Measurement rows and usable signals retained through Preparation 01, by participants and participant-days."
+#| label: tbl-preparation01-site-sample
+#| tbl-cap: "Participants, participant-days, and one-minute grid rows by site and measurement placement."
 
-knitr::kable(
-  import_alignment$audits$sample_audit,
-  col.names = c(
-    "Site",
-    "Placement",
-    "Preparation stage",
-    "Rows",
-    "Participants",
-    "Participant-days",
-    "Rows with valid melEDI",
-    "Rows with valid illuminance",
-    "Rows with both signals valid",
-    "Inserted original-interval rows",
-    "One-minute rows with every expected original reading"
+site_sample |>
+  prep_gt() |>
+  gt::tab_spanner(
+    label = "Near-eye",
+    columns = starts_with("Near-eye")
+  ) |>
+  gt::tab_spanner(
+    label = "Chest",
+    columns = starts_with("Chest")
+  ) |>
+  gt::fmt_integer(columns = -Site, use_seps = TRUE) |>
+  gt::cols_label(
+    `Near-eye participants` = "Participants",
+    `Near-eye participant-days` = "Participant-days",
+    `Near-eye minutes` = "Minutes",
+    `Chest participants` = "Participants",
+    `Chest participant-days` = "Participant-days",
+    `Chest minutes` = "Minutes"
+  ) |>
+  gt::cols_width(
+    Site ~ gt::pct(17),
+    gt::everything() ~ gt::pct(13.8)
   )
-)
 ```
 
-The affected high-light observations remain listed for traceability, but no
-hour or participant-day is removed here. Preparation 02 applies the approved
-50% hourly and 80% daily coverage rule. The daily calculation uses the full
-1,440-minute hybrid day, including bedside sleep-environment measurements.
-This differs from the preregistered sleep-excluded denominator (technical
-record `DEV-055`).
+Near-eye and chest measurements remain separate. Chest measurements are a
+complementary placement and are not pooled with the near-eye data.
 
-## Files produced
+## 7. Checks that had to pass
 
-Each site and placement is saved as an R data file (`.rds`) containing one
-data object. The file records participant, site, placement, source version,
-actual time, local clock time, original recording interval, raw signals,
-sleep/wear state and reasons for exclusion. The combined near-eye and chest
-files are written only after all requested sites pass the identifier, data
-matching, state and operating-limit checks. File paths and digital
-fingerprints are recorded in:
+The stored audits expose the checks performed during production. Rendering
+does not rerun their producing verifier; it confirms the identities of the
+stored evidence and summarizes the recorded outcomes.
 
-`r import_alignment$artifact_manifest_path`
+```{r}
+#| label: tbl-preparation01-validation
+#| tbl-cap: "Validation outcomes recorded for the accepted Preparation 01 outputs."
 
-The sleep and wear interval files have their own file inventory at:
+validation_summary |>
+  dplyr::mutate(Evidence = wrap_provenance_path(.data$Evidence)) |>
+  prep_gt() |>
+  gt::fmt_markdown(columns = Evidence) |>
+  gt::cols_width(
+    Check ~ gt::pct(22),
+    `Stored outcome` ~ gt::pct(52),
+    Evidence ~ gt::pct(26)
+  )
+```
 
-`r import_alignment$state_interval_manifest_path`
+```{r}
+#| label: tbl-preparation01-manifest-checks
+#| tbl-cap: "File-identity checks performed during this report render for accepted Preparation 01 artifacts."
+
+manifest_summary |>
+  prep_gt(
+    source_note = paste0(
+      "Every listed artifact was hashed during render. No manifest or ",
+      "scientific artifact was written."
+    )
+  ) |>
+  gt::cols_width(
+    Stage ~ gt::pct(35),
+    gt::everything() ~ gt::pct(13)
+  )
+```
+
+## Production scripts and why the operations are separate
+
+The producing code is listed in execution order in Table
+@tbl-preparation01-script-map. Separating source identity, temporal
+aggregation, interval preparation, state matching, and verification leaves a
+stored checkpoint at each scientifically consequential boundary.
+
+```{r}
+#| label: tbl-preparation01-script-map
+#| tbl-cap: "Producing scripts and function modules in execution order; none is executed while this report renders."
+
+script_map |>
+  prep_gt() |>
+  gt::fmt_markdown(columns = gt::everything()) |>
+  gt::cols_width(
+    `Step and producing code` ~ gt::pct(38),
+    `Reads, operation, separation, and output` ~ gt::pct(62)
+  )
+```
+
+## Exact artifacts passed to Preparation 02
+
+Preparation 02 receives the two combined one-minute files and the checked
+state intervals. The intervals are needed because Preparation 02 inserts
+explicit missing-minute rows before calculating coverage; known sleep, wake,
+and non-wear periods must also be assigned to those inserted rows.
+
+```{r}
+#| label: tbl-preparation01-handoff
+#| tbl-cap: "Stored Preparation 01 artifacts passed to coverage assessment."
+
+handoff_artifacts |>
+  dplyr::mutate(Exact_path = wrap_provenance_path(.data$Exact_path)) |>
+  prep_gt() |>
+  gt::fmt_markdown(columns = Exact_path) |>
+  gt::cols_label(
+    Stored_artifact = "Stored artifact",
+    Exact_path = "Exact path",
+    Use_in_Preparation_02 = "Use in Preparation 02"
+  ) |>
+  gt::cols_width(
+    Stored_artifact ~ gt::pct(25),
+    Exact_path ~ gt::pct(34),
+    Use_in_Preparation_02 ~ gt::pct(41)
+  )
+```
+
+## Render environment
+
+```{r}
+#| label: tbl-preparation01-environment
+#| tbl-cap: "Environment used for this documentation-only HTML render."
+
+environment_summary |>
+  prep_gt() |>
+  gt::cols_width(
+    Component ~ gt::pct(38),
+    Value ~ gt::pct(62)
+  )
+```

@@ -1,1124 +1,1373 @@
 ---
-title: "Preparation 06: Prepare data for each hypothesis"
+title: "Preparation 06: Build model-ready datasets"
+subtitle: "From checked metrics and participant information to hypothesis-specific inputs"
+date: last-modified
+engine: knitr
+format:
+  html:
+    toc: true
+    code-fold: true
+    code-summary: "Show supporting R code"
+execute:
+  echo: false
+  warning: false
+  message: false
+  error: false
+fig-cap-location: bottom
+tbl-cap-location: top
 ---
 
-## What this step does
-
-This step brings questionnaire and diary files into a consistent structure,
-combines them with the checked light-exposure metrics and participant and site
-information, and prepares the checked inputs needed to build a separate
-dataset for each hypothesis. Making the files consistent means using the same
-column types, labels and time representations across sites; it does not mean
-recalculating questionnaire scores or changing source values. A
-hypothesis-specific file is built only after that hypothesis's method has been
-approved.
-
-## What goes in and what comes out
-
-- **Inputs:** the fixed source files retrieved in Preparation 05, the checked
-  light-exposure metrics, participant and site information, and the analysis
-  decisions already approved.
-- **Outputs:** checked shared input files and, as each method is approved, one
-  R data file (`.rds`) for that hypothesis. H01 is the first
-  hypothesis-specific build. Files for H02 through H11, descriptive analyses,
-  and the paired sensor-placement comparison are added in their own audit
-  stages. Supporting files record which rows were included, how files were
-  combined, and what each variable means.
-- **Safeguards:** every data merge states whether one or several rows are
-  expected to match; every hypothesis has an explicit inclusion flag; free
-  text is excluded from analysis files; and no hypothesis chooses its outcomes
-  because another hypothesis produced a statistically significant result.
-
-## R code used on this page
-
 ```{r}
-#| label: setup-model-data
+#| label: setup-preparation-06
+#| include: false
+
+library(digest)
+library(dplyr)
+library(ggplot2)
+library(gt)
+library(readr)
+library(scales)
+library(tibble)
+library(tidyr)
 
 root <- normalizePath(
   Sys.getenv("QUARTO_PROJECT_DIR"),
   winslash = "/",
   mustWork = TRUE
 )
-source(file.path(root, "scripts/pipeline/paths_io.R"))
-source(file.path(root, "scripts/pipeline/assertions.R"))
-source(file.path(root, "scripts/pipeline/import_sources.R"))
-source(file.path(root, "scripts/pipeline/model_input_acquisition.R"))
-source(file.path(root, "scripts/pipeline/verify_model_input_acquisition.R"))
-source(file.path(root, "scripts/pipeline/model_input_normalization.R"))
-source(file.path(root, "scripts/pipeline/build_model_input_normalization.R"))
-source(file.path(root, "scripts/pipeline/verify_model_input_normalization.R"))
-source(file.path(root, "scripts/pipeline/site_solar_context.R"))
-source(file.path(root, "scripts/pipeline/build_site_solar_context.R"))
-source(file.path(
-  root,
-  "scripts/pipeline/verify_site_solar_context_artifacts.R"
-))
-source(file.path(
-  root,
-  "scripts/pipeline/temporal_sequence_provenance.R"
-))
-source(file.path(
-  root,
-  "scripts/pipeline/build_temporal_sequence_provenance.R"
-))
-source(file.path(
-  root,
-  "scripts/pipeline/verify_temporal_sequence_provenance_artifacts.R"
-))
-source(file.path(root, "scripts/pipeline/base_model_data.R"))
-source(file.path(root, "scripts/pipeline/build_base_model_data.R"))
-source(file.path(
-  root,
-  "scripts/pipeline/verify_base_model_data_artifacts.R"
-))
-source(file.path(root, "scripts/pipeline/metric_display_registry.R"))
-source(file.path(root, "scripts/pipeline/h01_model_data.R"))
-source(file.path(root, "scripts/pipeline/build_h01_model_data.R"))
-source(file.path(
-  root,
-  "scripts/pipeline/verify_h01_model_data_artifacts.R"
-))
-source(file.path(root, "scripts/pipeline/manuscript_prepared_data.R"))
-source(file.path(
-  root,
-  "scripts/pipeline/build_manuscript_prepared_data.R"
-))
-source(file.path(
-  root,
-  "scripts/pipeline/verify_manuscript_prepared_data_artifacts.R"
-))
-source(file.path(
-  root,
-  "scripts/pipeline/h01_manuscript_prepared_adapter.R"
-))
-source(file.path(
-  root,
-  "scripts/pipeline/build_h01_manuscript_prepared_data.R"
-))
-source(file.path(
-  root,
-  "scripts/pipeline/verify_h01_manuscript_prepared_data_artifacts.R"
-))
-source(file.path(root, "scripts/pipeline/preanalysis_comparison.R"))
-source(file.path(
-  root,
-  "scripts/pipeline/build_preanalysis_comparison.R"
-))
-source(file.path(
-  root,
-  "scripts/pipeline/verify_preanalysis_comparison_artifacts.R"
-))
 
-paths <- pipeline_paths(root)
-```
+stopifnot(
+  getRversion() >= numeric_version("4.6.1"),
+  getRversion() < numeric_version("4.7.0")
+)
 
-## Check and standardize questionnaire and diary files
+absolute_path <- function(path) {
+  ifelse(grepl("^/", path), path, file.path(root, path))
+}
 
-Only the exact source-file versions retrieved and checked in Preparation 05
-are used. Each source-file version is fixed to a specific repository revision,
-so a later change to an online file cannot silently change this analysis. A
-file inventory records the source revision, file size and SHA-256 checksum.
-A SHA-256 checksum is a digital fingerprint: identical files have the same
-fingerprint.
+read_stored_csv <- function(path) {
+  full_path <- absolute_path(path)
+  stopifnot(file.exists(full_path))
+  readr::read_csv(full_path, show_col_types = FALSE)
+}
 
-Before files from different sites are combined, each row receives its site and
-source-version labels. Time intervals are stored both as Coordinated Universal
-Time (UTC), which is used to calculate elapsed time, and as local clock time,
-which is used to compare times of day across sites. The time at which a form
-was submitted is kept as descriptive information but is not treated as an
-exposure interval. Free-text responses are checked for presence and missing
-values but are not copied into the analysis files.
+read_stored_rds <- function(path) {
+  full_path <- absolute_path(path)
+  stopifnot(file.exists(full_path))
+  readRDS(full_path)
+}
 
-```{r}
-#| label: build-normalized-model-inputs
+assert_columns <- function(data, required, label) {
+  missing_columns <- setdiff(required, names(data))
+  if (length(missing_columns) > 0L) {
+    stop(
+      label,
+      " is missing required columns: ",
+      paste(missing_columns, collapse = ", ")
+    )
+  }
+  invisible(data)
+}
 
-normalization <- build_model_input_normalization(root = root)
-normalization_verification <- verify_model_input_normalization(root = root)
-stopifnot(identical(normalization_verification$status, "PASS"))
-```
+prep_gt <- function(data, source_note = NULL, groupname_col = NULL) {
+  output <- gt::gt(data, groupname_col = groupname_col) |>
+    gt::opt_row_striping() |>
+    gt::sub_missing(missing_text = "—") |>
+    gt::tab_options(
+      table.font.size = gt::px(13),
+      table.width = gt::pct(100),
+      data_row.padding = gt::px(4),
+      heading.align = "left",
+      source_notes.font.size = gt::px(11)
+    )
 
-```{r}
-#| label: normalized-model-input-summary
+  if (!is.null(source_note)) {
+    output <- output |>
+      gt::tab_source_note(gt::md(source_note))
+  }
+  output
+}
 
-prepared_file_labels <- c(
+manifest_registry <- tibble::tribble(
+  ~stage_order, ~stage, ~manifest,
+  1L, "Standardized participant inputs",
+  "artifacts/12_manifests/model_input_normalization.csv",
+  2L, "Gap-timing-unaware prepared data",
+  "artifacts/12_manifests/manuscript_prepared_data_artifacts.csv",
+  3L, "Site and daylight context",
+  "artifacts/12_manifests/site_solar_context_artifacts.csv",
+  4L, "Local-clock and elapsed-time links",
+  "artifacts/06_model_data/temporal_provenance/artifact_manifest.csv",
+  5L, "Shared model inputs",
+  "artifacts/12_manifests/base_model_data_artifacts.csv",
+  6L, "H01 primary prepared frames",
+  "artifacts/12_manifests/H01_model_data_artifacts.csv",
+  7L, "H01 gap-timing-unaware prepared frames",
+  "artifacts/12_manifests/H01_manuscript_prepared_data_artifacts.csv",
+  8L, "Stored descriptive comparison",
+  "artifacts/12_manifests/preanalysis_comparison_artifacts.csv"
+)
+
+manifest_objects <- list()
+manifest_file_checks <- list()
+
+for (index in seq_len(nrow(manifest_registry))) {
+  registry_row <- manifest_registry[index, ]
+  manifest_data <- read_stored_csv(registry_row$manifest)
+  assert_columns(
+    manifest_data,
+    c("path", "sha256", "bytes"),
+    registry_row$manifest
+  )
+
+  listed_paths <- absolute_path(manifest_data$path)
+  exists <- file.exists(listed_paths)
+  actual_bytes <- rep(NA_real_, length(listed_paths))
+  actual_sha256 <- rep(NA_character_, length(listed_paths))
+  actual_bytes[exists] <- file.info(listed_paths[exists])$size
+  actual_sha256[exists] <- vapply(
+    listed_paths[exists],
+    digest::digest,
+    character(1),
+    algo = "sha256",
+    file = TRUE
+  )
+
+  manifest_file_checks[[index]] <- tibble::tibble(
+    stage_order = registry_row$stage_order,
+    stage = registry_row$stage,
+    path = manifest_data$path,
+    exists = exists,
+    bytes_match = exists & actual_bytes == as.numeric(manifest_data$bytes),
+    sha256_match = exists & actual_sha256 == manifest_data$sha256
+  )
+  manifest_objects[[registry_row$stage]] <- manifest_data
+}
+
+manifest_file_checks <- dplyr::bind_rows(manifest_file_checks)
+stopifnot(
+  all(manifest_file_checks$exists),
+  all(manifest_file_checks$bytes_match),
+  all(manifest_file_checks$sha256_match)
+)
+
+manifest_summary <- manifest_file_checks |>
+  dplyr::group_by(.data$stage_order, .data$stage) |>
+  dplyr::summarise(
+    `Files listed` = dplyr::n(),
+    `Files present` = sum(.data$exists),
+    `Size checks` = sum(.data$bytes_match),
+    `SHA-256 checks` = sum(.data$sha256_match),
+    Check = ifelse(
+      all(.data$exists & .data$bytes_match & .data$sha256_match),
+      "PASS",
+      "FAIL"
+    ),
+    .groups = "drop"
+  ) |>
+  dplyr::arrange(.data$stage_order) |>
+  dplyr::select(-.data$stage_order)
+
+normalization_manifest <-
+  manifest_objects[["Standardized participant inputs"]]
+gap_manifest <-
+  manifest_objects[["Gap-timing-unaware prepared data"]]
+site_manifest <-
+  manifest_objects[["Site and daylight context"]]
+
+normalized_labels <- c(
   normalized_demographics = "Participant characteristics",
   normalized_chronotype = "Chronotype questionnaire",
-  normalized_leba = "Light-exposure behaviour questionnaire",
-  normalized_vlsq8 = "Visual light sensitivity questionnaire",
+  normalized_leba = "Light-exposure behaviour questionnaire (LEBA)",
+  normalized_vlsq8 = "Visual light sensitivity questionnaire (VLSQ-8)",
   normalized_exercisediary = "Exercise diary",
   normalized_lightexposurediary = "Light-exposure diary",
-  normalized_sleepdiaries = "Sleep diary",
-  audit_source_schema = "Check of source columns and types",
-  audit_labels = "Check of labels",
-  audit_keys = "Check of participant and record identifiers",
-  audit_missingness = "Check of missing values",
-  audit_intervals = "Check of diary time intervals",
-  audit_interval_issues = "Diary intervals requiring review",
-  audit_free_text = "Check that free text is excluded",
-  audit_value_preservation = "Check that source values are unchanged"
+  normalized_sleepdiaries = "Sleep diary"
 )
 
-normalized_file_summary <- normalization_verification$artifact_summary |>
-  dplyr::transmute(
-    `Prepared file` = dplyr::recode(
-      .data$artifact_id,
-      !!!prepared_file_labels
-    ),
-    `File type` = toupper(.data$artifact_type),
+normalized_summary <- normalization_manifest |>
+  dplyr::filter(.data$artifact_id %in% names(normalized_labels)) |>
+  dplyr::mutate(
+    `Input type` = unname(normalized_labels[.data$artifact_id]),
+    `Stored file` = .data$path
+  ) |>
+  dplyr::select(
+    .data$`Input type`,
     Rows = .data$rows,
     Columns = .data$columns,
-    `Digital fingerprint (SHA-256)` = .data$sha256
+    .data$`Stored file`
   )
-knitr::kable(
-  normalized_file_summary
-)
 
-interval_summary <- normalization_verification$interval_summary |>
-  dplyr::transmute(
-    Source = dplyr::recode(
+interval_issues <- read_stored_csv(
+  "artifacts/06_model_data/normalized_inputs/audits/interval_issue_audit.csv"
+)
+assert_columns(
+  interval_issues,
+  c("modality", "site", "issue_code"),
+  "interval issue audit"
+)
+interval_issue_summary <- interval_issues |>
+  dplyr::count(.data$modality, .data$site, .data$issue_code, name = "Records") |>
+  dplyr::mutate(
+    `Prepared input` = dplyr::recode(
       .data$modality,
-      exercisediary = "Exercise diary",
       lightexposurediary = "Light-exposure diary",
       sleepdiaries = "Sleep diary"
     ),
-    `Use of timestamp` = dplyr::recode(
-      .data$timestamp_role,
-      analysis_interval = "Start and end of an analysis interval",
-      form_metadata = "Time when the form was submitted"
-    ),
-    Rows = .data$rows,
-    `Usable interval rows` = .data$analysis_eligible,
-    `Rows missing an interval endpoint` = .data$quarantined,
-    `Form-submission timestamps excluded` =
-      .data$excluded_as_form_metadata
+    `Why interval calculations cannot use the record` = dplyr::recode(
+      .data$issue_code,
+      missing_start_and_end = "Start and end time are missing",
+      missing_wake = "Wake time is missing"
+    )
+  ) |>
+  dplyr::select(
+    .data$`Prepared input`,
+    Site = .data$site,
+    .data$Records,
+    .data$`Why interval calculations cannot use the record`
   )
-knitr::kable(
-  interval_summary
+
+free_text_audit <- read_stored_csv(
+  "artifacts/06_model_data/normalized_inputs/audits/free_text_audit.csv"
 )
-```
-
-Twenty-seven light-diary records do not contain both a start and an end time:
-one record from RISE and 26 from THUAS. These records remain in the prepared
-file, but they are excluded from calculations that require a complete time
-interval. One MPI sleep-diary record without a wake time is handled in the
-same way. No questionnaire total or factor score is recalculated.
-
-The checked manuscript-prepared sensitivity files are also assembled here,
-before daylight information is calculated. This lets the daylight table cover
-the dates required by both datasets while keeping the light-exposure values in
-the two datasets separate.
-
-```{r}
-#| label: build-manuscript-prepared-inputs
-
-manuscript_prepared_build <- build_manuscript_prepared_data(
-  root = root,
-  output_root = root
+value_preservation_audit <- read_stored_csv(
+  "artifacts/06_model_data/normalized_inputs/audits/value_preservation_audit.csv"
 )
-manuscript_prepared_verification <-
-  verify_manuscript_prepared_data_artifacts(
-    root = root,
-    output_root = root
-  )
 stopifnot(
-  manuscript_prepared_verification$status == "PASS",
-  manuscript_prepared_verification$model_implementation_id ==
-    "new_h01_h11"
+  all(free_text_audit$excluded_from_analytic_rds),
+  !any(free_text_audit$content_exported),
+  all(value_preservation_audit$status == "PASS")
 )
 
-supplemental_site_date_paths <- stats::setNames(
-  manuscript_prepared_build$paths$rds[["participant_day_metrics"]],
-  "manuscript_prepared_participant_day"
+gap_output_labels <- c(
+  participant_metrics_csv = "Participant-level metrics",
+  participant_day_metrics_csv = "Participant-day metrics",
+  thirty_minute_data_csv = "30-minute values",
+  one_hour_data_csv = "One-hour values"
 )
-```
 
-## Add site and daylight information
+gap_artifact_summary <- gap_manifest |>
+  dplyr::filter(.data$artifact_id %in% names(gap_output_labels)) |>
+  dplyr::mutate(
+    `Stored data level` = unname(gap_output_labels[.data$artifact_id]),
+    `Stored file` = .data$path
+  ) |>
+  dplyr::select(
+    .data$`Stored data level`,
+    Rows = .data$rows,
+    Columns = .data$columns,
+    .data$`Stored file`
+  )
 
-The analysis uses the checked location and time-zone information for all nine
-study sites. Daylight information is calculated for every site and local date
-required by either the main data or the manuscript-prepared sensitivity. Two
-IZTECH dates occur only in the latter because the main analysis excludes their
-complete day-long flat-zero melEDI records. Keeping those dates in the
-daylight table allows the registered all-zero-inclusive comparison to be run;
-it does not return them to the main data. Before these values are saved, the
-main daily, 30-minute and one-hour files must contain the same sets of
-participant-days. Civil dawn, civil dusk and photoperiod are defined using a
-solar altitude of −6 degrees.
-
-Solar noon is calculated from midnight in each site's local time zone. This
-avoids accidentally assigning solar noon to the preceding UTC date for sites
-west of Greenwich. Solar noon is retained only as descriptive site
-information, not as an analysis variable. The actual instant is stored in UTC;
-the corresponding local time, UTC offset and daylight-saving status are
-stored separately.
-
-```{r}
-#| label: build-site-solar-context
-
-site_solar_build <- build_site_solar_context_artifacts(
-  root = root,
-  supplemental_date_paths = supplemental_site_date_paths
-)
-site_solar_verification <- verify_site_solar_context_artifacts(
-  root = root,
-  supplemental_date_paths = supplemental_site_date_paths
-)
-stopifnot(identical(site_solar_verification$status, "PASS"))
-```
-
-```{r}
-#| label: site-solar-context-summary
-
-site_solar_summary <- data.frame(
-  check = c(
-    "Overall check",
-    "Site-date combinations",
-    "Study sites",
-    "Site-dates containing a daylight-saving change",
-    "Data files checked before adding daylight information",
-    "Rows without matching site/date information",
-    "Files in the output inventory"
-  ),
-  value = unlist(site_solar_verification[c(
-    "status",
-    "site_dates",
-    "sites",
-    "dst_transition_site_dates",
-    "join_audit_rows",
-    "unmatched_rows",
-    "manifest_rows"
-  )])
-)
-knitr::kable(site_solar_summary)
-
-site_join_summary <- site_solar_build$join_audit |>
+correction_record <- read_stored_csv(
+  "artifacts/06_model_data/scenarios/manuscript_prepared_data/correction_manifest.csv"
+) |>
   dplyr::transmute(
-    Input = dplyr::recode(
-      .data$input_role,
-      glasses_daily = "Near-eye daily metrics",
-      glasses_30_minute = "Near-eye 30-minute values",
-      glasses_one_hour = "Near-eye one-hour values",
-      chest_daily = "Chest daily metrics",
-      chest_30_minute = "Chest 30-minute values",
-      chest_one_hour = "Chest one-hour values"
-    ),
+    `Correction record` = .data$correction_id,
+    Site = .data$affected_site,
+    `Diary rows` = .data$affected_rows,
+    `Recorded identifier` = .data$erroneous_value,
+    `Verified identifier` = .data$corrected_value,
+    `Scientific light values changed` = ifelse(
+      .data$scientific_light_values_changed,
+      "Yes",
+      "No"
+    )
+  )
+
+site_registry <- read_stored_csv("config/site_display_registry.csv")
+assert_columns(
+  site_registry,
+  c("site", "display_order", "display_name", "color_hex"),
+  "site display registry"
+)
+
+site_join_audit <- read_stored_csv(
+  "artifacts/06_model_data/context/site_solar_context_join_audit.csv"
+)
+stopifnot(
+  all(site_join_audit$status == "PASS"),
+  all(site_join_audit$input_rows == site_join_audit$joined_rows),
+  all(site_join_audit$unmatched_rows == 0L)
+)
+
+site_join_summary <- site_join_audit |>
+  dplyr::transmute(
     Placement = dplyr::recode(
       .data$placement,
       glasses = "Near-eye",
       chest = "Chest"
     ),
-    `Time resolution` = dplyr::recode(
+    Resolution = dplyr::recode(
       .data$resolution,
-      daily = "One value per participant-day",
+      daily = "Daily",
       `30_minute` = "30 minutes",
       one_hour = "One hour"
     ),
-    `Matching fields` = dplyr::recode(
-      .data$join_key,
-      `site|local_date` = "Site and local date"
-    ),
-    `Expected match` = dplyr::recode(
-      .data$relationship,
-      `many-to-one` = "One site-date record for each input row"
-    ),
-    `Rows before` = .data$input_rows,
-    `Rows after` = .data$joined_rows,
+    `Rows before join` = .data$input_rows,
+    `Rows after join` = .data$joined_rows,
     `Participant-days` = .data$participant_days,
-    `Site-date combinations` = .data$distinct_site_dates,
-    `Rows without a match` = .data$unmatched_rows,
+    `Unmatched rows` = .data$unmatched_rows,
     Check = .data$status
   )
-knitr::kable(
-  site_join_summary
+
+true_utc_bins <- read_stored_rds(
+  "artifacts/06_model_data/temporal_provenance/true_utc_source_bins.rds"
+)
+wall_outcome_links <- read_stored_rds(
+  "artifacts/06_model_data/temporal_provenance/wall_outcome_links.rds"
+)
+assert_columns(
+  true_utc_bins,
+  c(
+    "site", "Id", "local_date", "local_day_type",
+    "relationship_type", "sequence_eligible",
+    "true_elapsed_sequence_start"
+  ),
+  "true elapsed-time source bins"
+)
+assert_columns(
+  wall_outcome_links,
+  c(
+    "site", "Id", "local_date", "relationship_type",
+    "spring_gap_provenance"
+  ),
+  "local-clock outcome links"
+)
+
+count_participant_days <- function(data, day_type) {
+  data |>
+    dplyr::filter(.data$local_day_type == day_type) |>
+    dplyr::distinct(.data$site, .data$Id, .data$local_date) |>
+    nrow()
+}
+
+temporal_summary <- tibble::tibble(
+  `Stored check or outcome` = c(
+    "Original UTC intervals",
+    "Rows on the shared local-clock grid",
+    "Participant-days spanning the autumn clock change",
+    "Local-clock rows averaging two real intervals",
+    "Participant-days spanning the spring clock change",
+    "Structural local-clock rows in the spring gap",
+    "Original intervals without a one-to-one local-clock row",
+    "Intervals eligible for continuous-sequence models",
+    "Starts of continuous elapsed-time sequences"
+  ),
+  Value = c(
+    nrow(true_utc_bins),
+    nrow(wall_outcome_links),
+    count_participant_days(true_utc_bins, "fall_back_25h"),
+    sum(
+      wall_outcome_links$relationship_type ==
+        "two_to_one_averaged_fall_back",
+      na.rm = TRUE
+    ),
+    count_participant_days(true_utc_bins, "spring_forward_23h"),
+    sum(
+      wall_outcome_links$spring_gap_provenance ==
+        "structural_nonexistent_wall_bin",
+      na.rm = TRUE
+    ),
+    sum(
+      true_utc_bins$relationship_type != "one_to_one_true_elapsed",
+      na.rm = TRUE
+    ),
+    sum(true_utc_bins$sequence_eligible %in% TRUE),
+    sum(true_utc_bins$true_elapsed_sequence_start %in% TRUE)
+  )
+)
+
+near_eye_grid <- read_stored_rds(
+  "artifacts/06_model_data/base/metrics_glasses_30_minute_context.rds"
+)
+chest_grid <- read_stored_rds(
+  "artifacts/06_model_data/base/metrics_chest_30_minute_context.rds"
+)
+assert_columns(
+  near_eye_grid,
+  c("site", "Id", "local_date", "bin_admissible"),
+  "near-eye 30-minute model input"
+)
+assert_columns(
+  chest_grid,
+  c("site", "Id", "local_date", "bin_admissible"),
+  "chest 30-minute model input"
+)
+
+summarise_grid <- function(data, prefix) {
+  output <- data |>
+    dplyr::group_by(.data$site) |>
+    dplyr::summarise(
+      participants = dplyr::n_distinct(.data$Id),
+      participant_days = dplyr::n_distinct(
+        paste(.data$Id, .data$local_date)
+      ),
+      grid_rows = dplyr::n(),
+      admissible_rows = sum(.data$bin_admissible %in% TRUE),
+      .groups = "drop"
+    )
+  names(output)[-1] <- paste(prefix, names(output)[-1], sep = "_")
+  output
+}
+
+site_samples <- site_registry |>
+  dplyr::left_join(
+    summarise_grid(near_eye_grid, "near_eye"),
+    by = "site",
+    relationship = "one-to-one"
+  ) |>
+  dplyr::left_join(
+    summarise_grid(chest_grid, "chest"),
+    by = "site",
+    relationship = "one-to-one"
+  ) |>
+  dplyr::arrange(.data$display_order) |>
+  dplyr::transmute(
+    Site = .data$display_name,
+    site_code = .data$site,
+    color_hex = .data$color_hex,
+    `Near-eye participants` = .data$near_eye_participants,
+    `Near-eye participant-days` = .data$near_eye_participant_days,
+    `Near-eye 30-min rows` = .data$near_eye_grid_rows,
+    `Near-eye admissible rows` = .data$near_eye_admissible_rows,
+    `Chest participants` = .data$chest_participants,
+    `Chest participant-days` = .data$chest_participant_days,
+    `Chest 30-min rows` = .data$chest_grid_rows,
+    `Chest admissible rows` = .data$chest_admissible_rows
+  )
+
+participant_availability <- read_stored_csv(
+  "artifacts/06_model_data/base/participant_availability_audit.csv"
+)
+modality_columns <- c(
+  "Participant characteristics" = "has_demographics",
+  "Chronotype questionnaire" = "has_chronotype",
+  "Light-exposure behaviour questionnaire (LEBA)" = "has_leba",
+  "Visual light sensitivity questionnaire (VLSQ-8)" = "has_vlsq8",
+  "Exercise diary" = "has_exercisediary",
+  "Light-exposure diary" = "has_lightexposurediary",
+  "Sleep diary" = "has_sleepdiaries"
+)
+assert_columns(
+  participant_availability,
+  c(
+    "has_glasses_metrics", "has_chest_metrics",
+    unname(modality_columns)
+  ),
+  "participant availability audit"
+)
+
+summarise_availability <- function(metric_column, placement_label) {
+  metric_participants <- participant_availability[[metric_column]] %in% TRUE
+  matching_counts <- vapply(
+    unname(modality_columns),
+    function(column) {
+      sum(participant_availability[[column]][metric_participants] %in% TRUE)
+    },
+    integer(1)
+  )
+  tibble::tibble(
+    Placement = placement_label,
+    `Questionnaire or diary input` = names(modality_columns),
+    `Participants with light metrics` = sum(metric_participants),
+    `Participants with matching input` = matching_counts,
+    `Participants without matching input` =
+      sum(metric_participants) - matching_counts
+  )
+}
+
+availability_summary <- dplyr::bind_rows(
+  summarise_availability("has_glasses_metrics", "Near-eye"),
+  summarise_availability("has_chest_metrics", "Chest")
+)
+
+h01_primary_flow <- read_stored_csv(
+  "artifacts/06_model_data/H01/sample_flow.csv"
+)
+h01_gap_flow <- read_stored_csv(
+  paste0(
+    "artifacts/06_model_data/H01/scenarios/",
+    "manuscript_prepared_data/sample_flow.csv"
+  )
+)
+h01_primary_contract <- read_stored_csv(
+  "artifacts/06_model_data/H01/metric_contract.csv"
+)
+h01_gap_contract <- read_stored_csv(
+  paste0(
+    "artifacts/06_model_data/H01/scenarios/",
+    "manuscript_prepared_data/metric_contract.csv"
+  )
+)
+
+make_h01_sample <- function(sample_flow, metric_contract) {
+  assert_columns(
+    sample_flow,
+    c(
+      "placement", "scenario", "metric_order", "metric_id", "stage",
+      "scope", "model_observations", "participants",
+      "contributing_participant_days", "metric_support_valid_hours",
+      "sites"
+    ),
+    "H01 sample-flow file"
+  )
+  assert_columns(
+    metric_contract,
+    c("metric_id", "manuscript_name"),
+    "H01 metric contract"
+  )
+
+  output <- sample_flow |>
+    dplyr::filter(
+      .data$placement == "glasses",
+      .data$scenario == "all_available",
+      .data$stage == "metric_estimable",
+      .data$scope == "overall"
+    ) |>
+    dplyr::left_join(
+      metric_contract |>
+        dplyr::select(.data$metric_id, .data$manuscript_name),
+      by = "metric_id",
+      relationship = "many-to-one"
+    ) |>
+    dplyr::arrange(.data$metric_order) |>
+    dplyr::transmute(
+      Metric = .data$manuscript_name,
+      Participants = .data$participants,
+      `Rows in prepared frame` = .data$model_observations,
+      `Contributing participant-days` =
+        .data$contributing_participant_days,
+      `Valid measurement hours` = .data$metric_support_valid_hours,
+      Sites = .data$sites
+    )
+
+  stopifnot(nrow(output) == 17L)
+  output
+}
+
+h01_primary_sample <- make_h01_sample(
+  h01_primary_flow,
+  h01_primary_contract
+)
+h01_gap_sample <- make_h01_sample(
+  h01_gap_flow,
+  h01_gap_contract
+)
+
+h01_primary_status <- read_stored_csv(
+  "artifacts/06_model_data/H01/scenario_status.csv"
+)
+h01_gap_status <- read_stored_csv(
+  paste0(
+    "artifacts/06_model_data/H01/scenarios/",
+    "manuscript_prepared_data/scenario_status.csv"
+  )
+)
+paired_unavailable <- dplyr::bind_rows(
+  h01_primary_status |>
+    dplyr::mutate(Dataset = "Primary dataset"),
+  h01_gap_status |>
+    dplyr::mutate(Dataset = "Gap-timing-unaware dataset")
+) |>
+  dplyr::filter(!.data$available)
+stopifnot(nrow(paired_unavailable) == 8L)
+
+figure_source_path <- paste0(
+  "artifacts/08_diagnostics/preanalysis_comparison/",
+  "categorical_levels.csv"
+)
+figure_source <- read_stored_csv(figure_source_path)
+assert_columns(
+  figure_source,
+  c("variable_id", "placement", "series", "level", "n"),
+  "stored categorical figure source data"
+)
+
+figure_site_data <- figure_source |>
+  dplyr::filter(
+    .data$variable_id == "participant_site",
+    .data$placement == "glasses"
+  ) |>
+  dplyr::mutate(
+    Dataset = dplyr::recode(
+      .data$series,
+      canonical = "Primary dataset",
+      baseline = "Gap-timing-unaware dataset"
+    )
+  ) |>
+  dplyr::inner_join(
+    site_registry,
+    by = c("level" = "site"),
+    relationship = "many-to-one"
+  ) |>
+  dplyr::mutate(
+    Dataset = factor(
+      .data$Dataset,
+      levels = c("Primary dataset", "Gap-timing-unaware dataset")
+    ),
+    display_name = factor(
+      .data$display_name,
+      levels = rev(site_registry$display_name)
+    )
+  )
+stopifnot(nrow(figure_site_data) == 18L)
+
+render_boundary <- tibble::tribble(
+  ~During_render, ~What_it_means,
+  "Read stored RDS and CSV files",
+  "No source acquisition, normalization, metric derivation, or model-frame construction",
+  "Check file size and SHA-256 identity",
+  "Every file listed by the eight preparation manifests must match its stored record",
+  "Check required columns",
+  "The page stops if a stored file no longer has the fields needed for its displays",
+  "Calculate lightweight counts and draw one plot",
+  "Only descriptive summaries of stored rows are calculated; no analytical artifact is written"
+)
+
+script_map <- tibble::tribble(
+  ~Step, ~Producing_script, ~Function_module, ~Reads_and_operation, ~Stored_output,
+  1L,
+  "scripts/pipeline/build_model_input_normalization.R",
+  "scripts/pipeline/model_input_normalization.R",
+  "Reads the fixed local files acquired in Preparation 05; aligns field types, labels, identifiers, and time representations while preserving recorded values. Kept separate so source-value and free-text checks are explicit.",
+  "artifacts/06_model_data/normalized_inputs/",
+  2L,
+  "scripts/pipeline/build_manuscript_prepared_data.R",
+  "scripts/pipeline/manuscript_prepared_data.R",
+  "Reads the retained prepared measurements and checked participant inputs; assembles the predefined comparison dataset and records its single verified identifier correction. Kept separate so its preparation remains distinguishable from the primary dataset.",
+  "artifacts/06_model_data/scenarios/manuscript_prepared_data/",
+  3L,
+  "scripts/pipeline/build_site_solar_context.R",
+  "scripts/pipeline/site_solar_context.R",
+  "Reads site coordinates, time zones, and all dates needed by both datasets; creates civil dawn, civil dusk, photoperiod, and descriptive solar-noon fields. Kept separate so every site/date join can be checked once.",
+  "artifacts/06_model_data/context/",
+  4L,
+  "scripts/pipeline/build_temporal_sequence_provenance.R",
+  "scripts/pipeline/temporal_sequence_provenance.R",
+  "Reads accepted coverage and metric time series; links local-clock outcomes to their true UTC intervals and marks continuous elapsed-time sequences. Kept separate because time-of-day and elapsed-time questions require different coordinates.",
+  "artifacts/06_model_data/temporal_provenance/",
+  5L,
+  "scripts/pipeline/build_base_model_data.R",
+  "scripts/pipeline/base_model_data.R",
+  "Reads checked metrics, standardized participant inputs, and site context; attaches one matching context record while retaining metric rows and recording participant-input availability. Kept separate from hypothesis-specific exclusions.",
+  "artifacts/06_model_data/base/",
+  6L,
+  "scripts/pipeline/build_h01_model_data.R",
+  "scripts/pipeline/h01_model_data.R",
+  "Reads the shared model inputs and approved H01 metric contract; stores outcomes, predictors, metric-specific inclusion records, and sample flow for 17 metrics. No model is fitted.",
+  "artifacts/06_model_data/H01.rds and artifacts/06_model_data/H01/",
+  7L,
+  "scripts/pipeline/build_h01_manuscript_prepared_data.R",
+  "scripts/pipeline/h01_manuscript_prepared_adapter.R",
+  "Reads the gap-timing-unaware data and applies the same H01 implementation contract. Kept separate so shared model code can be checked without erasing the preparation difference.",
+  "artifacts/06_model_data/H01/scenarios/manuscript_prepared_data/",
+  8L,
+  "scripts/pipeline/build_preanalysis_comparison.R",
+  "scripts/pipeline/preanalysis_comparison.R",
+  "Reads both stored preparations; writes descriptive count, distribution, reconciliation, and figure-source records before hypothesis fitting. It does not test a scientific hypothesis.",
+  "artifacts/08_diagnostics/preanalysis_comparison/"
+)
+
+handoff_artifacts <- tibble::tribble(
+  ~Stored_artifact, ~Exact_path, ~Next_use,
+  "Standardized participant inputs",
+  "artifacts/06_model_data/normalized_inputs/",
+  "Joined to checked metrics in the shared model inputs",
+  "Gap-timing-unaware prepared measurements",
+  "artifacts/06_model_data/scenarios/manuscript_prepared_data/",
+  "Predefined prepared-data comparison in hypothesis analyses",
+  "Site and daylight context",
+  "artifacts/06_model_data/context/site_solar_context.rds",
+  "Site/date predictors and verified many-to-one joins",
+  "Elapsed-time provenance",
+  "artifacts/06_model_data/temporal_provenance/true_utc_source_bins.rds",
+  "Continuity and autocorrelation coordinates for H02 and H11",
+  "Shared near-eye and chest inputs",
+  "artifacts/06_model_data/base/",
+  "Starting point for each approved hypothesis-specific build",
+  "H01 primary prepared frames",
+  "artifacts/06_model_data/H01.rds",
+  "H01 analysis preparation and fitting",
+  "H01 gap-timing-unaware prepared frames",
+  "artifacts/06_model_data/H01/scenarios/manuscript_prepared_data/H01.rds",
+  "H01 prepared-data comparison",
+  "Stored descriptive comparison data",
+  "artifacts/08_diagnostics/preanalysis_comparison/",
+  "Reader-facing preparation comparisons and provenance checks"
+)
+
+environment_summary <- tibble::tibble(
+  Component = c(
+    "R",
+    "Quarto profile",
+    "Table package",
+    "Manifest hashing",
+    "Scientific recomputation during render"
+  ),
+  Value = c(
+    paste(R.version$major, R.version$minor, sep = "."),
+    "nathealth (HTML review render)",
+    paste0("gt ", as.character(utils::packageVersion("gt"))),
+    "SHA-256 with digest",
+    "None"
+  )
 )
 ```
 
-## Preserve local clock time and actual elapsed time
+## Purpose and position in the analysis chain
 
-The H02 and H11 data use a shared 30-minute local-clock grid: for example,
-08:00 means 08:00 local time at every site. This is the appropriate scale for
-comparing time of day, but it does not always show how much real time passed
-between two rows.
+Preparation 06 turns the checked light-exposure metrics from Preparation 04
+and the fixed participant, questionnaire, and diary files acquired in
+Preparation 05 into inputs that hypothesis analyses can use. It first makes
+participant files structurally consistent, then adds participant and site
+context to the metric files, preserves the distinction between local clock
+time and actual elapsed time, and finally stores a separate input when a
+hypothesis method has been approved. H01 is the first such build. This step
+does not fit a statistical model.
 
-Daylight-saving changes create the important exceptions. When clocks move
-back in autumn, one local half-hour occurs twice; the local-clock value is the
-average of those two real intervals. When clocks move forward in spring, some
-local-clock rows have no corresponding real interval. The link created below
-preserves both views without changing any exposure value: local clock time for
-time-of-day comparisons and UTC for gaps, continuity and autocorrelation.
+The predefined **gap-timing-unaware dataset** still passed the general
+50%-per-hour and 80%-per-day coverage rules. Its name means that the timing of
+remaining missing observations was not used for an additional metric-specific
+adjustment. For contrast, the primary dataset could be interpreted as a
+“time-sensitive primary metric dataset.” From this point onward, this report
+calls it simply the **primary dataset**.
+
+The exact inputs used by the producing scripts are recorded in the eight
+manifests checked on this page. They cover standardized participant inputs,
+the separate prepared-data comparison, site and daylight context,
+elapsed-time provenance, shared model inputs, both H01 preparations, and the
+stored descriptive comparison. The corresponding paths are reported in
+@tbl-manifest-identity and @tbl-script-execution-map.
+
+::: {.callout-note appearance="simple" title="What is calculated during this render?"}
+This report reads already stored RDS and CSV outputs. During rendering it
+checks that every manifest-listed file has the recorded size and SHA-256
+digital fingerprint, checks the columns needed for the displays, calculates
+only lightweight descriptive counts from stored rows, and redraws one
+reader-facing plot from its stored source-data CSV. It does not source or run
+any producing script, retrieve data, standardize inputs, derive metrics,
+construct or overwrite a model frame, fit a model, estimate autocorrelation,
+or write an analytical artifact.
+:::
+
+```{mermaid}
+%%| label: fig-preparation06-chain
+%%| fig-cap: "Position of Preparation 06 in the data-to-analysis chain. Solid arrows show stored data passed forward; rendering reads these outputs but does not recreate them."
+%%| fig-alt: "Flow diagram from fixed participant files and checked light-exposure metrics, through standardized participant inputs, site and elapsed-time context, shared model inputs, and hypothesis-specific prepared datasets, to hypothesis analyses. A separate branch carries the gap-timing-unaware dataset through the same hypothesis implementation."
+flowchart LR
+  A["Fixed participant, questionnaire, and diary files<br/>Preparation 05"] --> C["Standardize structures<br/>and audit source-value preservation"]
+  B["Checked light-exposure metrics<br/>Preparation 04"] --> D["Add site, daylight, and<br/>elapsed-time context"]
+  C --> E["Shared model inputs"]
+  D --> E
+  E --> F["Primary hypothesis-specific<br/>prepared dataset"]
+  G["Gap-timing-unaware<br/>prepared dataset"] --> H["Same hypothesis<br/>implementation"]
+  F --> I["Hypothesis analyses"]
+  H --> I
+```
 
 ```{r}
-#| label: build-temporal-sequence-provenance
+#| label: tbl-render-boundary
+#| tbl-cap: "Bounded operations permitted while this report renders."
 
-temporal_provenance <- build_temporal_sequence_provenance_artifacts(
-  root = root,
-  run_label = "full"
-)
-temporal_verification <-
-  verify_temporal_sequence_provenance_artifacts(
-    root = root,
-    stop_on_failure = TRUE
+render_boundary |>
+  dplyr::rename(
+    `During render` = .data$During_render,
+    `Interpretation` = .data$What_it_means
+  ) |>
+  prep_gt(
+    source_note = paste0(
+      "This table describes the page's execution boundary; producing ",
+      "scripts are not sourced or called."
+    )
+  ) |>
+  gt::cols_width(
+    `During render` ~ gt::pct(27),
+    Interpretation ~ gt::pct(73)
   )
-stopifnot(identical(temporal_verification$status, "PASS"))
 ```
+
+## 1. Standardize participant, questionnaire, and diary structures
+
+The first producing script,
+`scripts/pipeline/build_model_input_normalization.R`, reads only the fixed
+local files acquired in Preparation 05. Its function module,
+`scripts/pipeline/model_input_normalization.R`, places site identifiers,
+participant identifiers, labels, column types, and time representations into
+a consistent structure. Elapsed time is represented in Coordinated Universal
+Time (UTC); time-of-day fields retain the site's local clock time. This
+structural work is kept separate from later joins so that recorded values,
+missing values, and excluded free text can be checked before metrics and
+participant information meet.
+
+The procedure did not recalculate questionnaire totals or factor scores. The
+963 field-level value-preservation records all passed, and all 63 audited
+free-text fields were excluded from analytical RDS files without exporting
+their content.
+
+```{r}
+#| label: tbl-normalized-participant-inputs
+#| tbl-cap: "Standardized participant, questionnaire, and diary inputs stored before any model-specific selection."
+
+normalized_summary |>
+  prep_gt(
+    source_note = paste0(
+      "Stored manifest: `artifacts/12_manifests/",
+      "model_input_normalization.csv`."
+    )
+  ) |>
+  gt::fmt_integer(columns = c(Rows, Columns)) |>
+  gt::cols_width(
+    `Input type` ~ gt::pct(28),
+    Rows ~ gt::pct(9),
+    Columns ~ gt::pct(9),
+    `Stored file` ~ gt::pct(54)
+  )
+```
+
+Records without a complete interval remain in their prepared input file, but
+they cannot contribute to a calculation that requires both interval
+endpoints. The stored audit identifies 27 such light-exposure-diary records
+(one at RISE and 26 at THUAS) and one MPI sleep-diary record without a wake
+time.
+
+```{r}
+#| label: tbl-incomplete-diary-intervals
+#| tbl-cap: "Stored diary records that remain available descriptively but cannot support interval-based calculations."
+
+interval_issue_summary |>
+  prep_gt(
+    source_note = paste0(
+      "Read from `artifacts/06_model_data/normalized_inputs/audits/",
+      "interval_issue_audit.csv`; no interval is reconstructed during render."
+    )
+  ) |>
+  gt::fmt_integer(columns = Records) |>
+  gt::cols_width(
+    `Prepared input` ~ gt::pct(22),
+    Site ~ gt::pct(12),
+    Records ~ gt::pct(10),
+    `Why interval calculations cannot use the record` ~ gt::pct(56)
+  )
+```
+
+## 2. Keep the prepared-data comparison separate
+
+The next script, `scripts/pipeline/build_manuscript_prepared_data.R`, and its
+function module, `scripts/pipeline/manuscript_prepared_data.R`, assemble the
+gap-timing-unaware dataset independently of the primary dataset. That
+separation prevents a preparation difference from being erased when both are
+later passed through the same hypothesis implementation.
+
+The stored data cover participant-level, participant-day, 30-minute, and
+one-hour values. Exact metric-support hours cannot be recovered from these
+retained prepared artifacts; later tables therefore show those hours as
+unavailable rather than zero or a reconstructed estimate.
+
+```{r}
+#| label: tbl-gap-timing-unaware-artifacts
+#| tbl-cap: "Accepted data levels stored for the gap-timing-unaware dataset."
+
+gap_artifact_summary |>
+  prep_gt(
+    source_note = paste0(
+      "Stored manifest: `artifacts/12_manifests/",
+      "manuscript_prepared_data_artifacts.csv`. The internal filename is ",
+      "retained for provenance."
+    )
+  ) |>
+  gt::fmt_integer(columns = c(Rows, Columns)) |>
+  gt::cols_width(
+    `Stored data level` ~ gt::pct(22),
+    Rows ~ gt::pct(10),
+    Columns ~ gt::pct(10),
+    `Stored file` ~ gt::pct(58)
+  )
+```
+
+One objectively verified participant-identifier error is documented rather
+than silently changed: record DEV-056 assigns seven TUM exercise-diary rows
+to `TUM_S001` instead of the recorded `TUM_S101`. The correction did not
+change a scientific light value.
+
+```{r}
+#| label: tbl-gap-timing-unaware-correction
+#| tbl-cap: "Verified identifier correction recorded for the gap-timing-unaware dataset."
+
+correction_record |>
+  prep_gt(
+    source_note = paste0(
+      "Exact record: `artifacts/06_model_data/scenarios/",
+      "manuscript_prepared_data/correction_manifest.csv`."
+    )
+  ) |>
+  gt::fmt_integer(columns = `Diary rows`)
+```
+
+## 3. Add site and daylight context
+
+`scripts/pipeline/build_site_solar_context.R` reads the approved site
+coordinates and time zones and the local dates required by both prepared
+datasets. Its separate function module,
+`scripts/pipeline/site_solar_context.R`, stores civil dawn, civil dusk,
+photoperiod, and descriptive solar-noon information for 618 site-date
+combinations across nine sites, including four site-dates with a
+daylight-saving transition.
+
+Every merge uses site and local date as a many-to-one key: many measurement
+rows may use one site-date context record. All six joins retained their input
+row counts, and none lacked a matching site-date record.
+
+```{r}
+#| label: tbl-site-daylight-joins
+#| tbl-cap: "Row-preservation checks when site and daylight context was added to the primary metric files."
+
+site_join_summary |>
+  prep_gt(
+    source_note = paste0(
+      "Read from `artifacts/06_model_data/context/",
+      "site_solar_context_join_audit.csv`. Relationship: many measurement ",
+      "rows to one site-date record."
+    )
+  ) |>
+  gt::fmt_integer(
+    columns = c(
+      `Rows before join`, `Rows after join`,
+      `Participant-days`, `Unmatched rows`
+    )
+  ) |>
+  gt::tab_spanner(
+    label = "Join size",
+    columns = c(`Rows before join`, `Rows after join`)
+  ) |>
+  gt::cols_width(
+    Placement ~ gt::pct(12),
+    Resolution ~ gt::pct(13),
+    `Rows before join` ~ gt::pct(15),
+    `Rows after join` ~ gt::pct(15),
+    `Participant-days` ~ gt::pct(17),
+    `Unmatched rows` ~ gt::pct(15),
+    Check ~ gt::pct(13)
+  )
+```
+
+## 4. Preserve time of day and actual elapsed time
+
+Local clock time and elapsed time answer different questions. A 30-minute row
+labelled 08:00 represents 08:00 at every study site, which is useful for
+time-of-day comparisons. UTC records how much real time separated two rows,
+which is necessary for continuity and autocorrelation. The script
+`scripts/pipeline/build_temporal_sequence_provenance.R` and function module
+`scripts/pipeline/temporal_sequence_provenance.R` preserve both coordinates
+without changing melEDI values.
+
+When clocks move back, a local-clock interval may represent two real
+intervals; its stored local-clock outcome is their average. When clocks move
+forward, a local-clock interval can have no corresponding real interval.
+Only an unambiguous, usable real interval can continue an elapsed-time
+sequence. A real gap, unusable outcome, repeated autumn interval, or
+structural spring gap starts or interrupts a sequence.
 
 ```{r}
 #| label: tbl-temporal-sequence-provenance
-#| tbl-cap: "Checks linking local-clock rows to actual elapsed time."
+#| tbl-cap: "Stored links between local-clock outcomes and actual elapsed-time intervals."
 
-temporal_summary <- tibble::tibble(
-  check = c(
-    "Original intervals stored in UTC",
-    "Rows on the shared local-clock grid",
-    "Participant-days spanning the autumn clock change",
-    "Local-clock rows that average two real intervals",
-    "Participant-days spanning the spring clock change",
-    "Local-clock rows with no real interval during the spring gap",
-    "Original intervals without a one-to-one local-clock row",
-    "Intervals usable in continuous-sequence models",
-    "Starts of continuous sequences"
-  ),
-  value = c(
-    temporal_verification$source_bin_rows,
-    temporal_verification$wall_link_rows,
-    temporal_verification$fold_participant_days,
-    temporal_verification$fold_wall_rows,
-    temporal_verification$spring_gap_participant_days,
-    temporal_verification$spring_gap_wall_rows,
-    temporal_verification$non_one_to_one_source_bins,
-    temporal_verification$sequence_eligible_bins,
-    temporal_verification$sequence_starts
-  )
-)
-
-knitr::kable(temporal_summary)
-```
-
-Only rows with one unambiguous real interval receive a position in a continuous
-sequence. A real gap, a missing spring-clock interval, an unusable value or an
-averaged autumn-clock row starts a new sequence. H02 and H11 may still use
-local clock time as a predictor, but any autocorrelation term---which describes
-dependence between neighbouring observations---must follow actual elapsed
-time. This step prepares that information; it does not fit a model.
-
-## Combine data without choosing model samples
-
-The light-exposure metric files keep their original rows and order. Each
-measurement row receives one matching set of site/date information and one
-matching set of participant questionnaire information. The checks stop if a
-merge would unexpectedly duplicate or lose rows.
-
-No complete-case filtering or hypothesis-specific exclusion happens here.
-The diary files contribute only indicators showing whether data are available;
-the diary variables needed for a particular hypothesis are added later when
-that hypothesis dataset is prepared.
-
-```{r}
-#| label: build-base-model-data
-
-base_model_build <- build_base_model_data_artifacts(root = root)
-base_model_verification <- verify_base_model_data_artifacts(root = root)
-stopifnot(identical(base_model_verification$status, "PASS"))
-```
-
-```{r}
-#| label: base-model-data-summary
-
-base_file_labels <- c(
-  participant_metadata = "Participant information",
-  glasses_participant_day_context = "Near-eye daily metrics with site context",
-  chest_participant_day_context = "Chest daily metrics with site context",
-  glasses_participant = "Near-eye participant metrics",
-  chest_participant = "Chest participant metrics",
-  glasses_30_minute_context = "Near-eye 30-minute values with site context",
-  chest_30_minute_context = "Chest 30-minute values with site context",
-  glasses_one_hour_context = "Near-eye one-hour values with site context",
-  chest_one_hour_context = "Chest one-hour values with site context",
-  glasses_participant_day_enriched =
-    "Near-eye daily metrics with participant information",
-  chest_participant_day_enriched =
-    "Chest daily metrics with participant information",
-  glasses_participant_enriched =
-    "Near-eye participant metrics with participant information",
-  chest_participant_enriched =
-    "Chest participant metrics with participant information",
-  input_provenance = "Exact input-file record",
-  metric_registry_firewall = "Check of metrics allowed into models",
-  metric_key_join = "Check of metric identifiers",
-  modality_key_join = "Check of questionnaire and diary identifiers",
-  participant_availability =
-    "Availability of questionnaire and diary data by participant",
-  metadata_fields = "Data dictionary for participant information",
-  metric_metadata_availability =
-    "Availability of participant information for each metric file",
-  contract = "Checks required before hypothesis datasets are prepared"
-)
-
-base_file_summary <- base_model_verification$artifact_summary |>
-  dplyr::transmute(
-    `Prepared dataset or check` = dplyr::recode(
-      .data$artifact_id,
-      !!!base_file_labels
-    ),
-    Rows = .data$rows,
-    Columns = .data$columns,
-    Check = .data$status
-  )
-knitr::kable(
-  base_file_summary
-)
-
-participant_data_availability <- base_model_verification$anomaly_summary |>
-  dplyr::transmute(
-    Placement = dplyr::recode(
-      .data$placement,
-      glasses = "Near-eye",
-      chest = "Chest"
-    ),
-    `Questionnaire or diary source` = dplyr::recode(
-      .data$modality,
-      demographics = "Participant characteristics",
-      chronotype = "Chronotype questionnaire",
-      leba = "Light-exposure behaviour questionnaire",
-      vlsq8 = "Visual light sensitivity questionnaire",
-      exercisediary = "Exercise diary",
-      lightexposurediary = "Light-exposure diary",
-      sleepdiaries = "Sleep diary"
-    ),
-    `Participants with light metrics` = .data$metric_participants,
-    `Participants with matching source data` =
-      .data$metric_participants_present,
-    `Participants without matching source data` =
-      .data$metric_participants_absent
-  )
-knitr::kable(
-  participant_data_availability
-)
-```
-
-## Prepare the H01 data
-
-H01 compares 17 light-exposure metrics across sites. The file prepared here
-contains the outcome, site, day length, latitude and participant identifier
-needed for each H01 model. It also records why a row is excluded from a
-particular metric. No model is fitted in this step.
-
-Two analysis samples are prepared from the main dataset:
-
-- **all available near-eye data**, used for the primary analysis; and
-- **paired participant-days**, used to compare near-eye and chest measurements
-  on days available at both positions.
-
-IS and IV have one value per participant rather than one value per day. Their
-paired versions must therefore be recalculated from the same set of days at
-both positions; they are marked as unavailable until that calculation is
-implemented, rather than being approximated from unequal day sets.
-
-```{r}
-#| label: build-h01-model-data
-
-h01_build <- build_h01_model_data_artifacts(
-  root = root,
-  output_root = root
-)
-h01_verification <- verify_h01_model_data_artifacts(
-  root = root,
-  output_root = root
-)
-stopifnot(
-  h01_verification$status ==
-    "PASS_WITH_DECLARED_UNAVAILABLE_SCENARIO"
-)
-```
-
-```{r}
-#| label: tbl-h01-primary-sample
-#| tbl-cap: "Data available for each primary near-eye H01 model."
-
-h01_primary_sample <- h01_verification$primary_model_sample |>
-  dplyr::left_join(
-    h01_build$object$metric_contract |>
-      dplyr::select("metric_id", "manuscript_name"),
-    by = "metric_id",
-    relationship = "many-to-one"
-  ) |>
-  dplyr::arrange(
-    match(
-      .data$metric_id,
-      h01_build$object$metric_contract$metric_id
+temporal_summary |>
+  prep_gt(
+    source_note = paste0(
+      "Read from the RDS files in `artifacts/06_model_data/",
+      "temporal_provenance/`; the render does not rebuild the links."
     )
   ) |>
-  dplyr::transmute(
-    Metric = .data$manuscript_name,
-    Participants = .data$participants,
-    `Rows used by the model` = .data$model_observations,
-    `Participant-days contributing to the metric` =
-      .data$contributing_participant_days,
-    `Valid measurement hours contributing to the metric` =
-      round(.data$metric_support_valid_hours, 1),
-    `Expected measurement hours for that metric` =
-      round(.data$metric_support_expected_hours, 1),
-    Sites = .data$sites
+  gt::fmt_integer(columns = Value) |>
+  gt::cols_width(
+    `Stored check or outcome` ~ gt::pct(75),
+    Value ~ gt::pct(25)
   )
-
-knitr::kable(h01_primary_sample)
 ```
 
-The measurement hours in this table show how much recorded light data
-contributed to a derived outcome. They are not additional observations in the
-model. The H01 models use either participants or participant-days, as stated
-in the “Rows used by the model” column. The metric files do not currently
-export the exact contributing minutes for the brightest and darkest 10-hour
-means and midpoints, so those hour counts are shown as unavailable instead of
-being replaced with all recorded hours.
+## 5. Combine checked data without choosing a hypothesis sample
 
-## Prepare the manuscript-prepared-data sensitivity
+`scripts/pipeline/build_base_model_data.R` reads the checked metric files,
+standardized participant inputs, and site context. Its function module,
+`scripts/pipeline/base_model_data.R`, adds one matching participant record and
+one matching site/date record to each measurement row. It does not apply a
+complete-case filter or a hypothesis-specific exclusion. Instead, it records
+which questionnaire and diary inputs are available, allowing each hypothesis
+to state its own requirements later.
 
-The sensitivity dataset keeps the light-exposure values that were prepared
-for the manuscript and corrects only an objectively verified participant
-identifier in the exercise diary. It preserves the manuscript-prepared
-definitions of dose and MDER, because changing those definitions here would
-remove the preparation difference that this sensitivity is designed to test.
-The metric crosswalk states those differences explicitly.
-
-Both this dataset and the main dataset will be analysed with the same new
-H01--H11 implementation. The manuscript-generating model code is not part of
-this sensitivity.
-
-| Role | Prepared data | H01--H11 models | What the comparison answers |
-|---|---|---|---|
-| Main analysis | Data prepared with the audited rules | New implementation | Primary estimates and conclusions |
-| Manuscript-prepared-data sensitivity | Data prepared for the manuscript, with only indisputable data errors corrected | The same new implementation | How much the changed data preparation and metric calculation affect the new results |
-| Audit discussion only | Reported manuscript values and their generating code | Manuscript-generating implementation | Why a reported result differs; this is not a formal sensitivity scenario |
+The shared primary near-eye input contains
+`r dplyr::n_distinct(near_eye_grid$Id)` participants,
+`r dplyr::n_distinct(paste(near_eye_grid$Id, near_eye_grid$local_date))`
+participant-days, and `r format(nrow(near_eye_grid), big.mark = ",")`
+30-minute grid rows. The complementary chest input contains
+`r dplyr::n_distinct(chest_grid$Id)` participants,
+`r dplyr::n_distinct(paste(chest_grid$Id, chest_grid$local_date))`
+participant-days, and `r format(nrow(chest_grid), big.mark = ",")` rows. Chest
+measurements remain complementary; they are not pooled with the primary
+near-eye measurements.
 
 ```{r}
-#| label: build-manuscript-prepared-data
+#| label: tbl-shared-site-samples
+#| tbl-cap: "Participants, participant-days, and 30-minute grid rows in the shared primary inputs, by submitted-manuscript site."
 
-stopifnot(
-  manuscript_prepared_verification$status == "PASS",
-  manuscript_prepared_verification$model_implementation_id ==
-    "new_h01_h11"
-)
-
-h01_manuscript_prepared_build <-
-  build_h01_manuscript_prepared_data_artifacts(
-    root = root,
-    output_root = root
-  )
-h01_manuscript_prepared_verification <-
-  verify_h01_manuscript_prepared_data_artifacts(
-    root = root,
-    output_root = root
-  )
-stopifnot(
-  h01_manuscript_prepared_verification$status ==
-    paste0(
-      "PASS_WITH_DECLARED_UNAVAILABLE_SUPPORT_",
-      "AND_PAIRED_PARTICIPANT_METRICS"
-    ),
-  h01_manuscript_prepared_verification$model_implementation_id ==
-    h01_build$object$metadata$model_implementation_id,
-  h01_manuscript_prepared_verification$implementation_contract_sha256 ==
-    h01_build$object$metadata$implementation_contract_sha256,
-  h01_manuscript_prepared_verification$shared_implementation_sha256 ==
-    h01_build$object$metadata$shared_implementation_sha256
-)
-```
-
-```{r}
-#| label: tbl-manuscript-prepared-data
-#| tbl-cap: "Rows retained in the checked manuscript-prepared-data sensitivity inputs."
-
-manuscript_prepared_counts <- tibble::tibble(
-  `Type of value` = c(
-    "Participant-level metrics",
-    "Participant-day metrics",
-    "30-minute light values",
-    "One-hour light values"
-  ),
-  Rows = unname(
-    manuscript_prepared_verification$output_rows[c(
-      "participant_metrics",
-      "participant_day_metrics",
-      "thirty_minute_data",
-      "one_hour_data"
-    )]
-  )
-)
-knitr::kable(manuscript_prepared_counts)
-```
-
-```{r}
-#| label: tbl-h01-manuscript-prepared-sample
-#| tbl-cap: "Data available for each primary near-eye H01 model in the manuscript-prepared-data sensitivity."
-
-h01_manuscript_prepared_sample <-
-  h01_manuscript_prepared_verification$model_samples |>
-  dplyr::filter(
-    .data$placement == "glasses",
-    .data$scenario == "all_available"
-  ) |>
-  dplyr::left_join(
-    h01_manuscript_prepared_build$object$metric_contract |>
-      dplyr::select("metric_id", "manuscript_name"),
-    by = "metric_id",
-    relationship = "many-to-one"
-  ) |>
-  dplyr::arrange(
-    match(
-      .data$metric_id,
-      h01_manuscript_prepared_build$object$metric_contract$metric_id
+site_sample_gt <- site_samples |>
+  dplyr::select(-.data$site_code, -.data$color_hex) |>
+  prep_gt(
+    source_note = paste0(
+      "Calculated from the stored near-eye and chest RDS files in ",
+      "`artifacts/06_model_data/base/`. Admissible rows passed the stored ",
+      "30-minute support decision; no admissibility rule is rerun here."
     )
   ) |>
-  dplyr::transmute(
-    Metric = .data$manuscript_name,
-    Participants = .data$participants,
-    `Rows available to the model` = .data$model_observations,
-    `Participant-days contributing to the metric` =
-      .data$contributing_participant_days,
-    `Valid measurement hours contributing to the metric` =
-      "Not available from retained prepared artifacts",
-    Sites = .data$sites
+  gt::fmt_integer(columns = -Site) |>
+  gt::tab_spanner(
+    label = "Primary near-eye input",
+    columns = gt::starts_with("Near-eye")
+  ) |>
+  gt::tab_spanner(
+    label = "Complementary chest input",
+    columns = gt::starts_with("Chest")
+  ) |>
+  gt::cols_width(
+    Site ~ gt::pct(18),
+    gt::starts_with("Near-eye") ~ gt::pct(10.25),
+    gt::starts_with("Chest") ~ gt::pct(10.25)
   )
 
-knitr::kable(h01_manuscript_prepared_sample)
+for (row_index in seq_len(nrow(site_samples))) {
+  site_sample_gt <- site_sample_gt |>
+    gt::tab_style(
+      style = gt::cell_borders(
+        sides = "left",
+        color = site_samples$color_hex[row_index],
+        weight = gt::px(5)
+      ),
+      locations = gt::cells_body(rows = row_index)
+    )
+}
+
+site_sample_gt
 ```
 
-The table reports the prepared model frames, not the final fitted-model
-sample. Every fitted model will store its exact analysis frame and recheck its
-participants, participant-days or contributing days, observations and sites
-after any transformation or missing-value removal. Exact metric-support hours
-cannot be recovered from the retained manuscript-prepared metric artifacts,
-so they are shown as unavailable rather than as zero.
-
-When daylight saving time ends, the same local clock hour occurs twice.
-Following the manuscript preparation, measurements from those repeated hours
-are averaged into one local-hour value. This keeps every site on the same
-shared local-clock scale and prevents the repeated hour from contributing
-twice to a clock-time analysis. The underlying occurrence information is kept
-only to document how that average was formed.
-
-## Metric names used in the manuscript
-
-The code uses short internal identifiers to avoid ambiguity. Tables and figures
-use the familiar metric names and categories from the manuscript. Details such
-as coverage threshold, correction method, censoring or sensitivity analysis
-are shown in separate columns rather than being added to the metric name.
+All participants with near-eye or chest metrics have matching participant
+characteristics, chronotype, LEBA, VLSQ-8, and sleep-diary inputs. Exercise
+diary data are absent for three participants at each placement, and
+light-exposure diary data are absent for one participant at each placement.
+These are availability flags, not exclusions at this stage.
 
 ```{r}
-#| label: tbl-metric-display-registry
-#| tbl-cap: "Light-exposure metric names and categories used in the manuscript."
+#| label: tbl-participant-input-availability
+#| tbl-cap: "Availability of questionnaire and diary inputs among participants with stored light-exposure metrics."
 
-metric_display <- read_metric_display_registry(root) |>
+availability_summary |>
+  prep_gt(
+    groupname_col = "Placement",
+    source_note = paste0(
+      "Read from `artifacts/06_model_data/base/",
+      "participant_availability_audit.csv`; filtering_applied is FALSE for ",
+      "every participant record."
+    )
+  ) |>
+  gt::fmt_integer(
+    columns = c(
+      `Participants with light metrics`,
+      `Participants with matching input`,
+      `Participants without matching input`
+    )
+  ) |>
+  gt::cols_width(
+    `Questionnaire or diary input` ~ gt::pct(43),
+    `Participants with light metrics` ~ gt::pct(19),
+    `Participants with matching input` ~ gt::pct(19),
+    `Participants without matching input` ~ gt::pct(19)
+  )
+```
+
+## 6. Store the first hypothesis-specific inputs
+
+Once the H01 method was approved,
+`scripts/pipeline/build_h01_model_data.R` used the shared inputs and the H01
+metric contract to store outcomes, site and daylight predictors, participant
+identifiers, metric-specific inclusion records, and sample flow. Its function
+module is `scripts/pipeline/h01_model_data.R`. The corresponding adapter,
+`scripts/pipeline/build_h01_manuscript_prepared_data.R`, applies the same H01
+implementation contract to the gap-timing-unaware dataset through
+`scripts/pipeline/h01_manuscript_prepared_adapter.R`. Neither operation fits a
+model.
+
+H01 covers 17 metric contracts. The following tables report the all-available
+near-eye prepared frames. “Rows in prepared frame” is the potential input at
+this boundary, not a claim about the final fitted-model sample. Any later
+transformation or model-specific missing-value removal is rechecked and
+stored by the H01 analysis. Valid measurement hours describe the support from
+which a metric was derived; they are not additional model observations.
+
+```{r}
+#| label: tbl-h01-primary-prepared-samples
+#| tbl-cap: "Available records for the 17 primary near-eye H01 prepared frames."
+
+h01_primary_sample |>
+  prep_gt(
+    source_note = paste0(
+      "Read from `artifacts/06_model_data/H01/sample_flow.csv` and ",
+      "`artifacts/06_model_data/H01/metric_contract.csv`."
+    )
+  ) |>
+  gt::fmt_integer(
+    columns = c(
+      Participants, `Rows in prepared frame`,
+      `Contributing participant-days`, Sites
+    )
+  ) |>
+  gt::fmt_number(columns = `Valid measurement hours`, decimals = 1) |>
+  gt::cols_width(
+    Metric ~ gt::pct(31),
+    Participants ~ gt::pct(11),
+    `Rows in prepared frame` ~ gt::pct(14),
+    `Contributing participant-days` ~ gt::pct(17),
+    `Valid measurement hours` ~ gt::pct(17),
+    Sites ~ gt::pct(10)
+  )
+```
+
+For the brightest and darkest 10-hour means and their midpoints, the primary
+metric files do not export the exact contributing minutes; the corresponding
+hour cells remain unavailable. The gap-timing-unaware artifacts do not retain
+exact metric-support hours for any H01 metric, so the full column is shown as
+unavailable.
+
+```{r}
+#| label: tbl-h01-gap-prepared-samples
+#| tbl-cap: "Available records for the 17 gap-timing-unaware near-eye H01 prepared frames."
+
+h01_gap_sample |>
+  prep_gt(
+    source_note = paste0(
+      "Read from the sample-flow and metric-contract files under ",
+      "`artifacts/06_model_data/H01/scenarios/manuscript_prepared_data/`. ",
+      "Support hours are unavailable in the retained prepared artifacts."
+    )
+  ) |>
+  gt::fmt_integer(
+    columns = c(
+      Participants, `Rows in prepared frame`,
+      `Contributing participant-days`, Sites
+    )
+  ) |>
+  gt::fmt_number(columns = `Valid measurement hours`, decimals = 1) |>
+  gt::cols_width(
+    Metric ~ gt::pct(31),
+    Participants ~ gt::pct(11),
+    `Rows in prepared frame` ~ gt::pct(14),
+    `Contributing participant-days` ~ gt::pct(17),
+    `Valid measurement hours` ~ gt::pct(17),
+    Sites ~ gt::pct(10)
+  )
+```
+
+The H01 files also prepare paired participant-day comparisons between
+near-eye and chest measurements where possible. Interdaily stability and
+intradaily variability each produce one participant-level value from a series
+of days. Their paired versions would require recomputation from the same
+minute-level day set at both placements. They are therefore explicitly marked
+unavailable for both placements in both datasets—eight scenario records in
+total—instead of being approximated from unequal day sets.
+
+## 7. Describe composition before hypothesis fitting
+
+`scripts/pipeline/build_preanalysis_comparison.R` reads both stored
+preparations through `scripts/pipeline/preanalysis_comparison.R`. It records
+counts, distributions, key reconciliation, and paired descriptive
+comparisons. These outputs help readers see preparation differences before a
+hypothesis is tested; they are not hypothesis tests themselves.
+
+@fig-site-composition shows the near-eye participant composition used by this
+stored comparison. It is drawn during render from the paired source-data CSV,
+using the submitted-manuscript site names, order, and colours. The two panels
+use the same horizontal scale.
+
+```{r}
+#| label: fig-site-composition
+#| fig-cap: "Near-eye participants by study site in the primary and gap-timing-unaware datasets. Counts are descriptive inputs to the stored pre-analysis comparison, not fitted-model sample sizes."
+#| fig-alt: "Two stacked horizontal bar panels compare near-eye participant counts by study site. Each site has its submitted-manuscript colour and a count printed at the end of the bar. The primary and gap-timing-unaware datasets use the same horizontal scale."
+#| fig-width: 7.5
+#| fig-height: 6.8
+#| fig-dpi: 144
+#| out-width: "100%"
+
+ggplot(
+  figure_site_data,
+  aes(x = .data$n, y = .data$display_name, fill = .data$level)
+) +
+  geom_col(width = 0.68) +
+  geom_text(
+    aes(label = .data$n),
+    hjust = -0.22,
+    size = 3.2,
+    colour = "#222222"
+  ) +
+  facet_wrap(vars(.data$Dataset), ncol = 1, scales = "fixed") +
+  scale_fill_manual(
+    values = stats::setNames(site_registry$color_hex, site_registry$site),
+    guide = "none"
+  ) +
+  scale_x_continuous(
+    breaks = scales::pretty_breaks(n = 5),
+    expand = expansion(mult = c(0, 0.16))
+  ) +
+  labs(
+    x = "Participants with near-eye metrics",
+    y = NULL
+  ) +
+  theme_minimal(base_size = 10) +
+  theme(
+    axis.text = element_text(size = 9, colour = "#222222"),
+    axis.title = element_text(size = 10),
+    panel.grid.major.y = element_blank(),
+    panel.grid.minor = element_blank(),
+    strip.text = element_text(size = 10, face = "bold", hjust = 0),
+    strip.background = element_rect(fill = "#F2F2F2", colour = NA),
+    plot.margin = margin(8, 16, 8, 8)
+  )
+```
+
+[Download the source data for @fig-site-composition](../../artifacts/08_diagnostics/preanalysis_comparison/categorical_levels.csv).
+
+The figure uses a 7.5-inch by 6.8-inch canvas and 9–10 pt axis, tick, facet,
+and count labels before HTML scaling. Final-display typography, clipping,
+label wrapping, panel balance, bar distinguishability, and colour use are
+checked after the HTML render under REPORT-011.
+
+## 8. Verify provenance and hand off stored artifacts
+
+The page checked every file listed in the eight preparation manifests before
+displaying any result. A PASS means that the file existed and both its byte
+size and SHA-256 digital fingerprint matched the manifest; it does not mean
+that the render reran the producing calculation.
+
+```{r}
+#| label: tbl-manifest-identity
+#| tbl-cap: "File-identity checks read from the eight stored preparation manifests."
+
+manifest_summary |>
+  prep_gt(
+    source_note = paste0(
+      "Every listed file was hashed during render. No manifest or ",
+      "analytical artifact was written."
+    )
+  ) |>
+  gt::fmt_integer(
+    columns = c(
+      `Files listed`, `Files present`, `Size checks`, `SHA-256 checks`
+    )
+  ) |>
+  gt::tab_spanner(
+    label = "Files matching the manifest",
+    columns = c(`Files present`, `Size checks`, `SHA-256 checks`)
+  )
+```
+
+The producing scripts are listed below in execution order. Their separation
+is scientific provenance: each step has a narrower responsibility and a
+stored output that can be checked before the next step begins. Rendering this
+report reads those outputs only.
+
+```{r}
+#| label: tbl-script-execution-map
+#| tbl-cap: "Producing scripts and function modules in execution order; none is executed while this report renders."
+
+script_stage_labels <- c(
+  "Standardize participant inputs",
+  "Assemble gap-timing-unaware inputs",
+  "Add site and daylight context",
+  "Preserve elapsed-time provenance",
+  "Create shared model inputs",
+  "Store H01 primary frames",
+  "Store gap-timing-unaware H01 frames",
+  "Store pre-analysis displays"
+)
+
+wrap_provenance_path <- function(path) {
+  gsub("/", "/<wbr>", path, fixed = TRUE)
+}
+
+script_map |>
   dplyr::mutate(
-    analysis_unit = dplyr::recode(
-      .data$analysis_unit,
-      `participant-30-minute` = "30-minute observation",
-      `participant-hour` = "One-hour observation",
-      `participant-day` = "Participant-day",
-      participant = "Participant"
+    `Step and producing code` = paste0(
+      "**", .data$Step, ". ", script_stage_labels[.data$Step], "**<br>",
+      "**Script:** <code>",
+      wrap_provenance_path(.data$Producing_script),
+      "</code><br>",
+      "**Module:** <code>",
+      wrap_provenance_path(.data$Function_module),
+      "</code>"
     ),
-    analytical_role = dplyr::recode(
-      .data$analytical_role,
-      primary_outcome = "Primary outcome",
-      descriptive_only = "Descriptive result",
-      sensitivity_outcome = "Sensitivity result",
-      diagnostic_outcome = "Diagnostic result"
+    `Reads, operation, separation, and output` = paste0(
+      .data$Reads_and_operation,
+      "<br><br>**Stored output:** <code>",
+      wrap_provenance_path(.data$Stored_output),
+      "</code>"
     )
-  )
-knitr::kable(
-  metric_display[c(
-    "manuscript_name",
-    "abbreviation",
-    "manuscript_category",
-    "analysis_unit",
-    "display_unit",
-    "analytical_role",
-    "variant_label"
-  )],
-  col.names = c(
-    "Metric",
-    "Abbreviation",
-    "Category",
-    "One value per",
-    "Unit",
-    "How used",
-    "Analysis version"
-  )
-)
-```
-
-## Compare the manuscript-prepared and main datasets
-
-Before fitting any hypothesis model, we compare the data produced by the
-manuscript preparation with the newly prepared data for the main analysis.
-This is a descriptive comparison of available observations and distributions;
-it does not test a scientific hypothesis.
-
-A direct mapping means only that two variables have the same intended subject
-matter. It does not prove that they were calculated in exactly the same way.
-If a metric was newly defined or changed enough that a direct comparison would
-be misleading, the manuscript-prepared value is shown as “not applicable”
-rather than invented.
-
-The analysis stores a digital fingerprint for each input-file inventory. The
-comparison stops if either fingerprint changes, so results from a changed
-input cannot be mistaken for the version reviewed here.
-
-```{r}
-#| label: build-preanalysis-comparison
-
-expected_normalization_manifest_sha256 <-
-  "e3d484711abb54f69d63ff302e5a0329efda3fd0a8c85feaf9cc4f850005c9ab"
-expected_base_manifest_sha256 <-
-  "142d1044dd7e6a566e45e3a5c56033b1e8251e100c0d7c7523564c824950a0e4"
-
-stopifnot(
-  identical(
-    normalization_verification$normalization_manifest_sha256,
-    expected_normalization_manifest_sha256
-  ),
-  identical(
-    base_model_verification$manifest_sha256,
-    expected_base_manifest_sha256
-  )
-)
-
-preanalysis_build <- build_preanalysis_comparison_artifacts(
-  root = root,
-  output_root = root,
-  expected_normalization_manifest_sha256 =
-    expected_normalization_manifest_sha256,
-  expected_base_manifest_sha256 = expected_base_manifest_sha256
-)
-preanalysis_verification <- verify_preanalysis_comparison_artifacts(
-  root = root,
-  output_root = root,
-  expected_normalization_manifest_sha256 =
-    expected_normalization_manifest_sha256,
-  expected_base_manifest_sha256 = expected_base_manifest_sha256
-)
-stopifnot(identical(preanalysis_verification$status, "PASS"))
-```
-
-```{r}
-#| label: tbl-preanalysis-gate-summary
-#| tbl-cap: "Checks completed before comparing the manuscript-prepared and main datasets."
-
-preanalysis_gate_summary <- data.frame(
-  check = c(
-    "Overall check",
-    "Variables compared",
-    "Light-exposure metrics",
-    "Variable-by-placement combinations",
-    "Variables directly matched to the manuscript-prepared data",
-    "Variables without a meaningful manuscript-prepared counterpart",
-    "Files in the comparison inventory",
-    "Comparison-inventory digital fingerprint (SHA-256)"
-  ),
-  value = c(
-    preanalysis_verification$status,
-    preanalysis_verification$variables,
-    nrow(metric_display),
-    preanalysis_verification$overview_rows,
-    preanalysis_verification$applicable_variables,
-    preanalysis_verification$not_applicable_variables,
-    preanalysis_verification$artifacts,
-    preanalysis_verification$manifest_sha256
-  )
-)
-knitr::kable(preanalysis_gate_summary)
-```
-
-The complete comparison can be downloaded as
-[`comparison_overview.csv`](../../artifacts/08_diagnostics/preanalysis_comparison/comparison_overview.csv).
-It includes every metric and key analysis variable, with numbers of
-observations, participants and participant-days. For numerical variables it
-also reports the mean, median, spread and quantiles; for categorical variables
-it reports the proportion in each category. Complete numerical quantiles are in
-[`numeric_quantiles.csv`](../../artifacts/08_diagnostics/preanalysis_comparison/numeric_quantiles.csv),
-and complete category proportions are in
-[`categorical_levels.csv`](../../artifacts/08_diagnostics/preanalysis_comparison/categorical_levels.csv).
-
-```{r}
-#| label: tbl-preanalysis-count-comparison
-#| tbl-cap: "Available observations, participants and participant-days in the manuscript-prepared and main datasets."
-
-comparison_overview <- readr::read_csv(
-  preanalysis_build$paths$csv[["comparison_overview"]],
-  show_col_types = FALSE
-)
-
-display_placement <- function(value) {
-  dplyr::recode(
-    value,
-    all = "All placements",
-    glasses = "Near-eye",
-    chest = "Chest"
-  )
-}
-
-display_analysis_unit <- function(value) {
-  dplyr::recode(
-    value,
-    `30_minute` = "30-minute observation",
-    diary_interval = "Diary interval",
-    one_hour = "One-hour observation",
-    participant = "Participant",
-    participant_day = "Participant-day"
-  )
-}
-
-display_value_type <- function(value) {
-  dplyr::recode(
-    value,
-    numeric = "Numerical",
-    categorical = "Categorical"
-  )
-}
-
-display_comparability <- function(value) {
-  dplyr::recode(
-    value,
-    exact_field_key_and_scale_mapping =
-      "Yes: same field, records, and scale",
-    same_nominal_construct_changed_computation_admissibility_descriptive_only =
-      "Descriptive comparison only: calculation or data support changed",
-    changed_estimand_or_no_direct_mapping_no_numerical_comparison =
-      "No: definition changed or no matching manuscript-prepared value"
-  )
-}
-
-display_variant <- function(value) {
-  value
-}
-
-format_integer <- function(value) {
-  ifelse(is.na(value), "\u2014", format(value, trim = TRUE, scientific = FALSE))
-}
-
-format_number <- function(value) {
-  vapply(
-    value,
-    function(item) {
-      if (is.na(item)) {
-        return("\u2014")
-      }
-      if (item != 0 && (abs(item) >= 10000 || abs(item) < 0.001)) {
-        return(formatC(item, format = "e", digits = 2))
-      }
-      format(round(item, 3), trim = TRUE, scientific = FALSE)
-    },
-    character(1)
-  )
-}
-
-format_transition <- function(submitted, audited, delta, formatter) {
-  paste0(
-    formatter(submitted),
-    " \u2192 ",
-    formatter(audited),
-    " (\u0394 ",
-    formatter(delta),
-    ")"
-  )
-}
-
-count_comparison <- comparison_overview |>
-  dplyr::transmute(
-    Variable = .data$manuscript_name,
-    Variant = display_variant(.data$variant_label),
-    Placement = display_placement(.data$placement),
-    Unit = display_analysis_unit(.data$analysis_unit),
-    Type = display_value_type(.data$value_type),
-    estimable_n = format_transition(
-      .data$baseline_n_estimable,
-      .data$canonical_n_estimable,
-      .data$delta_n_estimable,
-      format_integer
-    ),
-    participants = format_transition(
-      .data$baseline_n_participants_observed,
-      .data$canonical_n_participants_observed,
-      .data$delta_n_participants_observed,
-      format_integer
-    ),
-    participant_days = format_transition(
-      .data$baseline_n_participant_days_observed,
-      .data$canonical_n_participant_days_observed,
-      .data$delta_n_participant_days_observed,
-      format_integer
-    ),
-    Comparability = display_comparability(.data$comparability_class)
-  )
-
-knitr::kable(
-  count_comparison,
-  col.names = c(
-    "Variable",
-    "Variant",
-    "Placement",
-    "Unit",
-    "Type",
-    "Available values: manuscript-prepared \u2192 main",
-    "Participants: manuscript-prepared \u2192 main",
-    "Participant-days: manuscript-prepared \u2192 main",
-    "Can the values be compared directly?"
-  )
-)
-```
-
-```{r}
-#| label: tbl-preanalysis-numeric-comparison
-#| tbl-cap: "Means, medians and distributions in the manuscript-prepared and main datasets."
-
-numeric_comparison <- comparison_overview |>
-  dplyr::filter(.data$value_type == "numeric") |>
-  dplyr::transmute(
-    Variable = .data$manuscript_name,
-    Variant = display_variant(.data$variant_label),
-    Placement = display_placement(.data$placement),
-    display_unit = .data$display_unit,
-    mean = paste0(
-      format_number(.data$baseline_mean),
-      " \u2192 ",
-      format_number(.data$canonical_mean)
-    ),
-    median = paste0(
-      format_number(.data$baseline_median),
-      " \u2192 ",
-      format_number(.data$canonical_median)
-    ),
-    iqr = paste0(
-      "[",
-      format_number(.data$baseline_q25),
-      ", ",
-      format_number(.data$baseline_q75),
-      "] \u2192 [",
-      format_number(.data$canonical_q25),
-      ", ",
-      format_number(.data$canonical_q75),
-      "]"
-    ),
-    largest_cumulative_difference = format_number(
-      .data$ecdf_max_distance
-    ),
-    average_shift_relative_to_iqr = format_number(
-      .data$wasserstein_1_iqr_scaled
+  ) |>
+  dplyr::select(
+    .data$`Step and producing code`,
+    .data$`Reads, operation, separation, and output`
+  ) |>
+  prep_gt(
+    source_note = paste0(
+      "Paths identify the external production code and accepted outputs; ",
+      "the render does not source these files."
     )
+  ) |>
+  gt::fmt_markdown(columns = gt::everything()) |>
+  gt::cols_width(
+    `Step and producing code` ~ gt::pct(38),
+    `Reads, operation, separation, and output` ~ gt::pct(62)
   )
-
-knitr::kable(
-  numeric_comparison,
-  col.names = c(
-    "Variable",
-    "Variant",
-    "Placement",
-    "Display unit",
-    "Mean: manuscript-prepared \u2192 main",
-    "Median: manuscript-prepared \u2192 main",
-    "Middle 50%: manuscript-prepared \u2192 main",
-    "Largest cumulative-distribution difference (0 = none)",
-    "Average distribution shift relative to the manuscript-prepared middle 50%"
-  )
-)
 ```
 
-```{r}
-#| label: tbl-preanalysis-categorical-comparison
-#| tbl-cap: "Category frequencies in the manuscript-prepared and main datasets."
+The following files and directories are the durable handoff from Preparation
+06. They—not values recalculated by this report—enter the hypothesis-specific
+analysis-preparation companions and model-fitting scripts.
 
-categorical_comparison <- comparison_overview |>
-  dplyr::filter(.data$value_type == "categorical") |>
-  dplyr::transmute(
-    Variable = .data$manuscript_name,
-    Variant = display_variant(.data$variant_label),
-    Placement = display_placement(.data$placement),
-    estimable_n = format_transition(
-      .data$baseline_n_estimable,
-      .data$canonical_n_estimable,
-      .data$delta_n_estimable,
-      format_integer
-    ),
-    total_variation_distance = format_number(
-      .data$total_variation_distance
-    ),
-    maximum_level_proportion_change = format_number(
-      .data$maximum_absolute_proportion_difference
+```{r}
+#| label: tbl-preparation06-handoff
+#| tbl-cap: "Stored Preparation 06 artifacts passed to later analysis stages."
+
+handoff_artifacts |>
+  dplyr::rename(
+    `Stored artifact` = .data$Stored_artifact,
+    `Exact path` = .data$Exact_path,
+    `Used next for` = .data$Next_use
+  ) |>
+  prep_gt(
+    source_note = paste0(
+      "H02–H11 inputs are added only after each hypothesis method is ",
+      "approved and are documented in their own analysis-preparation ",
+      "companions."
     )
+  ) |>
+  gt::cols_width(
+    `Stored artifact` ~ gt::pct(25),
+    `Exact path` ~ gt::pct(43),
+    `Used next for` ~ gt::pct(32)
   )
-
-knitr::kable(
-  categorical_comparison,
-  col.names = c(
-    "Variable",
-    "Variant",
-    "Placement",
-    "Available values: manuscript-prepared \u2192 main",
-    "Overall difference in category proportions",
-    "Largest change for any one category"
-  )
-)
-```
-
-For numerical variables, the largest cumulative-distribution difference
-describes the greatest separation between the two distributions at any value;
-it ranges from 0 (no observed difference) to 1 (complete separation). The
-average distribution shift is expressed relative to the manuscript-prepared
-interquartile range, which contains the middle 50% of those values.
-For categorical variables, the overall difference in category proportions
-ranges from 0 (identical proportions) to 1 (no overlap). These measures are
-descriptive flags for closer inspection, not hypothesis tests.
-
-The following panels show the same comparisons visually. They are analysis
-checks rather than submission figures, and the exact plotted values are saved
-beside each figure as a CSV file.
-
-```{r}
-#| label: fig-preanalysis-numeric-distributions
-#| fig-cap: "Numerical distributions in the manuscript-prepared and main datasets, shown on a common standardized scale."
-#| out-width: "100%"
-
-numeric_distribution_path <- normalizePath(
-  preanalysis_build$paths$figures[["numeric_distribution_overview"]],
-  winslash = "/",
-  mustWork = TRUE
-)
-stopifnot(file.exists(numeric_distribution_path))
-knitr::include_graphics(
-  numeric_distribution_path,
-  error = FALSE
-)
 ```
 
 ```{r}
-#| label: fig-preanalysis-categorical-distributions
-#| fig-cap: "Category proportions in the manuscript-prepared and main datasets."
-#| out-width: "100%"
+#| label: tbl-preparation06-environment
+#| tbl-cap: "Environment and execution boundary recorded for this review render."
 
-categorical_distribution_path <- normalizePath(
-  preanalysis_build$paths$figures[["categorical_distribution_overview"]],
-  winslash = "/",
-  mustWork = TRUE
-)
-stopifnot(file.exists(categorical_distribution_path))
-knitr::include_graphics(
-  categorical_distribution_path,
-  error = FALSE
-)
+environment_summary |>
+  prep_gt(
+    source_note = paste0(
+      "Rendering uses the project's R 4.6.1 library and the nathealth ",
+      "Quarto profile."
+    )
+  ) |>
+  gt::cols_width(
+    Component ~ gt::pct(38),
+    Value ~ gt::pct(62)
+  )
 ```
-
-## What happens next
-
-1. Check column structure, labels, identifiers, missing values, usable time
-   intervals and exact preservation of source values.
-2. Confirm that participant, site, participant-day and repeated-observation
-   identifiers are unique where expected.
-3. Add demographics, chronotype, VLSQ-8, LEBA, experience-sampling, exercise
-   and sleep variables, while checking that no merge duplicates or loses rows.
-4. Record variable definitions, units, categories and reference groups in a
-   data dictionary.
-5. Save one analysis dataset and one sample-flow table for each hypothesis.
-6. Create a paired sensor-placement dataset for participants with both
-   placements. This comparison does not pool chest measurements into the
-   primary near-eye analysis.

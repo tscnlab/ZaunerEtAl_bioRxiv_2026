@@ -1,187 +1,965 @@
 ---
-title: "Preparation 07: Example days from each study site"
-subtitle: "One-minute melEDI, daylight, diary periods, and declared non-wear"
+title: "Preparation 07: Inspect example days from each study site"
+subtitle: "A display-only check of prepared one-minute light exposure, daylight, diary periods, and declared non-wear"
+date: last-modified
+engine: knitr
+format:
+  html:
+    toc: true
+    code-fold: true
+    code-summary: "Show supporting R code"
 execute:
-  echo: true
-  warning: true
-  message: true
+  echo: false
+  warning: false
+  message: false
   error: false
-  freeze: false
+fig-cap-location: bottom
+tbl-cap-location: top
 ---
 
-## Purpose
-
-This page shows what the prepared one-minute data look like before any
-hypothesis model is fitted. It displays one participant-day from each study
-site, together with local daylight, diary-defined periods, and declared
-non-wear.
-
-The examples were chosen with a fixed random seed. A day could be selected
-only if it passed the main coverage rule, contained all 1,440 local-clock
-minutes, and had a complete diary sleep window with one visible sleep-window
-start and one wake time. The random selection was not repeated to find
-especially tidy or favourable examples.
-
-## Prepare the review page
-
 ```{r}
-#| label: setup-example-days
+#| label: setup-preparation-07
+#| include: false
 
-root_hint <- Sys.getenv("QUARTO_PROJECT_DIR", unset = getwd())
-source(file.path(root_hint, "scripts/pipeline/paths_io.R"))
-root <- project_root(root_hint)
-source(file.path(
-  root,
-  "scripts/pipeline/verify_prepared_day_showcase_artifacts.R"
-))
+library(digest)
+library(dplyr)
+library(ggplot2)
+library(gt)
+library(readr)
+library(scales)
+library(tibble)
 
-showcase_paths <- prepared_day_showcase_verifier_paths(root)
-verification <- verify_prepared_day_showcase_artifacts(root = root)
-if (!identical(verification$status, "PASS")) {
-  print(verification$failures)
-  stop("Example-day files did not pass verification.", call. = FALSE)
+root <- normalizePath(
+  Sys.getenv("QUARTO_PROJECT_DIR", unset = getwd()),
+  winslash = "/",
+  mustWork = TRUE
+)
+stopifnot(
+  getRversion() >= numeric_version("4.6.1"),
+  getRversion() < numeric_version("4.7.0")
+)
+
+absolute_path <- function(path) {
+  ifelse(grepl("^/", path), path, file.path(root, path))
 }
 
-selected_days <- readr::read_csv(
-  showcase_paths$selected_days,
-  show_col_types = FALSE,
-  progress = FALSE
+read_stored_csv <- function(path) {
+  full_path <- absolute_path(path)
+  stopifnot(file.exists(full_path))
+  readr::read_csv(full_path, show_col_types = FALSE, progress = FALSE)
+}
+
+assert_columns <- function(data, required, label) {
+  missing_columns <- setdiff(required, names(data))
+  if (length(missing_columns) > 0L) {
+    stop(
+      label,
+      " is missing required columns: ",
+      paste(missing_columns, collapse = ", ")
+    )
+  }
+  invisible(data)
+}
+
+file_sha256 <- function(path) {
+  digest::digest(file = absolute_path(path), algo = "sha256")
+}
+
+prep_gt <- function(data, source_note = NULL) {
+  output <- gt::gt(data) |>
+    gt::opt_row_striping() |>
+    gt::sub_missing(missing_text = "—") |>
+    gt::tab_options(
+      table.font.size = gt::px(13),
+      table.width = gt::pct(100),
+      data_row.padding = gt::px(4),
+      heading.align = "left",
+      source_notes.font.size = gt::px(11)
+    )
+  if (!is.null(source_note)) {
+    output <- output |>
+      gt::tab_source_note(gt::md(source_note))
+  }
+  output
+}
+
+wrap_path <- function(value) {
+  gsub("/", "/\u200b", value, fixed = TRUE)
+}
+
+wrap_hash <- function(value) {
+  gsub("(.{8})", "\\1\u200b", value, perl = TRUE)
+}
+
+format_minutes <- function(value) {
+  paste0(scales::comma(value, accuracy = 1), " min")
+}
+
+manifest_path <- "artifacts/12_manifests/prepared_day_showcase_artifacts.csv"
+expected_manifest_sha256 <-
+  "c5ca66b2a6ec4fabbe57d08135db7f365bcd123365caab6c987bcb2b62f7a322"
+current_manifest_sha256 <- file_sha256(manifest_path)
+stopifnot(identical(current_manifest_sha256, expected_manifest_sha256))
+
+manifest <- read_stored_csv(manifest_path)
+assert_columns(
+  manifest,
+  c(
+    "artifact_type", "path", "sha256", "bytes", "rows", "columns",
+    "producer", "seed", "coverage_input_sha256",
+    "solar_context_input_sha256", "site_metadata_input_sha256",
+    "r_version", "lightlogr_version", "ggplot2_version"
+  ),
+  "prepared-day showcase manifest"
 )
-eligible_counts <- readr::read_csv(
-  showcase_paths$eligible_day_counts,
-  show_col_types = FALSE,
-  progress = FALSE
+stopifnot(
+  nrow(manifest) == 6L,
+  !anyDuplicated(manifest$artifact_type),
+  length(unique(manifest$seed)) == 1L,
+  unique(manifest$seed) == 20260730L
 )
+
+listed_paths <- absolute_path(manifest$path)
+listed_present <- file.exists(listed_paths)
+listed_bytes <- rep(NA_real_, nrow(manifest))
+listed_hashes <- rep(NA_character_, nrow(manifest))
+listed_bytes[listed_present] <- file.info(listed_paths[listed_present])$size
+listed_hashes[listed_present] <- vapply(
+  listed_paths[listed_present],
+  function(path) digest::digest(file = path, algo = "sha256"),
+  character(1)
+)
+
+artifact_identity <- manifest |>
+  dplyr::mutate(
+    present = listed_present,
+    bytes_match = .data$present & listed_bytes == .data$bytes,
+    sha256_match = .data$present & listed_hashes == .data$sha256
+  )
+stopifnot(
+  all(artifact_identity$present),
+  all(artifact_identity$bytes_match),
+  all(artifact_identity$sha256_match)
+)
+
+selected_days <- read_stored_csv(
+  "artifacts/08_diagnostics/prepared_day_showcase/selected_days.csv"
+)
+eligible_counts <- read_stored_csv(
+  "artifacts/08_diagnostics/prepared_day_showcase/eligible_day_counts.csv"
+)
+selection_settings <- read_stored_csv(
+  "artifacts/08_diagnostics/prepared_day_showcase/selection_settings.csv"
+)
+source_data <- read_stored_csv(
+  "artifacts/11_source_data/prepared_day_showcase.csv"
+)
+site_display <- read_stored_csv("config/site_display_registry.csv")
+
+assert_columns(
+  selected_days,
+  c(
+    "site", "location", "participant", "local_date", "wake_time",
+    "sleep_preparation_time", "civil_dawn", "civil_dusk",
+    "valid_melEDI_minutes", "valid_melEDI_percent",
+    "declared_nonwear_minutes", "other_unavailable_minutes",
+    "eligible_days_at_site", "selection_seed"
+  ),
+  "stored selected participant-days"
+)
+assert_columns(
+  eligible_counts,
+  c("site", "eligible_participant_days"),
+  "stored eligible participant-day counts"
+)
+assert_columns(
+  selection_settings,
+  c("setting", "value"),
+  "stored selection settings"
+)
+assert_columns(
+  source_data,
+  c(
+    "site", "participant", "local_date", "clock_minute", "melEDI_lx",
+    "availability", "declared_nonwear", "brown_period",
+    "brown_reference_lx", "civil_dawn_wall_minute",
+    "civil_dusk_wall_minute", "solar_depression_deg", "observed_run",
+    "selection_seed"
+  ),
+  "stored one-minute figure source data"
+)
+assert_columns(
+  site_display,
+  c("site", "display_order", "display_name", "color_hex"),
+  "submitted site display registry"
+)
+
+csv_objects <- list(
+  selected_days_csv = selected_days,
+  eligible_day_counts_csv = eligible_counts,
+  selection_settings_csv = selection_settings,
+  plot_source_data_csv = source_data
+)
+csv_dimensions <- tibble::tibble(
+  artifact_type = names(csv_objects),
+  current_rows = vapply(csv_objects, nrow, integer(1)),
+  current_columns = vapply(csv_objects, ncol, integer(1))
+) |>
+  dplyr::left_join(
+    manifest |>
+      dplyr::select(
+        .data$artifact_type,
+        recorded_rows = .data$rows,
+        recorded_columns = .data$columns
+      ),
+    by = "artifact_type"
+  ) |>
+  dplyr::mutate(
+    dimensions_match =
+      .data$current_rows == .data$recorded_rows &
+      .data$current_columns == .data$recorded_columns
+  )
+stopifnot(all(csv_dimensions$dimensions_match))
+
+input_identity <- tibble::tribble(
+  ~Input, ~Path, ~`Recorded SHA-256`,
+  "Prepared near-eye minute data",
+  "artifacts/03_coverage/light_glasses_coverage.rds",
+  unique(manifest$coverage_input_sha256),
+  "Site- and date-specific daylight context",
+  "artifacts/06_model_data/context/site_solar_context.rds",
+  unique(manifest$solar_context_input_sha256),
+  "Site names, coordinates, and time zones",
+  "config/site_metadata.csv",
+  unique(manifest$site_metadata_input_sha256)
+) |>
+  dplyr::mutate(
+    `Current SHA-256` = vapply(.data$Path, file_sha256, character(1)),
+    Status = ifelse(
+      .data$`Recorded SHA-256` == .data$`Current SHA-256`,
+      "PASS",
+      "FAIL"
+    )
+  )
+stopifnot(all(input_identity$Status == "PASS"))
+
+eligible_consistency <- selected_days |>
+  dplyr::select(
+    .data$site,
+    selected_record = .data$eligible_days_at_site
+  ) |>
+  dplyr::inner_join(eligible_counts, by = "site")
+stopifnot(
+  nrow(selected_days) == 9L,
+  nrow(eligible_counts) == 9L,
+  nrow(eligible_consistency) == 9L,
+  all(
+    eligible_consistency$selected_record ==
+      eligible_consistency$eligible_participant_days
+  ),
+  nrow(source_data) == 12960L,
+  nrow(source_data) == 1440L * nrow(selected_days),
+  all(
+    as.integer(
+      table(
+        interaction(
+          source_data$site,
+          source_data$participant,
+          source_data$local_date,
+          drop = TRUE
+        )
+      )
+    ) == 1440L
+  ),
+  identical(sort(unique(selected_days$site)), sort(unique(site_display$site))),
+  length(unique(selected_days$selection_seed)) == 1L,
+  unique(selected_days$selection_seed) == 20260730L,
+  length(unique(source_data$selection_seed)) == 1L,
+  unique(source_data$selection_seed) == 20260730L
+)
+
+site_order <- site_display |>
+  dplyr::arrange(.data$display_order)
+selection_with_display <- selected_days |>
+  dplyr::inner_join(site_order, by = "site") |>
+  dplyr::arrange(.data$display_order) |>
+  dplyr::mutate(
+    panel_label = paste0(
+      .data$display_name,
+      "\n",
+      .data$participant,
+      " · ",
+      as.character(.data$local_date)
+    )
+  )
+panel_levels <- selection_with_display$panel_label
+
+plot_data <- source_data |>
+  dplyr::inner_join(
+    selection_with_display |>
+      dplyr::select(
+        .data$site,
+        .data$display_order,
+        .data$display_name,
+        .data$color_hex,
+        .data$panel_label
+      ),
+    by = "site"
+  ) |>
+  dplyr::mutate(
+    panel_label = factor(.data$panel_label, levels = panel_levels),
+    state_display = dplyr::if_else(
+      .data$declared_nonwear,
+      "Declared non-wear",
+      .data$brown_period
+    )
+  )
+
+solar_panels <- plot_data |>
+  dplyr::distinct(
+    .data$site,
+    .data$panel_label,
+    .data$civil_dawn_wall_minute,
+    .data$civil_dusk_wall_minute
+  )
+civil_night <- dplyr::bind_rows(
+  solar_panels |>
+    dplyr::transmute(
+      .data$site,
+      .data$panel_label,
+      xmin = 0,
+      xmax = .data$civil_dawn_wall_minute
+    ),
+  solar_panels |>
+    dplyr::transmute(
+      .data$site,
+      .data$panel_label,
+      xmin = .data$civil_dusk_wall_minute,
+      xmax = 1440
+    )
+)
+
+state_colours <- c(
+  "Waking daytime" = "#80AFC4",
+  "Three hours before sleep" = "#F2B35F",
+  "Sleep" = "#2F4054",
+  "Declared non-wear" = "#E13B2D"
+)
+
+make_showcase_plot <- function(sites, show_legend = FALSE) {
+  display_data <- plot_data |>
+    dplyr::filter(.data$site %in% sites)
+  display_night <- civil_night |>
+    dplyr::filter(.data$site %in% sites)
+
+  ggplot2::ggplot(display_data) +
+    ggplot2::geom_rect(
+      data = display_night,
+      ggplot2::aes(
+        xmin = .data$xmin,
+        xmax = .data$xmax,
+        ymin = -Inf,
+        ymax = Inf
+      ),
+      inherit.aes = FALSE,
+      fill = "#244B78",
+      alpha = 0.10
+    ) +
+    ggplot2::geom_tile(
+      ggplot2::aes(
+        x = .data$clock_minute,
+        y = -0.25,
+        fill = .data$state_display
+      ),
+      width = 1.05,
+      height = 0.50
+    ) +
+    ggplot2::geom_step(
+      ggplot2::aes(
+        x = .data$clock_minute,
+        y = .data$brown_reference_lx,
+        group = .data$site
+      ),
+      colour = "#555555",
+      linewidth = 0.45,
+      linetype = "22",
+      alpha = 0.9
+    ) +
+    ggplot2::geom_line(
+      ggplot2::aes(
+        x = .data$clock_minute,
+        y = .data$melEDI_lx,
+        group = interaction(.data$site, .data$observed_run)
+      ),
+      colour = "#202020",
+      linewidth = 0.30,
+      na.rm = TRUE
+    ) +
+    ggplot2::geom_point(
+      ggplot2::aes(
+        x = .data$clock_minute,
+        y = .data$melEDI_lx
+      ),
+      colour = "#202020",
+      size = 0.22,
+      alpha = 0.65,
+      na.rm = TRUE
+    ) +
+    ggplot2::facet_wrap(
+      ggplot2::vars(.data$panel_label),
+      nrow = 1,
+      drop = TRUE
+    ) +
+    ggplot2::scale_x_continuous(
+      breaks = seq(0, 1200, by = 240),
+      labels = sprintf("%02d:00", seq(0, 20, by = 4)),
+      limits = c(0, 1440),
+      expand = c(0, 0)
+    ) +
+    ggplot2::scale_y_continuous(
+      trans = LightLogR::symlog_trans(),
+      breaks = c(0, 1, 10, 250, 1000, 10000, 100000),
+      labels = scales::label_number(big.mark = "\u2009", accuracy = 1),
+      expand = ggplot2::expansion(mult = c(0.01, 0.03))
+    ) +
+    ggplot2::scale_fill_manual(
+      values = state_colours,
+      breaks = names(state_colours),
+      name = "Diary period and declared non-wear"
+    ) +
+    ggplot2::coord_cartesian(ylim = c(-0.5, 100000)) +
+    ggplot2::labs(
+      x = "Local clock time",
+      y = "melEDI (lx; one-minute values)"
+    ) +
+    ggplot2::guides(
+      fill = ggplot2::guide_legend(nrow = 1, byrow = TRUE)
+    ) +
+    ggplot2::theme_minimal(base_size = 10.5) +
+    ggplot2::theme(
+      legend.position = if (show_legend) "bottom" else "none",
+      legend.title = ggplot2::element_text(size = 9.5),
+      legend.text = ggplot2::element_text(size = 9),
+      strip.background = ggplot2::element_rect(
+        fill = "#F3F4F6",
+        colour = "#D1D5DB",
+        linewidth = 0.4
+      ),
+      strip.text = ggplot2::element_text(
+        size = 9.5,
+        face = "bold",
+        lineheight = 1.05,
+        margin = ggplot2::margin(4, 3, 4, 3)
+      ),
+      axis.text = ggplot2::element_text(size = 9),
+      axis.title = ggplot2::element_text(size = 10),
+      panel.grid.minor = ggplot2::element_blank(),
+      panel.spacing = grid::unit(8, "pt"),
+      plot.margin = ggplot2::margin(5, 7, 5, 5, "pt")
+    )
+}
+
+current_checks <- tibble::tribble(
+  ~Check, ~Result, ~Status,
+  "Showcase manifest identity",
+  "The current manifest SHA-256 matches the accepted value.",
+  "PASS",
+  "Three exact scientific inputs",
+  paste0(sum(input_identity$Status == "PASS"), " / 3 SHA-256 checks match."),
+  ifelse(all(input_identity$Status == "PASS"), "PASS", "FAIL"),
+  "Six manifest-listed display files",
+  paste0(sum(artifact_identity$present), " / 6 files are present."),
+  ifelse(all(artifact_identity$present), "PASS", "FAIL"),
+  "Stored byte sizes",
+  paste0(sum(artifact_identity$bytes_match), " / 6 sizes match the manifest."),
+  ifelse(all(artifact_identity$bytes_match), "PASS", "FAIL"),
+  "Stored file fingerprints",
+  paste0(sum(artifact_identity$sha256_match), " / 6 SHA-256 checks match."),
+  ifelse(all(artifact_identity$sha256_match), "PASS", "FAIL"),
+  "Four stored CSV dimensions",
+  paste0(sum(csv_dimensions$dimensions_match), " / 4 row-and-column checks match."),
+  ifelse(all(csv_dimensions$dimensions_match), "PASS", "FAIL"),
+  "Selected-day structure",
+  "Nine sites × 1,440 local-clock minutes = 12,960 rows.",
+  "PASS",
+  "Fixed seed recorded in stored outputs",
+  "Seed 20260730 is consistent in the selection and one-minute source data.",
+  "PASS"
+)
+stopifnot(all(current_checks$Status == "PASS"))
 ```
+
+## Purpose and position in the preparation chain
+
+This final preparation page is a **display-only inspection** of the prepared
+one-minute data. It shows one participant-day from each study site before any
+hypothesis model is fitted. The profiles combine melanopic equivalent daylight
+illuminance (melEDI; lx), local daylight, diary-defined periods, and declared
+non-wear so that readers can see what the accepted minute-level records look
+like.
+
+The exact scientific inputs are the prepared near-eye minute data from
+Preparation 02, the site- and date-specific daylight context assembled in
+Preparation 06, and the site metadata used to interpret local time. A fixed
+selection and its display files were produced separately by
+`scripts/pipeline/build_prepared_day_showcase.R`. **None of the Preparation 07
+selection, source-data, or figure files enters an H01–H11 model.** The
+hypothesis analyses receive their stored inputs from Preparation 06. There is
+no hypothesis-analysis handoff from this page.
+
+::: {.callout-note title="What is calculated during this render?"}
+This report reads the stored selection, settings, one-minute figure source
+data, display manifest, and site display registry. It calculates lightweight
+counts for the tables, compares current file sizes and SHA-256 fingerprints
+with the manifest, hashes—but does not open—the prepared coverage and daylight
+RDS inputs, and redraws the profiles from the stored source-data CSV for a
+more readable page layout. It does not rerun the fixed-seed selection, reload
+the prepared coverage data, rebuild any accepted file, recalculate a metric,
+fit a model, or call the independent production verifier.
+:::
+
+```{mermaid}
+%%| label: fig-example-day-chain
+%%| fig-cap: "Position of Preparation 07 in the data-to-analysis chain. It makes a display from accepted preparation artifacts but supplies no model input."
+%%| fig-alt: "Prepared near-eye minute data, stored daylight context, and site metadata feed a fixed-seed display builder. Its stored selection, source data, and figures feed only the Preparation 07 inspection page; an explicit endpoint states that there is no hypothesis-analysis handoff."
+flowchart LR
+  A["Prepared near-eye minutes<br/>Preparation 02"] --> D["Fixed-seed display build"]
+  B["Site and date daylight context<br/>Preparation 06"] --> D
+  C["Site metadata<br/>local time interpretation"] --> D
+  D --> E["Stored selection, source data,<br/>PNG, SVG, and manifest"]
+  E --> F["Preparation 07<br/>reader-facing inspection"]
+  F -. "display only" .-> G["No hypothesis-analysis handoff"]
+```
+
+## Exact inputs
+
+The display manifest has SHA-256
+`r current_manifest_sha256`. It records the three exact preparation inputs
+used when the example days were selected and plotted. The render confirmed
+that the current files have those same fingerprints without loading the two
+RDS data objects.
+
+```{r}
+#| label: tbl-example-day-inputs
+#| tbl-cap: "Exact scientific inputs recorded by the current example-day manifest."
+
+input_identity |>
+  dplyr::transmute(
+    .data$Input,
+    Path = wrap_path(.data$Path),
+    `Recorded and current SHA-256` = wrap_hash(.data$`Current SHA-256`),
+    .data$Status
+  ) |>
+  prep_gt(
+    source_note = paste(
+      "Only file identity is checked during render; the prepared RDS inputs",
+      "are not opened or recalculated."
+    )
+  ) |>
+  gt::cols_width(
+    Input ~ gt::pct(27),
+    Path ~ gt::pct(34),
+    `Recorded and current SHA-256` ~ gt::pct(31),
+    Status ~ gt::pct(8)
+  ) |>
+  gt::tab_style(
+    style = gt::cell_text(weight = "bold", color = "#1B6E3C"),
+    locations = gt::cells_body(columns = Status)
+  )
+```
+
+## How the example days were produced
+
+The display has its own narrow production workflow so that an illustrative
+choice cannot silently alter the prepared data. The producer reads accepted
+inputs and writes only display artifacts. The independent verifier is kept in
+a separate module and does not source the producer, allowing it to reconstruct
+the selection and compare the stored outputs by a different route.
+
+```{r}
+#| label: tbl-example-day-scripts
+#| tbl-cap: "Producing and verification scripts in execution order; none is executed while this report renders."
+
+script_map <- tibble::tribble(
+  ~Step, ~Script, ~`What it does and why it is separate`,
+  "1", "scripts/pipeline/build_prepared_day_showcase.R",
+  paste(
+    "Production driver. It starts the producer, then the independent",
+    "verifier, and stops if verification does not pass."
+  ),
+  "2", "scripts/pipeline/prepared_day_showcase.R",
+  paste(
+    "Reads the accepted near-eye coverage object, daylight context, and",
+    "site metadata; identifies eligible days; selects one per site with",
+    "seed 20260730; and writes the selection, settings, source data, PNG,",
+    "SVG, and manifest. Its output is illustrative, not analytical input."
+  ),
+  "3", "scripts/pipeline/verify_prepared_day_showcase_artifacts.R",
+  paste(
+    "Independently reopens the scientific inputs and display files; checks",
+    "the artifact set and fingerprints; reproduces the fixed-seed choice;",
+    "and compares minute values, non-wear, daylight, and figure files. It",
+    "writes nothing and is not called by this report."
+  )
+)
+
+script_map |>
+  dplyr::mutate(Script = wrap_path(.data$Script)) |>
+  prep_gt(
+    source_note = paste(
+      "The full production verifier is deliberately not rerun here because",
+      "it would reload prepared data and reconstruct the selection."
+    )
+  ) |>
+  gt::cols_width(
+    Step ~ gt::px(48),
+    Script ~ gt::pct(32),
+    `What it does and why it is separate` ~ gt::pct(60)
+  ) |>
+  gt::cols_align(align = "center", columns = Step)
+```
+
+### Eligibility and selection rules
+
+A participant-day could enter the selection pool only if it passed the general
+coverage rules from Preparation 02: at least 50% valid observations within
+each summarized hour and at least 80% valid observations across the full
+24-hour day. It also needed all 1,440 local-clock minutes and one complete
+diary sleep interval with a visible sleep start and wake transition. One day
+per site was then chosen with fixed seed 20260730; the selection was not
+repeated to find especially tidy or favourable profiles.
+
+```{r}
+#| label: tbl-example-day-rules
+#| tbl-cap: "Stored rules used to define and display eligible example days."
+
+rule_labels <- c(
+  selection_seed = "Reproducible selection",
+  placement = "Measurement placement",
+  coverage_rule = "General coverage requirement",
+  sleep_timing_requirement = "Diary timing requirement",
+  sleep_authority = "Sleep definition",
+  nonwear_display_rule = "Declared non-wear",
+  photoperiod_definition = "Daylight definition",
+  plot_time_basis = "Time axis"
+)
+
+rule_explanations <- c(
+  selection_seed = "One draw per site with fixed random seed 20260730.",
+  placement = "Near-eye measurements are shown while awake; the prepared sleep interval uses the bedside context.",
+  coverage_rule = "At least 50% valid within each summarized hour and at least 80% valid across the 24-hour day.",
+  sleep_timing_requirement = "Exactly one visible diary sleep start and one wake transition from a complete diary interval.",
+  sleep_authority = "The sleep diary defines the interval from sleep preparation to wake.",
+  nonwear_display_rule = "Wear-log ‘off’ outside diary-defined sleep is displayed as declared non-wear.",
+  photoperiod_definition = "Civil dawn to civil dusk, when the Sun is no more than 6° below the horizon.",
+  plot_time_basis = "Local wall-clock minute for display; the corresponding UTC time remains in the source data."
+)
+
+selection_settings |>
+  dplyr::filter(.data$setting %in% names(rule_labels)) |>
+  dplyr::mutate(
+    Rule = unname(rule_labels[.data$setting]),
+    `Scientific meaning` = unname(rule_explanations[.data$setting])
+  ) |>
+  dplyr::select(.data$Rule, .data$`Scientific meaning`) |>
+  prep_gt(
+    source_note = paste(
+      "These explanations translate the exact stored settings in",
+      "artifacts/08_diagnostics/prepared_day_showcase/selection_settings.csv."
+    )
+  ) |>
+  gt::cols_width(
+    Rule ~ gt::pct(28),
+    `Scientific meaning` ~ gt::pct(72)
+  )
+```
+
+The 80% daily rule covers the complete 24-hour measurement cycle. It combines
+near-eye measurements while participants were awake with bedside measurements
+during the diary-defined sleep interval. Retaining both contexts preserves the
+full day; it does not imply that the bedside sleep measurement was made at the
+eye.
 
 ## Selected participant-days
 
-The 80% daily rule applies to the complete 24-hour measurement cycle. It
-combines near-eye measurements while participants were awake with bedside
-measurements during the diary-defined sleep window. This is an intentional
-way to retain information across the full day; it does not imply that the
-bedside sleep measurement was made at the eye.
+The two compact tables separate timing from data availability so that neither
+has to be compressed into narrow cells. Submitted site names, order, and colour
+markers come from `config/site_display_registry.csv`.
 
 ```{r}
 #| label: tbl-example-day-selection
-#| tbl-cap: "Participant-days selected with the fixed random seed."
+#| tbl-cap: "Participant-days selected with fixed seed 20260730, in submitted site order."
 
-selection_table <- selected_days |>
+selection_table <- selection_with_display |>
   dplyr::transmute(
-    Site = paste0(.data$location, " (", .data$site, ")"),
+    Site = paste0(
+      "<span style=\"color:",
+      .data$color_hex,
+      "\" aria-hidden=\"true\">●</span> ",
+      .data$display_name
+    ),
     Participant = .data$participant,
     Date = as.character(.data$local_date),
-    `Diary sleep-window start` = .data$sleep_preparation_time,
+    `Diary sleep start` = .data$sleep_preparation_time,
     Wake = .data$wake_time,
-    `Civil dawn–dusk` = paste0(.data$civil_dawn, "–", .data$civil_dusk),
-    `Valid melEDI` = sprintf(
-      "%s min (%.1f%%)",
-      .data$valid_melEDI_minutes,
-      .data$valid_melEDI_percent
-    ),
-    `Declared non-wear` = paste0(
-      .data$declared_nonwear_minutes,
-      " min"
-    ),
-    `Other unavailable` = paste0(
-      .data$other_unavailable_minutes,
-      " min"
-    ),
-    `Eligible days at site` = .data$eligible_days_at_site
+    `Civil dawn–dusk` = paste0(.data$civil_dawn, "–", .data$civil_dusk)
   )
 
-knitr::kable(selection_table, align = "llcccccccc")
+selection_table |>
+  prep_gt(
+    source_note = paste(
+      "A coloured dot identifies the registered site colour; sleep and",
+      "daylight times are local wall-clock times."
+    )
+  ) |>
+  gt::fmt_markdown(columns = Site) |>
+  gt::cols_align(
+    align = "center",
+    columns = c(Date, `Diary sleep start`, Wake, `Civil dawn–dusk`)
+  ) |>
+  gt::cols_width(
+    Site ~ gt::pct(22),
+    Participant ~ gt::pct(19),
+    Date ~ gt::pct(15),
+    `Diary sleep start` ~ gt::pct(15),
+    Wake ~ gt::pct(11),
+    `Civil dawn–dusk` ~ gt::pct(18)
+  )
 ```
 
-The table reports the actual number of one-minute melEDI values shown for
-each day. Declared non-wear and other unavailable minutes remain missing; the
-plot does not connect the line across those gaps. The 50% hourly requirement
-does not remove observed one-minute values from this figure. It is used only
-when an hourly summary is calculated.
+```{r}
+#| label: tbl-example-day-availability
+#| tbl-cap: "Observed melEDI and unavailable minutes in the nine selected days."
+
+availability_table <- selection_with_display |>
+  dplyr::transmute(
+    Site = paste0(
+      "<span style=\"color:",
+      .data$color_hex,
+      "\" aria-hidden=\"true\">●</span> ",
+      .data$display_name
+    ),
+    `Valid melEDI` = paste0(
+      scales::comma(.data$valid_melEDI_minutes, accuracy = 1),
+      " min (",
+      scales::percent(.data$valid_melEDI_percent / 100, accuracy = 0.1),
+      ")"
+    ),
+    `Declared non-wear` = format_minutes(
+      .data$declared_nonwear_minutes
+    ),
+    `Other unavailable` = format_minutes(
+      .data$other_unavailable_minutes
+    ),
+    `Eligible pool at site` = scales::comma(
+      .data$eligible_days_at_site,
+      accuracy = 1
+    )
+  )
+
+availability_table |>
+  prep_gt(
+    source_note = paste0(
+      "Across the displayed days, ",
+      scales::comma(sum(selected_days$valid_melEDI_minutes), accuracy = 1),
+      " of 12,960 minutes have valid melEDI; ",
+      scales::comma(
+        sum(selected_days$declared_nonwear_minutes),
+        accuracy = 1
+      ),
+      " are declared non-wear and ",
+      scales::comma(
+        sum(selected_days$other_unavailable_minutes),
+        accuracy = 1
+      ),
+      " are unavailable for another reason."
+    )
+  ) |>
+  gt::fmt_markdown(columns = Site) |>
+  gt::cols_align(
+    align = "center",
+    columns = c(
+      `Valid melEDI`,
+      `Declared non-wear`,
+      `Other unavailable`,
+      `Eligible pool at site`
+    )
+  ) |>
+  gt::cols_width(
+    Site ~ gt::pct(24),
+    `Valid melEDI` ~ gt::pct(23),
+    `Declared non-wear` ~ gt::pct(18),
+    `Other unavailable` ~ gt::pct(18),
+    `Eligible pool at site` ~ gt::pct(17)
+  )
+```
+
+The valid share ranges from
+`r scales::percent(min(selected_days$valid_melEDI_percent) / 100, accuracy = 0.1)`
+to
+`r scales::percent(max(selected_days$valid_melEDI_percent) / 100, accuracy = 0.1)`.
+All nine selected days therefore remain above the 80% daily threshold. A zero
+melEDI value is a measurement and remains visible. Declared non-wear and other
+unavailable minutes remain missing, so the exposure line is not connected
+across them. The 50% hourly rule governs hourly summaries; it does not erase
+an observed one-minute value from this inspection.
 
 ## One-minute profiles
 
-![One randomly selected qualifying participant-day from each site. The black
-trace is the prepared one-minute melEDI series. Dark blue background shading
-marks civil night. The opaque strip below zero shows waking daytime, the three
-hours before sleep, diary-defined sleep, and declared non-wear. The dashed step
-shows the 250 lx, 10 lx, and 1 lx contextual reference values for those three
-diary periods.](../../artifacts/10_figures/prepared_day_showcase.png){#fig-example-days
-fig-alt="Nine panels, one per study site, show one-minute melEDI across a local
-24-hour day. A coloured strip below each panel marks waking daytime in blue,
-the three hours before sleep in orange, sleep in dark navy, and declared
-non-wear in red. Translucent dark blue background marks civil night. Black
-exposure traces and gaps differ across sites and participant-days."
-width="100%"}
-
-### How to read the figure
-
-- The black line and points are one-minute melEDI values. Zero is a measured
-  value and is retained; a blank segment means that no analysis-ready melEDI
-  value was available because the record or signal was missing or invalid, or
-  because the complete day failed the 80% rule. A partly observed hour is not
-  blanked merely because it contains fewer than 30 valid minutes.
-- The background marks photoperiod: the unshaded interval is civil day and the
-  translucent dark-blue interval is civil night, when the Sun was more than
-  6° below the horizon.
-- The opaque strip below zero shows the daily periods used in the analysis:
-  waking daytime, the three hours before sleep, and the diary-defined sleep
-  window. “Brown period” is the technical variable name for these three
-  periods.
-- Red sections overwrite the same strip where the wear log recorded “off”
-  outside the diary-defined sleep window. Wear-log entries do not determine
-  sleep.
-- The dashed step is a contextual reference, not a fitted value: 250 lx
-  during waking daytime, 10 lx in the three hours before sleep, and 1 lx
-  during sleep.
-
-## Checks completed
-
-The display was checked against the prepared one-minute data rather than
-against a manually copied figure. A SHA-256 checksum is a digital fingerprint
-that changes if a file changes.
+The exact 12,960 rows shown below are available as the paired
+[figure source-data CSV](../../artifacts/11_source_data/prepared_day_showcase.csv).
+The accepted production figure is also stored as
+[PNG](../../artifacts/10_figures/prepared_day_showcase.png) and
+[vector SVG](../../artifacts/10_figures/prepared_day_showcase.svg). For this
+HTML page, the same stored source data are split into three three-panel figures
+so that axes, times, participant labels, and annotations remain readable at
+the final display width.
 
 ```{r}
-#| label: tbl-example-day-verification
-#| tbl-cap: "Independent checks of the example-day files."
+#| label: fig-example-days-1
+#| fig-cap: "Example days 1–3 in submitted site order. The black trace and points are stored one-minute melEDI; dark-blue shading marks civil night; the strip below zero marks waking daytime, the three hours before sleep, diary-defined sleep, and declared non-wear. The dashed step gives contextual values of 250 lx, 10 lx, and 1 lx for those three diary periods."
+#| fig-alt: "Three panels show one-minute melEDI for selected participant-days in Borås, Delft, and Dortmund. Each panel spans a local 24-hour day. Black exposure traces vary over the day and contain gaps where values are unavailable. Dark-blue background marks civil night, and a coloured strip below zero marks waking daytime, the three hours before sleep, sleep, and declared non-wear."
+#| fig-width: 9.5
+#| fig-height: 4.2
+#| fig-dpi: 150
+#| out-width: "100%"
 
-reported_checks <- c(
-  "files::all_required",
-  "manifest::file_hashes",
-  "selection::one_day_per_site",
-  "selection::fixed_seed_reproduction",
-  "source_data::complete_minute_grid",
-  "source_data::prepared_minute_parity",
-  "source_data::nonwear_mask",
-  "source_data::solar_context_parity",
-  "figures::nonempty_png_and_svg"
-)
-check_names <- c(
-  "All required inputs and outputs are present",
-  "Digital fingerprints match the files",
-  "Exactly one day is shown for every site",
-  "The fixed random selection can be reproduced",
-  "Every displayed day contains 1,440 clock minutes",
-  "Displayed values and states match the prepared data",
-  "Declared non-wear has no analysis-ready melEDI",
-  "Dawn, dusk, and photoperiod match the site and date",
-  "Both high-resolution PNG and vector SVG exist"
-)
-verification_table <- verification$checks |>
-  dplyr::filter(.data$check_id %in% reported_checks) |>
-  dplyr::mutate(
-    Check = check_names[match(.data$check_id, reported_checks)]
-  ) |>
-  dplyr::select(Check, Status = status)
-
-knitr::kable(verification_table, align = "lc")
+make_showcase_plot(c("RISE", "THUAS", "BAUA"), show_legend = TRUE)
 ```
 
-All `r nrow(verification$checks)` programmed checks passed. The source-data
-file contains `r format(verification$summary$source_rows, big.mark = ",")`
-one-minute rows: 1,440 rows for each of the nine selected participant-days.
+```{r}
+#| label: fig-example-days-2
+#| fig-cap: "Example days 4–6 in submitted site order. Values, shading, bands, and the contextual dashed step have the same meaning as in @fig-example-days-1."
+#| fig-alt: "Three panels show one-minute melEDI for selected participant-days in Tübingen, Munich, and Madrid. Each panel spans a local 24-hour day with black exposure traces, dark-blue civil-night shading, coloured diary-period and non-wear bands below zero, and blank segments where melEDI is unavailable."
+#| fig-width: 9.5
+#| fig-height: 3.7
+#| fig-dpi: 150
+#| out-width: "100%"
 
-The exact values behind the figure are stored in
-`artifacts/11_source_data/prepared_day_showcase.csv`; the selection table and
-selection settings are stored in
-`artifacts/08_diagnostics/prepared_day_showcase/`.
+make_showcase_plot(c("MPI", "TUM", "FUSPCEU"))
+```
+
+```{r}
+#| label: fig-example-days-3
+#| fig-cap: "Example days 7–9 in submitted site order. Values, shading, bands, and the contextual dashed step have the same meaning as in @fig-example-days-1."
+#| fig-alt: "Three panels show one-minute melEDI for selected participant-days in Izmir, San José, and Kumasi. Each panel spans a local 24-hour day with black exposure traces, dark-blue civil-night shading, coloured diary-period and non-wear bands below zero, and blank segments where melEDI is unavailable."
+#| fig-width: 9.5
+#| fig-height: 3.7
+#| fig-dpi: 150
+#| out-width: "100%"
+
+make_showcase_plot(c("IZTECH", "UCR", "KNUST"))
+```
+
+### How to read the profiles
+
+- Civil night is the shaded part of the day when the Sun is more than 6°
+  below the horizon; the unshaded interval is civil day.
+- The strip below zero shows the diary-defined waking daytime, the three hours
+  before sleep, and sleep. Red overwrites the strip where the wear log records
+  “off” outside diary-defined sleep; wear-log entries do not define sleep.
+- The dashed step is a contextual reference rather than a fitted value: 250 lx
+  during waking daytime, 10 lx during the three hours before sleep, and 1 lx
+  during sleep.
+- All panels use the same transformed y-axis so that zero, dim exposure, and
+  high daytime exposure can appear together. The transformation changes only
+  display spacing; the source CSV retains the stored melEDI values in lx.
+
+## Checks on the current stored bundle
+
+The production verifier is designed to reopen the prepared inputs, reproduce
+the fixed-seed selection, and compare the selected minutes, state masks,
+daylight context, and figure files. That result-producing verifier was not run
+for this documentation render. The table below is intentionally narrower: it
+reports only file-identity, schema, and lightweight structural checks performed
+on the current bundle while this page rendered.
+
+```{r}
+#| label: tbl-example-day-current-checks
+#| tbl-cap: "Bounded checks performed on the current example-day bundle during this render."
+
+current_checks |>
+  prep_gt(
+    source_note = paste(
+      "PASS here means that the current files have the accepted identities",
+      "and recorded structure; it is not a rerun of the independent",
+      "fixed-seed reconstruction verifier."
+    )
+  ) |>
+  gt::cols_width(
+    Check ~ gt::pct(34),
+    Result ~ gt::pct(56),
+    Status ~ gt::pct(10)
+  ) |>
+  gt::tab_style(
+    style = gt::cell_text(weight = "bold", color = "#1B6E3C"),
+    locations = gt::cells_body(columns = Status)
+  )
+```
+
+## Stored display artifacts and analytical handoff
+
+All six display artifacts were produced by
+`scripts/pipeline/prepared_day_showcase.R` with R
+`r unique(manifest$r_version)`, LightLogR
+`r unique(manifest$lightlogr_version)`, and ggplot2
+`r unique(manifest$ggplot2_version)`. Their current byte sizes and SHA-256
+fingerprints match the manifest.
+
+```{r}
+#| label: tbl-example-day-artifacts
+#| tbl-cap: "Exact stored artifacts produced for the example-day inspection."
+
+artifact_labels <- c(
+  selected_days_csv = "Selected participant-days",
+  eligible_day_counts_csv = "Eligible pool sizes by site",
+  selection_settings_csv = "Selection and display settings",
+  plot_source_data_csv = "Paired one-minute figure source data",
+  figure_png = "Accepted high-resolution figure",
+  figure_svg = "Accepted vector figure"
+)
+artifact_roles <- c(
+  selected_days_csv = "Identifies the fixed participant-day selected at each site and summarizes its timing and availability.",
+  eligible_day_counts_csv = "Records how many participant-days were eligible before the one-per-site draw.",
+  selection_settings_csv = "Records the seed, coverage, diary, non-wear, daylight, and time-axis rules.",
+  plot_source_data_csv = "Contains all 12,960 one-minute rows displayed in the profiles.",
+  figure_png = "Stores the production raster display for review and reuse.",
+  figure_svg = "Stores the same production display in resolution-independent form."
+)
+
+manifest |>
+  dplyr::mutate(
+    Artifact = unname(artifact_labels[.data$artifact_type]),
+    Purpose = unname(artifact_roles[.data$artifact_type]),
+    Shape = dplyr::if_else(
+      !is.na(.data$rows),
+      paste0(
+        scales::comma(.data$rows, accuracy = 1),
+        " rows × ",
+        .data$columns,
+        " columns"
+      ),
+      toupper(tools::file_ext(.data$path))
+    ),
+    Path = wrap_path(.data$path)
+  ) |>
+  dplyr::select(.data$Artifact, .data$Purpose, .data$Shape, .data$Path) |>
+  prep_gt(
+    source_note = paste0(
+      "Current manifest SHA-256: ",
+      wrap_hash(current_manifest_sha256),
+      "."
+    )
+  ) |>
+  gt::cols_width(
+    Artifact ~ gt::pct(22),
+    Purpose ~ gt::pct(38),
+    Shape ~ gt::pct(16),
+    Path ~ gt::pct(24)
+  )
+```
+
+These artifacts document and visualize already prepared data. They do not
+change an exposure value, state assignment, inclusion decision, sample, model
+frame, or hypothesis result, and they are not inputs to the hypothesis
+analyses.
