@@ -473,10 +473,10 @@ primary_publication_display <- function() {
       adequacy_bold = !is.na(.data$adequacy_p_adjusted) &
         .data$adequacy_p_adjusted < 0.05,
       `Exact fitted sample` = paste0(
-        as.integer(.data$participants), " participants; ",
-        as.integer(.data$participant_days), " participant-days; ",
-        as.integer(.data$observations), " observations; ",
-        as.integer(.data$sites), " sites"
+        "<em>n</em><sub>participants</sub> = ",
+        as.integer(.data$participants), "; ",
+        "<em>n</em><sub>participant-days</sub> = ",
+        as.integer(.data$participant_days)
       )
     )
 }
@@ -484,6 +484,7 @@ primary_publication_display <- function() {
 primary_publication_gt <- function(data) {
   data |>
     h01_gt(groupname_col = "Category", rowname_col = "Metric") |>
+    fmt_markdown(columns = `Exact fitted sample`) |>
     tab_spanner(
       label = "Photoperiod",
       columns = c(`Photoperiod effect (95% CI)`, `Photoperiod BH-adjusted p`)
@@ -508,7 +509,7 @@ primary_publication_gt <- function(data) {
       `Latitude effect per 10° (95% CI)` ~ px(175),
       `Latitude BH-adjusted p` ~ px(105),
       `Site-versus-latitude BH-adjusted p` ~ px(125),
-      `Exact fitted sample` ~ px(250)
+      `Exact fitted sample` ~ px(275)
     ) |>
     tab_style(
       style = cell_text(weight = "bold"),
@@ -542,7 +543,14 @@ primary_publication_gt <- function(data) {
           "exact fitted samples. Each displayed p-value is BH-adjusted within ",
           "its explicitly labelled complete 17-test family; bold values meet ",
           "the BH-adjusted p < 0.050 rule. Full raw p-values and test ",
-          "statistics remain in the detailed tables below."
+          "statistics remain in the detailed tables below. Exact fitted ",
+          "samples use italic n with participant and participant-day ",
+          "subscripts. For the 15 participant-day models, the participant-day ",
+          "count equals the number of ",
+          "fitted observations. The two participant-level dynamics models ",
+          "use one fitted observation per participant and retain ",
+          "the participant-day count as contributing repeated-day support. All ",
+          "models include nine sites."
         )
       )
     )
@@ -1326,7 +1334,7 @@ sensor-placement effect.
 
 ```{r}
 #| label: tbl-h01-primary-publication-summary
-#| tbl-cap: "Publication summary of the primary near-eye H01 results."
+#| tbl-cap: "Publication summary of the primary near-eye H01 results. Exact fitted samples report italic n with participant and participant-day subscripts. For participant-day models, participant-days equal observations; the two participant-level dynamics models use one observation per participant and report participant-days as contributing-day support. All models include nine sites."
 
 primary_publication_gt(primary_publication_display())
 ```
@@ -1351,7 +1359,7 @@ effect_gt(effect_display(primary_run))
 
 ### Hierarchical site contrasts
 
-![Primary near-eye site differences or ratios relative to the equally weighted overall site mean. Only metrics with a supported overall site test are shown; horizontal lines are 95% confidence intervals.](../../artifacts/10_figures/H01/stage3/H01_stage3_site_contrasts_near_eye.png){#fig-h01-site-contrasts-near-eye fig-alt="Faceted forest plots for the eight near-eye metrics with a supported overall site test. Each panel displays the nine study sites in registered north-to-south order, with coloured points and horizontal 95 percent confidence intervals around differences or ratios relative to the equally weighted site mean. Dashed vertical lines mark zero for differences and one for ratios." width="100%"}
+![Primary near-eye site differences or ratios relative to the equally weighted overall site mean. Only metrics with a supported overall site test are shown. Panel A contains ratios and panel B contains differences. Every metric facet uses a symmetric scale around its null, placing 1 for ratios and 0 for differences at the same horizontal position. Filled circles with thicker 95% confidence intervals denote within-metric adjusted p below 0.050; open circles with thinner intervals denote adjusted p at least 0.050. Site labels give exact fitted observations as n.](../../artifacts/10_figures/H01/stage3/H01_stage3_site_contrasts_near_eye.png){#fig-h01-site-contrasts-near-eye fig-alt="Two-panel near-eye forest plot. Panel A groups four ratio metrics and panel B groups four difference metrics. Within every metric facet, the dashed null line is horizontally centred: one for ratios and zero for differences. Each facet displays the nine study sites in registered north-to-south order, with the exact metric-and-site fitted observation count appended to each site label as n. Coloured filled circles with thicker horizontal 95 percent confidence intervals indicate within-metric adjusted p below 0.050; coloured open circles with thinner intervals indicate adjusted p at least 0.050." width="100%"}
 
 [Source data for @fig-h01-site-contrasts-near-eye](../../artifacts/11_source_data/H01/stage3/H01_stage3_site_contrast_figure_source.csv)
 
@@ -1411,7 +1419,7 @@ effect_gt(effect_display(chest_run))
 
 ### Hierarchical site contrasts
 
-![Complementary chest site differences or ratios relative to the equally weighted overall site mean. Only metrics with a supported overall site test are shown; horizontal lines are 95% confidence intervals.](../../artifacts/10_figures/H01/stage3/H01_stage3_site_contrasts_chest.png){#fig-h01-site-contrasts-chest fig-alt="Faceted forest plots for the 13 chest metrics with a supported overall site test. Each panel displays the available study sites in registered north-to-south order, with coloured points and horizontal 95 percent confidence intervals around differences or ratios relative to the equally weighted site mean. Dashed vertical lines mark zero for differences and one for ratios." width="100%"}
+![Complementary chest site differences or ratios relative to the equally weighted overall site mean. Only metrics with a supported overall site test are shown. Panel A contains ratios and panel B contains differences. Every metric facet uses a symmetric scale around its null, placing 1 for ratios and 0 for differences at the same horizontal position. Filled circles with thicker 95% confidence intervals denote within-metric adjusted p below 0.050; open circles with thinner intervals denote adjusted p at least 0.050. Site labels give exact fitted observations as n.](../../artifacts/10_figures/H01/stage3/H01_stage3_site_contrasts_chest.png){#fig-h01-site-contrasts-chest fig-alt="Two-panel complementary chest forest plot. Panel A groups seven ratio metrics and panel B groups six difference metrics. Within every metric facet, the dashed null line is horizontally centred: one for ratios and zero for differences. Each facet displays the available study sites in registered north-to-south order, with the exact metric-and-site fitted observation count appended to each site label as n. Coloured filled circles with thicker horizontal 95 percent confidence intervals indicate within-metric adjusted p below 0.050; coloured open circles with thinner intervals indicate adjusted p at least 0.050." width="100%"}
 
 [Source data for @fig-h01-site-contrasts-chest](../../artifacts/11_source_data/H01/stage3/H01_stage3_site_contrast_figure_source.csv)
 

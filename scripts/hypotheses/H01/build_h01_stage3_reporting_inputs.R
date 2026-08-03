@@ -328,6 +328,26 @@ primary_publication_summary <- model_results |>
   ) |>
   arrange(.data$metric_order)
 
+site_sample_support <- samples_by_site |>
+  filter(.data$run_id %in% selected_runs) |>
+  transmute(
+    .data$run_id,
+    .data$metric_order,
+    .data$metric_id,
+    .data$site,
+    site_participants = as.integer(.data$participants),
+    site_participant_days = as.integer(.data$participant_days),
+    site_observations = as.integer(.data$observations)
+  )
+if (
+  anyDuplicated(
+    site_sample_support[c("run_id", "metric_order", "metric_id", "site")]
+  ) ||
+    any(site_sample_support$site_observations <= 0L)
+) {
+  stop("The stored H01 per-site fitted samples are invalid", call. = FALSE)
+}
+
 site_contrasts <- site_deviations |>
   filter(
     .data$run_id %in% selected_runs,
@@ -336,11 +356,57 @@ site_contrasts <- site_deviations |>
   left_join(metric_registry, by = c("metric_order", "metric_id")) |>
   left_join(run_registry, by = "run_id", relationship = "many-to-one") |>
   left_join(site_registry, by = "site", relationship = "many-to-one") |>
+  left_join(
+    site_sample_support,
+    by = c("run_id", "metric_order", "metric_id", "site"),
+    relationship = "one-to-one"
+  ) |>
   mutate(
     null_value = if_else(.data$effect_type == "ratio", 1, 0),
-    supported_within_metric = .data$p_adjusted_within_metric < 0.05
+    supported_within_metric = .data$p_adjusted_within_metric < 0.05,
+    support_display = if_else(
+      .data$supported_within_metric,
+      "Adjusted p < 0.050",
+      "Adjusted p ≥ 0.050"
+    ),
+    scale_group = if_else(.data$effect_type == "ratio", "Ratios", "Differences"),
+    figure_panel_tag = if_else(.data$scale_group == "Ratios", "A", "B"),
+    figure_panel_label = paste0(.data$figure_panel_tag, ". ", .data$scale_group),
+    metric_facet_label = .data$manuscript_name,
+    site_panel_key = paste(.data$metric_id, .data$site, sep = "__"),
+    site_axis_label = paste0(
+      sub("\\)$", "", .data$display_name),
+      ", n=", .data$site_observations, ")"
+    )
   ) |>
+  group_by(.data$run_id, .data$metric_id) |>
+  mutate(
+    display_half_range = 1.08 * max(
+      abs(c(
+        .data$conf_low_practical - first(.data$null_value),
+        .data$conf_high_practical - first(.data$null_value)
+      )),
+      na.rm = TRUE
+    ),
+    display_half_range = pmax(
+      .data$display_half_range,
+      if_else(first(.data$null_value) == 1, 0.05, 0.10)
+    ),
+    display_x_min = .data$null_value - .data$display_half_range,
+    display_x_max = .data$null_value + .data$display_half_range
+  ) |>
+  ungroup() |>
   arrange(.data$run_order, .data$metric_order, .data$display_order)
+if (
+  anyNA(site_contrasts[c(
+    "site_participants", "site_participant_days", "site_observations",
+    "scale_group", "figure_panel_tag", "figure_panel_label",
+    "metric_facet_label", "display_x_min", "display_x_max"
+  )]) ||
+    any(site_contrasts$display_half_range <= 0)
+) {
+  stop("The H01 site-contrast display metadata are incomplete", call. = FALSE)
+}
 
 question_support <- tests |>
   select("run_id", "metric_id", "family_id", "p_adjusted") |>
@@ -1152,25 +1218,66 @@ support_plot <- support_matrix |>
   )
 
 site_colors <- stats::setNames(site_registry$color_hex, site_registry$display_name)
-make_contrast_plot <- function(data, placement_name) {
+make_contrast_scale_panel <- function(data, scale_group, show_legend) {
   data <- data |>
-    filter(.data$placement_label == placement_name) |>
+    filter(.data$scale_group == .env$scale_group)
+  facet_levels <- data |>
+    distinct(.data$metric_order, .data$metric_facet_label) |>
+    arrange(.data$metric_order) |>
+    pull(.data$metric_facet_label)
+  site_panel_levels <- data |>
+    distinct(.data$metric_order, .data$display_order, .data$site_panel_key) |>
+    arrange(.data$metric_order, desc(.data$display_order)) |>
+    pull(.data$site_panel_key)
+  site_panel_labels <- data |>
+    distinct(.data$site_panel_key, .data$site_axis_label) |>
+    tibble::deframe()
+  panel_limits <- data |>
+    distinct(
+      .data$metric_order,
+      .data$metric_facet_label,
+      .data$display_x_min,
+      .data$display_x_max
+    ) |>
+    pivot_longer(
+      cols = c("display_x_min", "display_x_max"),
+      names_to = "limit_name",
+      values_to = "display_limit"
+    )
+  data <- data |>
     mutate(
-      site_display_name = factor(
-        .data$display_name,
-        levels = rev(site_registry$display_name)
+      site_panel_key = factor(.data$site_panel_key, levels = site_panel_levels),
+      metric_facet_label = factor(
+        .data$metric_facet_label,
+        levels = facet_levels
+      ),
+      support_display = factor(
+        .data$support_display,
+        levels = c("Adjusted p < 0.050", "Adjusted p ≥ 0.050")
+      )
+    )
+  panel_limits <- panel_limits |>
+    mutate(
+      metric_facet_label = factor(
+        .data$metric_facet_label,
+        levels = facet_levels
       )
     )
   nulls <- data |>
-    distinct(.data$manuscript_name, .data$null_value)
+    distinct(.data$metric_facet_label, .data$null_value)
   ggplot(
     data,
     aes(
       x = .data$estimate_practical,
-      y = .data$site_display_name,
+      y = .data$site_panel_key,
       colour = .data$display_name
     )
   ) +
+    geom_blank(
+      data = panel_limits,
+      aes(x = .data$display_limit),
+      inherit.aes = FALSE
+    ) +
     geom_vline(
       data = nulls,
       aes(xintercept = .data$null_value),
@@ -1180,26 +1287,104 @@ make_contrast_plot <- function(data, placement_name) {
       linewidth = 0.35
     ) +
     geom_errorbar(
-      aes(xmin = .data$conf_low_practical, xmax = .data$conf_high_practical),
+      aes(
+        xmin = .data$conf_low_practical,
+        xmax = .data$conf_high_practical,
+        linewidth = .data$support_display
+      ),
       width = 0,
-      orientation = "y",
-      linewidth = 0.45
+      orientation = "y"
     ) +
-    geom_point(size = 2.2) +
-    facet_wrap(vars(.data$manuscript_name), scales = "free_x", ncol = 2) +
-    scale_colour_manual(values = site_colors, drop = FALSE) +
+    geom_point(
+      aes(
+        shape = .data$support_display,
+        fill = .data$display_name
+      ),
+      size = 2.7,
+      stroke = 0.7
+    ) +
+    facet_wrap(vars(.data$metric_facet_label), scales = "free", ncol = 2) +
+    scale_x_continuous(expand = expansion(mult = c(0.04, 0.04))) +
+    scale_y_discrete(labels = site_panel_labels) +
+    scale_colour_manual(values = site_colors, drop = FALSE, guide = "none") +
+    scale_fill_manual(values = site_colors, drop = FALSE, guide = "none") +
+    scale_shape_manual(
+      name = "Within-metric contrast",
+      values = c(
+        "Adjusted p < 0.050" = 21,
+        "Adjusted p ≥ 0.050" = 1
+      )
+    ) +
+    scale_linewidth_manual(
+      values = c(
+        "Adjusted p < 0.050" = 0.9,
+        "Adjusted p ≥ 0.050" = 0.38
+      ),
+      guide = "none"
+    ) +
     labs(
-      x = "Difference or ratio versus the equally weighted site mean",
+      title = paste0(
+        if (scale_group == "Ratios") "A" else "B",
+        ". ", scale_group
+      ),
+      x = if (
+        scale_group == "Ratios"
+      ) {
+        "Ratio versus the equally weighted site mean"
+      } else {
+        "Difference versus the equally weighted site mean"
+      },
       y = NULL
     ) +
-    theme_minimal(base_size = 10.5) +
+    theme_minimal(base_size = 11.5) +
     theme(
       panel.grid.minor = element_blank(),
-      axis.text = element_text(size = 9),
-      axis.title = element_text(size = 10),
-      strip.text = element_text(face = "bold", size = 9.5),
-      legend.position = "none"
+      axis.text = element_text(size = 10),
+      axis.title = element_text(size = 11),
+      strip.text = element_text(face = "bold", size = 10.5),
+      plot.title = element_text(face = "bold", size = 13, hjust = 0),
+      plot.title.position = "plot",
+      legend.position = if (show_legend) "bottom" else "none",
+      legend.title = element_text(size = 10),
+      legend.text = element_text(size = 10)
+    ) +
+    guides(
+      shape = guide_legend(
+        override.aes = list(
+          colour = "#444444",
+          fill = c("#444444", "white"),
+          size = 2.7,
+          linewidth = c(0.9, 0.38)
+        )
+      )
     )
+}
+make_contrast_plot <- function(data, placement_name) {
+  selected <- data |>
+    filter(.data$placement_label == .env$placement_name)
+  metric_counts <- selected |>
+    distinct(.data$scale_group, .data$metric_id) |>
+    count(.data$scale_group, name = "metrics")
+  ratios <- make_contrast_scale_panel(selected, "Ratios", show_legend = FALSE)
+  differences <- make_contrast_scale_panel(
+    selected,
+    "Differences",
+    show_legend = TRUE
+  )
+  ratio_rows <- ceiling(
+    metric_counts$metrics[metric_counts$scale_group == "Ratios"] / 2
+  )
+  difference_rows <- ceiling(
+    metric_counts$metrics[metric_counts$scale_group == "Differences"] / 2
+  )
+  cowplot::plot_grid(
+    ratios,
+    differences,
+    ncol = 1,
+    align = "v",
+    axis = "lr",
+    rel_heights = c(ratio_rows + 0.45, difference_rows + 0.80)
+  )
 }
 contrast_near_plot <- make_contrast_plot(site_contrasts, "Near eye")
 contrast_chest_plot <- make_contrast_plot(site_contrasts, "Chest")
@@ -1499,8 +1684,8 @@ paired_placement_plot <- cowplot::plot_grid(
 
 figure_specs <- list(
   H01_stage3_model_support = list(plot = support_plot, width = 10.5, height = 7.4, bg = "white"),
-  H01_stage3_site_contrasts_near_eye = list(plot = contrast_near_plot, width = 11.5, height = 13.0, bg = "white"),
-  H01_stage3_site_contrasts_chest = list(plot = contrast_chest_plot, width = 11.5, height = 19.0, bg = "white"),
+  H01_stage3_site_contrasts_near_eye = list(plot = contrast_near_plot, width = 11.5, height = 14.5, bg = "white"),
+  H01_stage3_site_contrasts_chest = list(plot = contrast_chest_plot, width = 11.5, height = 21.0, bg = "white"),
   H01_stage3_r2_intervals = list(plot = r2_plot, width = 10.5, height = 8.0, bg = "white"),
   H01_stage3_diagnostic_assessment = list(plot = diagnostic_plot, width = 11.5, height = 7.6, bg = "white"),
   H01_stage3_paired_placement = list(plot = paired_placement_plot, width = 12, height = 6.8, bg = "white"),

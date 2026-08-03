@@ -17,6 +17,7 @@ manifest_path <- file.path(
   "artifacts/12_manifests/H01_reporting_artifacts.csv"
 )
 stage3_table_root <- file.path(root, "artifacts/09_tables/H01/stage3")
+stage3_source_root <- file.path(root, "artifacts/11_source_data/H01/stage3")
 stage3_manifest_path <- file.path(
   root,
   "artifacts/12_manifests/H01_stage3_reporting_artifacts.csv"
@@ -95,6 +96,18 @@ paths <- c(
     stage3_table_root,
     "H01_stage3_figure_display_registry.csv"
   ),
+  stage3_site_contrasts = file.path(
+    stage3_table_root,
+    "H01_stage3_site_contrasts.csv"
+  ),
+  stage3_site_contrast_source = file.path(
+    stage3_source_root,
+    "H01_stage3_site_contrast_figure_source.csv"
+  ),
+  exact_samples_by_site = file.path(
+    root,
+    "artifacts/09_tables/H01/H01_exact_samples_by_site.csv"
+  ),
   stage3_manifest = stage3_manifest_path,
   manifest = manifest_path,
   qmd = file.path(root, "notebooks/hypotheses/H01.qmd")
@@ -121,6 +134,9 @@ manifest <- read_path("manifest")
 stage3_publication_summary <- read_path("stage3_publication_summary")
 stage3_diagnostic_details <- read_path("stage3_diagnostic_details")
 stage3_figure_display_registry <- read_path("stage3_figure_display_registry")
+stage3_site_contrasts <- read_path("stage3_site_contrasts")
+stage3_site_contrast_source <- read_path("stage3_site_contrast_source")
+exact_samples_by_site <- read_path("exact_samples_by_site")
 stage3_manifest <- read_path("stage3_manifest")
 
 stopifnot(
@@ -290,6 +306,23 @@ stopifnot(
     "observations",
     "sites"
   )])),
+  all(stage3_publication_summary$sites == 9L),
+  all(
+    stage3_publication_summary$participant_days[
+      stage3_publication_summary$metric_order > 2L
+    ] ==
+      stage3_publication_summary$observations[
+        stage3_publication_summary$metric_order > 2L
+      ]
+  ),
+  all(
+    stage3_publication_summary$observations[
+      stage3_publication_summary$metric_order <= 2L
+    ] ==
+      stage3_publication_summary$participants[
+        stage3_publication_summary$metric_order <= 2L
+      ]
+  ),
   nrow(stage3_diagnostic_details) == 34L,
   all(stage3_diagnostic_details$assessment %in% c(
     "Acceptable", "Acceptable with limitations"
@@ -309,6 +342,71 @@ stopifnot(
     root,
     stage3_figure_display_registry$artifact_path
   )))
+)
+
+site_sample_check <- stage3_site_contrasts |>
+  dplyr::left_join(
+    exact_samples_by_site |>
+      dplyr::transmute(
+        .data$run_id,
+        .data$metric_order,
+        .data$metric_id,
+        .data$site,
+        expected_site_observations = as.integer(.data$observations)
+      ),
+    by = c("run_id", "metric_order", "metric_id", "site"),
+    relationship = "one-to-one"
+  )
+stopifnot(
+  identical(
+    artifact_sha256(paths[["stage3_site_contrasts"]]),
+    artifact_sha256(paths[["stage3_site_contrast_source"]])
+  ),
+  all(c(
+    "site_participants", "site_participant_days", "site_observations",
+    "support_display", "site_panel_key", "site_axis_label", "scale_group",
+    "figure_panel_tag", "figure_panel_label", "metric_facet_label",
+    "display_half_range", "display_x_min", "display_x_max"
+  ) %in% names(stage3_site_contrasts)),
+  all(site_sample_check$site_observations ==
+    site_sample_check$expected_site_observations),
+  all(grepl(", n=[0-9]+\\)$", stage3_site_contrasts$site_axis_label)),
+  setequal(
+    unique(stage3_site_contrasts$figure_panel_tag[
+      stage3_site_contrasts$run_id == "main__glasses__all_available"
+    ]),
+    c("A", "B")
+  ),
+  setequal(
+    unique(stage3_site_contrasts$figure_panel_tag[
+      stage3_site_contrasts$run_id == "main__chest__all_available"
+    ]),
+    c("A", "B")
+  ),
+  all(
+    stage3_site_contrasts$figure_panel_tag ==
+      ifelse(stage3_site_contrasts$effect_type == "ratio", "A", "B")
+  ),
+  all(
+    stage3_site_contrasts$scale_group ==
+      ifelse(stage3_site_contrasts$effect_type == "ratio", "Ratios", "Differences")
+  ),
+  all(abs(
+    (stage3_site_contrasts$null_value - stage3_site_contrasts$display_x_min) -
+      (stage3_site_contrasts$display_x_max - stage3_site_contrasts$null_value)
+  ) < 1e-12),
+  all(stage3_site_contrasts$display_x_min <=
+    stage3_site_contrasts$conf_low_practical),
+  all(stage3_site_contrasts$display_x_max >=
+    stage3_site_contrasts$conf_high_practical),
+  all(
+    stage3_site_contrasts$support_display ==
+      ifelse(
+        stage3_site_contrasts$supported_within_metric,
+        "Adjusted p < 0.050",
+        "Adjusted p ≥ 0.050"
+      )
+  )
 )
 
 for (index in seq_len(nrow(manifest))) {
@@ -350,6 +448,14 @@ stopifnot(
   !grepl("#fig-h01-photoperiod-near-eye", qmd_text, fixed = TRUE),
   !grepl("#fig-h01-photoperiod-chest", qmd_text, fixed = TRUE),
   grepl("tbl-h01-primary-publication-summary", qmd_text, fixed = TRUE),
+  grepl("<sub>participants</sub>", qmd_text, fixed = TRUE),
+  grepl("<sub>participant-days</sub>", qmd_text, fixed = TRUE),
+  grepl("All models include nine sites", qmd_text, fixed = TRUE),
+  grepl("Filled circles with thicker", qmd_text, fixed = TRUE),
+  grepl("Panel A contains ratios", qmd_text, fixed = TRUE),
+  grepl("panel B contains differences", qmd_text, fixed = TRUE),
+  !grepl("facet tags A–H", qmd_text, fixed = TRUE),
+  !grepl("facet tags A–M", qmd_text, fixed = TRUE),
   grepl("tbl-h01-primary-site-deviation-matrix", qmd_text, fixed = TRUE),
   length(gregexpr("tbl-h01-samples-", qmd_text, fixed = TRUE)[[1]]) == 8L,
   grepl("tbl-h01-representative-diagnostics", qmd_text, fixed = TRUE),
@@ -408,6 +514,19 @@ if (file.exists(html_path)) {
     site_matrix,
     "thead tr:last-child th"
   ))
+  publication_table <- rvest::html_element(
+    html,
+    "#tbl-h01-primary-publication-summary"
+  )
+  publication_table_text <- rvest::html_text2(publication_table)
+  publication_subscripts <- rvest::html_text2(rvest::html_elements(
+    publication_table,
+    "tbody td sub"
+  ))
+  publication_sample_n <- rvest::html_elements(
+    publication_table,
+    "tbody td em"
+  )
   stopifnot(
     length(gt_tables) == 36L,
     length(rvest::html_elements(html, "table.gt_table thead")) == 36L,
@@ -424,6 +543,12 @@ if (file.exists(html_path)) {
       html,
       "#tbl-h01-primary-publication-summary table.gt_table"
     )) == 1L,
+    length(publication_sample_n) == 34L,
+    sum(publication_subscripts == "participants") == 17L,
+    sum(publication_subscripts == "participant-days") == 17L,
+    grepl("participants = 141", publication_table_text, fixed = TRUE),
+    grepl("participant-days = 816", publication_table_text, fixed = TRUE),
+    grepl("All models include nine sites", publication_table_text, fixed = TRUE),
     length(rvest::html_elements(
       html,
       "#tbl-h01-primary-site-deviation-matrix table.gt_table"
