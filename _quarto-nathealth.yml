@@ -5,7 +5,7 @@
 # documents are reviewed in HTML. The single submission-stage manuscript DOCX
 # is deliberately deferred until the manuscript is stable.
 project:
-  type: default
+  type: website
   output-dir: _build/nathealth
   execute-dir: project
   render:
@@ -17,16 +17,21 @@ project:
     - notebooks/preparation/06_model_ready_datasets.qmd
     - notebooks/preparation/07_example_days.qmd
     - audit/hypotheses/implementation_result_comparison_contract.qmd
+    - audit/hypotheses/H03-H11_gated_workflow.qmd
     - notebooks/placement_decision.qmd
     - notebooks/descriptives.qmd
     - notebooks/hypotheses/H01.qmd
+    - audit/hypotheses/H01/H01_analysis_preparation.qmd
     - notebooks/hypotheses/H02.qmd
+    - audit/hypotheses/H02/H02_analysis_preparation.qmd
     - notebooks/hypotheses/H03.qmd
     - notebooks/hypotheses/H04.qmd
     - notebooks/hypotheses/H05.qmd
+    - audit/hypotheses/H05/H05_analysis_preparation.qmd
     - notebooks/hypotheses/H06.qmd
     - notebooks/hypotheses/H07.qmd
     - notebooks/hypotheses/H08.qmd
+    - audit/hypotheses/H08/H08_analysis_preparation.qmd
     - notebooks/hypotheses/H09.qmd
     - notebooks/hypotheses/H10.qmd
     - notebooks/hypotheses/H11.qmd
@@ -46,6 +51,92 @@ project:
     - "!RQ1_chest.qmd"
     - "!RQ2_chest.qmd"
     - "!RQ3_chest.qmd"
+
+# Use a profile-specific sidebar rather than the submitted-version navigation
+# inherited from the public website. Defining this as a sidebar list also
+# prevents the two navigation trees from being concatenated during profile
+# merging.
+website:
+  title: "Nature Health analysis and manuscript"
+  sidebar:
+    - id: nathealth
+      style: "docked"
+      search: true
+      contents:
+        - href: index.qmd
+          text: "Manuscript"
+        - href: supplementary_information.qmd
+          text: "Supplementary information"
+        - section: "Preparation"
+          contents:
+            - href: notebooks/preparation/01_import_state_alignment.qmd
+              text: "01 Import and state alignment"
+            - href: notebooks/preparation/02_coverage_sample_flow.qmd
+              text: "02 Coverage and sample flow"
+            - href: notebooks/preparation/03_reference_profiles.qmd
+              text: "03 Reference profiles"
+            - href: notebooks/preparation/04_metric_derivation.qmd
+              text: "04 Metric derivation"
+            - href: notebooks/preparation/05_model_input_acquisition.qmd
+              text: "05 Model-input acquisition"
+            - href: notebooks/preparation/06_model_ready_datasets.qmd
+              text: "06 Model-ready datasets"
+            - href: notebooks/preparation/07_example_days.qmd
+              text: "07 Example days"
+        - section: "Analysis overview"
+          contents:
+            - href: notebooks/placement_decision.qmd
+              text: "Placement decision"
+            - href: notebooks/descriptives.qmd
+              text: "Descriptive results"
+        - section: "Hypothesis analyses"
+          contents:
+            - href: notebooks/hypotheses/H01.qmd
+              text: "H01 results"
+            - href: audit/hypotheses/H01/H01_analysis_preparation.qmd
+              text: "H01 preparation and provenance"
+            - href: notebooks/hypotheses/H02.qmd
+              text: "H02 results"
+            - href: audit/hypotheses/H02/H02_analysis_preparation.qmd
+              text: "H02 preparation and provenance"
+            - href: notebooks/hypotheses/H03.qmd
+              text: "H03 results"
+            - href: notebooks/hypotheses/H04.qmd
+              text: "H04 results"
+            - href: notebooks/hypotheses/H05.qmd
+              text: "H05 results"
+            - href: audit/hypotheses/H05/H05_analysis_preparation.qmd
+              text: "H05 preparation and provenance"
+            - href: notebooks/hypotheses/H06.qmd
+              text: "H06 results"
+            - href: notebooks/hypotheses/H07.qmd
+              text: "H07 results"
+            - href: notebooks/hypotheses/H08.qmd
+              text: "H08 results"
+            - href: audit/hypotheses/H08/H08_analysis_preparation.qmd
+              text: "H08 preparation and provenance"
+            - href: notebooks/hypotheses/H09.qmd
+              text: "H09 results"
+            - href: notebooks/hypotheses/H10.qmd
+              text: "H10 results"
+            - href: notebooks/hypotheses/H11.qmd
+              text: "H11 results"
+        - section: "Audit workflow"
+          contents:
+            - href: audit/hypotheses/implementation_result_comparison_contract.qmd
+              text: "Comparison contract"
+            - href: audit/hypotheses/H03-H11_gated_workflow.qmd
+              text: "H03–H11 gated workflow"
+        - section: "Sensitivity and assembly"
+          contents:
+            - href: notebooks/sensitivity_battery.qmd
+              text: "Sensitivity checks"
+            - href: notebooks/assemble_artifacts.qmd
+              text: "Publication artifacts"
+
+# Select the profile-specific sidebar for every Nature Health page. The base
+# website sidebar remains available to the existing public-site workflow.
+sidebar: nathealth
 
 execute:
   freeze: false
