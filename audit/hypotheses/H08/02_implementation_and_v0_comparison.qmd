@@ -1,0 +1,1325 @@
+---
+title: "H08 Stage 2: implementation, diagnostics, and V0 comparison"
+subtitle: "Visual light sensitivity and personal light exposure — author result gate"
+date: "2026-08-01"
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    embed-resources: true
+    code-fold: true
+    code-summary: "Show audit code"
+    code-overflow: wrap
+    df-print: paged
+bibliography: ../../../bibliography.bib
+execute:
+  echo: false
+  warning: false
+  message: false
+editor: source
+---
+
+```{r}
+#| label: setup
+#| include: false
+
+locate_project_root <- function(start = getwd()) {
+  candidate <- normalizePath(start, winslash = "/", mustWork = TRUE)
+  repeat {
+    if (
+      file.exists(file.path(candidate, "renv.lock")) &&
+        file.exists(file.path(candidate, "_quarto.yml"))
+    ) {
+      return(candidate)
+    }
+    parent <- dirname(candidate)
+    if (identical(parent, candidate)) {
+      stop("Could not locate the project root", call. = FALSE)
+    }
+    candidate <- parent
+  }
+}
+
+configured_root <- Sys.getenv("NATHEALTH_PROJECT_ROOT", unset = "")
+if (
+  nzchar(configured_root) &&
+    file.exists(file.path(configured_root, "renv.lock")) &&
+    file.exists(file.path(configured_root, "_quarto.yml"))
+) {
+  root <- normalizePath(configured_root, winslash = "/", mustWork = TRUE)
+} else {
+  root <- locate_project_root()
+}
+project_library <- file.path(
+  root,
+  "renv/library/macos/R-4.6/aarch64-apple-darwin23"
+)
+if (dir.exists(project_library)) {
+  .libPaths(c(project_library, .libPaths()))
+}
+
+suppressPackageStartupMessages({
+  library(dplyr)
+  library(gt)
+  library(readr)
+  library(stringr)
+  library(tibble)
+  library(tidyr)
+})
+
+if (!identical(as.character(getRversion()), "4.6.1")) {
+  stop("H08 Stage 2 report must run under R 4.6.1", call. = FALSE)
+}
+
+source(file.path(root, "scripts", "pipeline", "p_value_display.R"))
+
+h08_artifact <- function(...) file.path(root, "artifacts", ...)
+read_h08 <- function(...) {
+  readr::read_csv(h08_artifact(...), show_col_types = FALSE, na = "")
+}
+
+approvals <- read_h08("06_model_data", "H08", "H08_author_approvals.csv")
+input_audit <- read_h08("06_model_data", "H08", "H08_input_audit.csv")
+metric_registry <- read_h08("06_model_data", "H08", "H08_metric_registry.csv")
+response_contract <- read_h08(
+  "06_model_data", "H08", "H08_response_contract_audit.csv"
+)
+sample_index <- read_h08("06_model_data", "H08", "H08_model_frame_index.csv")
+sample_by_site <- read_h08(
+  "06_model_data", "H08", "H08_model_frame_by_site.csv"
+)
+paired_audit <- read_h08("06_model_data", "H08", "H08_paired_sample_audit.csv")
+main_gap_common_audit <- read_h08(
+  "06_model_data", "H08", "H08_main_gap_common_sample_audit.csv"
+)
+score_audit <- read_h08("08_diagnostics", "H08", "H08_vlsq_score_audit.csv")
+diagnostics <- read_h08("08_diagnostics", "H08", "H08_model_diagnostics.csv")
+response_gate <- read_h08(
+  "08_diagnostics", "H08", "H08_response_family_gate.csv"
+)
+loo_summary <- read_h08(
+  "08_diagnostics", "H08", "H08_leave_one_site_out_summary.csv"
+)
+master <- read_h08("09_tables", "H08", "H08_model_results_master.csv")
+family_audit <- read_h08("09_tables", "H08", "H08_family_audit.csv")
+predictions <- read_h08("09_tables", "H08", "H08_centered_predictions.csv")
+site_slopes <- read_h08("09_tables", "H08", "H08_site_specific_slopes.csv")
+gap_sensitivity <- read_h08(
+  "09_tables", "H08", "H08_gap_timing_unaware_sensitivity.csv"
+)
+photoperiod <- read_h08(
+  "09_tables", "H08", "H08_photoperiod_sensitivity.csv"
+)
+participant_summary <- read_h08(
+  "09_tables", "H08", "H08_participant_summary_sensitivity.csv"
+)
+exact_longest <- read_h08(
+  "09_tables", "H08", "H08_exactly_identified_longest_period_sensitivity.csv"
+)
+observed_dose <- read_h08(
+  "09_tables", "H08", "H08_observed_dose_sensitivity.csv"
+)
+v0_reproduction <- read_h08(
+  "09_tables", "H08", "H08_v0_reproduction.csv"
+)
+v0_comparison <- read_h08(
+  "09_tables", "H08", "H08_v0_to_new_comparison.csv"
+)
+execution_environment <- read_h08(
+  "12_manifests", "H08", "H08_execution_environment.csv"
+)
+
+main_near <- master |>
+  filter(run_id == "main__glasses__all_available") |>
+  arrange(metric_order)
+main_chest <- master |>
+  filter(run_id == "main__chest__all_available") |>
+  arrange(metric_order)
+main_primary <- bind_rows(main_near, main_chest)
+
+near_average_significant <- sum(
+  main_near$average_adjusted_significant,
+  na.rm = TRUE
+)
+near_interaction_significant <- sum(
+  main_near$interaction_adjusted_significant,
+  na.rm = TRUE
+)
+chest_average_significant <- sum(
+  main_chest$average_adjusted_significant,
+  na.rm = TRUE
+)
+chest_interaction_significant <- sum(
+  main_chest$interaction_adjusted_significant,
+  na.rm = TRUE
+)
+
+format_p_cell <- function(value, significant) {
+  display <- nh_p_value_display(value, significant = significant)
+  ifelse(
+    display$p_bold,
+    paste0("**", display$p_display, "**"),
+    display$p_display
+  )
+}
+
+format_effect <- function(estimate, low, high, effect_type) {
+  ifelse(
+    effect_type == "ratio",
+    sprintf("%.3f× (%.3f to %.3f)", estimate, low, high),
+    sprintf("%+.3f h (%+.3f to %+.3f)", estimate, low, high)
+  )
+}
+
+model_to_practical <- function(value, response_transform, effect_scale) {
+  case_when(
+    effect_scale == "difference" ~ value,
+    response_transform == "log10_offset_0.1" ~ 10^value,
+    effect_scale == "ratio" ~ exp(value),
+    TRUE ~ value
+  )
+}
+
+format_sample <- function(participants, participant_days, sites) {
+  sprintf("%d / %d / %d", participants, participant_days, sites)
+}
+
+h08_gt <- function(data, title, subtitle = NULL, note = NULL, size = 11) {
+  out <- data |>
+    gt() |>
+    opt_align_table_header(align = "left") |>
+    opt_row_striping() |>
+    tab_options(
+      table.width = pct(100),
+      table.font.size = px(size),
+      data_row.padding = px(3),
+      heading.align = "left",
+      source_notes.font.size = px(max(9, size - 2))
+    )
+  if (is.null(subtitle)) {
+    out <- out |> tab_header(title = md(title))
+  } else {
+    out <- out |> tab_header(title = md(title), subtitle = md(subtitle))
+  }
+  if (!is.null(note)) out <- out |> tab_source_note(md(note))
+  out
+}
+
+result_display <- function(data) {
+  data |>
+    transmute(
+      Order = metric_order,
+      Metric = manuscript_name,
+      `Effect per 5.540 VLSQ-8 points (95% CI)` = format_effect(
+        estimate_practical_per_sd,
+        conf_low_practical_per_sd,
+        conf_high_practical_per_sd,
+        effect_type
+      ),
+      `Raw p` = format_p_cell(average_p_raw, average_adjusted_significant),
+      `BH-adjusted p` = format_p_cell(
+        average_p_adjusted,
+        average_adjusted_significant
+      ),
+      `Participants / participant-days / sites` = format_sample(
+        participants,
+        participant_days,
+        sites
+      ),
+      Diagnostics = if_else(
+        diagnostic_status == "PASS",
+        "Pass",
+        str_replace_all(diagnostic_issues, "_", " ")
+      )
+    )
+}
+```
+
+::: {.callout-warning}
+## Stage 2 gate — fitted outputs require author approval
+
+This document reports the approved Stage 2 implementation, exact fitted
+samples, 95% confidence intervals, multiplicity-adjusted tests, interpreted
+diagnostics, V0 reconciliation, and planned sensitivities. It reads frozen
+H08 artifacts and does not refit models. No Stage 3 manuscript-facing notebook
+or Stage 4 preparation record will be created until the author explicitly
+approves this result package. No resampling was run.
+:::
+
+# Hypothesis and analytical question
+
+The signed preregistration states:
+
+> **H8: Duration-, exposure-history-, and level-based metrics are associated
+> with VLSQ-8 light sensitivity scores.**
+
+The audited question is whether participant-level VLSQ-8 scores are associated
+with repeated participant-day personal light-exposure metrics after adjustment
+for submitted site. Near-eye measurements are primary; chest measurements are
+complementary. Temperature and other unsupported predictors are absent.
+
+The predefined preparation sensitivity is called the
+**gap-timing-unaware dataset**. It still passed the general 50%-per-hour and
+80%-per-day coverage rules. The name means that the timing of the remaining
+missing observations is not used for an additional metric-specific adjustment;
+it does not mean that gaps, missingness, or coverage were ignored. For this
+one-time first explanation, the primary could be interpreted as a
+time-sensitive primary metric dataset because its approved preparation uses
+the timing of remaining missing observations where that timing is relevant.
+From here onward, it is called simply the **primary dataset**.
+
+# Frozen implementation contract
+
+All 14 Stage 1 decisions are recorded as approved, and all 13 consumed inputs
+match their pinned SHA-256 values.
+
+```{r}
+#| label: approvals-and-inputs
+
+bind_rows(
+  tibble(
+    Check = "Approved H08-G decisions",
+    Result = sprintf("%d / %d", sum(approvals$approved), nrow(approvals))
+  ),
+  tibble(
+    Check = "Pinned input hashes verified",
+    Result = sprintf(
+      "%d / %d",
+      sum(input_audit$hash_verified),
+      nrow(input_audit)
+    )
+  )
+) |>
+  h08_gt(
+    title = "Implementation preconditions",
+    note = "Stage 2 stopped immediately if an approval or pinned hash failed."
+  )
+```
+
+## VLSQ-8 scoring and scaling
+
+The participant-level predictor is complete for all 184 participants across
+nine sites. The stored score equals the sum of the eight ordered 1–5 item
+codes plus 5 for every participant. Its observed range is 13–39, its mean is
+21.597826, and its participant standard deviation is 5.539840. Models use the
+centred raw score; practical effects compare scores separated by one such
+standard deviation. No within-site standardisation was applied.
+
+```{r}
+#| label: score-audit-table
+
+score_audit |>
+  transmute(
+    Participants = participants,
+    Sites = sites,
+    `Missing scores` = missing_scores,
+    `Missing item cells` = missing_item_cells,
+    Range = sprintf("%d–%d", observed_min, observed_max),
+    Mean = sprintf("%.6f", observed_mean),
+    SD = sprintf("%.6f", observed_participant_sd),
+    `Stored − item sum` = stored_minus_item_sum_unique,
+    Verified = scoring_rule_verified
+  ) |>
+  h08_gt(
+    title = "VLSQ-8 score audit",
+    note = "The +5 scoring constant is an author-approved project convention; it is not claimed as a published standard total-score algorithm."
+  )
+```
+
+## Exact fitted formulas
+
+The following evaluated cell is the complete formula contract. Site uses the
+submitted order and explicit sum contrasts. `site:Id` is the participant
+random-intercept grouping factor; participants remain nested within site.
+
+```{r}
+#| label: exact-fitted-formulas
+#| echo: true
+#| code-fold: false
+
+site_only <- stats::as.formula(
+  "response_value ~ site + (1 | site:Id)"
+)
+additive <- stats::as.formula(
+  "response_value ~ site + VLSQ8_c + (1 | site:Id)"
+)
+interaction <- stats::as.formula(
+  "response_value ~ site * VLSQ8_c + (1 | site:Id)"
+)
+photoperiod_site_only <- stats::as.formula(
+  "response_value ~ site + photoperiod_c + (1 | site:Id)"
+)
+photoperiod_additive <- stats::as.formula(
+  "response_value ~ site + photoperiod_c + VLSQ8_c + (1 | site:Id)"
+)
+photoperiod_interaction <- stats::as.formula(
+  "response_value ~ site * VLSQ8_c + photoperiod_c + (1 | site:Id)"
+)
+participant_site_only <- stats::as.formula(
+  "participant_response ~ site"
+)
+participant_additive <- stats::as.formula(
+  "participant_response ~ site + VLSQ8_c"
+)
+participant_interaction <- stats::as.formula(
+  "participant_response ~ site * VLSQ8_c"
+)
+
+site_only
+additive
+interaction
+photoperiod_site_only
+photoperiod_additive
+photoperiod_interaction
+participant_site_only
+participant_additive
+participant_interaction
+```
+
+The primary average association is the likelihood-ratio comparison of
+`site_only` with `additive`. Site heterogeneity is the separate comparison of
+`additive` with `interaction`. These tests answer different questions and are
+adjusted in different complete nine-member Benjamini–Hochberg families.
+
+## Metrics, response families, and practical estimands
+
+```{r}
+#| label: response-contract-table
+
+response_contract |>
+  arrange(metric_order) |>
+  transmute(
+    Order = metric_order,
+    Metric = manuscript_name,
+    Category = manuscript_category,
+    Unit = display_unit,
+    `Response / transform` = paste(response_family, response_transform, sep = " / "),
+    `Effect shown` = if_else(
+      effect_scale == "ratio",
+      "Ratio per VLSQ-8 SD",
+      "Hour difference per VLSQ-8 SD"
+    ),
+    `Participant-day value` = primary_value_definition
+  ) |>
+  h08_gt(
+    title = "Nine-member H08 response contract",
+    note = "melEDI and manuscript-facing period terminology are used throughout."
+  )
+```
+
+# Exact fitted samples
+
+Every row entering each model was fixed before fitting. The compact tables
+below report participants / participant-days / sites. Row-key and full
+model-frame SHA-256 values are preserved in the source artifact.
+
+## All available samples by dataset and placement
+
+```{r}
+#| label: all-available-samples
+
+sample_index |>
+  filter(sample_scenario == "all_available") |>
+  transmute(
+    metric_order,
+    Metric = manuscript_name,
+    Dataset = reader_scenario,
+    Placement = placement_label,
+    Sample = format_sample(participants, participant_days, sites)
+  ) |>
+  arrange(metric_order, Dataset, Placement) |>
+  select(-metric_order) |>
+  pivot_wider(names_from = c(Dataset, Placement), values_from = Sample) |>
+  h08_gt(
+    title = "Exact all-available fitted samples",
+    note = "Cells are participants / participant-days / sites. Each metric has its own complete fitted frame."
+  )
+```
+
+## Primary-dataset site cells
+
+```{r}
+#| label: primary-site-cells
+
+site_levels <- sample_by_site |>
+  distinct(display_order, display_name) |>
+  arrange(display_order) |>
+  pull(display_name)
+
+sample_by_site |>
+  filter(run_id %in% c(
+    "main__glasses__all_available",
+    "main__chest__all_available"
+  )) |>
+  mutate(
+    Placement = if_else(
+      run_id == "main__glasses__all_available",
+      "Near eye",
+      "Chest"
+    ),
+    Site = factor(display_name, levels = site_levels),
+    Cell = sprintf("%d / %d", participants, participant_days)
+  ) |>
+  select(metric_order, metric_id, Placement, Site, Cell) |>
+  left_join(
+    metric_registry |>
+      select(metric_id, manuscript_name),
+    by = "metric_id"
+  ) |>
+  select(metric_order, Metric = manuscript_name, Placement, Site, Cell) |>
+  arrange(metric_order, Placement, Site) |>
+  pivot_wider(names_from = Site, values_from = Cell, values_fill = "—") |>
+  select(-metric_order) |>
+  h08_gt(
+    title = "Primary-dataset fitted site cells",
+    note = "Cells are participants / participant-days. Borås has no chest observations; the chest model therefore contains eight sites. Submitted names and order are retained.",
+    size = 10
+  )
+```
+
+## Paired-placement and cross-dataset common samples
+
+The paired-placement frames contain exactly the same participant-day keys for
+near eye and chest in all 18 metric-by-dataset checks. The cross-dataset frames
+likewise contain exactly the same keys for the primary and gap-timing-unaware
+fits in all 18 placement-by-metric checks.
+
+```{r}
+#| label: common-sample-audits
+
+paired_display <- paired_audit |>
+  left_join(
+    metric_registry |>
+      select(metric_id, manuscript_name),
+    by = "metric_id"
+  ) |>
+  transmute(
+    metric_order,
+    Metric = manuscript_name,
+    Comparison = if_else(
+      data_scenario_id == "main",
+      "Primary paired placement",
+      "Gap-timing-unaware paired placement"
+    ),
+    Sample = format_sample(
+      participants_glasses,
+      participant_days_glasses,
+      sites_glasses
+    ),
+    `Exact keys` = exact_row_keys_match
+  )
+
+cross_dataset_display <- main_gap_common_audit |>
+  left_join(
+    metric_registry |>
+      select(metric_id, manuscript_name),
+    by = "metric_id"
+  ) |>
+  transmute(
+    metric_order,
+    Metric = manuscript_name,
+    Comparison = paste(
+      if_else(placement == "glasses", "Near eye", "Chest"),
+      "primary–gap common"
+    ),
+    Sample = format_sample(
+      participants_main,
+      participant_days_main,
+      sites_main
+    ),
+    `Exact keys` = exact_row_keys_match
+  )
+
+bind_rows(paired_display, cross_dataset_display) |>
+  arrange(metric_order, Comparison) |>
+  select(-metric_order) |>
+  pivot_wider(
+    names_from = Comparison,
+    values_from = c(Sample, `Exact keys`),
+    names_glue = "{Comparison}: {.value}"
+  ) |>
+  h08_gt(
+    title = "Exact common-sample audits",
+    note = "Sample cells are participants / participant-days / sites. TRUE means both compared frames had identical sorted row keys and hashes.",
+    size = 10
+  )
+```
+
+[Download the complete model-frame index](../../../artifacts/06_model_data/H08/H08_model_frame_index.csv)
+and [all fitted site cells](../../../artifacts/06_model_data/H08/H08_model_frame_by_site.csv).
+
+# Primary near-eye results
+
+No average near-eye association survived the complete nine-member BH family
+(`r near_average_significant` adjusted-positive results), and no near-eye
+site-by-VLSQ-8 interaction survived its separate family
+(`r near_interaction_significant` adjusted-positive results). The practical
+estimates below are still informative about direction and uncertainty; they
+are not evidence that every true effect is exactly null.
+
+```{r}
+#| label: primary-near-eye-results
+
+result_display(main_near) |>
+  select(-Order) |>
+  h08_gt(
+    title = "Primary near-eye average VLSQ-8 associations",
+    subtitle = "Practical estimate, 95% Wald CI, REPORT-008 p-values, and exact fitted sample",
+    note = "Raw p-values compare site-only with additive models. BH adjustment is across all nine metrics. Significant adjusted p-values would be bold; none is bold."
+  ) |>
+  fmt_markdown(columns = c(`Raw p`, `BH-adjusted p`))
+```
+
+The melEDI-dose estimate was a ratio of 0.846 per VLSQ-8 SD (95% CI
+0.716–0.999), while its likelihood-ratio raw p-value was 0.051 and its
+BH-adjusted p-value was 0.160. The Wald interval and likelihood-ratio test use
+different inferential constructions; the complete family decision is
+therefore **inconclusive**, not statistically significant. The same family
+qualification applies to all unadjusted patterns.
+
+```{r}
+#| label: fig-near-eye-effects
+#| fig-cap: "Primary near-eye average associations between VLSQ-8 and the nine personal light-exposure metrics. Points show effects per one participant-level VLSQ-8 SD; horizontal lines are 95% Wald confidence intervals."
+#| fig-alt: "Forest plot with nine near-eye light-exposure metrics. Most ratio estimates are below one, but every interval reaches or crosses one except the melEDI-dose interval, which ends just below one. The hour-difference interval for time below 10 lx melEDI before sleep crosses zero. No BH-adjusted test is significant."
+#| out-width: "100%"
+
+knitr::include_graphics(h08_artifact(
+  "10_figures", "H08", "H08_near_eye_effects.png"
+))
+```
+
+[Source data for the near-eye figure](../../../artifacts/11_source_data/H08/H08_near_eye_effects_data.csv)
+
+# Complementary chest results
+
+Chest results are complementary rather than a second primary screen. No
+average chest association survived its nine-member family
+(`r chest_average_significant` adjusted-positive results), and no chest
+interaction survived its separate family (`r chest_interaction_significant`
+adjusted-positive results).
+
+```{r}
+#| label: complementary-chest-results
+
+result_display(main_chest) |>
+  select(-Order) |>
+  h08_gt(
+    title = "Complementary chest average VLSQ-8 associations",
+    subtitle = "Practical estimate, 95% Wald CI, REPORT-008 p-values, and exact fitted sample",
+    note = "The chest placement is complementary. BH adjustment is separate from the primary near-eye family. Significant adjusted p-values would be bold; none is bold."
+  ) |>
+  fmt_markdown(columns = c(`Raw p`, `BH-adjusted p`))
+```
+
+```{r}
+#| label: fig-chest-effects
+#| fig-cap: "Complementary chest average associations between VLSQ-8 and the nine personal light-exposure metrics. Points show effects per one participant-level VLSQ-8 SD; horizontal lines are 95% Wald confidence intervals."
+#| fig-alt: "Forest plot with nine chest light-exposure metrics. Most ratio estimates are below one. Several intervals approach one, but the BH-adjusted association tests are not significant. The hour-difference interval for time below 10 lx melEDI before sleep crosses zero."
+#| out-width: "100%"
+
+knitr::include_graphics(h08_artifact(
+  "10_figures", "H08", "H08_chest_effects.png"
+))
+```
+
+[Source data for the chest figure](../../../artifacts/11_source_data/H08/H08_chest_effects_data.csv)
+
+# Interaction structure and estimands
+
+## Global site-heterogeneity tests
+
+The interaction comparison asks whether the VLSQ-8 slope varies by submitted
+site after the average slope has been added. It is not the primary average
+association test.
+
+```{r}
+#| label: interaction-tests
+
+main_primary |>
+  transmute(
+    metric_order,
+    Placement = placement_label,
+    Metric = manuscript_name,
+    `LRT df` = interaction_lrt_df,
+    `Raw p` = format_p_cell(
+      interaction_p_raw,
+      interaction_adjusted_significant
+    ),
+    `BH-adjusted p` = format_p_cell(
+      interaction_p_adjusted,
+      interaction_adjusted_significant
+    ),
+    Status = interaction_effect_status
+  ) |>
+  arrange(metric_order, Placement) |>
+  select(-metric_order) |>
+  h08_gt(
+    title = "Separate site-by-VLSQ-8 heterogeneity families",
+    note = "Each placement has its own complete nine-member BH family. Significant adjusted p-values would be bold; none is bold."
+  ) |>
+  fmt_markdown(columns = c(`Raw p`, `BH-adjusted p`))
+```
+
+## Site-specific slopes
+
+Site-specific slopes are secondary estimates from the interaction models. They
+are shown with 95% intervals for transparency, not as new site-wise hypothesis
+families and not as evidence for site differences when the global
+heterogeneity test is inconclusive.
+
+```{r}
+#| label: site-specific-slopes
+
+site_slopes |>
+  filter(run_id %in% c(
+    "main__glasses__all_available",
+    "main__chest__all_available"
+  )) |>
+  transmute(
+    metric_order,
+    site_order = display_order,
+    Metric = manuscript_name,
+    Site = display_name,
+    Placement = placement_label,
+    Effect = format_effect(
+      estimate_practical_per_sd,
+      conf_low_practical_per_sd,
+      conf_high_practical_per_sd,
+      effect_type
+    )
+  ) |>
+  arrange(metric_order, site_order, Placement) |>
+  select(-metric_order, -site_order) |>
+  pivot_wider(names_from = Placement, values_from = Effect, values_fill = "—") |>
+  h08_gt(
+    title = "Site-specific VLSQ-8 slopes",
+    subtitle = "Effect per one VLSQ-8 SD (95% Wald CI)",
+    note = "Ratios use ×; the pre-sleep metric is an hour difference. Borås has no chest estimate.",
+    size = 10
+  )
+```
+
+## Centred low-to-high predictions
+
+The table compares predictions at half an SD below and half an SD above the
+observed score mean, averaging the sum-contrast site effect. These are
+predictions, not additional tests.
+
+```{r}
+#| label: centered-predictions
+
+predictions |>
+  filter(run_id %in% c(
+    "main__glasses__all_available",
+    "main__chest__all_available"
+  )) |>
+  mutate(
+    Score = sprintf("%.3f", VLSQ8),
+    Prediction = sprintf("%.3f (%.3f to %.3f)", estimate, conf_low, conf_high),
+    Point = recode(
+      prediction_id,
+      centre_minus_half_sd = "Lower score",
+      centre_plus_half_sd = "Higher score"
+    )
+  ) |>
+  select(
+    metric_order,
+    Placement = placement_label,
+    Metric = manuscript_name,
+    Point,
+    Score,
+    Prediction
+  ) |>
+  arrange(metric_order, Placement, Point) |>
+  pivot_wider(
+    names_from = Point,
+    values_from = c(Score, Prediction),
+    names_glue = "{Point}: {.value}"
+  ) |>
+  select(-metric_order) |>
+  h08_gt(
+    title = "Centred VLSQ-8 prediction contrast",
+    note = "Predictions are on each metric's natural scale and include 95% delta-method intervals with physical lower bounds applied."
+  )
+```
+
+# Paired-placement comparison
+
+Near-eye and chest models were fitted separately on exactly matched
+participant-day keys. The display compares estimates; it does not pool
+placements, estimate within-day placement differences, or claim equivalence.
+
+```{r}
+#| label: paired-placement-table
+
+master |>
+  filter(run_id %in% c(
+    "main__glasses__paired_common_sample",
+    "main__chest__paired_common_sample"
+  )) |>
+  transmute(
+    metric_order,
+    Metric = manuscript_name,
+    Placement = placement_label,
+    Effect = format_effect(
+      estimate_practical_per_sd,
+      conf_low_practical_per_sd,
+      conf_high_practical_per_sd,
+      effect_type
+    ),
+    Sample = format_sample(participants, participant_days, sites)
+  ) |>
+  arrange(metric_order, Placement) |>
+  pivot_wider(
+    names_from = Placement,
+    values_from = c(Effect, Sample),
+    names_glue = "{Placement}: {.value}"
+  ) |>
+  select(-metric_order) |>
+  h08_gt(
+    title = "Exactly paired near-eye and chest estimates",
+    note = "Effects are per one VLSQ-8 SD with 95% Wald CIs. Sample cells are participants / participant-days / sites. This comparison carries estimates and intervals only; it is not an extra p-value screen."
+  )
+```
+
+The identity-line plot contains only ratio-scale metrics. The pre-sleep metric
+has an additive hour-difference scale and is therefore kept in the adjacent
+table rather than mixed into that geometry.
+
+```{r}
+#| label: fig-paired-placement
+#| fig-cap: "Near-eye and chest VLSQ-8 associations estimated on identical participant-day samples. Ratio-scale metrics only; diagonal line marks equal point estimates, not an equivalence region."
+#| fig-alt: "Scatter plot comparing paired-sample near-eye ratios on the horizontal axis with chest ratios on the vertical axis for eight metrics. Points cluster near the diagonal and below one, with no equivalence bounds. The additive pre-sleep hour-difference outcome is excluded from this plot and reported in the adjacent table."
+#| out-width: "88%"
+
+knitr::include_graphics(h08_artifact(
+  "10_figures", "H08", "H08_paired_placement_effects.png"
+))
+```
+
+[Source data for the paired-placement figure](../../../artifacts/11_source_data/H08/H08_paired_placement_effects_data.csv)
+
+# Diagnostics and response-family gate
+
+All 36 primary-dataset additive and interaction fits converged, had
+positive-definite Hessians, were nonsingular, and retained full-rank fixed
+effects. No primary or complementary effect was declared non-estimable. The
+diagnostic gate retained all nine approved response specifications; three need
+explicit limitations rather than a post-result family switch.
+
+```{r}
+#| label: response-family-gate
+
+response_gate |>
+  arrange(metric_order) |>
+  transmute(
+    Order = metric_order,
+    Metric = manuscript_name,
+    `Response / transform` = paste(response_family, response_transform, sep = " / "),
+    `Inferential targets` = inferential_targets,
+    `Major failures` = major_failures,
+    `Review targets` = review_targets,
+    Decision = str_replace_all(family_gate_status, "_", " ")
+  ) |>
+  select(-Order) |>
+  h08_gt(
+    title = "Common response-family gate",
+    note = "A review flag triggers explicit qualification; it does not permit data-dependent response-family switching."
+  )
+```
+
+```{r}
+#| label: primary-diagnostics
+
+diagnostics |>
+  filter(run_id %in% c(
+    "main__glasses__all_available",
+    "main__chest__all_available"
+  )) |>
+  transmute(
+    metric_order,
+    Placement = placement_label,
+    Metric = manuscript_name,
+    `Maximum gradient` = sprintf(
+      "%.2g",
+      pmax(additive_max_gradient, interaction_max_gradient, na.rm = TRUE)
+    ),
+    `Residual |fit| Spearman` = sprintf(
+      "%+.3f",
+      residual_absolute_fitted_spearman
+    ),
+    `Consecutive-day residual r` = sprintf(
+      "%+.3f",
+      pooled_consecutive_day_residual_correlation
+    ),
+    `Observed / expected zeros` = if_else(
+      response_family == "tweedie_log",
+      sprintf("%d / %.3g", observed_zero_n, expected_zero_n),
+      "—"
+    ),
+    `Bound check` = prediction_bound_status,
+    `Diagnostic decision` = if_else(
+      diagnostic_status == "PASS",
+      "PASS",
+      str_replace_all(diagnostic_issues, "_", " ")
+    )
+  ) |>
+  arrange(metric_order, Placement) |>
+  select(-metric_order) |>
+  h08_gt(
+    title = "Interpreted primary-dataset diagnostics",
+    note = "Serial correlations are descriptive pooled checks. Zero expectations are analytical compound-Poisson probabilities from the fitted Tweedie model; no simulation was used.",
+    size = 10
+  )
+```
+
+The main limitations are specific:
+
+- Darkest 10 h mean showed increasing residual spread with fitted values
+  (absolute-residual versus fitted Spearman correlations 0.341 near eye and
+  0.349 chest). Its direction and intervals should therefore be read with
+  extra caution.
+- Time below 1 lx melEDI during sleep contained four observed exact zeros at
+  each placement, whereas the fitted compound-Poisson model assigned an
+  extremely small expected zero count. This is a conspicuous relative
+  discrepancy but only four rows in each large fitted frame. The model is
+  retained under the approved common-family gate, with the zero-mass mismatch
+  stated explicitly.
+- The corrected melEDI-dose fits passed the main numerical checks, but the
+  correction is timing-dependent and is therefore interpreted alongside the
+  exact common-sample dataset and observed-dose sensitivities below.
+
+```{r}
+#| label: fig-model-adequacy
+#| fig-cap: "Selected near-eye model-adequacy checks for all nine metrics. Panels retain the model-specific transformed or Pearson-residual scales and are diagnostic rather than effect displays."
+#| fig-alt: "Multi-panel diagnostic figure for the nine primary near-eye models, showing residual-versus-fitted patterns and distribution checks. Darkest 10 h mean has the clearest increase in residual spread; the sleep-below-1-lux model has a small observed zero mass not reproduced by its Tweedie fit."
+#| out-width: "100%"
+
+knitr::include_graphics(h08_artifact(
+  "10_figures", "H08", "H08_near_eye_model_adequacy.png"
+))
+```
+
+[Source data for the adequacy figure](../../../artifacts/11_source_data/H08/H08_near_eye_model_adequacy_data.csv)
+
+## Site and participant influence
+
+All 153 planned leave-one-site-out refits succeeded. Some point estimates were
+direction- or magnitude-sensitive to omitting one site, which reinforces the
+inconclusive family-level interpretation. No site was removed. The participant
+screen ranks the five largest residual profiles for each main
+placement-by-metric fit; it is a transparent review list, not a deletion rule,
+and no participant was excluded after seeing it.
+
+```{r}
+#| label: leave-one-site-out-summary
+
+loo_summary |>
+  arrange(metric_order, placement_label) |>
+  transmute(
+    metric_order,
+    Placement = placement_label,
+    Metric = manuscript_name,
+    Refits = sprintf("%d / %d", successful_refits, refits),
+    `Sign reversal` = sign_reversal_any,
+    `Largest relative |change|` = sprintf(
+      "%.2f",
+      maximum_relative_absolute_change
+    ),
+    `Most influential omitted site` = most_influential_omitted_site,
+    Interpretation = influence_status
+  ) |>
+  select(-metric_order) |>
+  h08_gt(
+    title = "Leave-one-site-out stability",
+    note = "Relative changes can be large when the full-sample estimate is close to zero. They do not by themselves identify an erroneous site."
+  )
+```
+
+[Download the participant influence screen](../../../artifacts/08_diagnostics/H08/H08_participant_influence_screen.csv).
+
+# Gap-timing-unaware dataset sensitivity
+
+The strongest dataset comparison uses identical row keys across datasets,
+placement, and metric. All 18 exact-common-sample estimates were classified as
+stable within model uncertainty. The scenario-specific all-available families
+had no BH-adjusted conclusion change. Within those all-available fits,
+near-eye wake time above 250 lx melEDI and corrected melEDI dose were
+precision-sensitive because a 95% interval's zero-exclusion changed; all chest
+comparisons were stable within model uncertainty.
+
+```{r}
+#| label: gap-common-sample-table
+
+gap_common_display <- gap_sensitivity |>
+  filter(sample_scenario == "main_gap_common_sample") |>
+  left_join(
+    metric_registry |>
+      select(metric_id, response_transform, effect_scale),
+    by = "metric_id"
+  ) |>
+  mutate(
+    estimate_main_display = model_to_practical(
+      estimate_main,
+      response_transform,
+      effect_scale
+    ),
+    conf_low_main_display = model_to_practical(
+      conf_low_main,
+      response_transform,
+      effect_scale
+    ),
+    conf_high_main_display = model_to_practical(
+      conf_high_main,
+      response_transform,
+      effect_scale
+    ),
+    estimate_gap_display = model_to_practical(
+      estimate_gap_timing_unaware,
+      response_transform,
+      effect_scale
+    ),
+    conf_low_gap_display = model_to_practical(
+      conf_low_gap_timing_unaware,
+      response_transform,
+      effect_scale
+    ),
+    conf_high_gap_display = model_to_practical(
+      conf_high_gap_timing_unaware,
+      response_transform,
+      effect_scale
+    )
+  )
+
+gap_common_display |>
+  transmute(
+    metric_order,
+    Placement = if_else(placement == "glasses", "Near eye", "Chest"),
+    Metric = manuscript_name,
+    `Primary effect (95% CI)` = format_effect(
+      estimate_main_display,
+      conf_low_main_display,
+      conf_high_main_display,
+      effect_scale
+    ),
+    `Gap-timing-unaware effect (95% CI)` = format_effect(
+      estimate_gap_display,
+      conf_low_gap_display,
+      conf_high_gap_display,
+      effect_scale
+    ),
+    Sample = format_sample(
+      participants_main,
+      participant_days_main,
+      sites_main
+    ),
+    `Exact row keys` = exact_common_keys,
+    Stability = stability_classification
+  ) |>
+  arrange(metric_order, Placement) |>
+  select(-metric_order) |>
+  h08_gt(
+    title = "Exact-common-sample dataset sensitivity",
+    note = "Effects are per one VLSQ-8 SD with 95% Wald CIs. These comparisons carry no additional p-value screen."
+  )
+```
+
+```{r}
+#| label: fig-gap-common-sample
+#| fig-cap: "Primary and gap-timing-unaware VLSQ-8 associations on exactly matched participant-day samples, shown separately for near-eye and chest placements."
+#| fig-alt: "Paired comparison of primary and gap-timing-unaware estimates on identical samples for nine metrics at each placement. Estimates are generally close; all eighteen comparisons are classified as stable within model uncertainty."
+#| out-width: "100%"
+
+knitr::include_graphics(h08_artifact(
+  "10_figures", "H08", "H08_gap_common_sample_effects.png"
+))
+```
+
+[Source data for the common-sample dataset figure](../../../artifacts/11_source_data/H08/H08_gap_common_sample_effects_data.csv)
+
+```{r}
+#| label: all-available-gap-stability
+
+gap_sensitivity |>
+  filter(sample_scenario == "all_available") |>
+  count(
+    Placement = if_else(placement == "glasses", "Near eye", "Chest"),
+    Stability = stability_classification,
+    name = "Metrics"
+  ) |>
+  h08_gt(
+    title = "Scenario-specific all-available stability classifications",
+    note = "These fits can differ in both metric values and available rows; the exact-common-sample table above isolates value-definition changes."
+  )
+```
+
+# Other prespecified sensitivities
+
+## Photoperiod adjustment and participant summaries
+
+Linear centred photoperiod was added only as a sensitivity covariate, with site
+retained and no photoperiod interaction. Participant-summary models give each
+participant one outcome value and use the corresponding fixed-effects model.
+All 36 additive sensitivity fits converged and retained full-rank fixed
+effects. Their estimates were broadly compatible with the participant-day
+results; they are not new multiplicity screens.
+
+```{r}
+#| label: photoperiod-participant-summary
+
+bind_rows(
+  photoperiod |>
+    mutate(Sensitivity = "Photoperiod-adjusted"),
+  participant_summary |>
+    mutate(
+      Sensitivity = "Participant summary",
+      participant_days = participant_days_contributing
+    )
+) |>
+  transmute(
+    metric_order,
+    Sensitivity,
+    Placement = placement_label,
+    Metric = manuscript_name,
+    `Effect per VLSQ-8 SD (95% CI)` = format_effect(
+      estimate_practical_per_sd,
+      conf_low_practical_per_sd,
+      conf_high_practical_per_sd,
+      effect_type
+    ),
+    Sample = format_sample(participants, participant_days, sites),
+    `Converged / full rank` = paste(converged, fixed_full_rank, sep = " / ")
+  ) |>
+  arrange(metric_order, Sensitivity, Placement) |>
+  select(-metric_order) |>
+  h08_gt(
+    title = "Photoperiod-adjusted and participant-summary estimates",
+    note = "Effects have 95% Wald CIs. Sample cells are participants / contributing participant-days / sites. TRUE / TRUE means convergence and full fixed-effect rank."
+  )
+```
+
+## Exactly identified longest period and observed dose
+
+The primary longest-period metric is an observed lower bound. Requiring exact
+identification reduced the available sample and did not yield a precise
+association: near eye 0.958× (95% CI 0.856–1.072) and chest 0.939× (95% CI
+0.855–1.032). On the exactly paired sample, estimates were 0.943× near eye and
+0.952× chest, with both intervals crossing one.
+
+The observed-dose comparison holds the corrected-dose fitted sample fixed and
+replaces the value with uncorrected observed dose. It is descriptive. The
+all-available near-eye estimate was 0.842× (95% CI 0.713–0.995), but the paired
+near-eye interval crossed one; the chest all-available interval also reached
+one. These sensitivities do not override the primary BH family.
+
+```{r}
+#| label: exact-longest-observed-dose
+
+bind_rows(
+  exact_longest |>
+    mutate(Sensitivity = "Exactly identified longest period"),
+  observed_dose |>
+    mutate(Sensitivity = "Observed dose on corrected-dose sample")
+) |>
+  transmute(
+    metric_order,
+    Sensitivity,
+    Placement = placement_label,
+    `Sample basis` = recode(
+      sample_scenario,
+      all_available = "All available",
+      paired_common_sample = "Paired placement"
+    ),
+    `Effect per VLSQ-8 SD (95% CI)` = format_effect(
+      estimate_practical_per_sd,
+      conf_low_practical_per_sd,
+      conf_high_practical_per_sd,
+      effect_type
+    ),
+    Sample = format_sample(participants, participant_days, sites),
+    Status = effect_status
+  ) |>
+  arrange(metric_order, Sensitivity, `Sample basis`, Placement) |>
+  select(-metric_order) |>
+  h08_gt(
+    title = "Metric-definition sensitivities",
+    note = "Estimates have 95% Wald CIs and do not carry an additional p-value family."
+  )
+```
+
+## Deferred upstream-dependent scenarios
+
+Approved Rule B/Rule C daily-denominator variants and the all-zero-inclusive
+scenario are not H08-ready direct inputs. They remain deferred rather than
+being approximated within H08. Stage 2 does not require an upstream change
+request because the available, hash-verified sensitivity battery addresses the
+current result gate. If the author makes those scenarios mandatory before
+Stage 3, H08 will write `audit/handoffs/H08_shared_change_request.md` and stop
+for the upstream producer.
+
+# Multiplicity audit
+
+All eight inferential families contain exactly nine observed raw and adjusted
+p-values. Independent BH recalculation matched the stored results. No family
+had an adjusted p-value below 0.05. Paired/common-sample and other sensitivity
+estimates carry 95% intervals but no additional p-value screen.
+
+```{r}
+#| label: multiplicity-family-audit
+
+family_audit |>
+  transmute(
+    Family = family_id,
+    Role = role,
+    `Observed / planned` = sprintf("%d / %d", observed_raw_p, planned_n),
+    Method = multiplicity_method,
+    `Raw p < 0.05` = raw_significant_n,
+    `Adjusted p < 0.05` = adjusted_significant_n,
+    `Complete family` = complete_nine_member_family,
+    `Independent check` = independent_recalculation_matches
+  ) |>
+  h08_gt(
+    title = "Eight complete nine-member H08 families",
+    note = "REPORT-008 uses a leading zero and three decimals, with values below 0.001 shown as <0.001. Bold is reserved for the adjusted decision; none qualifies here."
+  )
+```
+
+# V0 reconstruction and reconciliation
+
+V0 is reproducible from the archived RData files and rendered outputs. It used
+chest as the main placement, near eye as a robustness repeat, default treatment
+coding, `(1 | Id)`, and a joint score-plus-site-interaction block as its
+association test. It then called `p.adjust()` on one scalar at a time with
+`n = 9`. That scalar operation reproduces the displayed strings but is not a
+nine-member FDR adjustment. A consistent vector BH calculation is retained in
+the audit artifact for comparison.
+
+```{r}
+#| label: v0-reproduction-table
+
+v0_reproduction |>
+  transmute(
+    metric_order,
+    Placement = placement,
+    Metric = manuscript_name,
+    `V0 sample` = format_sample(participants, participant_days, sites),
+    `V0 joint raw p` = nh_format_p_value(association_p_raw),
+    `V0 scalar display` = displayed_adjusted_p,
+    `Scalar display supported` = displayed_supported,
+    `Consistent vector BH p` = nh_format_p_value(consistent_vector_bh_p)
+  ) |>
+  arrange(metric_order, Placement) |>
+  select(-metric_order) |>
+  h08_gt(
+    title = "Exact V0 reconstruction",
+    note = "Near-eye V0 displayed >0.9 for every metric. Chest displayed 0.4, 0.7, then >0.9 except 0.3 for pre-sleep; the archived render strings and scalar calculation agree."
+  )
+```
+
+```{r}
+#| label: v0-new-comparison
+
+v0_comparison |>
+  transmute(
+    metric_order,
+    Placement = placement,
+    Metric = manuscript_name,
+    `V0 joint raw p` = nh_format_p_value(association_p_raw),
+    `Audited average raw p` = nh_format_p_value(new_average_p_raw),
+    `Audited average BH p` = nh_format_p_value(new_average_p_adjusted),
+    `Audited effect (95% CI)` = format_effect(
+      new_estimate_practical_per_sd,
+      new_conf_low_practical_per_sd,
+      new_conf_high_practical_per_sd,
+      new_effect_type
+    ),
+    `Participant-day change` = participant_day_change,
+    `Adjusted conclusion changed` = new_conclusion_differs_from_v0_scalar
+  ) |>
+  arrange(metric_order, Placement) |>
+  select(-metric_order) |>
+  h08_gt(
+    title = "V0-to-audited result comparison",
+    note = "The tests are not numerically interchangeable: V0 tests the joint score-plus-interaction block, whereas the audited average test adds one centred score slope after site. No audited BH-adjusted conclusion is positive."
+  )
+```
+
+The audited implementation therefore does not convert a V0 positive result
+into a negative one. Rather, it replaces a nonstandard display adjustment and
+a differently defined joint test with the approved average-slope and
+heterogeneity families. The defensible Stage 2 conclusion is that the observed
+data do not provide multiplicity-adjusted evidence of an association between
+VLSQ-8 score and any of the nine near-eye metrics; chest and the sensitivity
+battery do not materially strengthen that evidence. Several estimates lean
+toward less bright-light exposure at higher scores, but their family-adjusted
+evidence and site stability are inconclusive. These are associations, not
+physiological responses or health effects.
+
+# Reproducibility and artifact map
+
+The Stage 2 runner fitted all approved models in R 4.6.1, wrote frozen model
+frames and bundles, and exported tables, diagnostics, figures, source data,
+and manifests. It used maintained `reformulas` formula helpers. The production
+run used no bootstrap, simulation, or other resampling, so the pilot-runtime
+gate was not triggered.
+
+```{r}
+#| label: execution-environment
+
+execution_environment |>
+  h08_gt(
+    title = "Recorded execution environment",
+    note = "Consequential package versions, commands, and input files are recorded in the H08 manifest artifacts."
+  )
+```
+
+Primary entry points and frozen outputs:
+
+- [Stage 2 runner](../../../scripts/hypotheses/H08/run_h08_stage2.R)
+- [H08 contract](../../../scripts/hypotheses/H08/h08_contract.R)
+- [H08 modelling helpers](../../../scripts/hypotheses/H08/h08_modeling.R)
+- [Focused Stage 2 test](../../../tests/hypotheses/H08/test_h08_stage2.R)
+- [Master result table](../../../artifacts/09_tables/H08/H08_model_results_master.csv)
+- [Complete diagnostic table](../../../artifacts/08_diagnostics/H08/H08_model_diagnostics.csv)
+- [Model-frame rows](../../../artifacts/06_model_data/H08/H08_model_frame_rows.csv)
+- [Stage 2 artifact manifest](../../../artifacts/12_manifests/H08/H08_stage2_artifacts.csv)
+- [Figure manifest and alt text](../../../artifacts/12_manifests/H08/H08_figure_manifest.csv)
+
+# Stage 2 author approval gate
+
+::: {.callout-important}
+## Approval requested before Stage 3
+
+Please approve or revise the following as one Stage 2 result package:
+
+1. Accept the eight complete nine-member BH families and the conclusion that
+   none has an adjusted p-value below 0.05.
+2. Accept the primary near-eye and complementary chest practical estimates,
+   95% Wald confidence intervals, exact fitted samples, and separate
+   site-heterogeneity interpretation.
+3. Accept the retained response families with explicit limitations for
+   Darkest 10 h mean residual spread, sleep-below-1-lx zero mass, and the
+   timing-dependent corrected dose.
+4. Accept the leave-one-site-out interpretation: some estimates are
+   site-sensitive, no site is removed, and the overall result remains
+   inconclusive.
+5. Accept the exact paired-placement display without pooling or equivalence
+   claims and without an additional p-value screen.
+6. Accept the gap-timing-unaware, photoperiod, participant-summary,
+   exactly-identified-longest-period, and observed-dose sensitivity
+   interpretations.
+7. Accept the V0 reconstruction and the explanation that V0 and the audited
+   model test different null hypotheses and use different multiplicity
+   procedures.
+8. Accept the plain-language claim boundary: no multiplicity-adjusted evidence
+   for an H08 association, with uncertain directional patterns and no causal,
+   physiological, or health-effect claim.
+
+On explicit approval, Stage 3 may create `notebooks/hypotheses/H08.qmd` from
+these accepted outputs. In accordance with REPORT-012 for this H08 task, that
+future notebook will place a compact note callout titled **Results in brief**
+directly after the hypothesis/analytical-question section and will preserve
+the multiplicity, uncertainty, chest, and sensitivity qualifications. Stage 4
+will remain gated after Stage 3. No Stage 3 or Stage 4 file has been created.
+:::

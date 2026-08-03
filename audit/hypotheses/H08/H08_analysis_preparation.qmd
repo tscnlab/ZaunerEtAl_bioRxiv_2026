@@ -1,0 +1,1245 @@
+---
+title: "H08 analysis preparation and provenance"
+subtitle: "From verified VLSQ-8 scores and personal light-exposure metrics to reported associations"
+date: last-modified
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    code-fold: true
+    code-summary: "Show the R code used for this display"
+    code-tools: true
+    page-layout: full
+execute:
+  echo: true
+  warning: false
+  message: false
+  error: false
+fig-cap-location: bottom
+tbl-cap-location: top
+---
+
+```{r}
+#| label: setup-h08-preparation
+#| include: false
+
+suppressPackageStartupMessages({
+  library(dplyr)
+  library(ggplot2)
+  library(gt)
+  library(knitr)
+  library(readr)
+  library(scales)
+  library(tibble)
+  library(tidyr)
+})
+
+root_candidates <- unique(c(
+  normalizePath(getwd(), winslash = "/", mustWork = TRUE),
+  normalizePath(
+    file.path(getwd(), "../../.."),
+    winslash = "/",
+    mustWork = FALSE
+  )
+))
+is_project_root <- vapply(
+  root_candidates,
+  function(path) {
+    file.exists(file.path(path, "renv.lock")) &&
+      file.exists(file.path(
+        path,
+        "scripts/hypotheses/H08/h08_contract.R"
+      ))
+  },
+  logical(1)
+)
+stopifnot(any(is_project_root))
+root <- root_candidates[which(is_project_root)[1L]]
+knitr::opts_knit$set(root.dir = root)
+
+source(file.path(root, "scripts/pipeline/paths_io.R"))
+
+if (!identical(as.character(getRversion()), "4.6.1")) {
+  stop("H08 preparation requires R 4.6.1", call. = FALSE)
+}
+
+read_h08_csv <- function(relative_path) {
+  readr::read_csv(
+    file.path(root, relative_path),
+    show_col_types = FALSE,
+    progress = FALSE,
+    na = ""
+  )
+}
+
+prep_gt <- function(table, font_size = 12) {
+  table |>
+    gt::opt_row_striping() |>
+    gt::sub_missing(missing_text = "—") |>
+    gt::tab_options(
+      table.width = gt::pct(100),
+      table.font.size = gt::px(font_size),
+      data_row.padding = gt::px(4),
+      column_labels.font.weight = "600",
+      source_notes.font.size = gt::px(max(10, font_size - 2))
+    )
+}
+
+format_count <- function(value) {
+  format(value, big.mark = ",", scientific = FALSE, trim = TRUE)
+}
+
+placement_colors <- c(
+  "Near eye" = "#0072B2",
+  "Chest" = "#D55E00"
+)
+
+input_audit <- read_h08_csv(
+  "artifacts/06_model_data/H08/H08_input_audit.csv"
+)
+metric_registry <- read_h08_csv(
+  "artifacts/06_model_data/H08/H08_metric_registry.csv"
+)
+formula_registry <- read_h08_csv(
+  "artifacts/06_model_data/H08/H08_formula_registry.csv"
+)
+run_registry <- read_h08_csv(
+  "artifacts/06_model_data/H08/H08_run_registry.csv"
+)
+frame_index <- read_h08_csv(
+  "artifacts/06_model_data/H08/H08_model_frame_index.csv"
+)
+response_contract <- read_h08_csv(
+  "artifacts/06_model_data/H08/H08_response_contract_audit.csv"
+)
+paired_audit <- read_h08_csv(
+  "artifacts/06_model_data/H08/H08_paired_sample_audit.csv"
+)
+main_gap_audit <- read_h08_csv(
+  "artifacts/06_model_data/H08/H08_main_gap_common_sample_audit.csv"
+)
+score_audit <- read_h08_csv(
+  "artifacts/08_diagnostics/H08/H08_vlsq_score_audit.csv"
+)
+diagnostics <- read_h08_csv(
+  "artifacts/08_diagnostics/H08/H08_model_diagnostics.csv"
+)
+response_gate <- read_h08_csv(
+  "artifacts/08_diagnostics/H08/H08_response_family_gate.csv"
+)
+loo_summary <- read_h08_csv(
+  "artifacts/08_diagnostics/H08/H08_leave_one_site_out_summary.csv"
+)
+family_audit <- read_h08_csv(
+  "artifacts/09_tables/H08/H08_family_audit.csv"
+)
+gap_sensitivity <- read_h08_csv(
+  "artifacts/09_tables/H08/H08_gap_timing_unaware_sensitivity.csv"
+)
+photoperiod <- read_h08_csv(
+  "artifacts/09_tables/H08/H08_photoperiod_sensitivity.csv"
+)
+participant_summary <- read_h08_csv(
+  "artifacts/09_tables/H08/H08_participant_summary_sensitivity.csv"
+)
+exact_longest <- read_h08_csv(
+  paste0(
+    "artifacts/09_tables/H08/",
+    "H08_exactly_identified_longest_period_sensitivity.csv"
+  )
+)
+observed_dose <- read_h08_csv(
+  "artifacts/09_tables/H08/H08_observed_dose_sensitivity.csv"
+)
+sample_support <- read_h08_csv(
+  "artifacts/11_source_data/H08/H08_preparation_sample_support.csv"
+)
+score_distribution <- read_h08_csv(
+  paste0(
+    "artifacts/11_source_data/H08/",
+    "H08_preparation_vlsq_score_distribution.csv"
+  )
+)
+score_site_support <- read_h08_csv(
+  paste0(
+    "artifacts/11_source_data/H08/",
+    "H08_preparation_vlsq_site_support.csv"
+  )
+)
+metric_availability <- read_h08_csv(
+  paste0(
+    "artifacts/11_source_data/H08/",
+    "H08_preparation_metric_availability.csv"
+  )
+)
+site_support <- read_h08_csv(
+  "artifacts/11_source_data/H08/H08_preparation_site_support.csv"
+)
+site_support_summary <- read_h08_csv(
+  paste0(
+    "artifacts/11_source_data/H08/",
+    "H08_preparation_site_support_summary.csv"
+  )
+)
+site_registry <- read_h08_csv("config/site_display_registry.csv") |>
+  arrange(.data$display_order)
+
+model_frame_archive <- readRDS(file.path(
+  root,
+  "artifacts/06_model_data/H08/H08_model_frames.rds"
+))
+model_frames <- model_frame_archive$model_frames
+
+near_id <- "main__glasses__all_available"
+chest_id <- "main__chest__all_available"
+```
+
+::: {.callout-note title="About this analysis record"}
+This page explains how verified VLSQ-8 questionnaire scores and personal
+light-exposure metrics were turned into the H08 results. The companion
+[H08 results report](../../../notebooks/hypotheses/H08.html) presents the
+scientific findings.
+
+Rendering this page recalculates only file-identity checks, schema and key
+checks, and lightweight descriptive summaries from frozen H08 model frames.
+It reads stored fits, estimates, 95% confidence intervals, diagnostics,
+influence screens, and sensitivity outputs from their recorded files. It does
+not fit or refit a model, calculate predictions, re-estimate residual
+diagnostics, rerun site-omission analyses, bootstrap, resample, or simulate
+data.
+:::
+
+## Purpose
+
+H08 asks whether nine duration-, exposure-history-, and level-based personal
+light-exposure metrics are associated with VLSQ-8 visual-light-sensitivity
+scores. Near-eye measurement is primary because it more closely represents
+light near the eyes during wear. All-available chest measurement is
+complementary and is not pooled with near-eye measurement. Every inferential
+outcome has one row per participant-day.
+
+The predefined preparation sensitivity uses the **gap-timing-unaware
+dataset**. It still passed the general requirement of at least 50% valid
+minutes per hour and at least 80% valid hours per day, but the timing of the
+remaining missing observations was not used for an additional metric-specific
+adjustment. For contrast at this first explanation, the primary could be
+interpreted as a **time-sensitive primary metric dataset**. Hereafter it is
+called simply the primary dataset.
+
+This page identifies the exact data, score rule, samples, formulae, code, and
+stored checks behind the accepted report. It documents provenance; it does
+not create an alternate analysis.
+
+## Analysis map
+
+```{mermaid}
+flowchart TD
+  A["Verified VLSQ-8 scores<br/>184 participants"] --> C["Identity, score, schema,<br/>key and support checks"]
+  B["Verified personal light exposure<br/>near eye and chest"] --> C
+  C --> D["Twelve run definitions<br/>dataset × placement × sample"]
+  D --> E["Nine metric-specific<br/>participant-day frames per run"]
+  E --> F["Centred VLSQ-8 predictor<br/>one participant SD = 5.540 points"]
+  F --> G["Site-only, additive and<br/>site-interaction models"]
+  G --> H["Practical effects, 95% intervals<br/>and complete-family BH adjustment"]
+  G --> I["Residual, support, serial,<br/>influence and response checks"]
+  G --> J["Placement, preparation,<br/>photoperiod and summary sensitivities"]
+  H --> K["Tables, accessible figures<br/>and exact source CSV files"]
+  I --> K
+  J --> K
+  K --> L["H08 results report"]
+  M["Automated identity and<br/>structural checks"] -. verify .-> C
+  M -. verify .-> E
+  M -. verify .-> K
+```
+
+The arrows show dependencies. They do not mean that this page repeats model
+estimation.
+
+## What is calculated when this page opens
+
+```{r}
+#| label: tbl-h08-prep-boundary
+#| tbl-cap: "Calculations performed when this page is rendered."
+
+tibble::tribble(
+  ~Category, ~Calculated_on_render, ~Explanation,
+  "File identity and schema", "Yes", "Checks recorded SHA-256 identities, required columns, unique keys, and archive dimensions.",
+  "Descriptive support", "Yes", "Summarises stored score counts, metric-specific samples, missing-value reasons, and site contributions.",
+  "Model construction and estimation", "No", "Reads the formula registry, model-frame archive, stored estimates, and model records.",
+  "Diagnostics and sensitivities", "No", "Reads recorded diagnostic and sensitivity outputs; no check or sensitivity is repeated.",
+  "Reader figures", "Display only", "Draws three descriptive figures from the linked, exact source-data CSV files."
+) |>
+  gt::gt() |>
+  gt::cols_width(
+    Category ~ gt::pct(24),
+    Calculated_on_render ~ gt::pct(18),
+    Explanation ~ gt::pct(58)
+  ) |>
+  prep_gt()
+```
+
+## 1. Verified inputs
+
+### File identity
+
+The result-producing analysis begins from nine current inputs whose SHA-256
+identities were pinned before the model frames were constructed. Four
+historical reconstruction inputs are retained in the complete audit record but
+are not used to produce the current results and are therefore omitted below.
+
+```{r}
+#| label: tbl-h08-prep-input-identities
+#| tbl-cap: "Verified inputs used by the current H08 result-producing analysis."
+
+result_input_roles <- c(
+  "normalized_vlsq8",
+  "primary_near_eye_metrics",
+  "primary_chest_metrics",
+  "gap_timing_unaware_metrics",
+  "primary_support_provenance",
+  "gap_support_provenance",
+  "site_display_registry",
+  "metric_display_registry",
+  "h05_response_contract"
+)
+input_labels <- c(
+  normalized_vlsq8 = "Normalised VLSQ-8 scores",
+  primary_near_eye_metrics = "Primary near-eye metrics",
+  primary_chest_metrics = "Complementary chest metrics",
+  gap_timing_unaware_metrics = "Preparation-sensitivity metrics",
+  primary_support_provenance = "Primary metric-support provenance",
+  gap_support_provenance = "Preparation-sensitivity support provenance",
+  site_display_registry = "Submitted site display registry",
+  metric_display_registry = "Manuscript metric display registry",
+  h05_response_contract = "Inherited response-family contract"
+)
+
+verified_inputs <- input_audit |>
+  filter(.data$input_role %in% result_input_roles) |>
+  mutate(
+    current_sha256 = vapply(
+      file.path(root, .data$path),
+      artifact_sha256,
+      character(1)
+    ),
+    Input = unname(input_labels[.data$input_role]),
+    Path = .data$path,
+    `SHA-256 prefix` = substr(.data$current_sha256, 1L, 16L),
+    Verified = if_else(
+      .data$current_sha256 == .data$expected_sha256,
+      "PASS",
+      "FAIL"
+    )
+  )
+stopifnot(nrow(verified_inputs) == 9L, all(verified_inputs$Verified == "PASS"))
+
+verified_inputs |>
+  select("Input", "Path", "SHA-256 prefix", "Verified") |>
+  gt::gt() |>
+  gt::cols_width(
+    Input ~ gt::pct(24),
+    Path ~ gt::pct(54),
+    `SHA-256 prefix` ~ gt::pct(15),
+    Verified ~ gt::pct(7)
+  ) |>
+  gt::tab_source_note(
+    "Complete 64-character identities remain in artifacts/06_model_data/H08/H08_input_audit.csv."
+  ) |>
+  prep_gt(11)
+```
+
+### Schema, key, content, and value checks
+
+VLSQ-8 is keyed by site and participant. Every model frame is keyed by site,
+participant, local date, and metric. The 108-row model-frame index identifies
+one exact frame for each of 12 runs and nine metrics.
+
+```{r}
+#| label: tbl-h08-prep-integrity-checks
+#| tbl-cap: "Bounded integrity checks performed from stored H08 inputs and model frames."
+
+required_frame_columns <- c(
+  ".model_row_id", "site", "Id", "participant_key", "local_date",
+  "VLSQ8", "VLSQ8_c", "value", "response_value", "metric_id"
+)
+frames_with_complete_schema <- sum(vapply(
+  model_frames,
+  function(frame) all(required_frame_columns %in% names(frame)),
+  logical(1)
+))
+frame_duplicate_keys <- sum(vapply(
+  model_frames,
+  function(frame) anyDuplicated(frame$.model_row_id) > 0L,
+  logical(1)
+))
+index_key_rows <- frame_index |>
+  distinct(.data$run_id, .data$metric_id) |>
+  nrow()
+response_contract_verified <- all(
+  response_contract$response_family_matches &
+    response_contract$response_transform_matches &
+    response_contract$effect_scale_matches
+)
+
+integrity_checks <- tibble::tribble(
+  ~Check, ~Expected, ~Observed, ~Status,
+  "Current input identities", "9 matches", paste0(sum(verified_inputs$Verified == "PASS"), " matches"), if_else(all(verified_inputs$Verified == "PASS"), "PASS", "FAIL"),
+  "VLSQ-8 participant key", "184 participants; no missing score or item", paste0(score_audit$participants, " participants; ", score_audit$missing_scores, " missing scores; ", score_audit$missing_item_cells, " missing item cells"), if_else(score_audit$participants == 184L && score_audit$missing_scores == 0L && score_audit$missing_item_cells == 0L, "PASS", "FAIL"),
+  "VLSQ-8 reconstruction", "Stored sum rule verified", if_else(score_audit$scoring_rule_verified, "Verified", "Not verified"), if_else(score_audit$scoring_rule_verified, "PASS", "FAIL"),
+  "Metric registry", "9 unique participant-day metrics", paste0(n_distinct(metric_registry$metric_id), " unique metrics"), if_else(n_distinct(metric_registry$metric_id) == 9L && all(metric_registry$analysis_unit == "participant_day"), "PASS", "FAIL"),
+  "Run registry", "12 unique runs", paste0(n_distinct(run_registry$run_id), " unique runs"), if_else(n_distinct(run_registry$run_id) == 12L, "PASS", "FAIL"),
+  "Stored model frames", "108 frames", paste0(length(model_frames), " frames"), if_else(length(model_frames) == 108L, "PASS", "FAIL"),
+  "Frame schema and row keys", "108 complete; 0 duplicate-key frames", paste0(frames_with_complete_schema, " complete; ", frame_duplicate_keys, " duplicate-key frames"), if_else(frames_with_complete_schema == 108L && frame_duplicate_keys == 0L, "PASS", "FAIL"),
+  "Run–metric index", "108 unique cells", paste0(index_key_rows, " unique cells"), if_else(index_key_rows == 108L && nrow(frame_index) == 108L, "PASS", "FAIL"),
+  "Inherited response contract", "9 exact family, transform, and scale matches", paste0(sum(response_contract$response_family_matches & response_contract$response_transform_matches & response_contract$effect_scale_matches), " exact matches"), if_else(response_contract_verified, "PASS", "FAIL"),
+  "Paired placement keys", "18 exact pairs", paste0(sum(paired_audit$exact_row_keys_match), " exact pairs"), if_else(all(paired_audit$exact_row_keys_match), "PASS", "FAIL"),
+  "Primary–sensitivity common keys", "18 exact pairs", paste0(sum(main_gap_audit$exact_row_keys_match), " exact pairs"), if_else(all(main_gap_audit$exact_row_keys_match), "PASS", "FAIL")
+)
+stopifnot(all(integrity_checks$Status == "PASS"))
+
+integrity_checks |>
+  gt::gt() |>
+  gt::cols_width(
+    Check ~ gt::pct(26),
+    Expected ~ gt::pct(29),
+    Observed ~ gt::pct(36),
+    Status ~ gt::pct(9)
+  ) |>
+  prep_gt(11)
+```
+
+## 2. VLSQ-8 predictor
+
+### Scale and score reconstruction
+
+VLSQ-8 contains eight ordered item codes from 1 to 5. For every participant,
+the stored score equalled the item sum plus 5. The constant offset does not
+affect a centred slope, but retaining it is necessary to reproduce the
+approved 13–39 score scale. All 184 participants had complete item and total
+scores. The score was centred at its observed participant mean, 21.598, and
+reported effects compare scores separated by the participant SD of 5.540
+points. Scores were not standardised within site.
+
+```{r}
+#| label: tbl-h08-prep-score-audit
+#| tbl-cap: "VLSQ-8 score reconstruction and observed support."
+
+score_audit |>
+  transmute(
+    Participants = .data$participants,
+    Sites = .data$sites,
+    `Observed range` = paste0(.data$observed_min, "–", .data$observed_max),
+    Mean = .data$observed_mean,
+    `Participant SD` = .data$observed_participant_sd,
+    `Missing scores` = .data$missing_scores,
+    `Missing item cells` = .data$missing_item_cells,
+    `Stored minus item sum` = .data$stored_minus_item_sum_unique,
+    Verified = if_else(.data$scoring_rule_verified, "PASS", "FAIL")
+  ) |>
+  gt::gt() |>
+  gt::fmt_number(columns = c(Mean, `Participant SD`), decimals = 3) |>
+  gt::fmt_integer(
+    columns = c(
+      Participants, Sites, `Missing scores`, `Missing item cells`,
+      `Stored minus item sum`
+    )
+  ) |>
+  prep_gt(11)
+```
+
+```{r}
+#| label: fig-h08-prep-vlsq-distribution
+#| fig-cap: "Distribution of the verified VLSQ-8 scores. The bars sum to all 184 questionnaire participants."
+#| fig-alt: "Bar chart of VLSQ-8 participant counts from score 13 to 39. Scores cluster around the low twenties, with fewer participants at the highest values; all 184 participants are represented."
+#| fig-width: 6.692913
+#| fig-height: 4.6
+#| out-width: "100%"
+
+ggplot(
+  score_distribution,
+  aes(x = .data$stored_VLSQ8, y = .data$participants)
+) +
+  geom_col(fill = "#0072B2", width = 0.85) +
+  scale_x_continuous(breaks = scales::breaks_width(2)) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.06))) +
+  labs(x = "VLSQ-8 score", y = "Participants") +
+  theme_minimal(base_size = 9) +
+  theme(
+    panel.grid.minor = element_blank(),
+    axis.text = element_text(size = 8),
+    axis.title = element_text(size = 9, face = "bold")
+  )
+```
+
+The bars use the exact aggregated
+[figure source data](../../../artifacts/11_source_data/H08/H08_preparation_vlsq_score_distribution.csv).
+The corresponding
+[site-specific score support](../../../artifacts/11_source_data/H08/H08_preparation_vlsq_site_support.csv)
+retains the submitted site order, participant counts, ranges, means, and SDs.
+
+## 3. Metrics and analytical samples
+
+### Metric definitions and missing values
+
+The nine outcomes retain the manuscript names and melEDI units. Unsupported
+values remain missing; they are never converted to darkness or zero. Four
+metrics use Gaussian models after `log10(value + 0.1)` transformation, three
+non-negative duration metrics use Tweedie models with a log link, and two use
+Gaussian identity models. Practical effects are ratios except for time below
+10 lx melEDI before sleep, which is an hour difference.
+
+The longest continuous period above 250 lx melEDI can be a lower bound when a
+remaining gap interrupts the observed period. A separate exact-identification
+sensitivity retains only participant-days for which both ends of the longest
+period are observed. The corrected melEDI dose uses the registered
+time-sensitive value; observed uncorrected dose is retained as a descriptive
+sensitivity on the same fitted sample.
+
+```{r}
+#| label: tbl-h08-prep-metric-contract
+#| tbl-cap: "Metric-specific analysis level, response model, transformation, and reported effect scale."
+
+metric_registry |>
+  arrange(.data$metric_order) |>
+  transmute(
+    Order = .data$metric_order,
+    Metric = .data$manuscript_name,
+    Category = .data$manuscript_category,
+    `Analysis level` = "Participant-day",
+    `Response model` = recode(
+      .data$response_family,
+      gaussian = "Gaussian",
+      tweedie_log = "Tweedie, log link"
+    ),
+    Transformation = recode(
+      .data$response_transform,
+      identity = "Identity",
+      log10_offset_0.1 = "log10(value + 0.1)"
+    ),
+    `Reported effect` = recode(
+      .data$effect_scale,
+      difference = "Difference in hours",
+      ratio = "Ratio"
+    ),
+    Unit = .data$display_unit
+  ) |>
+  gt::gt(rowname_col = "Order") |>
+  gt::cols_width(
+    Metric ~ gt::pct(27),
+    Category ~ gt::pct(13),
+    `Analysis level` ~ gt::pct(13),
+    `Response model` ~ gt::pct(14),
+    Transformation ~ gt::pct(15),
+    `Reported effect` ~ gt::pct(12),
+    Unit ~ gt::pct(6)
+  ) |>
+  prep_gt(10)
+```
+
+The preparation source records each available metric value and each explicit
+reason for an unavailable participant-day. The compact table below reports
+the stored counts without treating unavailable values as observations.
+
+```{r}
+#| label: tbl-h08-prep-availability
+#| tbl-cap: "Stored metric availability by dataset and placement."
+
+metric_availability |>
+  mutate(
+    Availability = if_else(
+      .data$availability_reason == "available",
+      "Available",
+      "Unavailable with recorded reason"
+    )
+  ) |>
+  group_by(
+    .data$preparation,
+    .data$placement_label,
+    .data$Availability
+  ) |>
+  summarise(`Participant-days` = sum(.data$participant_days), .groups = "drop") |>
+  gt::gt(groupname_col = "preparation") |>
+  gt::cols_label(
+    placement_label = "Placement",
+    Availability = "Metric-value status"
+  ) |>
+  gt::fmt_integer(columns = `Participant-days`, use_seps = TRUE) |>
+  gt::tab_source_note(
+    "Counts sum metric-specific participant-days and therefore are not counts of unique days across metrics. Exact reason-level counts remain in the linked source."
+  ) |>
+  prep_gt(11)
+```
+
+The [availability source](../../../artifacts/11_source_data/H08/H08_preparation_metric_availability.csv)
+retains each metric, dataset, placement, availability reason, and count.
+
+### Exact primary and complementary samples
+
+Each model used its metric-specific complete frame. Primary near-eye samples
+contained 139–141 participants, 655–816 participant-days, and nine sites.
+Complementary chest samples contained 153–154 participants, 743–902
+participant-days, and eight sites.
+
+```{r}
+#| label: tbl-h08-prep-primary-samples
+#| tbl-cap: "Exact all-available primary near-eye and complementary chest samples for each metric."
+
+sample_support |>
+  mutate(
+    Placement = factor(
+      .data$placement_label,
+      levels = c("Near eye", "Chest")
+    )
+  ) |>
+  transmute(
+    Placement,
+    Order = .data$metric_order,
+    Metric = .data$manuscript_name,
+    Participants = .data$participants,
+    `Participant-days` = .data$participant_days,
+    Sites = .data$sites,
+    `Valid support hours` = .data$metric_support_valid_hours,
+    `Expected support hours` = .data$metric_support_expected_hours
+  ) |>
+  gt::gt(groupname_col = "Placement", rowname_col = "Order") |>
+  gt::fmt_integer(
+    columns = c(
+      Participants, `Participant-days`, Sites, `Valid support hours`,
+      `Expected support hours`
+    ),
+    use_seps = TRUE
+  ) |>
+  gt::cols_width(
+    Metric ~ gt::pct(35),
+    Participants ~ gt::pct(12),
+    `Participant-days` ~ gt::pct(14),
+    Sites ~ gt::pct(8),
+    `Valid support hours` ~ gt::pct(15),
+    `Expected support hours` ~ gt::pct(16)
+  ) |>
+  prep_gt(10)
+```
+
+The [exact table source](../../../artifacts/11_source_data/H08/H08_preparation_sample_support.csv)
+also retains run, metric, placement, row-key, and frame identities.
+
+```{r}
+#| label: fig-h08-prep-sample-support
+#| fig-cap: "Metric-specific participant and participant-day support in the primary near-eye and complementary chest analyses. Metric numbers follow the preceding table."
+#| fig-alt: "Two line-and-point panels compare near-eye and chest support across nine ordered metrics. Participant counts are 139 to 141 near eye and 153 to 154 at the chest. Participant-day counts vary more, from 655 to 816 near eye and 743 to 902 at the chest."
+#| fig-width: 6.692913
+#| fig-height: 4.9
+#| out-width: "100%"
+
+sample_plot_data <- sample_support |>
+  select(
+    "metric_order", "placement_label", "participants", "participant_days"
+  ) |>
+  pivot_longer(
+    cols = c("participants", "participant_days"),
+    names_to = "quantity",
+    values_to = "count"
+  ) |>
+  mutate(
+    quantity = recode(
+      .data$quantity,
+      participants = "Participants",
+      participant_days = "Participant-days"
+    )
+  )
+
+ggplot(
+  sample_plot_data,
+  aes(
+    x = .data$metric_order,
+    y = .data$count,
+    colour = .data$placement_label,
+    group = .data$placement_label
+  )
+) +
+  geom_line(linewidth = 0.65) +
+  geom_point(size = 2) +
+  facet_wrap(vars(.data$quantity), scales = "free_y", ncol = 1) +
+  scale_colour_manual(values = placement_colors) +
+  scale_x_continuous(breaks = seq_len(9L)) +
+  scale_y_continuous(labels = scales::label_comma()) +
+  labs(x = "Metric order", y = NULL, colour = "Placement") +
+  theme_minimal(base_size = 9) +
+  theme(
+    panel.grid.minor = element_blank(),
+    strip.text = element_text(size = 9, face = "bold"),
+    axis.text = element_text(size = 8),
+    axis.title.x = element_text(size = 9, face = "bold"),
+    legend.text = element_text(size = 8),
+    legend.title = element_text(size = 8.5),
+    legend.position = "top"
+  )
+```
+
+The plot uses the same
+[exact source data](../../../artifacts/11_source_data/H08/H08_preparation_sample_support.csv)
+as the sample table.
+
+### Site contributions
+
+The primary analysis represents all nine submitted-manuscript sites. The
+complementary chest analysis represents eight because chest data are absent
+for Tübingen. Site-specific participant and day counts vary by metric
+eligibility, so the ranges below come from the nine exact model frames and
+not from a pooled approximation.
+
+```{r}
+#| label: tbl-h08-prep-site-support
+#| tbl-cap: "Per-site sample ranges across the nine all-available metric frames."
+
+site_support_summary |>
+  transmute(
+    Analysis = recode(
+      .data$placement_label,
+      `Near eye` = "Primary near eye",
+      Chest = "Complementary chest"
+    ),
+    `Site order` = .data$display_order,
+    Site = .data$site_name,
+    `Metric frames` = .data$metric_frames,
+    `Participants, min–max` = paste0(
+      .data$participants_min,
+      "–",
+      .data$participants_max
+    ),
+    `Participant-days, min–max` = paste0(
+      format_count(.data$participant_days_min),
+      "–",
+      format_count(.data$participant_days_max)
+    )
+  ) |>
+  gt::gt(groupname_col = "Analysis", rowname_col = "Site order") |>
+  gt::fmt_integer(columns = `Metric frames`) |>
+  gt::cols_width(
+    Site ~ gt::pct(30),
+    `Metric frames` ~ gt::pct(17),
+    `Participants, min–max` ~ gt::pct(23),
+    `Participant-days, min–max` ~ gt::pct(30)
+  ) |>
+  gt::tab_source_note(
+    "Sites follow the submitted-manuscript order. The complete metric-by-site table retains every exact count."
+  ) |>
+  prep_gt(11)
+```
+
+```{r}
+#| label: fig-h08-prep-site-range
+#| fig-cap: "Range of participant-day contributions by site across the nine primary near-eye and complementary chest metric frames. Site order and colours follow the submitted manuscript registry."
+#| fig-alt: "Two panels show horizontal ranges of participant-day counts for each submitted site across nine metrics. The near-eye panel has nine sites and the chest panel eight. Tübingen contributes only near-eye data; San José has the largest chest contribution."
+#| fig-width: 6.692913
+#| fig-height: 5.9
+#| out-width: "100%"
+
+site_levels <- rev(site_registry$display_name)
+site_colors <- site_registry$color_hex
+names(site_colors) <- site_registry$display_name
+site_plot_data <- site_support_summary |>
+  mutate(
+    site_name = factor(.data$site_name, levels = site_levels),
+    Analysis = recode(
+      .data$placement_label,
+      `Near eye` = "Primary near eye",
+      Chest = "Complementary chest"
+    )
+  )
+
+ggplot(site_plot_data, aes(y = .data$site_name, colour = .data$site_name)) +
+  geom_segment(
+    aes(
+      x = .data$participant_days_min,
+      xend = .data$participant_days_max,
+      yend = .data$site_name
+    ),
+    linewidth = 1.9,
+    lineend = "round"
+  ) +
+  geom_point(aes(x = .data$participant_days_min), size = 2.2) +
+  geom_point(aes(x = .data$participant_days_max), size = 2.2) +
+  facet_wrap(vars(.data$Analysis), ncol = 2) +
+  scale_colour_manual(values = site_colors, drop = FALSE) +
+  scale_x_continuous(labels = scales::label_comma()) +
+  labs(x = "Participant-days across metric-specific frames", y = NULL) +
+  theme_minimal(base_size = 9) +
+  theme(
+    panel.grid.minor = element_blank(),
+    strip.text = element_text(size = 9, face = "bold"),
+    axis.text = element_text(size = 8),
+    axis.title.x = element_text(size = 9, face = "bold"),
+    legend.position = "none"
+  )
+```
+
+The plotted ranges have
+[exact source data](../../../artifacts/11_source_data/H08/H08_preparation_site_support_summary.csv).
+The complete
+[metric-by-site source](../../../artifacts/11_source_data/H08/H08_preparation_site_support.csv)
+contains all 153 cells across the 18 main all-available metric frames.
+
+## 4. Model construction and inference
+
+### Exact formulae supplied to the models
+
+The primary specification uses fixed site with sum-to-zero contrasts and a
+participant random intercept nested within site. The additive coefficient is
+therefore a site-adjusted average VLSQ-8 slope rather than a slope at one
+reference site. A likelihood-ratio comparison of the site-only and additive
+models tests the average association. Comparing the additive and interaction
+models tests site heterogeneity. Photoperiod adjustment and participant-level
+summary models are structured sensitivities.
+
+The table retains the exact evaluated Wilkinson formulae used for the current
+analysis and its two structured sensitivity branches.
+
+```{r}
+#| label: tbl-h08-prep-exact-formulas
+#| tbl-cap: "Exact evaluated Wilkinson formulae supplied to current H08 models and structured sensitivities."
+
+analysis_labels <- c(
+  approved_participant_day = "Participant-day analysis",
+  photoperiod_sensitivity = "Photoperiod sensitivity",
+  participant_summary_sensitivity = "Participant-summary sensitivity"
+)
+role_labels <- c(
+  site_only = "Site-only comparison",
+  additive = "Additive VLSQ-8 model",
+  interaction = "Site-interaction model"
+)
+
+formula_registry |>
+  filter(.data$analysis_kind %in% names(analysis_labels)) |>
+  mutate(
+    Analysis = unname(analysis_labels[.data$analysis_kind]),
+    `Model role` = unname(role_labels[.data$formula_id]),
+    Formula = paste0("`", .data$formula, "`")
+  ) |>
+  select("Analysis", "Model role", "Formula") |>
+  gt::gt(groupname_col = "Analysis") |>
+  gt::fmt_markdown(columns = Formula) |>
+  gt::cols_width(
+    `Model role` ~ gt::pct(25),
+    Formula ~ gt::pct(75)
+  ) |>
+  prep_gt(11)
+```
+
+### Engines and estimation settings
+
+```{r}
+#| label: tbl-h08-prep-model-settings
+#| tbl-cap: "Model engines, comparisons, and reporting settings used for H08."
+
+tibble::tribble(
+  ~Component, ~Setting, ~Reason,
+  "Gaussian outcomes", "lme4::lmer, maximum likelihood for model comparisons", "Allows likelihood-ratio comparison of nested participant-day models on one likelihood basis.",
+  "Non-negative duration outcomes", "glmmTMB::glmmTMB, Tweedie family with log link, maximum likelihood", "Accommodates right-skewed, non-negative durations while retaining a participant random intercept.",
+  "Site adjustment", "Fixed submitted site order; sum-to-zero contrasts", "Estimates an across-site average VLSQ-8 slope and avoids choosing a reference-site slope.",
+  "Repeated observations", "Random intercept for participant nested within site", "Accounts for multiple participant-days from the same person.",
+  "Average-association test", "Likelihood-ratio test: site-only versus additive", "Tests whether VLSQ-8 adds information after site adjustment.",
+  "Site-heterogeneity test", "Likelihood-ratio test: additive versus site interaction", "Tests whether the VLSQ-8 slope differs by site.",
+  "Practical estimand", "Effect per one participant VLSQ-8 SD", "Reports ratios or an hour difference for a 5.540-point score contrast.",
+  "Uncertainty", "Two-sided 95% Wald confidence interval", "Keeps uncertainty on the same practical scale as the effect.",
+  "Multiplicity", "Benjamini–Hochberg within each complete nine-test family", "Separates placement, dataset, and average-versus-heterogeneity decisions."
+) |>
+  gt::gt() |>
+  gt::cols_width(
+    Component ~ gt::pct(22),
+    Setting ~ gt::pct(35),
+    Reason ~ gt::pct(43)
+  ) |>
+  prep_gt(10)
+```
+
+### Multiplicity families
+
+Average-association and site-heterogeneity tests were adjusted separately.
+Near-eye and chest placements and the primary and preparation-sensitivity
+datasets were also separate. This gives eight complete nine-test
+Benjamini–Hochberg families. The family adjustment was calculated from the
+unrounded p-values; display rounding did not affect decisions.
+
+```{r}
+#| label: tbl-h08-prep-family-audit
+#| tbl-cap: "Complete-family multiplicity audit for the eight declared H08 inferential families."
+
+family_audit |>
+  transmute(
+    Family = .data$family_id,
+    Role = .data$role,
+    Comparison = recode(
+      .data$comparison_id,
+      average_vlsq = "Average association",
+      site_heterogeneity = "Site heterogeneity"
+    ),
+    `Planned / observed` = paste0(
+      .data$planned_n,
+      " / ",
+      .data$observed_raw_p
+    ),
+    Method = .data$multiplicity_method,
+    `Raw p < 0.05` = .data$raw_significant_n,
+    `Retained at BH 0.05` = .data$adjusted_significant_n,
+    Verified = if_else(
+      .data$complete_nine_member_family &
+        .data$independent_recalculation_matches,
+      "PASS",
+      "FAIL"
+    )
+  ) |>
+  gt::gt() |>
+  gt::tab_source_note(
+    "All eight families contain nine tests; no adjusted p-value met the 0.050 criterion."
+  ) |>
+  prep_gt(9)
+```
+
+## 5. Diagnostics and influence
+
+Every current additive and interaction fit was checked for convergence,
+Hessian status, singularity, fixed-effect rank, residual behaviour, response
+support, prediction bounds, and serial dependence. Exact response zeros and
+the expected zero mass were compared for Tweedie outcomes. The checks retain
+three explicit limitations: increasing residual spread for darkest 10 h mean,
+a small observed zero mass not reproduced for sleep time below 1 lx melEDI,
+and corrected-dose sensitivity to remaining-gap timing. No limitation was used
+as a significance screen.
+
+```{r}
+#| label: tbl-h08-prep-response-gate
+#| tbl-cap: "Stored response-family diagnostic disposition for the nine H08 metrics."
+
+response_gate |>
+  transmute(
+    Order = .data$metric_order,
+    Metric = .data$manuscript_name,
+    Model = recode(
+      .data$response_family,
+      gaussian = "Gaussian",
+      tweedie_log = "Tweedie, log link"
+    ),
+    `Inferential targets` = .data$inferential_targets,
+    `Major failures` = .data$major_failures,
+    `Review targets` = .data$review_targets,
+    `Average non-estimable` = .data$average_non_estimable,
+    `Interaction non-estimable` = .data$interaction_non_estimable,
+    Disposition = recode(
+      .data$family_gate_status,
+      PASS = "Pass",
+      RETAIN_WITH_EXPLICIT_LIMITATIONS = "Retain with explicit limitations"
+    )
+  ) |>
+  gt::gt(rowname_col = "Order") |>
+  gt::cols_width(
+    Metric ~ gt::pct(30),
+    Model ~ gt::pct(15),
+    `Inferential targets` ~ gt::pct(10),
+    `Major failures` ~ gt::pct(9),
+    `Review targets` ~ gt::pct(9),
+    `Average non-estimable` ~ gt::pct(9),
+    `Interaction non-estimable` ~ gt::pct(9),
+    Disposition ~ gt::pct(18)
+  ) |>
+  prep_gt(9)
+```
+
+All 153 planned leave-one-site-out refits succeeded. Some estimates changed
+direction or magnitude after one site was omitted, which supports cautious,
+inconclusive interpretation. It does not identify a site for removal. The
+participant-influence screen likewise ranks observations for review and is
+not a deletion rule; no site or participant was removed after inspection.
+
+```{r}
+#| label: tbl-h08-prep-site-influence
+#| tbl-cap: "Leave-one-site-out stability of primary-dataset average associations."
+
+loo_summary |>
+  arrange(.data$metric_order, .data$placement_label) |>
+  transmute(
+    Order = .data$metric_order,
+    Placement = .data$placement_label,
+    Metric = .data$manuscript_name,
+    Refits = paste0(.data$successful_refits, " / ", .data$refits),
+    `Sign reversal` = if_else(.data$sign_reversal_any, "Yes", "No"),
+    `Largest relative absolute change` = sprintf(
+      "%.2f",
+      .data$maximum_relative_absolute_change
+    ),
+    `Most influential omitted site` = .data$most_influential_omitted_site,
+    Interpretation = .data$influence_status
+  ) |>
+  gt::gt(rowname_col = "Order") |>
+  gt::tab_source_note(
+    "Relative changes can be large when the full-sample estimate is close to zero; they do not by themselves identify an erroneous site."
+  ) |>
+  prep_gt(9)
+```
+
+The [complete diagnostic table](../../../artifacts/08_diagnostics/H08/H08_model_diagnostics.csv)
+and [participant-influence screen](../../../artifacts/08_diagnostics/H08/H08_participant_influence_screen.csv)
+retain the model-level evidence.
+
+## 6. Sensitivity analyses
+
+Sensitivity branches preserve the accepted estimand unless their purpose
+explicitly changes sample construction, adjustment, or metric definition.
+They describe stability and do not promote an association that was not
+retained in the primary multiplicity family.
+
+```{r}
+#| label: tbl-h08-prep-sensitivity-map
+#| tbl-cap: "H08 sensitivity branches, exact stored scope, and interpretive role."
+
+gap_common <- gap_sensitivity |>
+  filter(.data$sample_scenario == "main_gap_common_sample")
+photo_summary <- photoperiod |>
+  summarise(
+    fits = n(),
+    converged = sum(.data$converged),
+    full_rank = sum(.data$fixed_full_rank)
+  )
+participant_summary_counts <- participant_summary |>
+  summarise(
+    fits = n(),
+    converged = sum(.data$converged),
+    full_rank = sum(.data$fixed_full_rank)
+  )
+
+tibble::tribble(
+  ~Analysis, ~Exact_stored_scope, ~Purpose, ~Interpretive_rule,
+  "Paired/common placement", paste0(nrow(paired_audit), " exact metric-by-dataset pairs; all row keys matched"), "Separates placement from unequal all-available samples.", "Compare separately fitted matched effects; do not infer equivalence.",
+  "Preparation sensitivity on common samples", paste0(nrow(gap_common), " metric-by-placement comparisons; all exact common keys; all classified stable within model uncertainty"), "Checks sensitivity to metric-specific use of remaining-gap timing.", "Uses identical participant-day keys within metric and placement.",
+  "Preparation sensitivity on all available samples", "18 metric-by-placement comparisons with separate complete nine-test families", "Checks the combined effect of preparation and resulting sample availability.", "Family-adjusted conclusions remain scenario-specific.",
+  "Photoperiod adjustment", paste0(photo_summary$fits, " fits; ", photo_summary$converged, " converged and ", photo_summary$full_rank, " full rank"), "Adds centred linear photoperiod while retaining site.", "No photoperiod interaction and no new multiplicity family.",
+  "Participant summaries", paste0(participant_summary_counts$fits, " fits; ", participant_summary_counts$converged, " converged and ", participant_summary_counts$full_rank, " full rank"), "Gives each participant one outcome value.", "Uses fixed site and reports descriptive compatibility with participant-day estimates.",
+  "Exactly identified longest period", paste0(nrow(exact_longest), " placement-by-sample estimates"), "Removes lower-bound ambiguity when a gap can interrupt the longest continuous period.", "Retains only participant-days with an exactly observed period.",
+  "Observed melEDI dose", paste0(nrow(observed_dose), " placement-by-sample estimates on corrected-dose fitted frames"), "Separates observed uncorrected dose from the corrected dose definition.", "Descriptive 95% intervals; no additional p-value screen.",
+  "Leave one site out", paste0(sum(loo_summary$successful_refits), " successful refits"), "Assesses dependence on one submitted site.", "A stability description, not an exclusion or significance rule."
+) |>
+  gt::gt() |>
+  gt::cols_label(
+    Exact_stored_scope = "Exact stored scope",
+    Interpretive_rule = "Interpretive rule"
+  ) |>
+  gt::cols_width(
+    Analysis ~ gt::pct(20),
+    Exact_stored_scope ~ gt::pct(28),
+    Purpose ~ gt::pct(24),
+    Interpretive_rule ~ gt::pct(28)
+  ) |>
+  prep_gt(9)
+```
+
+The paired-placement display in the results report puts near eye on the
+x-axis and chest on the y-axis, includes only exact common participant-day
+samples, and uses equal axis geometry, an identity line, and null lines. It
+describes agreement and differences without claiming equivalence. The stored
+component estimates and 95% confidence intervals were not recomputed for the
+display.
+
+Complete sensitivity records are available for the
+[preparation comparison](../../../artifacts/09_tables/H08/H08_gap_timing_unaware_sensitivity.csv),
+[photoperiod adjustment](../../../artifacts/09_tables/H08/H08_photoperiod_sensitivity.csv),
+[participant summaries](../../../artifacts/09_tables/H08/H08_participant_summary_sensitivity.csv),
+[exactly identified longest period](../../../artifacts/09_tables/H08/H08_exactly_identified_longest_period_sensitivity.csv),
+and [observed melEDI dose](../../../artifacts/09_tables/H08/H08_observed_dose_sensitivity.csv).
+
+## 7. Code map and execution order
+
+### Function modules
+
+```{r}
+#| label: tbl-h08-prep-module-map
+#| tbl-cap: "Function modules used by the H08 executable analysis."
+
+tibble::tribble(
+  ~Module, ~Reads_or_defines, ~Contribution, ~Why_separate,
+  "scripts/pipeline/paths_io.R", "Artifact-writing and SHA-256 helpers", "Writes typed artifacts with hashes, byte sizes, producers, and R version.", "Keeps identity rules common across analyses.",
+  "scripts/pipeline/multiplicity.R", "Complete-family adjustment helpers", "Applies complete nine-value Benjamini–Hochberg vectors and verifies family size.", "Separates multiplicity from individual model code.",
+  "scripts/pipeline/p_value_display.R", "P-value display rules", "Formats p-values without changing unrounded inferential decisions.", "Keeps display policy separate from inference.",
+  "scripts/hypotheses/H08/h08_contract.R", "Score, metrics, runs, formulae, families, and pinned inputs", "Defines exact H08 estimands and analysis registries.", "Provides one auditable specification before fitting.",
+  "scripts/hypotheses/H08/h08_modeling.R", "Frame construction, engines, effects, diagnostics, and sensitivities", "Implements scientific operations against the contract.", "Keeps reusable operations outside the executable driver."
+) |>
+  gt::gt() |>
+  gt::cols_width(
+    Module ~ gt::pct(25),
+    Reads_or_defines ~ gt::pct(23),
+    Contribution ~ gt::pct(30),
+    Why_separate ~ gt::pct(22)
+  ) |>
+  prep_gt(10)
+```
+
+### Executable entry points
+
+```{r}
+#| label: tbl-h08-prep-script-map
+#| tbl-cap: "H08 scripts and documents in analytical and reporting order."
+
+tibble::tribble(
+  ~Order, ~Entry_point, ~Reads, ~Produces, ~Runs_when_page_renders,
+  1L, "run_h08_stage2.R", "Verified score and metric inputs, H08 contract and functions", "108 frames, fitted models, effects, diagnostics, influence and sensitivity records", "No",
+  2L, "rebuild_h08_reader_figures.R", "Stored H08 figure-source CSV files", "Five result figures exported natively at 170 mm and their display manifest", "No",
+  3L, "notebooks/hypotheses/H08.qmd", "Stored scientific outputs and reader assets", "The standalone H08 results report", "No",
+  4L, "build_h08_preparation_artifacts.R", "Frozen H08 frames, registries, samples and scores", "Six descriptive source-data CSV files for this page", "No; run before rendering",
+  5L, "H08_analysis_preparation.qmd", "Stored H08 artifacts and descriptive source data", "This preparation and provenance companion", "Yes",
+  6L, "build_h08_figure_physical_size_qa.R", "Eight final reader figures and their physical metadata", "A4 inspection sheets and a figure readability record", "No; run after rendering",
+  7L, "build_h08_preparation_report_manifest.R", "Final source, website copy, HTML, scripts, outputs, figures, source data, and QA", "Non-circular preparation-report manifest", "No; run after rendering and QA"
+) |>
+  gt::gt(rowname_col = "Order") |>
+  gt::cols_width(
+    Entry_point ~ gt::pct(24),
+    Reads ~ gt::pct(27),
+    Produces ~ gt::pct(35),
+    Runs_when_page_renders ~ gt::pct(14)
+  ) |>
+  prep_gt(9)
+```
+
+The scientific model run used R 4.6.1 and the project library. These commands
+are shown for reproducibility; this page does not execute them.
+
+```bash
+Rscript --vanilla scripts/hypotheses/H08/run_h08_stage2.R
+Rscript --vanilla scripts/hypotheses/H08/rebuild_h08_reader_figures.R
+quarto render notebooks/hypotheses/H08.qmd --profile nathealth
+Rscript --vanilla scripts/hypotheses/H08/build_h08_preparation_artifacts.R
+quarto render audit/hypotheses/H08/H08_analysis_preparation.qmd --profile nathealth
+Rscript --vanilla scripts/hypotheses/H08/build_h08_figure_physical_size_qa.R
+```
+
+## 8. Output and claim provenance
+
+The frame index records exact participant, participant-day, site, row-key,
+and frame identities for every run and metric. The model manifest connects
+each frame to its site-only, additive, and interaction objects. Stored result,
+diagnostic, and sensitivity tables then connect those fits to report tables
+and figures. Every reader figure links to an exact source CSV so it need not be
+digitised.
+
+```{r}
+#| label: tbl-h08-prep-output-identities
+#| tbl-cap: "Principal stored H08 outputs and their current identities."
+
+output_registry <- tibble::tribble(
+  ~Output, ~Path, ~Producer,
+  "Model-frame archive", "artifacts/06_model_data/H08/H08_model_frames.rds", "run_h08_stage2.R",
+  "Model-frame index", "artifacts/06_model_data/H08/H08_model_frame_index.csv", "run_h08_stage2.R",
+  "Inferential model archive", "artifacts/07_models/H08/H08_inferential_model_objects.rds", "run_h08_stage2.R",
+  "Model manifest", "artifacts/07_models/H08/H08_model_manifest.csv", "run_h08_stage2.R",
+  "Master results", "artifacts/09_tables/H08/H08_model_results_master.csv", "run_h08_stage2.R",
+  "Model diagnostics", "artifacts/08_diagnostics/H08/H08_model_diagnostics.csv", "run_h08_stage2.R",
+  "Site-omission summary", "artifacts/08_diagnostics/H08/H08_leave_one_site_out_summary.csv", "run_h08_stage2.R",
+  "Paired placement source", "artifacts/11_source_data/H08/H08_paired_placement_effects_data.csv", "run_h08_stage2.R",
+  "Figure readability record", "artifacts/12_manifests/H08/H08_figure_physical_size_qa.csv", "build_h08_figure_physical_size_qa.R",
+  "H08 results report", "_build/nathealth/notebooks/hypotheses/H08.html", "notebooks/hypotheses/H08.qmd"
+) |>
+  filter(file.exists(file.path(root, .data$Path))) |>
+  rowwise() |>
+  mutate(
+    `SHA-256 prefix` = substr(
+      artifact_sha256(file.path(root, .data$Path)),
+      1L,
+      16L
+    ),
+    Bytes = file.info(file.path(root, .data$Path))$size
+  ) |>
+  ungroup()
+
+output_registry |>
+  gt::gt() |>
+  gt::fmt_integer(columns = Bytes, use_seps = TRUE) |>
+  gt::cols_width(
+    Output ~ gt::pct(20),
+    Path ~ gt::pct(45),
+    Producer ~ gt::pct(19),
+    `SHA-256 prefix` ~ gt::pct(12),
+    Bytes ~ gt::pct(8)
+  ) |>
+  prep_gt(9)
+```
+
+The preparation-report manifest is created only after the final profile render
+and physical-size figure inspection. It records complete identities for the
+authoring source, byte-identical website source copy, rendered HTML, page
+assets, H08 scripts and tests, scientific outputs, source data, shared
+configuration snapshot, decision records, and R environment. It excludes
+itself and the handoff that quotes its identity, avoiding a circular checksum
+chain.
+
+## 9. How to examine or reproduce H08
+
+A reader can follow the analysis in five passes:
+
+1. inspect `H08_input_audit.csv`, `h08_contract.R`, and the score, metric,
+   formula, and run registries to verify frozen inputs and specifications;
+2. compare the exact samples above with `H08_model_frame_index.csv` and the
+   108 frames in `H08_model_frames.rds`;
+3. follow `run_h08_stage2.R` through `h08_modeling.R` to connect each frame to
+   its stored object, practical effect, 95% interval, likelihood-ratio test,
+   diagnostic, and sensitivity record;
+4. inspect all eight complete nine-value multiplicity families before
+   interpreting an individual association; and
+5. read the [H08 results report](../../../notebooks/hypotheses/H08.html)
+   alongside its numerical tables, accessible figures, and exact source CSV
+   files.
+
+This preparation record documents a frozen analysis. If an input, score rule,
+metric definition, sample rule, response model, or estimand changes, the
+affected scientific pipeline must be rerun before this page is refreshed.
+
+## Environment
+
+```{r}
+#| label: tbl-h08-prep-environment
+#| tbl-cap: "Consequential R environment recorded for H08 analysis and reporting."
+
+package_names <- c(
+  "dplyr", "readr", "digest", "lme4", "glmmTMB", "ggplot2", "gt"
+)
+package_versions <- vapply(
+  package_names,
+  function(package) as.character(utils::packageVersion(package)),
+  character(1)
+)
+
+bind_rows(
+  tibble::tibble(
+    Component = "R",
+    Version = as.character(getRversion()),
+    Role = "Authoritative scientific computation and Quarto rendering"
+  ),
+  tibble::tibble(
+    Component = package_names,
+    Version = unname(package_versions),
+    Role = c(
+      "Data manipulation",
+      "Typed CSV input",
+      "SHA-256 and model-frame identities",
+      "Gaussian mixed models",
+      "Tweedie mixed models",
+      "Figures",
+      "Reader-facing tables"
+    )
+  )
+) |>
+  gt::gt(rowname_col = "Component") |>
+  gt::cols_width(
+    Version ~ gt::pct(18),
+    Role ~ gt::pct(62)
+  ) |>
+  gt::tab_source_note(
+    "The project renv.lock records the full dependency set; artifact manifests record R 4.6.1 with each output identity."
+  ) |>
+  prep_gt()
+```
+
+```{r}
+#| label: session-info-h08-preparation
+#| include: false
+
+sessionInfo()
+```
