@@ -71,7 +71,7 @@ reader_figures <- file.path(
     "H05_reader_chest_adequacy.png",
     "H05_reader_near_eye_residual_fitted.png",
     "H05_reader_near_eye_residual_qq.png",
-    "H05_paired_placement_effects.png"
+    "H05_reader_paired_placement_effects.png"
   )
 )
 reader_sources <- file.path(
@@ -345,6 +345,15 @@ stopifnot(
 
 qmd <- paste(readLines(qmd_path, warn = FALSE), collapse = "\n")
 builder <- paste(readLines(builder_path, warn = FALSE), collapse = "\n")
+stopifnot(
+  grepl(
+    '::: {.callout-note title="Answer in brief"}',
+    qmd,
+    fixed = TRUE
+  ),
+  !grepl('title="Results in brief"', qmd, fixed = TRUE),
+  !grepl('callout-tip title="Answer in brief"', qmd, fixed = TRUE)
+)
 forbidden_source_patterns <- c(
   "\\bV0\\b",
   "submitted-versus-new",
@@ -379,8 +388,40 @@ main <- xml2::xml_find_first(document, "//main[@id='quarto-document-content']")
 stopifnot(!inherits(main, "xml_missing"))
 main_text <- xml2::xml_text(main)
 main_text_lower <- tolower(main_text)
+question_section <- xml2::xml_find_first(main, ".//section[@id='question']")
+answer_callouts <- xml2::xml_find_all(
+  main,
+  paste0(
+    ".//*[contains(concat(' ', normalize-space(@class), ' '), ",
+    "' callout-note ') and @title='Answer in brief']"
+  )
+)
+question_answer_callout <- xml2::xml_find_first(
+  question_section,
+  paste0(
+    "./div[contains(concat(' ', normalize-space(@class), ' '), ",
+    "' callout-note ') and @title='Answer in brief']"
+  )
+)
+answer_text <- gsub(
+  "[[:space:]]+",
+  " ",
+  xml2::xml_text(question_answer_callout)
+)
 
 stopifnot(
+  !inherits(question_section, "xml_missing"),
+  length(answer_callouts) == 1L,
+  !inherits(question_answer_callout, "xml_missing"),
+  grepl("None of the 68 primary near-eye associations", answer_text, fixed = TRUE),
+  grepl("95% CI 1.084–1.405", answer_text, fixed = TRUE),
+  grepl("95% CI 1.079–1.514", answer_text, fixed = TRUE),
+  grepl("BH-adjusted p = 0.124", answer_text, fixed = TRUE),
+  grepl("Complementary chest results", answer_text, fixed = TRUE),
+  grepl("gap-timing-unaware dataset", answer_text, fixed = TRUE),
+  grepl("Uncertainty remains", answer_text, fixed = TRUE),
+  grepl("unfit for H05 inference", answer_text, fixed = TRUE),
+  !grepl("Results in brief", main_text, fixed = TRUE),
   grepl(
     paste(
       "H5: LEBA questionnaire factors correlate with selected personal",
@@ -575,6 +616,12 @@ expected_manifest_paths <- c(
   "audit/decisions/paired_placement_comparison_display.md",
   "audit/decisions/gap_timing_unaware_dataset_terminology.md",
   "audit/decisions/manuscript_prepared_data_sensitivity.md",
+  "audit/decisions/answer_in_brief_callout.md",
+  "audit/decisions/figure_readability_and_layout.md",
+  "audit/decisions/report011_physical_size_revalidation.md",
+  "audit/decisions/reader_facing_symlog_scale.md",
+  "audit/hypotheses/H05/H05_figure_readability_qa.md",
+  "artifacts/12_manifests/H05/H05_figure_A4_proofs.pdf",
   "audit/ledgers/hypothesis_stage_gates.csv",
   "audit/ledgers/change_log.csv",
   "scripts/pipeline/p_value_display.R",

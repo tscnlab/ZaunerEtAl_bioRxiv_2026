@@ -152,6 +152,10 @@ files <- unique(c(
     "audit/decisions/gap_timing_unaware_dataset_terminology.md"
   ),
   file.path(root, "audit/decisions/figure_readability_and_layout.md"),
+  file.path(root, "audit/decisions/report011_physical_size_revalidation.md"),
+  file.path(root, "audit/decisions/reader_facing_symlog_scale.md"),
+  file.path(root, "audit/decisions/answer_in_brief_callout.md"),
+  file.path(root, "audit/hypotheses/H05/H05_figure_readability_qa.md"),
   file.path(root, "audit/handoffs/H05_stage3_handoff.md"),
   file.path(root, "scripts/pipeline/paths_io.R"),
   file.path(root, "scripts/pipeline/multiplicity.R"),
@@ -162,6 +166,10 @@ files <- unique(c(
   ),
   file.path(root, "scripts/hypotheses/H01/h01_contract.R"),
   file.path(root, "scripts/hypotheses/H01/h01_modeling.R"),
+  file.path(
+    root,
+    "artifacts/12_manifests/H05/H05_figure_A4_proofs.pdf"
+  ),
   preparation_asset_files,
   script_files,
   test_files,

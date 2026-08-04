@@ -21,7 +21,8 @@ The coordinator-owned records remain read-only for this H05 task:
 - `audit/decisions/h05_stage3_gate_and_stage4_transition.md` (`H05-002`);
 - `audit/decisions/h05_stage4_closure.md` (`H05-003`);
 - `audit/ledgers/hypothesis_stage_gates.csv`; and
-- `audit/ledgers/change_log.csv` (`CHG-071`, `CHG-077`, `CHG-080`).
+- `audit/ledgers/change_log.csv` (`CHG-071`, `CHG-077`, `CHG-080`,
+  `CHG-084`, `CHG-085`, `CHG-092`, and `CHG-096`).
 
 They record Stages 1--4 as complete and verified, production computation as
 not required, and the current H05 gate as closed.
@@ -31,8 +32,11 @@ The report also follows the coordinator-owned display and terminology rules:
 - `audit/decisions/p_value_display_conventions.md` (`REPORT-008`);
 - `audit/decisions/paired_placement_comparison_display.md` (`REPORT-009`);
 - `audit/decisions/gap_timing_unaware_dataset_terminology.md`
-  (`REPORT-010`); and
-- `audit/decisions/figure_readability_and_layout.md` (`REPORT-011`).
+  (`REPORT-010`);
+- `audit/decisions/figure_readability_and_layout.md` (`REPORT-011`);
+- `audit/decisions/report011_physical_size_revalidation.md`;
+- `audit/decisions/answer_in_brief_callout.md` (`REPORT-012`); and
+- `audit/decisions/reader_facing_symlog_scale.md` (`REPORT-013`).
 
 ## Completed reader-facing deliverable
 
@@ -48,10 +52,41 @@ The standalone H05 result is complete at:
 - provenance seal:
   `artifacts/12_manifests/H05/H05_stage3_artifacts.csv`.
 
+The clarified REPORT-011 evidence consists of:
+
+- QA builder:
+  `scripts/hypotheses/H05/build_h05_figure_readability_qa.R`;
+- physical-size record:
+  `audit/hypotheses/H05/H05_figure_readability_qa.md`;
+- ten-page A4 inspection proof:
+  `artifacts/12_manifests/H05/H05_figure_A4_proofs.pdf`; and
+- machine-readable evidence:
+  `artifacts/12_manifests/H05/H05_figure_readability_qa.csv`.
+
 The shared Nature Health profile was used without an H05-owned configuration
 edit. The reader report links reciprocally to the approved preparation and
 provenance companion. It does not discuss submitted-versus-new comparisons,
 internal workflow mechanics, or discarded construction variants.
+
+At the explicitly authorized 2026-08-03 display-only reporting touchpoint, the
+compact Quarto note titled **Answer in brief** was brought into exact
+REPORT-012 form. It now states the zero-of-68 primary result, both leading F2
+ratios with 95% confidence intervals and their non-retention after BH
+adjustment, the materially agreeing complementary chest direction, the
+unchanged gap-timing-unaware conclusion, and the main uncertainty and
+sleep-environment qualifications. This update used only stored accepted
+results and did not change an estimate, interval, p-value, diagnostic,
+sensitivity result, or claim.
+
+The same touchpoint revalidated all ten H05 result and preparation figures at
+their actual QMD widths within the 170-mm reference frame required by the
+clarified REPORT-011 rule. The first proof exposed four display defects: two
+clipped effect subtitles, a cropped quantile--quantile title, and a clipped
+paired-placement subtitle. Wrapping, title, canvas, and text-size repairs were
+made from accepted stored tables or diagnostic points, after which the full
+physical-size inspection passed. REPORT-013 was assessed as not applicable:
+none of the ten figures displays non-negative, strongly right-skewed raw
+metric values with meaningful exact zeros.
 
 ## Scientific result presented
 
@@ -152,28 +187,33 @@ bootstrap was added. The reader-artifact builder checks the frozen inputs and
 only pairs existing estimates with manuscript labels, prepares reader-facing
 CSV files, and draws figures from stored results.
 
-The final Stage 3 manifest contains 144 non-circular file identities and verifies
+The refreshed Stage 3 manifest contains 152 non-circular file identities and verifies
 before writing that every file in the frozen Stage 2 manifest still has its
 recorded SHA-256 hash. The manifest excludes itself and this handoff by design;
 its own identity is reported here.
 
 | File | SHA-256 |
 |---|---|
-| `notebooks/hypotheses/H05.qmd` | `b75b10bafefe3dfe7b7fdc809b0e31f0b477c6bc2c454bba1cf64b50dc5ed73b` |
-| `_build/nathealth/notebooks/hypotheses/H05.html` | `ca1c9fbc3920ec72da6660ffb8d5fb585ca75ef96e65fbab791b61b7a80cb34a` |
-| `scripts/hypotheses/H05/build_h05_reader_artifacts.R` | `11a9568193764e3c145ecd3ceaebffa954e347925b29be155367e41225531388` |
-| `scripts/hypotheses/H05/build_h05_stage3_manifest.R` | `f538d2a2420a30be440cb5e4efc8884da5a51504f79280559ad5f0c4d6033212` |
-| `tests/hypotheses/H05/test_h05_stage3_reader_report.R` | `936e8677c30926b5af20b02566c23104f8f201c91535ce48ae7950b39ef14f0a` |
-| `artifacts/12_manifests/H05/H05_stage3_artifacts.csv` | `abc7480eded838a4108a27781c04d8a85dde09c4de99b2402b4a6673981a7958` |
+| `notebooks/hypotheses/H05.qmd` | `7923ec7a57b6c891dffb8d63eaeda3db86346c88c278c69a2b70ca97b7bf0cd7` |
+| `_build/nathealth/notebooks/hypotheses/H05.html` | `d47b0e1fd61fcf42bb624c94b761e9af7d3243023bf2f84df4ac4dac5f210615` |
+| `scripts/hypotheses/H05/build_h05_reader_artifacts.R` | `8ceacea40010749e4f09933f376e45c6fbcd5730176af8eea696e581ed79e926` |
+| `scripts/hypotheses/H05/build_h05_figure_readability_qa.R` | `35eae45b3ee715891eb1d9b503146dc1dd19651f4f11e2a8d5ebba2092421b87` |
+| `scripts/hypotheses/H05/build_h05_stage3_manifest.R` | `00207689df7f8f7f19d90180a7164566b180c3c737ac8ea1977f6dd5a6ba9d47` |
+| `tests/hypotheses/H05/test_h05_stage3_reader_report.R` | `cf2f8e0e5ebc1cff40f94f4192c6922dcd52d559a72f85c705f99adba162a5c7` |
+| `audit/hypotheses/H05/H05_figure_readability_qa.md` | `a3d59c052a604f6d689c31b1d894af6b073fcae264ca75c45012961696dcf835` |
+| `artifacts/12_manifests/H05/H05_figure_readability_qa.csv` | `70d8fc9600dc96342adfb8cb003bf30c30720b8c3d15ba7822735d5ba0c63095` |
+| `artifacts/12_manifests/H05/H05_figure_A4_proofs.pdf` | `c155c5fcefb744dc51ffb1728c00fbaa61ff88dcfaf1ac3fcbbba438b4bbce71` |
+| `artifacts/12_manifests/H05/H05_stage3_artifacts.csv` | `f3ed8526b77c65b6738f413ecec7b3ab435bfb88117ddd963d6c040bbb6b0f9e` |
 
 Reader figures have non-empty alternative text. The rendered HTML contains 26
 bounded `gt` tables, seven accessible figures, a six-row exact-formula table,
 four 17-row paired component tables, and links to the paired figure/table
-source data used in the report. Individual PNG figures were inspected at final
-display size. The only defect found, a clipped Q--Q diagnostic subtitle, was
-repaired by wrapping the annotation; frozen estimates and source data were not
-changed. The reader-artifact builder now identity-checks the frozen Stage 2
-comparison figures instead of rewriting their timestamp-bearing PDFs.
+source data used in the report. All ten result and preparation figures passed
+the recorded physical-size inspection for clipping/cropping, overlap, text
+shape, wrapping, readability, data-region balance, mark distinguishability,
+and caption/alt-text presence. The reader-artifact builder now identity-checks
+the frozen Stage 2 comparison figures instead of rewriting their
+timestamp-bearing PDFs.
 
 ## Verification commands
 
@@ -190,11 +230,11 @@ quarto render notebooks/hypotheses/H05.qmd --profile nathealth
 
 R_PROFILE_USER=/dev/null \
 R_LIBS=renv/library/macos/R-4.6/aarch64-apple-darwin23 \
-Rscript --vanilla scripts/hypotheses/H05/build_h05_stage3_manifest.R
+Rscript --vanilla scripts/hypotheses/H05/build_h05_figure_readability_qa.R
 
 R_PROFILE_USER=/dev/null \
 R_LIBS=renv/library/macos/R-4.6/aarch64-apple-darwin23 \
-Rscript --vanilla tests/hypotheses/H05/test_h05_stage2.R
+Rscript --vanilla scripts/hypotheses/H05/build_h05_stage3_manifest.R
 
 R_PROFILE_USER=/dev/null \
 R_LIBS=renv/library/macos/R-4.6/aarch64-apple-darwin23 \
@@ -205,5 +245,12 @@ Rscript --vanilla tests/hypotheses/H05/test_h05_stage3_reader_report.R
 
 The author approved the Stage 3 report and explicitly authorized Stage 4.
 `H05-002` and `CHG-077` record that transition. `H05-003` and `CHG-080`
-verify the completed companion and close H05. No commit, push, upload, or
-external publication action was made by this task.
+verify the completed companion and close H05. The scientific closure remains
+unchanged by the later REPORT-011 through REPORT-013 display-only update. The
+original H05 closure is committed as `b2f0415`; this follow-up has not been
+part of that original closure commit. The display-only follow-up is contained
+in the H05-only commit that includes this handoff; its non-circular Git
+identity is reported to the coordinator outside the commit. The
+coordinator-owned `H05-003`/`CHG-084` checksum snapshot predates this authorized
+display-only refresh and requires checksum-only reconciliation; no scientific
+gate is reopened.

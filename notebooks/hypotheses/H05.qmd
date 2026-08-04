@@ -569,15 +569,24 @@ are associated with 17 personal light-exposure metrics after accounting for
 study site. Higher scores mean that the behaviour described by a factor was
 reported more often.
 
-::: {.callout-tip title="Answer in brief"}
+::: {.callout-note title="Answer in brief"}
 None of the 68 primary near-eye associations remained statistically supported
-after the complete Benjamini--Hochberg correction. The two largest positive
-F2 estimates—time above 1,000 lx melEDI and melEDI dose—were consistent across
-several sensitivity analyses, but their adjusted values were both
-BH-adjusted *p* = `r format_p(near_duration$p_adjusted)`. They are therefore
-descriptive, not multiplicity-retained findings. Separately, the four planned
-H05 sleep-environment models are unfit for inference and support no estimate
-or claim under this response definition and model structure.
+after the complete Benjamini--Hochberg correction. The two largest positive F2
+estimates were ratios of
+`r format_number(near_duration$estimate_practical_per_sd)` (95% CI
+`r format_number(near_duration$conf_low_practical_per_sd)`–`r format_number(near_duration$conf_high_practical_per_sd)`)
+for time above 1,000 lx melEDI and
+`r format_number(near_dose$estimate_practical_per_sd)` (95% CI
+`r format_number(near_dose$conf_low_practical_per_sd)`–`r format_number(near_dose$conf_high_practical_per_sd)`)
+for melEDI dose; both had BH-adjusted *p* =
+`r format_p(near_duration$p_adjusted)` and therefore remain descriptive rather
+than multiplicity-retained. Complementary chest results likewise retained
+zero of 68 associations but reproduced the positive direction of both leading
+F2 estimates, and the gap-timing-unaware dataset left the family-wide
+conclusion unchanged. Uncertainty remains: several small estimates changed
+direction when a site was omitted, and the four planned sleep-environment
+models are unfit for H05 inference under this response definition and model
+structure.
 :::
 
 The exact data preparation, model construction, diagnostic sequence, and
@@ -1139,7 +1148,8 @@ tests of placement differences.
 #| fig-align: center
 
 knitr::include_graphics(file.path(
-  root, "artifacts", "10_figures", "H05", "H05_paired_placement_effects.png"
+  root, "artifacts", "10_figures", "H05",
+  "H05_reader_paired_placement_effects.png"
 ))
 ```
 

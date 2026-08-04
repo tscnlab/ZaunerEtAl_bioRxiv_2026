@@ -181,23 +181,50 @@ qa_path <- file.path(
 )
 qa <- readr::read_csv(qa_path, show_col_types = FALSE)
 qa_checks <- c(
-  "no_clipping_or_cropping",
-  "no_overlap",
-  "no_text_distortion",
-  "no_bad_wrapping",
+  "clipping_or_cropping",
+  "overlaps",
+  "text_shape_and_distortion",
+  "wrapping_and_units",
   "important_text_readable",
-  "data_region_proportionate",
-  "marks_distinguishable",
+  "legend_and_data_region_balance",
+  "marks_and_lines_distinguishable",
   "caption_and_alt_text_present"
+)
+proof_path <- file.path(
+  root,
+  "artifacts/12_manifests/H05/H05_figure_A4_proofs.pdf"
+)
+qa_record_path <- file.path(
+  root,
+  "audit/hypotheses/H05/H05_figure_readability_qa.md"
 )
 stopifnot(
   nrow(qa) == 10L,
   !anyDuplicated(qa$figure_id),
   all(qa$status == "PASS"),
-  all(qa$reporting_rule == "REPORT-011"),
-  all(qa$pixel_width >= 1900L),
-  all(qa$pixel_height >= 1200L),
-  all(vapply(qa[qa_checks], function(value) all(value), logical(1)))
+  all(qa$overall_status == "PASS"),
+  all(qa$visual_status == "PASS"),
+  all(qa$typography_status == "PASS_BY_CALCULATION"),
+  all(qa$reporting_rule ==
+    "REPORT-011; REPORT-013 assessed not applicable"),
+  all(qa$symlog_applicability == "NOT_APPLICABLE"),
+  all(qa$intended_display_width_mm >= 149.5),
+  all(qa$intended_display_width_mm <= 170),
+  all(qa$display_reduction_factor > 0),
+  all(qa$display_reduction_factor <= 1),
+  all(qa$effective_final_essential_text_pt >= 5),
+  all(
+    is.na(qa$effective_final_central_text_pt) |
+      qa$effective_final_central_text_pt >= 7
+  ),
+  identical(as.integer(qa$a4_proof_page), seq_len(10L)),
+  all(qa$a4_page_width_mm == 210),
+  all(qa$a4_page_height_mm == 297),
+  all(qa$a4_side_margin_mm >= 20),
+  all(vapply(qa[qa_checks], function(value) all(value == "PASS"), logical(1))),
+  file.exists(proof_path),
+  file.info(proof_path)$size > 0,
+  file.exists(qa_record_path)
 )
 
 stopifnot(

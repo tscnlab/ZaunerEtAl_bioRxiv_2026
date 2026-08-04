@@ -251,7 +251,7 @@ effect_plot <- function(data, placement_title) {
     ) +
     ggplot2::geom_text(
       ggplot2::aes(label = .data$effect_label),
-      size = 2.5
+      size = 3.5
     ) +
     ggplot2::scale_fill_gradient2(
       low = "#3B4CC0",
@@ -268,14 +268,14 @@ effect_plot <- function(data, placement_title) {
         " associations between LEBA factors and personal light exposure"
       ),
       subtitle = paste0(
-        "Cell values are reader-scale effects per participant SD; ",
-        "grey cells are unfit for inference and no association remained ",
+        "Cell values are reader-scale effects per participant SD;\n",
+        "grey cells are unfit for inference; no association remained ",
         "after the 68-test adjustment"
       ),
       x = NULL,
       y = NULL
     ) +
-    ggplot2::theme_minimal(base_size = 10) +
+    ggplot2::theme_minimal(base_size = 11) +
     ggplot2::theme(
       panel.grid = ggplot2::element_blank(),
       axis.text.x = ggplot2::element_text(angle = 30, hjust = 1),
@@ -289,7 +289,7 @@ save_plot <- function(plot, stem, width, height, pdf = FALSE) {
     plot = plot,
     width = width,
     height = height,
-    dpi = 240
+    dpi = 300
   )
   if (pdf) {
     ggplot2::ggsave(
@@ -316,14 +316,14 @@ write_reader_csv(
 save_plot(
   effect_plot(near_plot_data, "Near-eye"),
   "H05_reader_near_eye_effects",
-  11,
+  9,
   9,
   pdf = TRUE
 )
 save_plot(
   effect_plot(chest_plot_data, "Chest"),
   "H05_reader_chest_effects",
-  11,
+  9,
   9,
   pdf = TRUE
 )
@@ -396,7 +396,7 @@ adequacy_plot <- function(data, placement_title) {
       x = NULL,
       y = NULL
     ) +
-    ggplot2::theme_minimal(base_size = 10) +
+    ggplot2::theme_minimal(base_size = 11) +
     ggplot2::theme(
       panel.grid = ggplot2::element_blank(),
       axis.text.x = ggplot2::element_text(angle = 30, hjust = 1),
@@ -411,19 +411,12 @@ save_plot(
     "Near-eye"
   ),
   "H05_reader_near_eye_adequacy",
-  11,
+  9,
   8.5
 )
-save_plot(
-  adequacy_plot(
-    adequacy_plot_data |>
-      dplyr::filter(.data$reader_placement == "Near eye"),
-    "H05 primary near-eye"
-  ),
-  "H05_primary_model_adequacy",
-  11,
-  8.5
-)
+invisible(verified_path(
+  "artifacts/10_figures/H05/H05_primary_model_adequacy.png"
+))
 save_plot(
   adequacy_plot(
     adequacy_plot_data |>
@@ -431,7 +424,7 @@ save_plot(
     "Chest"
   ),
   "H05_reader_chest_adequacy",
-  11,
+  9,
   8.5
 )
 
@@ -485,7 +478,7 @@ residual_fitted_plot <- selected_diagnostics |>
     x = "Fitted value",
     y = "Standardized Pearson residual"
   ) +
-  ggplot2::theme_minimal(base_size = 10)
+  ggplot2::theme_minimal(base_size = 11)
 
 qq_plot <- selected_diagnostics |>
   dplyr::filter(.data$panel == "normal_qq") |>
@@ -494,7 +487,7 @@ qq_plot <- selected_diagnostics |>
   ggplot2::geom_point(alpha = 0.32, size = 0.8) +
   ggplot2::facet_wrap(~manuscript_name, scales = "free", ncol = 1) +
   ggplot2::labs(
-    title = "Selected near-eye residual quantile checks",
+    title = "Near-eye residual quantile checks",
     subtitle = paste0(
       "Gaussian normal-reference quantiles are descriptive;\n",
       "response-support and simulation failures make the H05 Tweedie ",
@@ -503,7 +496,7 @@ qq_plot <- selected_diagnostics |>
     x = "Theoretical normal quantile",
     y = "Observed standardized residual quantile"
   ) +
-  ggplot2::theme_minimal(base_size = 10)
+  ggplot2::theme_minimal(base_size = 11)
 
 save_plot(
   residual_fitted_plot,
@@ -642,7 +635,8 @@ paired_plot <- ggplot2::ggplot(
     title = "Paired/common-sample near-eye and chest effects",
     subtitle = paste0(
       "Matched model-scale estimands: 110–112 participants, 505–643 ",
-      "participant-days, and 8 sites; IS/IV use 112 participant rows"
+      "participant-days, and 8 sites;\n",
+      "IS/IV use 112 participant rows"
     ),
     x = "Near-eye estimate",
     y = "Chest estimate",
@@ -653,7 +647,7 @@ paired_plot <- ggplot2::ggplot(
     )
   ) +
   ggplot2::guides(colour = "none") +
-  ggplot2::theme_minimal(base_size = 10) +
+  ggplot2::theme_minimal(base_size = 11) +
   ggplot2::theme(
     plot.title.position = "plot",
     plot.caption.position = "plot",
@@ -665,8 +659,8 @@ paired_plot <- ggplot2::ggplot(
 
 save_plot(
   paired_plot,
-  "H05_paired_placement_effects",
-  10,
+  "H05_reader_paired_placement_effects",
+  9,
   8
 )
 

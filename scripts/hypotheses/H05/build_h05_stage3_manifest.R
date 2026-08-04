@@ -109,6 +109,10 @@ single_files <- file.path(
     "audit/decisions/paired_placement_comparison_display.md",
     "audit/decisions/gap_timing_unaware_dataset_terminology.md",
     "audit/decisions/manuscript_prepared_data_sensitivity.md",
+    "audit/decisions/answer_in_brief_callout.md",
+    "audit/decisions/figure_readability_and_layout.md",
+    "audit/decisions/report011_physical_size_revalidation.md",
+    "audit/decisions/reader_facing_symlog_scale.md",
     "audit/ledgers/hypothesis_stage_gates.csv",
     "audit/ledgers/change_log.csv",
     "scripts/pipeline/p_value_display.R"
