@@ -1,0 +1,1359 @@
+---
+title: "H11 analysis preparation and provenance"
+subtitle: "From verified H02 temporal frames and recorded biological sex to complete-curve inference"
+date: last-modified
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    code-fold: true
+    code-summary: "Show the R code used for this display"
+    code-tools: true
+    page-layout: full
+execute:
+  echo: true
+  warning: false
+  message: false
+  error: false
+fig-cap-location: bottom
+tbl-cap-location: top
+---
+
+```{r}
+#| label: setup-h11-preparation
+#| include: false
+
+suppressPackageStartupMessages({
+  library(dplyr)
+  library(gt)
+  library(knitr)
+  library(readr)
+  library(tibble)
+  library(tidyr)
+})
+
+root_candidates <- unique(c(
+  normalizePath(
+    Sys.getenv("QUARTO_PROJECT_DIR", unset = getwd()),
+    winslash = "/",
+    mustWork = FALSE
+  ),
+  normalizePath(getwd(), winslash = "/", mustWork = TRUE),
+  normalizePath(file.path(getwd(), "../../.."), winslash = "/", mustWork = FALSE)
+))
+is_project_root <- vapply(
+  root_candidates,
+  function(path) {
+    file.exists(file.path(path, "renv.lock")) &&
+      file.exists(file.path(
+        path,
+        "scripts/hypotheses/H11/build_h11_preparation_artifacts.R"
+      ))
+  },
+  logical(1)
+)
+stopifnot(any(is_project_root))
+root <- root_candidates[which(is_project_root)[1L]]
+knitr::opts_knit$set(
+  root.dir = file.path(root, "audit", "hypotheses", "H11")
+)
+
+source(file.path(root, "scripts/pipeline/paths_io.R"))
+source(file.path(root, "scripts/pipeline/p_value_display.R"))
+
+if (!identical(as.character(getRversion()), "4.6.1")) {
+  stop("H11 preparation requires R 4.6.1", call. = FALSE)
+}
+
+read_h11_csv <- function(relative_path) {
+  readr::read_csv(file.path(root, relative_path), show_col_types = FALSE)
+}
+
+prep_gt <- function(table, font_size = 12) {
+  table |>
+    gt::opt_row_striping() |>
+    gt::sub_missing(missing_text = "—") |>
+    gt::tab_options(
+      table.width = gt::pct(100),
+      table.font.size = gt::px(font_size),
+      data_row.padding = gt::px(4),
+      column_labels.font.weight = "600",
+      source_notes.font.size = gt::px(11)
+    )
+}
+
+format_count <- function(value) {
+  format(value, big.mark = ",", scientific = FALSE, trim = TRUE)
+}
+
+format_p <- function(value) {
+  nh_format_p_value(as.numeric(value))
+}
+
+frame_integrity <- read_h11_csv(
+  paste0(
+    "artifacts/11_source_data/H11/preparation/",
+    "H11_preparation_frame_integrity.csv"
+  )
+)
+sample_support <- read_h11_csv(
+  paste0(
+    "artifacts/11_source_data/H11/preparation/",
+    "H11_preparation_sample_support.csv"
+  )
+)
+input_identities <- read_h11_csv(
+  paste0(
+    "artifacts/11_source_data/H11/preparation/",
+    "H11_preparation_input_identities.csv"
+  )
+)
+site_sex_support <- read_h11_csv(
+  paste0(
+    "artifacts/11_source_data/H11/preparation/",
+    "H11_preparation_site_sex_support.csv"
+  )
+)
+melEDI_distribution <- read_h11_csv(
+  paste0(
+    "artifacts/11_source_data/H11/preparation/",
+    "H11_preparation_melEDI_distribution.csv"
+  )
+)
+AR_boundaries <- read_h11_csv(
+  paste0(
+    "artifacts/11_source_data/H11/preparation/",
+    "H11_preparation_AR_boundary_support.csv"
+  )
+)
+activity_attrition <- read_h11_csv(
+  paste0(
+    "artifacts/11_source_data/H11/preparation/",
+    "H11_preparation_activity_attrition.csv"
+  )
+)
+environment <- read_h11_csv(
+  paste0(
+    "artifacts/11_source_data/H11/preparation/",
+    "H11_preparation_environment.csv"
+  )
+)
+
+formula_manifest <- read_h11_csv(
+  "artifacts/06_model_data/H11/stage2/formula_and_fit_manifest.csv"
+)
+activity_formula_manifest <- read_h11_csv(
+  "artifacts/06_model_data/H11/activity_context/formula_and_fit_manifest.csv"
+)
+fit_summary <- read_h11_csv(
+  "artifacts/09_tables/H11/stage2/model_fit_summary.csv"
+)
+activity_fit_summary <- read_h11_csv(
+  "artifacts/09_tables/H11/activity_context/model_fit_summary.csv"
+)
+global_tests <- read_h11_csv(
+  "artifacts/09_tables/H11/stage3/H11_reader_global_tests.csv"
+)
+decomposition <- read_h11_csv(
+  paste0(
+    "artifacts/09_tables/H11/stage3/",
+    "H11_reader_level_shape_decomposition.csv"
+  )
+)
+curve_effects <- read_h11_csv(
+  paste0(
+    "artifacts/09_tables/H11/stage3/",
+    "H11_reader_curve_variation_effect_size.csv"
+  )
+)
+parametric_levels <- read_h11_csv(
+  paste0(
+    "artifacts/09_tables/H11/stage3/",
+    "H11_reader_parametric_level_estimates.csv"
+  )
+)
+activity_comparison <- read_h11_csv(
+  paste0(
+    "artifacts/09_tables/H11/stage3/",
+    "H11_reader_activity_global_comparison.csv"
+  )
+)
+activity_attenuation <- read_h11_csv(
+  paste0(
+    "artifacts/09_tables/H11/stage3/",
+    "H11_reader_activity_attenuation.csv"
+  )
+)
+diagnostics <- read_h11_csv(
+  paste0(
+    "artifacts/08_diagnostics/H11/stage3/",
+    "H11_reader_diagnostic_assessment.csv"
+  )
+)
+activity_diagnostics <- read_h11_csv(
+  paste0(
+    "artifacts/08_diagnostics/H11/stage3/",
+    "H11_reader_activity_diagnostic_assessment.csv"
+  )
+)
+robust_diagnostics <- read_h11_csv(
+  paste0(
+    "artifacts/08_diagnostics/H11/stage3/",
+    "H11_reader_robust_diagnostics.csv"
+  )
+)
+deferred_registry <- read_h11_csv(
+  "artifacts/06_model_data/H11/stage2/deferred_analysis_registry.csv"
+)
+paired_assessment <- read_h11_csv(
+  paste0(
+    "artifacts/06_model_data/H11/stage3/",
+    "H11_reader_placement_comparison_assessment.csv"
+  )
+)
+qa <- read_h11_csv(
+  paste0(
+    "artifacts/12_manifests/H11/",
+    "H11_preparation_figure_readability_qa.csv"
+  )
+)
+
+near_global <- global_tests |>
+  filter(.data$dataset_label == "Primary dataset", .data$placement_label == "Near eye")
+chest_global <- global_tests |>
+  filter(.data$dataset_label == "Primary dataset", .data$placement_label == "Chest")
+```
+
+::: {.callout-note title="About this analysis record"}
+This page explains how the verified H02 temporal frames and recorded biological
+sex were turned into the H11 inference. The companion
+[H11 results report](../../../notebooks/hypotheses/H11.html) presents the
+scientific findings.
+
+Rendering this page recalculates only file-identity checks, schema and key
+checks, and lightweight descriptive summaries from frozen analysis frames. It
+reads model specifications, fitted summaries, estimates, intervals,
+diagnostics, influence screens, and sensitivity outputs from recorded files.
+It does not fit or refit a model, estimate autocorrelation, calculate model
+predictions, rerun a bootstrap or simulation, or repeat robust inference.
+:::
+
+## Purpose
+
+H11 asks whether the 24-hour pattern of personal melanopic equivalent daylight
+illuminance (melEDI) differs by the biological-sex variable recorded in the
+study. Biological sex and gender are distinct constructs; no gender variable
+was used in this analysis. Near-eye measurements are primary, and chest-level
+measurements provide complementary evidence.
+
+The central sensitivity uses the exact term **gap-timing-unaware dataset**. It
+still passed the general requirement for at least 50% valid data per hour and
+at least 80% valid data per participant-day. “Gap-timing-unaware” means that
+the timing of the remaining missing observations is not used for
+metric-specific adjustment. For contrast only in this first explanation, the
+primary dataset could be interpreted as a **time-sensitive primary metric
+dataset**; hereafter it is called simply the primary dataset.
+
+The reported estimand is the complete Female-minus-Male fitted curve across 48
+half-hour clock bins, averaged equally across included sites and conditional on
+the fitted temporal, participant, participant-day, site, and autocorrelation
+structure. The participant is the independent unit for robust inference; the
+rows supplied to the model are 30-minute observations nested within
+participant-days and participants.
+
+## Analysis map
+
+```{mermaid}
+flowchart TD
+  A["Verified H02 placement-specific temporal frames"] --> B["Join recorded biological sex"]
+  B --> C["Retain 48 local-wall-clock bins and H02 AR boundaries"]
+  C --> D["Fit cyclic sex-pattern model"]
+  D --> E["Participant-cluster robust complete-curve test"]
+  E --> F["Pointwise 95% curve and contrast intervals"]
+  E --> G["Conditional effect-size branch when raw global p < 0.050"]
+  D --> H["Two-component level/shape attribution with BH adjustment"]
+  C --> I["Gap-timing-unaware sensitivity"]
+  C --> J["Activity-complete same-sample sensitivity"]
+```
+
+## What is calculated when this page opens
+
+The executable cells read frozen CSV summaries, verify their recorded
+identities and dimensions, format tables and p-values, and embed previously
+exported figures. Scientific estimates are never regenerated here. The
+preparation script that created the source-data CSVs performed only integrity
+and descriptive checks in R; it did not call a model-fitting, prediction, or
+resampling function.
+
+## 1. Verified inputs
+
+### File identity
+
+Ten consequential inputs were checked against the identities recorded when
+the analysis frames were accepted. They include the signed preregistration,
+the extracted H11 contract, the finalized H02 temporal specification,
+biological-sex metadata, the site display registry, four placement/scenario
+frames, and the normalized activity diary.
+
+```{r}
+#| label: tbl-h11-prep-input-identities
+#| tbl-cap: "Consequential input identities checked against their recorded SHA-256 values"
+
+input_identities |>
+  transmute(
+    Input = .data$input,
+    `Recorded SHA-256` = substr(.data$expected_sha256, 1, 12),
+    `Current SHA-256` = substr(.data$current_sha256, 1, 12),
+    Status = .data$verification
+  ) |>
+  gt::gt() |>
+  prep_gt() |>
+  gt::tab_style(
+    style = gt::cell_text(weight = "bold", color = "#117733"),
+    locations = gt::cells_body(columns = "Status", rows = Status == "PASS")
+  ) |>
+  gt::tab_source_note(
+    gt::md("Full 64-character hashes remain in the paired source CSV.")
+  )
+```
+
+[Full-precision input identity source data](../../../artifacts/11_source_data/H11/preparation/H11_preparation_input_identities.csv)
+
+### Schema, keys, and values
+
+All six frozen frames have the required fields, unique participant-day and
+clock-bin keys, the complete set of 48 clock positions, non-negative melEDI,
+exact response reconstruction as $\log_{10}(\mathrm{melEDI}+0.1)$, matching
+biological-sex encodings, and boundary flags consistent with their recorded
+reasons. Their file identities and stored sample counts also match.
+
+```{r}
+#| label: tbl-h11-prep-frame-integrity
+#| tbl-cap: "Integrity checks for every frozen H11 frame"
+
+frame_integrity |>
+  transmute(
+    Analysis = .data$analysis_label,
+    `File identity` = .data$file_identity,
+    `Schema complete` = if_else(.data$schema_complete, "PASS", "FAIL"),
+    `Duplicate keys` = .data$duplicate_row_keys,
+    `48-bin grid` = if_else(.data$complete_48_bin_clock_grid, "PASS", "FAIL"),
+    `Response error` = .data$response_reconstruction_maximum_absolute_error,
+    `AR boundaries` = if_else(
+      .data$AR_start_matches_boundary_reason,
+      "PASS",
+      "FAIL"
+    ),
+    Overall = .data$overall_status
+  ) |>
+  gt::gt() |>
+  gt::fmt_number(columns = "Response error", decimals = 3) |>
+  prep_gt(font_size = 11)
+```
+
+```{r}
+#| label: tbl-h11-prep-frame-content
+#| tbl-cap: "Frame content and metric-support checks"
+
+frame_integrity |>
+  transmute(
+    Analysis = .data$analysis_label,
+    `Minimum bins/day` = .data$minimum_bins_per_participant_day,
+    `Complete participant-days` = .data$complete_48_bin_participant_days,
+    `Minimum valid min/bin` = .data$minimum_valid_minutes_per_30_minute_bin,
+    `Maximum valid min/bin` = .data$maximum_valid_minutes_per_30_minute_bin,
+    `Gap-timing field` = .data$metric_specific_gap_timing_field,
+    `Exact zeros` = .data$exact_zero_observations
+  ) |>
+  gt::gt() |>
+  gt::fmt_integer(columns = c(
+    "Minimum bins/day", "Complete participant-days", "Exact zeros"
+  )) |>
+  prep_gt(font_size = 11)
+```
+
+## 2. Temporal and analytical-frame construction
+
+### Inherited time structure
+
+H11 inherits the finalized H02 temporal structure rather than selecting a new
+one. Local wall-clock time is represented by 48 half-hour midpoints from 00:15
+to 23:45. The smooth is cyclic at midnight. Site-specific deviation smooths
+sum to zero, participant curves use factor-smooth interactions, and
+participant-days enter as random intercepts.
+
+Autocorrelation sequences are based on true elapsed instants. A sequence
+restarts at participant-day boundaries, elapsed-time discontinuities, and
+non-one-to-one wall-clock outcomes, including daylight-saving-time ambiguity.
+The accepted frames therefore do not infer continuity merely because two rows
+have adjacent clock labels.
+
+```{r}
+#| label: tbl-h11-prep-ar-boundaries-primary
+#| tbl-cap: "Autocorrelation-boundary evidence in the primary fitted frames"
+
+AR_boundaries |>
+  filter(.data$analysis_label %in% c("Primary near eye", "Complementary chest")) |>
+  transmute(
+    Analysis = .data$analysis_label,
+    `Boundary reason` = .data$boundary_reason,
+    Observations = .data$observations,
+    `Share of frame` = .data$percent_of_frame / 100
+  ) |>
+  gt::gt(groupname_col = "Analysis") |>
+  gt::fmt_integer(columns = "Observations") |>
+  gt::fmt_percent(columns = "Share of frame", decimals = 2) |>
+  prep_gt(font_size = 11)
+```
+
+```{r}
+#| label: tbl-h11-prep-ar-boundaries-sensitivity
+#| tbl-cap: "Autocorrelation-boundary evidence in the sensitivity frames"
+
+AR_boundaries |>
+  filter(!.data$analysis_label %in% c("Primary near eye", "Complementary chest")) |>
+  transmute(
+    Analysis = .data$analysis_label,
+    `Boundary reason` = .data$boundary_reason,
+    Observations = .data$observations,
+    `Share of frame` = .data$percent_of_frame / 100
+  ) |>
+  gt::gt(groupname_col = "Analysis") |>
+  gt::fmt_integer(columns = "Observations") |>
+  gt::fmt_percent(columns = "Share of frame", decimals = 2) |>
+  prep_gt(font_size = 11)
+```
+
+### Coverage, missingness, and transformation
+
+The general data-admission rules required at least 50% valid data per hour and
+at least 80% valid data per participant-day. The primary model frames then
+required 15–30 valid wall-clock minutes in each retained 30-minute melEDI bin.
+
+The **gap-timing-unaware dataset** still passed those general coverage rules,
+but the timing of the remaining missing observations was not used for
+metric-specific adjustment. The unavailable metric-specific timing fields in
+the sensitivity frames are therefore intentional, not missing evidence for
+the general coverage checks.
+
+All non-negative melEDI values, including exact zeros, are retained. The model
+response is $\log_{10}(\mathrm{melEDI}+0.1)$, so zero maps exactly to -1 on the
+model scale. The descriptive figure uses a true symlog display only for the
+positive original-unit distribution and shows the retained zeros separately.
+
+```{r}
+#| label: tbl-h11-prep-samples
+#| tbl-cap: "Exact analytical samples"
+
+sample_support |>
+  transmute(
+    Analysis = .data$analysis_label,
+    Participants = .data$participants,
+    `Female / Male` = paste0(
+      .data$female_participants,
+      " / ",
+      .data$male_participants
+    ),
+    `Participant-days` = .data$participant_days,
+    `30-min observations` = .data$observations_30_minute,
+    `Nominal hours` = .data$nominal_observation_hours,
+    Sites = .data$sites,
+    `AR sequences` = .data$AR_sequences
+  ) |>
+  gt::gt() |>
+  gt::fmt_integer(columns = c(
+    "Participants", "Participant-days", "30-min observations", "Sites",
+    "AR sequences"
+  )) |>
+  gt::fmt_number(columns = "Nominal hours", decimals = 1, use_seps = TRUE) |>
+  prep_gt(font_size = 11)
+```
+
+The primary near-eye model uses **141 participants, 816 participant-days,
+37,756 observations (18,878.0 nominal hours), and 9 sites**. The complementary
+chest model uses **154 participants, 902 participant-days, 41,842 observations
+(20,921.0 nominal hours), and 8 sites**. These counts reconcile exactly with
+the accepted H02 fitted samples.
+
+### Site and biological-sex support
+
+```{r}
+#| label: fig-h11-prep-site-sex-support
+#| fig-cap: "Participant support by recorded biological sex and submitted-manuscript site. The line joins Female and Male counts within each site; the figure describes support rather than effect size."
+#| fig-alt: "Two-panel dot plot of participant counts by recorded biological sex at each site for near-eye and chest fitted frames. Every included site has both Female and Male participants; chest data are absent for Tübingen."
+#| out-width: "100%"
+
+knitr::include_graphics(file.path(
+  root,
+  "artifacts/10_figures/H11/preparation/H11_preparation_site_sex_support.png"
+))
+```
+
+[Paired site-support source data](../../../artifacts/11_source_data/H11/preparation/H11_preparation_site_sex_support.csv)
+
+```{r}
+#| label: tbl-h11-prep-site-summary
+#| tbl-cap: "Range of site-specific participant support by placement and recorded biological sex"
+
+site_sex_support |>
+  group_by(.data$placement_label, .data$sex) |>
+  summarise(
+    Sites = n_distinct(.data$site),
+    `Minimum participants/site` = min(.data$participants),
+    `Median participants/site` = median(.data$participants),
+    `Maximum participants/site` = max(.data$participants),
+    .groups = "drop"
+  ) |>
+  transmute(
+    Placement = .data$placement_label,
+    `Recorded biological sex` = .data$sex,
+    Sites,
+    `Minimum participants/site`,
+    `Median participants/site`,
+    `Maximum participants/site`
+  ) |>
+  gt::gt(groupname_col = "Placement") |>
+  gt::fmt_number(columns = "Median participants/site", decimals = 1) |>
+  prep_gt()
+```
+
+### Original-unit melEDI support
+
+```{r}
+#| label: fig-h11-prep-melEDI-distribution
+#| fig-cap: "Observed melEDI support in the primary frames. Panel A summarizes positive observations using the 10th–90th percentile line, 25th–75th percentile thick line, median point, and open 99th-percentile point on a true symlog axis. Panel B shows the exact-zero observations retained in the models."
+#| fig-alt: "Two-part figure comparing melEDI distributions by recorded biological sex at near eye and chest. Positive values span broad right-skewed ranges on a scale linear to 1 lux and logarithmic above 1 lux. Exact zeros comprise about 31 to 35 percent of observations."
+#| out-width: "100%"
+
+knitr::include_graphics(file.path(
+  root,
+  "artifacts/10_figures/H11/preparation/H11_preparation_melEDI_distribution.png"
+))
+```
+
+[Paired untransformed distribution source data](../../../artifacts/11_source_data/H11/preparation/H11_preparation_melEDI_distribution.csv)
+
+```{r}
+#| label: tbl-h11-prep-melEDI-distribution
+#| tbl-cap: "Observed melEDI distribution by placement and recorded biological sex"
+
+melEDI_distribution |>
+  transmute(
+    Placement = .data$placement_label,
+    `Recorded biological sex` = .data$sex,
+    Observations = .data$observations,
+    `Exact zeros` = .data$exact_zeros,
+    `Exact zero share` = .data$exact_zero_percent / 100,
+    `Positive median (lx)` = .data$positive_median_melEDI_lx,
+    `Positive P90 (lx)` = .data$positive_p90_melEDI_lx,
+    `Positive P99 (lx)` = .data$positive_p99_melEDI_lx,
+    `Maximum (lx)` = .data$maximum_melEDI_lx
+  ) |>
+  gt::gt(groupname_col = "Placement") |>
+  gt::fmt_integer(columns = c("Observations", "Exact zeros")) |>
+  gt::fmt_percent(columns = "Exact zero share", decimals = 1) |>
+  gt::fmt_number(
+    columns = c(
+      "Positive median (lx)", "Positive P90 (lx)", "Positive P99 (lx)",
+      "Maximum (lx)"
+    ),
+    decimals = 1,
+    use_seps = TRUE
+  ) |>
+  prep_gt(font_size = 11)
+```
+
+## 3. Activity-context construction
+
+The exploratory activity analysis uses the accepted primary placement frames
+and a normalized hourly diary. A 30-minute observation is retained only when
+there is exactly one containing diary hour and exactly one eligible mapped
+activity: Home, Sleep, Public transport/car, Indoor work/home office, or
+Outdoors/active travel. Missing flags, no selection, multiple selections, and
+an unspecified “other” selection are not imputed. Autocorrelation sequences
+restart across gaps created by this filter.
+
+```{r}
+#| label: fig-h11-prep-activity-attrition
+#| fig-cap: "Observation-level activity matching and attrition from each accepted placement-specific frame. Paired horizontal bars use a common 0–100% axis and carry direct percentage labels; classifications sum to 100% within each placement."
+#| fig-alt: "Grouped horizontal bar chart comparing near-eye and chest percentages for six activity-matching outcomes. About four-fifths of near-eye observations and almost nine-tenths of chest observations had one eligible mapped activity. The largest exclusion category is missing activity flags, with smaller shares for unmatched hours, no activity, multiple activities, and unspecified other activity."
+#| out-width: "100%"
+
+knitr::include_graphics(file.path(
+  root,
+  "artifacts/10_figures/H11/preparation/H11_preparation_activity_attrition.png"
+))
+```
+
+[Paired activity-attrition source data](../../../artifacts/11_source_data/H11/preparation/H11_preparation_activity_attrition.csv)
+
+```{r}
+#| label: tbl-h11-prep-activity-attrition
+#| tbl-cap: "Activity matching and observation-level attrition"
+
+activity_attrition |>
+  transmute(
+    Placement = .data$placement_label,
+    Classification = .data$status_label,
+    `30-min observations` = .data$observations_30_minute,
+    `Share of accepted frame` = .data$percent_of_original_frame / 100
+  ) |>
+  arrange(.data$Classification, .data$Placement) |>
+  gt::gt(groupname_col = "Classification") |>
+  gt::fmt_integer(columns = "30-min observations") |>
+  gt::fmt_percent(columns = "Share of accepted frame", decimals = 1) |>
+  prep_gt(font_size = 11)
+```
+
+This creates same-sample near-eye models with 126 participants, 724
+participant-days, and 30,499 observations, and chest models with 150
+participants, 875 participant-days, and 36,711 observations. The comparison
+between models with and without activity is descriptive contextualization; it
+cannot show that activity mediates or causes a biological-sex association.
+
+## 4. Model construction
+
+### Exact Wilkinson formulas
+
+The following are the exact formulas supplied to the accepted model fits. The
+cells are displayed for auditability and are not executed on this page.
+
+```{r}
+#| label: h11-exact-pattern-formula
+#| eval: false
+
+M_pattern <- response ~ sex +
+  s(time_hour, bs = "cc", k = 12) +
+  s(time_hour, by = sex_smooth, bs = "cc", k = 12) +
+  s(time_hour, site, bs = "sz", k = 12) +
+  s(time_hour, participant, bs = "fs", k = 10) +
+  s(participant_day, bs = "re")
+```
+
+```{r}
+#| label: h11-exact-effect-baseline-formula
+#| eval: false
+
+M_0 <- response ~
+  s(time_hour, bs = "cc", k = 12) +
+  s(time_hour, site, bs = "sz", k = 12) +
+  s(time_hour, participant, bs = "fs", k = 10) +
+  s(participant_day, bs = "re")
+```
+
+```{r}
+#| label: h11-exact-activity-formula
+#| eval: false
+
+M_activity <- response ~ sex + activity +
+  s(time_hour, bs = "cc", k = 12) +
+  s(time_hour, by = sex_smooth, bs = "cc", k = 12) +
+  s(time_hour, by = activity_smooth, bs = "cc", k = 12, id = 2) +
+  s(time_hour, site, bs = "sz", k = 12) +
+  s(time_hour, participant, bs = "fs", k = 10) +
+  s(participant_day, bs = "re")
+```
+
+```{r}
+#| label: h11-exact-activity-effect-baseline-formula
+#| eval: false
+
+M_activity_0 <- response ~ activity +
+  s(time_hour, bs = "cc", k = 12) +
+  s(time_hour, by = activity_smooth, bs = "cc", k = 12, id = 2) +
+  s(time_hour, site, bs = "sz", k = 12) +
+  s(time_hour, participant, bs = "fs", k = 10) +
+  s(participant_day, bs = "re")
+```
+
+The sex factor uses Male as the treatment-reference level. The ordered
+`sex_smooth` factor identifies the cyclic Female-minus-Male deviation. The
+main cyclic smooth is the Male reference curve; the sex-deviation smooth adds
+the Female shape difference. Site deviations use the sum-to-zero basis,
+participant curves use factor smooths, and participant-day random intercepts
+account for repeated observations within days. In the activity model, Home is
+the treatment reference and the ordered activity deviation smooths share one
+smoothing parameter (`id = 2`).
+
+```{r}
+#| label: tbl-h11-prep-formula-registry
+#| tbl-cap: "Formula roles and fit gates recorded before estimation"
+
+bind_rows(
+  formula_manifest |>
+    distinct(.data$formula_id, .data$formula, .data$fit_role) |>
+    filter(.data$formula_id %in% c("proposed_mpattern", "proposed_m0")) |>
+    transmute(
+      Model = recode(
+        .data$formula_id,
+        proposed_mpattern = "Sex-pattern model",
+        proposed_m0 = "Conditional effect-size baseline"
+      ),
+      Role = .data$fit_role,
+      Formula = .data$formula
+    ),
+  activity_formula_manifest |>
+    filter(.data$formula_id %in% c("activity_adjusted", "activity_adjusted_no_sex")) |>
+    transmute(
+      Model = recode(
+        .data$formula_id,
+        activity_adjusted = "Activity-adjusted sex-pattern model",
+        activity_adjusted_no_sex = "Activity-adjusted effect-size baseline"
+      ),
+      Role = paste(.data$fit_role, "Fit rule:", .data$fit_gate),
+      Formula = .data$formula
+    )
+) |>
+  gt::gt() |>
+  gt::cols_width(Model ~ gt::px(190), Role ~ gt::px(260), Formula ~ gt::px(700)) |>
+  prep_gt(font_size = 10)
+```
+
+### Engine and estimation settings
+
+All models are Gaussian identity-link additive models fitted by fast REML with
+`discrete = TRUE` and cyclic knots `time_hour = c(0, 24)`. For each run, a
+preliminary full model with $\rho=0$ estimates the lag-1 residual correlation
+within the inherited `AR_start` sequences. The final full model uses that one
+run-specific $\rho$. Any conditional effect-size baseline uses the same frame,
+$\rho$, knots, and non-sex structure.
+
+```{r}
+#| label: tbl-h11-prep-fit-settings
+#| tbl-cap: "Accepted final-model settings and run-specific autocorrelation"
+
+bind_rows(
+  fit_summary |>
+    filter(.data$model_id == "mpattern_final_fREML") |>
+    transmute(
+      Analysis = case_when(
+        .data$data_scenario_id == "main" & .data$placement == "glasses" ~
+          "Primary near eye",
+        .data$data_scenario_id == "main" & .data$placement == "chest" ~
+          "Complementary chest",
+        .data$data_scenario_id != "main" & .data$placement == "glasses" ~
+          "Gap-timing-unaware near eye",
+        TRUE ~ "Gap-timing-unaware chest"
+      ),
+      Observations = .data$n,
+      `Total edf` = .data$total_edf,
+      Rho = .data$rho,
+      Converged = .data$convergence,
+      `Elapsed seconds` = .data$elapsed_seconds,
+      Engine = paste0("mgcv ", .data$mgcv_version, "; fREML; discrete")
+    ),
+  activity_fit_summary |>
+    filter(.data$model_variant == "activity_adjusted") |>
+    transmute(
+      Analysis = if_else(
+        .data$placement == "glasses",
+        "Activity-adjusted near eye",
+        "Activity-adjusted chest"
+      ),
+      Observations = .data$n,
+      `Total edf` = .data$total_edf,
+      Rho = .data$rho,
+      Converged = .data$convergence,
+      `Elapsed seconds` = .data$elapsed_seconds,
+      Engine = paste0("mgcv ", .data$mgcv_version, "; fREML; discrete")
+    )
+) |>
+  gt::gt() |>
+  gt::fmt_integer(columns = "Observations") |>
+  gt::fmt_number(columns = c("Total edf", "Rho", "Elapsed seconds"), decimals = 3) |>
+  prep_gt(font_size = 11)
+```
+
+## 5. Estimand, uncertainty, and multiplicity
+
+### Complete-curve inference
+
+The preregistered question is represented by one global test of the complete
+48-bin Female-minus-Male curve within each placement and dataset. Inference
+uses participant-summed, AR-whitened scores; a participant-cluster CR1
+covariance; the smoothing-bias term $V_p-V_e$; and a finite-cluster,
+fractional-rank $F$ reference. Confidence intervals for fitted curves,
+pointwise contrasts, and displayed scalar estimates are **pointwise 95%
+intervals**, not simultaneous bands.
+
+The primary near-eye global raw p-value is
+`r format_p(near_global$p_raw)` and the complementary chest raw p-value is
+`r format_p(chest_global$p_raw)`. Each is the sole member of its explicitly
+labelled global family, so its stored adjusted value is numerically identical.
+
+```{r}
+#| label: tbl-h11-prep-global-tests
+#| tbl-cap: "Complete-curve tests; raw and adjusted p-values are labelled and styled independently"
+
+global_display <- global_tests |>
+  mutate(
+    raw_significant = .data$p_raw < 0.05,
+    adjusted_significant = .data$p_adjusted < 0.05,
+    `Raw p` = format_p(.data$p_raw),
+    `Adjusted p` = format_p(.data$p_adjusted)
+  ) |>
+  transmute(
+    Dataset = .data$dataset_label,
+    Placement = .data$placement_label,
+    `F statistic` = .data$F_statistic,
+    `Numerator df` = .data$fractional_numerator_df,
+    `Denominator df` = .data$denominator_df,
+    `Raw p`,
+    `Adjusted p`,
+    `Family size` = .data$observed_family_n,
+    Decision = if_else(.data$adjusted_significant, "Supported", "Not supported"),
+    raw_significant,
+    adjusted_significant
+  )
+
+global_display |>
+  gt::gt(groupname_col = "Dataset") |>
+  gt::fmt_number(columns = c("F statistic", "Numerator df"), decimals = 3) |>
+  gt::fmt_integer(columns = c("Denominator df", "Family size")) |>
+  gt::tab_style(
+    style = gt::cell_text(weight = "bold"),
+    locations = gt::cells_body(columns = "Raw p", rows = raw_significant)
+  ) |>
+  gt::tab_style(
+    style = gt::cell_text(weight = "bold"),
+    locations = gt::cells_body(columns = "Adjusted p", rows = adjusted_significant)
+  ) |>
+  gt::cols_hide(columns = c("raw_significant", "adjusted_significant")) |>
+  prep_gt(font_size = 11) |>
+  gt::tab_source_note(
+    gt::md("Significance rule: each labelled global family has one test; $p<0.050$.")
+  )
+```
+
+### What the two-component decomposition can and cannot say
+
+The complete-curve result is the overall test. A separate, secondary
+decomposition asks whether that curve difference can be attributed cleanly to
+(1) a constant parametric level component or (2) a cyclic shape component.
+Those two attribution tests form a two-test Benjamini–Hochberg family within
+each placement and dataset.
+
+No component remains supported after that two-test adjustment. This does
+**not** invalidate or reverse the significant global curve result. It means
+only that the evidence cannot cleanly separate the overall curve association
+into an independent “level” contribution and an independent “shape”
+contribution after accounting for the two attribution attempts. The two
+components are parameterization-dependent parts of one fitted curve and are
+not a second omnibus test of whether the full curve differs.
+
+```{r}
+#| label: tbl-h11-prep-decomposition
+#| tbl-cap: "Secondary level/shape attribution tests with within-run two-test BH adjustment"
+
+decomposition_display <- decomposition |>
+  mutate(
+    raw_significant = .data$p_raw < 0.05,
+    adjusted_significant = .data$p_adjusted < 0.05,
+    `Raw p` = format_p(.data$p_raw),
+    `BH-adjusted p` = format_p(.data$p_adjusted)
+  ) |>
+  transmute(
+    Dataset = .data$dataset_label,
+    Placement = .data$placement_label,
+    Component = recode(
+      .data$comparison_id,
+      parametric_level_component = "Level",
+      cyclic_shape_component = "Shape"
+    ),
+    `F statistic` = .data$F_statistic,
+    `Numerator df` = .data$fractional_numerator_df,
+    `Raw p`,
+    `BH-adjusted p`,
+    Decision = if_else(
+      .data$adjusted_significant,
+      "Attribution supported",
+      "Attribution not resolved"
+    ),
+    raw_significant,
+    adjusted_significant
+  )
+
+decomposition_display |>
+  gt::gt(groupname_col = "Dataset") |>
+  gt::fmt_number(columns = c("F statistic", "Numerator df"), decimals = 3) |>
+  gt::tab_style(
+    style = gt::cell_text(weight = "bold"),
+    locations = gt::cells_body(columns = "Raw p", rows = raw_significant)
+  ) |>
+  gt::tab_style(
+    style = gt::cell_text(weight = "bold"),
+    locations = gt::cells_body(
+      columns = "BH-adjusted p",
+      rows = adjusted_significant
+    )
+  ) |>
+  gt::cols_hide(columns = c("raw_significant", "adjusted_significant")) |>
+  prep_gt(font_size = 11) |>
+  gt::tab_source_note(
+    gt::md("Significance rule: BH-adjusted $p<0.050$ within each two-component attribution family.")
+  )
+```
+
+### Conditional effect-size branch
+
+The predeclared effect-size branch opens only when the placement-specific raw
+global test has $p<0.050$. It opened for both primary placements. The reported
+curve-variation estimator is the mean, across 48 clock bins, of the sample
+variance across the two equally weighted fitted biological-sex curves. It is a
+conditional descriptive magnitude on the squared model-prediction scale, not
+variance explained. Its 95% interval uses the accepted participant-cluster
+robust covariance and first-order delta method.
+
+```{r}
+#| label: tbl-h11-prep-effect-sizes
+#| tbl-cap: "Conditional descriptive effect-size estimates for globally supported primary curves"
+
+curve_effects |>
+  transmute(
+    Placement = .data$placement_label,
+    Participants = .data$participants,
+    `Participant-days` = .data$participant_days,
+    Observations = .data$observations_30_minute,
+    Estimate = .data$estimate,
+    `Lower 95%` = .data$lower_95,
+    `Upper 95%` = .data$upper_95,
+    Unit = .data$unit
+  ) |>
+  gt::gt() |>
+  gt::fmt_integer(columns = c("Participants", "Participant-days", "Observations")) |>
+  gt::fmt_number(columns = c("Estimate", "Lower 95%", "Upper 95%"), decimals = 4) |>
+  prep_gt(font_size = 11)
+```
+
+The fitted parametric level coefficient is also reported with its
+participant-cluster-robust pointwise 95% interval, but its interpretation is
+conditional on the cyclic sex-deviation smooth and must not be used as a
+stand-alone replacement for the complete-curve test.
+
+```{r}
+#| label: tbl-h11-prep-parametric-level
+#| tbl-cap: "Conditional parametric level estimates in the primary fits"
+
+parametric_levels |>
+  transmute(
+    Placement = .data$placement_label,
+    `Female-minus-Male estimate` = .data$estimate_eta,
+    `Lower 95%` = .data$lower_eta_95,
+    `Upper 95%` = .data$upper_eta_95,
+    `Shifted geometric-mean ratio` = .data$female_to_male_shifted_ratio,
+    `Ratio lower 95%` = .data$ratio_lower_95,
+    `Ratio upper 95%` = .data$ratio_upper_95
+  ) |>
+  gt::gt() |>
+  gt::fmt_number(columns = 2:7, decimals = 3) |>
+  prep_gt()
+```
+
+## 6. Diagnostics and influence
+
+The diagnostic sequence checked convergence and warnings, cyclic closure at
+midnight, site sum-to-zero constraints, basis dimensions, residual
+distributions, boundary-aware residual autocorrelation, formal concurvity,
+robust covariance behaviour, participant influence, and agreement between the
+curve-space and coefficient-block formulations of the global test.
+
+```{r}
+#| label: tbl-h11-prep-diagnostic-assessment
+#| tbl-cap: "Overall diagnostic assessment for primary and gap-timing-unaware fits"
+
+diagnostics |>
+  transmute(
+    Dataset = .data$dataset_label,
+    Placement = .data$placement_label,
+    Assessment = .data$classification,
+    Converged = .data$converged,
+    `Cyclic closure` = .data$cyclic_sex_curves_close_at_midnight,
+    `Site constraint` = .data$site_sum_to_zero_verified,
+    `Final lag-1 residual correlation` =
+      .data$final_boundary_aware_lag1_correlation,
+    `Severe basis flags` = .data$severe_k_check_flags
+  ) |>
+  gt::gt(groupname_col = "Dataset") |>
+  gt::fmt_number(columns = "Final lag-1 residual correlation", decimals = 3) |>
+  gt::fmt_integer(columns = "Severe basis flags") |>
+  prep_gt(font_size = 11)
+```
+
+All four models were assessed as **acceptable with specified limitations**.
+They converged without serious warnings, closed cyclically at midnight,
+preserved the inherited site constraint, had no severe basis-dimension flags,
+and reduced boundary-aware lag-1 residual correlation to 0.070–0.083. The
+remaining limitations are the Gaussian log-scale mean assumption, exact-zero
+mass, heavy residual tails, heteroscedasticity, and concurvity inherited from
+the H02 temporal analysis. These caution against interpreting the curves as a
+complete generative account of melEDI, but they did not trigger the prespecified
+unacceptable-model criteria.
+
+```{r}
+#| label: tbl-h11-prep-robust-influence
+#| tbl-cap: "Participant-cluster robust covariance and delete-one-participant stability"
+
+robust_diagnostics |>
+  transmute(
+    Dataset = .data$dataset_label,
+    Placement = .data$placement_label,
+    Participants = .data$participants,
+    `Maximum cluster score share` =
+      .data$maximum_participant_unscaled_meat_share,
+    `Effective clusters` = .data$effective_participants_unscaled_meat_trace,
+    `Delete-one p minimum` = format_p(.data$delete_one_participant_p_minimum),
+    `Delete-one p median` = format_p(.data$delete_one_participant_p_median),
+    `Delete-one p maximum` = format_p(.data$delete_one_participant_p_maximum),
+    `Delete-one results below 0.050` =
+      .data$delete_one_participant_below_0_05
+  ) |>
+  gt::gt(groupname_col = "Dataset") |>
+  gt::fmt_integer(columns = c("Participants", "Delete-one results below 0.050")) |>
+  gt::fmt_number(
+    columns = c("Maximum cluster score share", "Effective clusters"),
+    decimals = 3
+  ) |>
+  prep_gt(font_size = 11) |>
+  gt::tab_source_note(
+    gt::md("The displayed delete-one p-values are raw global-test values; no new multiplicity family is created by this influence screen.")
+  )
+```
+
+Every delete-one-participant primary and sensitivity result remained below
+0.050. Maximum participant score contribution ranged from 2.7% to 7.6%, while
+the effective number of contributing clusters was smaller than the nominal
+participant count, especially for chest. The robust covariance therefore
+materially protects inference from within-participant dependence, but the
+chest result should still be read as complementary.
+
+## 7. Sensitivity findings
+
+### Gap timing
+
+Applying the same model and global test to the gap-timing-unaware dataset gave
+raw global p-values of
+`r format_p(global_tests$p_raw[global_tests$dataset_label == "Gap-timing-unaware dataset" & global_tests$placement_label == "Near eye"])`
+near eye and
+`r format_p(global_tests$p_raw[global_tests$dataset_label == "Gap-timing-unaware dataset" & global_tests$placement_label == "Chest"])`
+at chest. This supports stability to whether the timing of remaining missing
+observations is used for metric-specific adjustment. It does not test every
+possible missing-data mechanism.
+
+### Activity context
+
+The activity comparison separates sample restriction from covariate
+adjustment. First, the unadjusted sex-pattern model is refitted to the exact
+activity-complete sample. Second, activity level and activity-specific cyclic
+deviations are added on that same sample. Because both models use identical
+rows, the difference is not confounded by the activity-related attrition
+between those two fits.
+
+```{r}
+#| label: tbl-h11-prep-activity-global
+#| tbl-cap: "Exploratory same-sample activity contextualization of the complete sex-curve test"
+
+activity_display <- activity_comparison |>
+  mutate(
+    raw_significant = .data$p_raw < 0.05,
+    adjusted_significant = .data$p_adjusted < 0.05,
+    `Raw p` = format_p(.data$p_raw),
+    `Adjusted p` = format_p(.data$p_adjusted)
+  ) |>
+  transmute(
+    Placement = .data$placement_label,
+    Analysis = .data$analysis_step,
+    Participants = .data$participants,
+    `Participant-days` = .data$participant_days,
+    Observations = .data$observations_30_minute,
+    `F statistic` = .data$F_statistic,
+    `Raw p`,
+    `Adjusted p`,
+    Decision = if_else(.data$adjusted_significant, "Supported", "Not supported"),
+    raw_significant,
+    adjusted_significant
+  )
+
+activity_display |>
+  gt::gt(groupname_col = "Placement") |>
+  gt::fmt_integer(columns = c("Participants", "Participant-days", "Observations")) |>
+  gt::fmt_number(columns = "F statistic", decimals = 3) |>
+  gt::tab_style(
+    style = gt::cell_text(weight = "bold"),
+    locations = gt::cells_body(columns = "Raw p", rows = raw_significant)
+  ) |>
+  gt::tab_style(
+    style = gt::cell_text(weight = "bold"),
+    locations = gt::cells_body(columns = "Adjusted p", rows = adjusted_significant)
+  ) |>
+  gt::cols_hide(columns = c("raw_significant", "adjusted_significant")) |>
+  prep_gt(font_size = 11) |>
+  gt::tab_source_note(
+    gt::md("Each row is an explicitly labelled one-test exploratory global family; $p<0.050$. Activity-adjusted inference is contextual, not causal or mediational.")
+  )
+```
+
+On the activity-complete near-eye sample, the unadjusted raw p-value was
+`r format_p(activity_comparison$p_raw[activity_comparison$placement_label == "Near eye" & activity_comparison$analysis_step == "Activity-complete sample, unadjusted"])`
+and the activity-adjusted raw p-value was
+`r format_p(activity_comparison$p_raw[activity_comparison$placement_label == "Near eye" & activity_comparison$analysis_step == "Same sample, activity-adjusted"])`.
+At chest these were
+`r format_p(activity_comparison$p_raw[activity_comparison$placement_label == "Chest" & activity_comparison$analysis_step == "Activity-complete sample, unadjusted"])`
+and
+`r format_p(activity_comparison$p_raw[activity_comparison$placement_label == "Chest" & activity_comparison$analysis_step == "Same sample, activity-adjusted"])`.
+Thus the activity-adjusted exploratory global tests do not meet the 0.050
+rule. This is compatible with attenuation or reduced precision, but it does
+not establish that activity explains, mediates, or makes the accepted primary
+association disappear.
+
+```{r}
+#| label: tbl-h11-prep-activity-attenuation
+#| tbl-cap: "Descriptive change in the same-sample sex-curve contrast after activity adjustment"
+
+activity_attenuation |>
+  transmute(
+    Placement = .data$placement_label,
+    `Unadjusted RMS contrast` = .data$restricted_unadjusted_rms_eta,
+    `Activity-adjusted RMS contrast` = .data$activity_adjusted_rms_eta,
+    `Relative RMS change` = .data$rms_relative_change,
+    `Maximum absolute curve change` =
+      .data$maximum_absolute_cross_model_change_eta,
+    Pattern = recode(
+      .data$threshold_pattern,
+      crossed_0.05_after_activity_adjustment =
+        "Crossed 0.050 after adjustment",
+      not_supported_in_either_common_sample_model =
+        "Not supported in either same-sample model"
+    )
+  ) |>
+  gt::gt() |>
+  gt::fmt_number(
+    columns = c(
+      "Unadjusted RMS contrast", "Activity-adjusted RMS contrast",
+      "Maximum absolute curve change"
+    ),
+    decimals = 3
+  ) |>
+  gt::fmt_percent(columns = "Relative RMS change", decimals = 1) |>
+  prep_gt(font_size = 11)
+```
+
+The activity-adjusted effect-size branch was deliberately not run: both
+activity-adjusted raw global p-values were at or above 0.050, so the
+predeclared gate for the no-sex baseline and its bootstrap pilot remained
+closed. No post hoc effect-size estimate was manufactured for an unsupported
+adjusted global effect.
+
+```{r}
+#| label: tbl-h11-prep-activity-diagnostics
+#| tbl-cap: "Diagnostic and influence assessment for activity-complete models"
+
+activity_diagnostics |>
+  transmute(
+    Placement = .data$placement_label,
+    Analysis = .data$analysis_step,
+    Assessment = .data$classification,
+    `Final lag-1 residual correlation` =
+      .data$final_boundary_aware_lag1_correlation,
+    `Maximum cluster score share` =
+      .data$maximum_participant_unscaled_meat_share,
+    `Effective clusters` = .data$effective_participants_unscaled_meat_trace,
+    `Delete-one p range` = paste0(
+      format_p(.data$delete_one_participant_p_minimum),
+      "–",
+      format_p(.data$delete_one_participant_p_maximum)
+    )
+  ) |>
+  gt::gt(groupname_col = "Placement") |>
+  gt::fmt_number(
+    columns = c(
+      "Final lag-1 residual correlation", "Maximum cluster score share",
+      "Effective clusters"
+    ),
+    decimals = 3
+  ) |>
+  prep_gt(font_size = 11)
+```
+
+### Placement comparability and analyses not run
+
+A scalar near-eye-versus-chest identity plot is not valid for H11. The stored
+primary fits use different all-available samples, and H11 has no fitted
+common-sample placement outputs or prespecified scalar reduction of its
+temporal estimand. The reader report therefore presents separate near-eye and
+chest curves without implying equivalence or a paired placement difference.
+
+```{r}
+#| label: tbl-h11-prep-placement-assessment
+#| tbl-cap: "Assessment of a paired near-eye-versus-chest display"
+
+paired_assessment |>
+  transmute(
+    `Stored common-sample participants` =
+      .data$stored_common_sample_participants,
+    `Stored common-sample participant-days` =
+      .data$stored_common_sample_participant_days,
+    `Fitted common-sample H11 outputs` =
+      .data$common_sample_H11_fitted_outputs_available,
+    `Prespecified scalar temporal estimand` =
+      .data$predeclared_scalar_temporal_estimand_available,
+    `Scalar identity plot applicable` = .data$scalar_identity_plot_applicable,
+    Reason = paste(
+      "The accepted H11 fits use unmatched all-available samples and no",
+      "common-sample H11 model outputs or prespecified scalar reduction exist."
+    ),
+    `Closest valid display` = paste(
+      "Separate primary near-eye and complementary chest curves without",
+      "a paired or equivalence interpretation."
+    )
+  ) |>
+  gt::gt() |>
+  gt::cols_width(
+    Reason ~ gt::px(480),
+    `Closest valid display` ~ gt::px(480)
+  ) |>
+  prep_gt(font_size = 10)
+```
+
+Other analyses remain outside the accepted result set: the registered hourly
+geometric-mean outcome, a paired common-sample placement analysis,
+leave-one-site-out refits, an all-zero-inclusive frame that has not been
+provided, and alternative temporal bases or response families. They could
+address different robustness questions, but none is necessary to document
+the provenance of the accepted result and none was silently substituted for
+the prespecified analysis.
+
+```{r}
+#| label: tbl-h11-prep-deferred-analyses
+#| tbl-cap: "Sensitivity questions that remain outside the accepted result set"
+
+deferred_registry |>
+  transmute(
+    Question = recode(
+      .data$scenario_id,
+      registered_hourly_geometric_mean = "Registered hourly geometric mean",
+      paired_common_sample = "Paired common placement sample",
+      leave_one_site_out = "Leave one site out",
+      all_zero_inclusive = "All-zero-inclusive participant-days",
+      H02_model_form = "Alternative temporal model forms",
+      activity_context = "Activity context"
+    ),
+    `Placement scope` = .data$placement_scope,
+    Status = if_else(
+      .data$scenario_id == "activity_context",
+      "Completed as exploratory context",
+      "Not included in accepted result set"
+    ),
+    `Potential interpretive contribution` = .data$could_change_interpretation
+  ) |>
+  gt::gt() |>
+  prep_gt(font_size = 11)
+```
+
+## 8. Code map and execution order
+
+The scientific computation was separated into bounded, checkpointed steps so
+that each fitted object and downstream calculation has a recorded input
+identity. This page itself executes only the final display step.
+
+```{r}
+#| label: tbl-h11-prep-code-map
+#| tbl-cap: "H11 computational and reporting code map"
+
+tibble::tribble(
+  ~Order, ~Purpose, ~Entry_point,
+  1L, "Construct and verify accepted frames", "scripts/hypotheses/H11/build_h11_stage2_frames.R",
+  2L, "Fit preliminary and final temporal models", "scripts/hypotheses/H11/run_h11_stage2_models.R",
+  3L, "Construct participant-cluster robust tests", "scripts/hypotheses/H11/run_h11_stage2_robust_inference.R",
+  4L, "Calculate gated primary effect-size summaries", "scripts/hypotheses/H11/run_h11_stage2_effect_size_pilot.R",
+  5L, "Build and analyse activity-complete frames", "scripts/hypotheses/H11/run_h11_activity_context.R",
+  6L, "Create reader tables, figures, and source data", "scripts/hypotheses/H11/build_h11_stage3_artifacts.R",
+  7L, "Create preparation-only checks and displays", "scripts/hypotheses/H11/build_h11_preparation_artifacts.R",
+  8L, "Render this bounded provenance page", "audit/hypotheses/H11/H11_analysis_preparation.qmd"
+) |>
+  gt::gt() |>
+  gt::cols_width(Purpose ~ gt::px(380), Entry_point ~ gt::px(600)) |>
+  prep_gt(font_size = 10)
+```
+
+## 9. Output and claim provenance
+
+Every claim in the result report can be traced to a full-precision stored
+table or figure source. The preparation figures also have paired CSVs and
+physical-size QA records. Internal filenames preserve computational
+traceability even where reader-facing terminology has been updated.
+
+```{r}
+#| label: tbl-h11-prep-output-map
+#| tbl-cap: "Principal H11 outputs and the claims they support"
+
+tibble::tribble(
+  ~Claim_or_display, ~Authoritative_output,
+  "Exact fitted samples", "artifacts/09_tables/H11/stage3/H11_reader_samples.csv",
+  "Complete-curve tests", "artifacts/09_tables/H11/stage3/H11_reader_global_tests.csv",
+  "Level/shape attribution", "artifacts/09_tables/H11/stage3/H11_reader_level_shape_decomposition.csv",
+  "Pointwise curves and contrasts", "artifacts/11_source_data/H11/stage3/H11_reader_sex_specific_curves.csv and H11_reader_female_minus_male_contrasts.csv",
+  "Conditional effect sizes", "artifacts/09_tables/H11/stage3/H11_reader_curve_variation_effect_size.csv",
+  "Activity contextualization", "artifacts/09_tables/H11/stage3/H11_reader_activity_global_comparison.csv",
+  "Primary diagnostics", "artifacts/08_diagnostics/H11/stage3/H11_reader_diagnostic_assessment.csv",
+  "Robust influence checks", "artifacts/08_diagnostics/H11/stage3/H11_reader_robust_diagnostics.csv",
+  "Figure physical-size QA", "artifacts/12_manifests/H11/H11_stage3_figure_readability_qa.csv",
+  "Preparation-page physical-size QA", "artifacts/12_manifests/H11/H11_preparation_figure_readability_qa.csv"
+) |>
+  gt::gt() |>
+  gt::cols_width(Claim_or_display ~ gt::px(310), Authoritative_output ~ gt::px(760)) |>
+  prep_gt(font_size = 10)
+```
+
+```{r}
+#| label: tbl-h11-prep-figure-qa
+#| tbl-cap: "Physical-size readability verification for preparation figures"
+
+qa |>
+  transmute(
+    Figure = .data$figure_id,
+    `Native width (mm)` = .data$native_export_width_mm,
+    `Intended width (mm)` = .data$intended_display_width_mm,
+    `Scale factor` = .data$display_reduction_factor,
+    `Smallest essential nominal text (pt)` =
+      .data$smallest_essential_nominal_text_pt,
+    `Effective essential text (pt)` =
+      .data$effective_final_essential_text_pt,
+    `Effective minor text (pt)` = .data$effective_final_minor_text_pt,
+    Status = .data$overall_status
+  ) |>
+  gt::gt() |>
+  gt::fmt_number(
+    columns = c(
+      "Native width (mm)", "Intended width (mm)", "Scale factor",
+      "Smallest essential nominal text (pt)",
+      "Effective essential text (pt)", "Effective minor text (pt)"
+    ),
+    decimals = 2
+  ) |>
+  prep_gt(font_size = 11)
+```
+
+## 10. How to examine or reproduce H11
+
+Use the project R 4.6.1 library and run only the H11 entry points in their
+recorded order. The frozen fitted outputs and source-data files allow the
+reader report and this preparation record to be rendered without repeating
+model fits or resampling. Rebuilding scientific artifacts should occur only
+when an analytical input or approved method changes, and should then produce
+new hashes and manifests rather than silently replacing accepted evidence.
+
+```{r}
+#| label: tbl-h11-prep-environment
+#| tbl-cap: "Recorded computational environment for preparation verification"
+
+environment |>
+  transmute(Component = .data$component, Version = .data$version, Role = .data$role) |>
+  gt::gt() |>
+  prep_gt()
+```
+
+The preparation-report manifest records every H11-scoped script, test,
+scientific artifact, source-data CSV, figure, report source, rendered report,
+and consequential shared policy file with SHA-256, byte size, producer, and R
+version. Its own integrity is checked after rendering so that the manifest
+does not contain a circular self-hash.

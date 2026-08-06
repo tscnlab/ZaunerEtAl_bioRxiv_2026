@@ -1,0 +1,783 @@
+---
+title: "H11 Stage 1: audit and proposed analysis"
+subtitle: "Nature Health analysis audit — author approval gate"
+date: last-modified
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    code-fold: true
+    code-summary: "Show audit code"
+    code-tools: true
+    embed-resources: true
+execute:
+  echo: true
+  warning: false
+  message: false
+  error: false
+  freeze: false
+---
+
+```{r}
+#| label: setup
+#| include: false
+
+options(
+  stringsAsFactors = FALSE,
+  scipen = 999,
+  width = 120,
+  dplyr.summarise.inform = FALSE
+)
+
+library(dplyr)
+library(tibble)
+library(gt)
+
+find_project_root <- function(start = getwd()) {
+  candidate <- normalizePath(start, winslash = "/", mustWork = TRUE)
+  repeat {
+    if (
+      file.exists(file.path(candidate, "renv.lock")) &&
+        dir.exists(file.path(candidate, "audit"))
+    ) {
+      return(candidate)
+    }
+    parent <- dirname(candidate)
+    if (identical(parent, candidate)) {
+      stop("Could not locate the project root from: ", start)
+    }
+    candidate <- parent
+  }
+}
+
+project_root <- Sys.getenv(
+  "H11_PROJECT_ROOT",
+  unset = Sys.getenv("QUARTO_PROJECT_DIR", unset = "")
+)
+if (!nzchar(project_root) || !file.exists(file.path(project_root, "renv.lock"))) {
+  project_root <- find_project_root()
+}
+project_root <- normalizePath(project_root, winslash = "/", mustWork = TRUE)
+
+source(file.path(project_root, "scripts/hypotheses/H11/h11_stage1.R"))
+stage1 <- h11_stage1_artifacts(project_root)
+formulas <- h11_formula_set(project_root)
+
+artifact_dir <- file.path(project_root, "artifacts/06_model_data/H11")
+artifact_manifest <- read.csv(
+  file.path(project_root, "artifacts/12_manifests/H11/H11_stage1_artifacts.csv"),
+  stringsAsFactors = FALSE,
+  check.names = FALSE
+)
+stopifnot(
+  nrow(artifact_manifest) == length(stage1),
+  all(stage1$input_provenance$hash_verified),
+  all(stage1$candidate_sample_counts$missing_biological_sex_rows == 0L)
+)
+
+audit_gt <- function(data, title, subtitle = NULL) {
+  data |>
+    gt() |>
+    tab_header(
+      title = md(title),
+      subtitle = if (is.null(subtitle)) NULL else md(subtitle)
+    ) |>
+    opt_row_striping() |>
+    tab_options(
+      table.width = pct(100),
+      data_row.padding = px(4),
+      heading.align = "left"
+    )
+}
+
+placement_label <- function(x) {
+  ifelse(x == "glasses", "Near-eye", "Chest")
+}
+```
+
+## Stage 1 verdict
+
+**The H11 audit and proposed specification are complete, but Stage 2 is
+blocked pending explicit author approval.** No proposed H11 inferential model,
+bootstrap, coefficient simulation, or sensitivity model has been fitted.
+
+The recommended primary analysis asks whether the complete biological-sex
+contribution---a constant level plus a cyclic time-varying deviation---improves
+the finalized H02 temporal model. It uses near-eye measurements as primary and
+recreates the same analysis for chest measurements as complementary evidence.
+The proposed model sequence restores the registered parametric sex term,
+inherits the accepted H02 clock-time, participant, participant-day, site, and
+AR-boundary structure without reopening it, compares candidate mean structures
+under one common correlation specification, and replaces pointwise period
+claims with a global comparison and a simultaneous 95% curve band.
+
+The current submitted-analysis claims are reopened. In particular, this audit
+does not support the existing claims of a significant 08:00--10:00 interval,
+a factor-two peak, less than 1% variance explained, a retained chest sex term,
+or a behaviourally driven mechanism.
+
+## Controlling evidence and provenance
+
+The signed AsPredicted PDF was indexed in a temporary, non-repository
+page-level index. Its SHA-256 is
+`fce192c88676602b72013e4872a03b535a2f4ef59d34de3a9e1c47527742b7ad`;
+both pages were text-searchable and the index verified against the source.
+Exact searches located the hypothesis and outcome on PDF p. 1 and the model,
+FDR, GAMM ΔAIC, diagnostics, and AR(1) rules on PDF p. 2.
+
+The H02 handoff and 174-file manifest also match their authoritative hashes:
+
+- handoff: `5f4bc01d7cb3d7c6e61fa1b70f2ed5fbdc4e6b76fed3542b315ba3f35b24157b`;
+- manifest: `a978faedbbcbf337a2ed3bb624d5704c50c4929334f62a6c159f8417b65098c9`;
+- selected temporal specification:
+  `c3c95e97dbf7a260e4aa7513a15bb8c3c7e98bdb754d97c54700e4d82629310f`.
+
+```{r}
+#| label: key-input-provenance
+#| echo: false
+
+stage1$input_provenance |>
+  filter(input_id %in% c(
+    "signed_preregistration",
+    "h02_worker_handoff",
+    "h02_worker_manifest",
+    "h02_selected_temporal_specification",
+    "h11_developed_plan",
+    "demographics",
+    "v0_near_eye_render",
+    "v0_chest_render"
+  )) |>
+  transmute(
+    Source = input_id,
+    Path = relative_path,
+    `SHA-256` = observed_sha256,
+    Verified = hash_verified
+  ) |>
+  audit_gt(
+    "Key frozen inputs verified at render time",
+    "The complete 44-row provenance table is exported with the Stage 1 artifacts."
+  ) |>
+  cols_width(Path ~ px(330), `SHA-256` ~ px(430))
+```
+
+The audit used R and did not use another language to calculate or adjudicate a
+scientific result.
+
+```{r}
+#| label: environment
+#| echo: false
+
+stage1$environment |>
+  setNames(c("Component", "Version")) |>
+  audit_gt("Analytical environment")
+```
+
+## Preregistered contract
+
+The exact signed H11 hypothesis is:
+
+> H11: Diurnal exposure patterns differ by sex.
+
+The registered H11 outcome is the hourly geometric mean of melanopic EDI. The
+signed document places chest measurements first and repeats the analysis with
+glasses-mounted measurements. The later project-wide approved placement rule
+reverses those roles: near-eye is primary and chest is complementary.
+
+The signed method is printed below as the actual R formula object recovered by
+the Stage 1 formula builder.
+
+```{r}
+#| label: registered-formula
+#| code-summary: "Registered H11 formula"
+
+formulas$registered_h11
+```
+
+The signed general rules require FDR correction within hypothesis families,
+GAMM model selection using a ΔAIC threshold of at least 2, residual,
+homoscedasticity, and normality checks, and AR(1) errors when residual
+autocorrelation is detected.
+
+### Deviations relevant to H11
+
+The shared deviation register already identifies `DEV-042` through `DEV-048`,
+plus `DEV-019`, `IMP-005`, and `DOC-001`. The reader-facing shared deviation
+narrative currently stops after H07; this H11 worker therefore proposes the
+needed central entries in its handoff rather than editing a coordinator-owned
+file.
+
+The finalized H02 handoff now resolves parts of the earlier H11 migration
+gate. H11 must use the supported 30-minute arithmetic-mean outcome as primary,
+the H02 transform and basis dimensions, the H02 site/participant/day
+hierarchy, and the H02 boundary-aware AR algorithm. The registered hourly
+geometric-mean outcome remains a named sensitivity. Those inherited choices
+are audited here but are not reselected using H11 results.
+
+## The measured construct: biological sex, not gender
+
+The normalized demographics artifact has separate `sex` and `gender` fields.
+H11 uses only the measured biological-sex field. It is complete and contains
+105 participants recorded as Female and 86 recorded as Male in the full
+demographic source. Gender contains 106 Woman, 84 Man, and one Non-binary
+record; two records do not follow a simple Female/Woman or Male/Man mapping.
+No gender value is converted into sex, and gender does not enter an H11 model.
+
+```{r}
+#| label: sex-gender-crosswalk
+#| echo: false
+
+stage1$sex_gender_crosswalk |>
+  rename(
+    `Biological sex` = biological_sex,
+    Gender = gender,
+    Participants = participants
+  ) |>
+  audit_gt(
+    "Separate source fields for biological sex and gender",
+    "Aggregated counts only; the H11 predictor is biological sex."
+  )
+```
+
+For modelling, `sex` is an unordered treatment-coded factor with Male as the
+reference. A second variable, `sex_smooth`, is an ordered factor with levels
+Male then Female. It is derived from the same biological-sex field solely to
+request one Female-minus-Male cyclic deviation smooth from `mgcv`; it is not a
+different construct.
+
+## Exact candidate samples
+
+### Reconciliation to H02
+
+Joining biological sex by the unique `site × Id` key changes no row and
+introduces no missing value. All three proposed comparison formulas therefore
+use the same frame within a placement and scenario.
+
+The primary model frames reconcile exactly to the accepted H02 counts:
+
+- near-eye: **141 participants, 816 participant-days, 37,756 30-minute
+  observations, and 9 sites**;
+- chest: **154 participants, 902 participant-days, 41,842 30-minute
+  observations, and 8 sites**.
+
+```{r}
+#| label: all-candidate-samples
+#| echo: false
+
+stage1$candidate_sample_counts |>
+  mutate(
+    Placement = placement_label(placement),
+    Scenario = recode(
+      data_scenario_id,
+      main = "Main H02-prepared",
+      manuscript_prepared_data = "Manuscript-prepared",
+      registered_outcome_sensitivity = "Registered hourly sensitivity"
+    ),
+    Sample = recode(
+      sample_scenario,
+      all_available = "All available",
+      paired_common_sample = "Paired/common",
+      all_available_h02_day_domain = "All available H02 day domain"
+    )
+  ) |>
+  select(
+    Scenario, Placement, Sample, participants, participant_days,
+    observations_or_hours, observation_unit, sites,
+    female_participants, male_participants
+  ) |>
+  rename(
+    Participants = participants,
+    `Participant-days` = participant_days,
+    `Rows entering each candidate model` = observations_or_hours,
+    `Row unit` = observation_unit,
+    Sites = sites,
+    `Female participants` = female_participants,
+    `Male participants` = male_participants
+  ) |>
+  audit_gt(
+    "Exact candidate samples for M0, M_level, and M_pattern",
+    "Within each row, all three proposed formulas share the exact frame."
+  ) |>
+  fmt_integer(columns = c(
+    Participants, `Participant-days`, `Rows entering each candidate model`,
+    Sites, `Female participants`, `Male participants`
+  ))
+```
+
+The registered-outcome sensitivity is already countable without fitting a
+model. On the accepted H02 participant-day domain it contains 18,953 supported
+near-eye hours and 21,004 supported chest hours. Every accepted participant-day
+has at least one supported hour. The hourly metric is used only when at least
+30 of 60 one-minute intervals are valid; an under-supported raw geometric
+summary remains masked from the candidate model value.
+
+### Main-versus-manuscript common rows
+
+The Stage 2 data-preparation comparison will use the same new implementation
+on both inputs. Its exact common keys are fixed before modelling.
+
+```{r}
+#| label: main-manuscript-common
+#| echo: false
+
+stage1$main_manuscript_common_samples |>
+  transmute(
+    Placement = placement_label(placement),
+    Participants = participants,
+    `Participant-days` = participant_days,
+    `Common 30-minute observations` = common_observations_30_minute,
+    Sites = sites
+  ) |>
+  audit_gt(
+    "Exact main/manuscript common sample",
+    "Used to distinguish data-preparation changes from model changes in Stage 2."
+  ) |>
+  fmt_integer(columns = everything())
+```
+
+### Site-by-sex support
+
+Both recorded biological-sex categories occur at every included site, but
+some cells are small. In the primary near-eye frame, San José has four Female
+and two Male participants; Munich has six Female and four Male participants.
+This makes site influence and the common-across-sites sex assumption important
+diagnostics. H11 does not introduce a sex-by-site smooth or interaction after
+seeing results.
+
+```{r}
+#| label: site-sex-near-eye
+#| echo: false
+
+stage1$site_sex_support |>
+  filter(placement == "glasses") |>
+  transmute(
+    Site = display_name,
+    Colour = paste0(
+      "<span style=\"color:", color_hex, ";\">●</span> ", color_hex
+    ),
+    `Biological sex` = biological_sex,
+    Participants = participants,
+    `Participant-days` = participant_days,
+    `30-minute observations` = observations_30_minute
+  ) |>
+  audit_gt(
+    "Primary near-eye site-by-sex support",
+    "Submitted-manuscript site names and order; internal codes are not displayed."
+  ) |>
+  fmt_integer(columns = c(Participants, `Participant-days`, `30-minute observations`)) |>
+  fmt_markdown(columns = Colour)
+```
+
+```{r}
+#| label: site-sex-chest
+#| echo: false
+
+stage1$site_sex_support |>
+  filter(placement == "chest") |>
+  transmute(
+    Site = display_name,
+    Colour = paste0(
+      "<span style=\"color:", color_hex, ";\">●</span> ", color_hex
+    ),
+    `Biological sex` = biological_sex,
+    Participants = participants,
+    `Participant-days` = participant_days,
+    `30-minute observations` = observations_30_minute
+  ) |>
+  audit_gt(
+    "Complementary chest site-by-sex support",
+    "Tübingen is absent because the accepted chest frame contains eight sites."
+  ) |>
+  fmt_integer(columns = c(Participants, `Participant-days`, `30-minute observations`)) |>
+  fmt_markdown(columns = Colour)
+```
+
+## What V0 estimated
+
+V0 models the zero-aware base-10 log of the 30-minute arithmetic mean melEDI.
+It includes common, photoperiod-state, site, participant, and participant-day
+temporal terms. Its full model adds only a non-explicitly-cyclic
+sum-to-zero sex smooth; it omits the registered parametric sex term. It fits
+each formula first without AR(1), estimates a separate `rho` for each formula,
+refits with participant-only `AR.start`, and compares the final fREML AICs.
+
+The exact V0 formula objects recovered from `RQ3.qmd` and
+`RQ3_chest.qmd` are printed below. The structures are identical between
+placements, so one object per distinct structure is sufficient.
+
+```{r}
+#| label: v0-formulas
+#| code-summary: "Exact V0 H11 formula objects"
+
+for (formula_id in c(
+  "v0_temporal_null",
+  "v0_temporal_full",
+  "v0_activity_only",
+  "v0_activity_plus_sex"
+)) {
+  cat("\n", formula_id, "\n", sep = "")
+  print(formulas[[formula_id]])
+}
+```
+
+### Recovered V0 numerical facts
+
+```{r}
+#| label: v0-results
+#| echo: false
+
+stage1$v0_result_summary |>
+  mutate(
+    Placement = placement_label(placement),
+    Comparison = comparison
+  ) |>
+  select(
+    Placement, Comparison, participants, participant_days,
+    observations_30_minute, reduced_AIC, full_AIC,
+    delta_AIC_reduced_minus_full, smooth_sex_p, adjusted_R2
+  ) |>
+  rename(
+    Participants = participants,
+    `Participant-days` = participant_days,
+    `30-minute observations` = observations_30_minute,
+    `Reduced AIC` = reduced_AIC,
+    `Full AIC` = full_AIC,
+    `ΔAIC (reduced − full)` = delta_AIC_reduced_minus_full,
+    `V0 sex-smooth p` = smooth_sex_p,
+    `V0 adjusted R²` = adjusted_R2
+  ) |>
+  audit_gt(
+    "Recovered V0 model summaries",
+    "These values reproduce the rendered record; the AIC comparisons are not decision-valid."
+  ) |>
+  fmt_number(
+    columns = c(`Reduced AIC`, `Full AIC`, `ΔAIC (reduced − full)`),
+    decimals = 2
+  ) |>
+  fmt_number(columns = c(`V0 sex-smooth p`, `V0 adjusted R²`), decimals = 4)
+```
+
+V0 near-eye favours its full formula by about 7.82 AIC units, whereas chest
+favours its null by about 3.13. The chest prose nevertheless says to retain
+sex. The activity comparison similarly favours adding the sex smooth by only
+about 1.74 AIC units near eye and favours omitting it by about 3.11 for chest.
+These comparisons are descriptive recovery, not accepted inference, because
+the compared fits use differing fREML mean structures and separately estimated
+correlation parameters.
+
+### Confirmed findings
+
+```{r}
+#| label: critical-findings
+#| echo: false
+
+stage1$findings |>
+  filter(severity == "critical") |>
+  select(finding_id, area, finding, stage1_disposition) |>
+  rename(
+    ID = finding_id,
+    Area = area,
+    Finding = finding,
+    `Required disposition` = stage1_disposition
+  ) |>
+  audit_gt("Critical H11 findings")
+```
+
+```{r}
+#| label: other-findings
+#| echo: false
+
+stage1$findings |>
+  filter(severity != "critical") |>
+  select(finding_id, severity, area, finding, stage1_disposition) |>
+  rename(
+    ID = finding_id,
+    Severity = severity,
+    Area = area,
+    Finding = finding,
+    `Required disposition` = stage1_disposition
+  ) |>
+  audit_gt("Major and minor H11 findings")
+```
+
+## Distinguishing data-preparation from model changes
+
+Stage 2 will make three comparisons, in this order:
+
+1. reproduce V0 from its frozen outputs and data description;
+2. apply the new implementation to the manuscript-prepared frame, isolating
+   model and inference changes as far as the frozen artifacts permit; and
+3. compare that fit with the identical new implementation on the main H02
+   frame, isolating data-preparation changes on both full and exact common
+   samples.
+
+| Element | V0 | Proposed Stage 2 | Change class |
+|---|---|---|---|
+| Near-eye frame | 141 participants / 809 days / 37,603 rows | 141 / 816 / 37,756 | Data preparation |
+| Chest frame | 154 participants / 894 days / 41,664 rows | 154 / 902 / 41,842 | Data preparation |
+| Sex construct | Source `sex`, but no parametric term | Biological `sex`; Male-reference level plus cyclic deviation | Model/estimand |
+| H02 hierarchy | V0 working hierarchy and photoperiod-state term | Finalized H02 common/site/participant/day structure | Model/provenance |
+| AR boundaries | Participant start only | Participant-day, omitted/discontinuous bin, and fall-back boundaries | Dependence implementation |
+| Mean-structure comparison | Separate-rho fREML AIC | Common-rho ML likelihood/AIC comparison | Inference implementation |
+| Time localization | Pointwise interval | Simultaneous 95% curve band | Multiplicity/inference |
+| Activity claim | Sample-changing adjustment interpreted causally | Deferred exact-common-sample contextual sensitivity | Estimand/claim |
+
+No new numerical result is available in Stage 1, so no direction, magnitude,
+or significance comparison is made here.
+
+## Proposed estimand and analysis unit
+
+### Primary estimand
+
+The primary estimand is the joint contribution of recorded biological sex to
+the conditional 24-hour local-clock trajectory of
+`log10(30-minute arithmetic-mean melEDI + 0.1 lx)` in the all-available
+near-eye H02 frame. It combines:
+
+- a constant Female-minus-Male level difference; and
+- a cyclic Female-minus-Male deviation over clock time.
+
+The global primary comparison is `M0` versus `M_pattern`. The model's
+site-temporal term adjusts for the accepted site patterns; participant-specific
+curves and participant-day intercepts account for repeated measurements. For
+the displayed Female-minus-Male contrast, the same site, participant, and day
+terms are used on both sides and therefore cancel. The sex effect is assumed
+common across sites; site-by-sex interaction is not added post hoc.
+
+The likelihood is row-based: the analysis unit is one supported 30-minute
+observation. Repeated observations are nested in participant-days and
+participants, and AR(1) dependence is allowed only within the uninterrupted
+H02-defined sequences. The estimand is not a participant-balanced average and
+is not causal.
+
+### Practical scale
+
+The fitted response is the conditional mean on the base-10 log scale. The
+Female-minus-Male curve is reported both as a log-scale difference and as
+`10^difference`, the ratio of the modelled shifted values
+`(melEDI + 0.1 lx)`. Sex-specific curves are displayed after
+`10^prediction - 0.1 lx`. These are back-transformed conditional log-scale
+curves, not untransformed arithmetic means of raw one-minute measurements.
+
+Every estimate will carry a 95% confidence interval. A claimed time interval
+must be supported by the simultaneous band; pointwise bands may be displayed
+only when explicitly labelled descriptive.
+
+## Exact proposed models
+
+The H02-selected formula is the exact source of `M0`. `M_level` adds the
+parametric biological-sex term. `M_pattern` adds one explicitly cyclic
+Female-minus-Male deviation by using the ordered `sex_smooth` factor. The
+common curve remains the Male reference curve; this is the ordered-factor
+reference/difference construction documented by the installed `mgcv` 1.9-4.
+
+The same generic `response` formula is used for near-eye and chest, main and
+manuscript-prepared data, and the registered hourly sensitivity because the
+right-hand side is identical. Only the response construction, frame, and
+placement-specific `rho` differ.
+
+```{r}
+#| label: proposed-formulas
+#| code-summary: "Exact proposed H11 formula objects"
+
+for (formula_id in c("proposed_m0", "proposed_mlevel", "proposed_mpattern")) {
+  cat("\n", formula_id, "\n", sep = "")
+  print(formulas[[formula_id]])
+}
+```
+
+No proposed formula contains gender, photoperiod state, an activity term, or
+a sex-by-site interaction.
+
+### Formula-to-fit map
+
+```{r}
+#| label: formula-manifest
+#| echo: false
+
+stage1$formula_manifest |>
+  filter(grepl("proposed_", formula_id, fixed = TRUE)) |>
+  select(
+    formula_id, analytical_role, family, link,
+    estimation_and_correlation, contrasts, knots
+  ) |>
+  rename(
+    `Formula ID` = formula_id,
+    Role = analytical_role,
+    Family = family,
+    Link = link,
+    `Estimation and correlation` = estimation_and_correlation,
+    Contrasts = contrasts,
+    Knots = knots
+  ) |>
+  audit_gt(
+    "Proposed formula and fitting contract",
+    "The full formula text is exported in the machine-readable manifest."
+  )
+```
+
+## Proposed fitting and comparison sequence
+
+For each placement and scenario, Stage 2 will:
+
+1. join demographics many-to-one by `site × Id`, assert no row change or
+   missing biological sex, and save the exact candidate frame;
+2. preserve H02 row order, `time_hour`, `AR_start`, participant, and
+   participant-day keys for the 30-minute analyses;
+3. fit one `M_pattern` preliminary model with `method = "fREML"`, `rho = 0`,
+   and the H02 knots to estimate a boundary-aware lag-1 `rho`;
+4. hold that single `rho`, frame, row order, and `AR.start` vector fixed while
+   fitting `M0`, `M_level`, and `M_pattern` with `method = "ML"` and
+   `discrete = FALSE` for mean-structure comparison;
+5. fail the comparison if model-frame hashes, row counts, sequence starts, or
+   correlation settings differ;
+6. report ML log likelihoods, effective degrees of freedom, likelihood-ratio
+   statistics, raw and adjusted p-values, AIC, and
+   `AIC(reduced) - AIC(full)`;
+7. fit `M_pattern` with `method = "fREML"`, `discrete = TRUE`, and the same
+   fixed `rho` for final estimation, regardless of whether the global result
+   supports a sex contribution; and
+8. persist every frame, fit, warning, smoothing parameter, `rho`, sequence
+   count, diagnostic, contrast, and display-source row.
+
+All fits use Gaussian errors with identity link,
+`knots = list(time_hour = c(0, 24))`, one thread, and the installed
+`mgcv` 1.9-4. H02's accepted `rho` values are not copied; `rho` is re-estimated
+for each H11 placement/scenario from the H11 full preliminary residuals.
+
+The registered GAMM rule is retained: the full model is AIC-supported only
+when the reduced-minus-full ΔAIC is at least 2. The ML likelihood-ratio p-value
+is also reported. If the AIC rule and global p-value disagree, the result is
+labelled inconclusive rather than selecting the favourable criterion.
+
+## Planned contrasts and multiplicity
+
+| Output | Model comparison or contrast | Role | Multiplicity |
+|---|---|---|---|
+| Global sex contribution | `M0` versus `M_pattern` | Primary confirmatory near-eye test | `H11-F1-primary`, BH with planned n = 1 |
+| Constant level | `M0` versus `M_level`; parametric Female-minus-Male estimate | Secondary decomposition | `H11-F2-level-shape`, BH across 2 tests |
+| Time-varying shape | `M_level` versus `M_pattern` | Secondary decomposition | `H11-F2-level-shape`, BH across 2 tests |
+| Female-minus-Male curve | Linear-predictor difference at identical site/participant/day settings | Practical localization | Simultaneous 95% band across the daily grid |
+| Chest repeat | Same global and decomposition sequence | Complementary evidence, not a second primary rejection opportunity | `H11-C1-global`, BH n = 1; `H11-C2-level-shape`, BH n = 2 |
+| Registered hourly and other sensitivities | Same predeclared outputs | Stability evidence only | Cannot replace the primary conclusion; p-values are descriptive, and any displayed decomposition pair is BH-adjusted with n = 2 within placement |
+
+Near-eye and chest families are not pooled: chest cannot rescue or overturn
+the primary rejection rule. Manuscript-prepared, paired/common, hourly,
+leave-one-site-out, and activity outputs cannot create a new primary
+rejection. No leave-one-site-out p-value screen is performed.
+
+The simultaneous band will be calibrated from the full coefficient covariance,
+including the parametric sex term, using a fixed-seed 10,000-draw coefficient
+simulation on a 5-minute grid over `[0, 24)`. The critical value is the maximum
+standardized absolute contrast across the grid. A 1-minute and 15-minute grid
+check must not materially change a localized interval. This is a bounded,
+non-bootstrap calculation and does not require a production-computation stage.
+If implementation instead requires participant resampling or another heavy
+bootstrap, only a 50- or 100-replicate pilot may run, and the task must return
+to the author before a full run.
+
+## Diagnostics and acceptance assessment
+
+Stage 2 must show each diagnostic, interpret it in plain language, and classify
+the near-eye and chest analyses separately as **acceptable**, **acceptable
+with specified limitations**, or **not acceptable for inference**.
+
+| Domain | Required check | Consequence |
+|---|---|---|
+| Data and design | Exact participants, participant-days, rows/hours, sites, site-by-sex cells, missingness before/after join, factor references, design rank | Any unexplained row change, missing sex, or rank deficiency stops inference |
+| Temporal provenance | True-UTC sort, 30-minute or one-hour epoch, fold provenance, every H02 AR boundary, sequence counts, no crossing of a day/gap/non-one-to-one outcome | Any boundary violation is not acceptable |
+| Cyclic topology | Predicted common and sex-difference curves agree at 0 and 24 h to numerical tolerance | Failure blocks time-of-day interpretation |
+| Fit stability | Convergence state, warnings, finite coefficients, rank, smoothing parameters, effective degrees of freedom | Unresolved convergence/rank failure is not acceptable |
+| Basis adequacy | `k` checks, EDF relative to available basis, residual pattern by clock time | Evidence of an undersized sex basis reopens the specification rather than triggering silent tuning |
+| Residual distribution | Residual-versus-fitted, Q--Q/tails, scale-location, residuals by sex/site/time, exact-zero behaviour | Material heteroscedasticity or tails are described and can limit interval interpretation |
+| Autocorrelation | Raw and standardized residual ACF within valid sequences, boundary-aware lag correlations, comparison with the H02 diagnostic profile | Material residual dependence is an explicit limitation or can make inference unacceptable |
+| Concurvity | Full formal concurvity, with particular attention to common time, site time, and sex deviation | A poorly identified sex deviation prevents a sex-pattern claim |
+| Influence | Participant/day summaries, site deletion, and leave-one-site-out sex curves without selecting a favourable site subset | A conclusion driven by one site is unstable and cannot be generalized across sites |
+| Inference integrity | Common-frame/common-rho checks, AIC/LRT agreement status, raw/adjusted p-values, simultaneous-band coverage and grid check | Any provenance mismatch invalidates the comparison |
+| Display integrity | Every plotted time maps one-to-one to exported source data; 95% intervals, placement, scale, and sample labels reconcile | Unreconciled figures or tables are not publishable |
+
+The H02 diagnostic inheritance is explicit: its residual zero-bound,
+heteroscedasticity/tail, residual-autocorrelation, and common/site-concurvity
+limitations are not erased by reusing the model. H11 adds a sex-specific
+identifiability question. A satisfactory H02 diagnostic profile does not by
+itself establish that the H11 sex deviation is estimable.
+
+## Sensitivity battery and V0 recreation plan
+
+```{r}
+#| label: sensitivity-plan
+#| echo: false
+
+stage1$sensitivity_plan |>
+  rename(
+    Scenario = scenario_id,
+    Role = role,
+    `Data change` = data_change,
+    `Model change` = model_change,
+    `Comparison strategy` = comparison_strategy,
+    Stage = stage
+  ) |>
+  audit_gt(
+    "Predeclared H11 sensitivity and diagnostic scenarios",
+    "Expensive or underspecified side analyses remain behind their stated gate."
+  )
+```
+
+The Stage 2 core includes the main near-eye and chest fits, the registered
+hourly outcome, manuscript-prepared data, paired/common placement samples, and
+the feasible leave-one-site-out diagnostic. The H02 model-form alternative and
+activity analysis are deferred. The all-zero-inclusive scenario cannot be fit
+until the coordinator supplies an approved H02-compatible sensitivity frame;
+this worker will not reconstruct a shared input independently.
+
+V0 figures will be recreated from their recovered specification before being
+corrected. The near-eye and chest displays will retain the recognizable
+sex-specific curve and contrast-panel layout, but the caption will refer to
+biological-sex differences, not work/free days; pointwise red segments will
+not be treated as inferential; and the new display will show 95% uncertainty,
+exact samples, scale, outcome, and placement. V0 and new displays remain in the
+Stage 2 audit only. The final reader-facing notebook will contain no V0 or
+construction terminology.
+
+The activity scenario, if later authorized, must use the audited H04 activity
+dictionary and three fits on one exact activity-complete frame: unrestricted
+main result restricted to the activity-complete sample, the same restricted
+model without activity, and then the activity-adjusted model. It may support
+only wording such as “attenuated after adjustment for recorded activity
+context”; it cannot identify mediation or a behaviourally driven mechanism.
+
+## Author decisions required before Stage 2
+
+Every row below requires explicit approval. Approval of the table authorizes
+implementation of the recommended dispositions, not any deferred analysis
+whose row states that a later gate is required.
+
+```{r}
+#| label: author-decisions
+#| echo: false
+
+stage1$author_decisions |>
+  rename(
+    ID = decision_id,
+    `Decision required` = decision_required,
+    `Recommended disposition` = recommended_disposition,
+    `Why it matters` = why_it_matters
+  ) |>
+  audit_gt(
+    "H11 author-approval checklist",
+    "Stage 2 remains blocked until all items are resolved."
+  )
+```
+
+## Gate status
+
+**Stop here.** Do not fit `M0`, `M_level`, or `M_pattern`; do not run the
+coefficient simulation, activity model, model-form sensitivity, bootstrap, or
+full sensitivity battery; do not edit `notebooks/hypotheses/H11.qmd`; and do
+not change a shared ledger, configuration file, manuscript, or preparation
+artifact until the author explicitly approves the Stage 1 specification in
+this task.
+
+To open Stage 2, the author should state that the H11 Stage 1 proposal and the
+11-item approval checklist are approved, or list the item IDs that must be
+changed.
