@@ -1,41 +1,1118 @@
 ---
-title: "H07: Latitude, photoperiod, and possible exposure plateaus"
-params:
-  placement: glasses
-  scenario: primary
+title: "H07: Photoperiod and possible plateaus in personal light exposure"
+subtitle: "Pooled photoperiod associations across nine personal light-exposure metrics"
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    code-tools: false
+execute:
+  echo: false
+  warning: false
+  message: false
 ---
 
-## What this notebook checks
+```{r}
+#| label: setup-h07-reader
 
-Assess whether exposure stops increasing beyond some latitude or photoperiod.
-Photoperiod is the daylight duration between dawn and dusk. A levelling-off
-would be described as a plateau, rather than assumed to be a ceiling. Separate
-the roles of site, latitude, photoperiod, and the dates or seasons in which
-each site was measured. Do not choose outcomes based on H02 results.
+suppressPackageStartupMessages({
+  library(dplyr)
+  library(gt)
+  library(readr)
+  library(tibble)
+  library(tidyr)
+})
 
-## What this notebook uses and produces
+root <- normalizePath(
+  Sys.getenv("QUARTO_PROJECT_DIR", unset = getwd()),
+  winslash = "/",
+  mustWork = TRUE
+)
+knitr::opts_knit$set(
+  root.dir = file.path(root, "notebooks", "hypotheses")
+)
 
-- Uses: the prepared H07 dataset in `artifacts/06_model_data/H07.rds`.
-- Produces: if a plateau can be estimated, its definition, size, and
-  uncertainty; otherwise, a clear statement that the available data cannot
-  identify one. The notebook also produces fitted models, model checks,
-  practical summaries with 95% confidence intervals, the exact participants,
-  participant-days, observations, and sites used by each model, overall and by
-  site; tables, figures, and source data.
-- Data sensitivity: fit this identical H07 implementation to the
-  manuscript-prepared dataset and compare exact samples, estimates, 95%
-  confidence intervals, diagnostics, plateau conclusions, and overall
-  stability.
-- Formula display: the completed audit must contain a visible evaluated code
-  cell printing the exact Wilkinson formulas passed to the selected model and
-  every fitted comparison model.
+read_h07 <- function(...) {
+  readr::read_csv(file.path(root, ...), show_col_types = FALSE)
+}
+
+table_dir <- c("artifacts", "09_tables", "H07")
+figure_dir <- file.path("artifacts", "08_figures", "H07")
+
+main_samples <- read_h07(
+  table_dir[[1]], table_dir[[2]], table_dir[[3]],
+  "H07_main_samples.csv"
+)
+plateau_all <- read_h07(
+  table_dir[[1]], table_dir[[2]], table_dir[[3]],
+  "H07_revised_plateau_summary.csv"
+)
+derivative_points <- read_h07(
+  table_dir[[1]], table_dir[[2]], table_dir[[3]],
+  "H07_revised_derivative_points.csv"
+)
+curve_points <- read_h07(
+  table_dir[[1]], table_dir[[2]], table_dir[[3]],
+  "H07_main_curve_points.csv"
+)
+formula_registry <- read_h07(
+  table_dir[[1]], table_dir[[2]], table_dir[[3]],
+  "H07_formula_registry.csv"
+)
+diagnostics <- read_h07(
+  table_dir[[1]], table_dir[[2]], table_dir[[3]],
+  "H07_main_diagnostics.csv"
+)
+pairwise_concurvity <- read_h07(
+  table_dir[[1]], table_dir[[2]], table_dir[[3]],
+  "H07_main_pairwise_concurvity.csv"
+)
+residual_summary <- read_h07(
+  table_dir[[1]], table_dir[[2]], table_dir[[3]],
+  "H07_main_residual_distribution_summary.csv"
+)
+tweedie_pilot <- read_h07(
+  table_dir[[1]], table_dir[[2]], table_dir[[3]],
+  "H07_main_tweedie_distribution_pilot.csv"
+)
+sensitivity_results <- read_h07(
+  table_dir[[1]], table_dir[[2]], table_dir[[3]],
+  "H07_revised_sensitivity_plateau_comparison.csv"
+)
+sensitivity_samples <- read_h07(
+  table_dir[[1]], table_dir[[2]], table_dir[[3]],
+  "H07_sensitivity_samples.csv"
+)
+model_form_results <- read_h07(
+  table_dir[[1]], table_dir[[2]], table_dir[[3]],
+  "H07_revised_model_form_plateau_comparison.csv"
+)
+loso_results <- read_h07(
+  table_dir[[1]], table_dir[[2]], table_dir[[3]],
+  "H07_revised_loso_plateau_influence_summary.csv"
+)
+site_support <- read_h07(
+  table_dir[[1]], table_dir[[2]], table_dir[[3]],
+  "H07_main_site_support.csv"
+)
+figure_settings <- read_h07(
+  table_dir[[1]], table_dir[[2]], table_dir[[3]],
+  "H07_revised_paired_figure_settings.csv"
+)
+session_record <- read_h07(
+  table_dir[[1]], table_dir[[2]], table_dir[[3]],
+  "H07_session.csv"
+)
+site_registry <- read_h07("config", "site_display_registry.csv") |>
+  arrange(.data$display_order)
+
+derivative_method <- "REVISED_CENTRAL_UNCONDITIONAL_POINTWISE"
+plateau <- plateau_all |>
+  filter(.data$method_id == .env$derivative_method) |>
+  arrange(.data$placement, .data$metric_order)
+derivative_reader <- derivative_points |>
+  filter(.data$method_id == .env$derivative_method)
+
+metric_registry <- plateau |>
+  distinct(
+    .data$metric_id,
+    .data$metric_order,
+    .data$manuscript_name,
+    .data$display_unit,
+    .data$response_family,
+    .data$response_transform
+  ) |>
+  arrange(.data$metric_order)
+
+sample_display <- main_samples |>
+  mutate(placement = sub("^primary__", "", .data$run_id)) |>
+  left_join(
+    metric_registry |>
+      select(
+        .data$metric_id,
+        .data$metric_order,
+        .data$manuscript_name
+      ),
+    by = "metric_id",
+    relationship = "many-to-one"
+  ) |>
+  arrange(.data$placement, .data$metric_order)
+
+adapted_diagnostics <- diagnostics |>
+  filter(.data$model_id == "adapted_photoperiod_smooth") |>
+  mutate(placement = sub("^primary__", "", .data$run_id)) |>
+  left_join(
+    metric_registry |>
+      select(
+        .data$metric_id,
+        .data$metric_order,
+        .data$manuscript_name
+      ),
+    by = "metric_id",
+    relationship = "many-to-one"
+  )
+
+target_concurvity <- pairwise_concurvity |>
+  filter(
+    .data$model_id == "adapted_photoperiod_smooth",
+    .data$measure == "estimate",
+    .data$supplier_term == "s(site_participant)",
+    .data$target_term == "s(photoperiod_hours)"
+  )
+
+placement_label <- c(near_eye = "Near eye", chest = "Chest")
+
+fmt_number <- function(value, digits = 2L) {
+  formatC(value, digits = digits, format = "f", big.mark = ",")
+}
+
+fmt_range <- function(lower, upper, digits = 2L, suffix = "") {
+  paste0(
+    fmt_number(lower, digits), "–", fmt_number(upper, digits), suffix
+  )
+}
+
+fmt_ci <- function(estimate, lower, upper, digits = 3L) {
+  paste0(
+    fmt_number(estimate, digits), " (95% CI ",
+    fmt_number(lower, digits), " to ", fmt_number(upper, digits), ")"
+  )
+}
+
+metric_group <- function(metric_order) {
+  dplyr::case_when(
+    metric_order <= 3 ~ "Light level",
+    metric_order <= 8 ~ "Duration and continuous period",
+    TRUE ~ "Exposure history"
+  )
+}
+
+h07_gt <- function(table, font_size = 13) {
+  table |>
+    gt::opt_row_striping() |>
+    gt::sub_missing(missing_text = "—") |>
+    gt::tab_options(
+      table.width = gt::pct(100),
+      table.font.size = gt::px(font_size),
+      data_row.padding = gt::px(5),
+      column_labels.font.weight = "600",
+      source_notes.font.size = gt::px(11)
+    )
+}
+
+sample_table <- function(placement) {
+  sample_display |>
+    filter(.data$placement == .env$placement) |>
+    mutate(
+      Group = metric_group(.data$metric_order),
+      Metric = .data$manuscript_name,
+      Participants = .data$participants,
+      `Participant-days` = .data$participant_days,
+      Observations = .data$observations,
+      Sites = .data$sites,
+      `Civil photoperiod (h)` = fmt_range(
+        .data$photoperiod_min,
+        .data$photoperiod_max
+      )
+    ) |>
+    select(
+      .data$Group,
+      .data$Metric,
+      .data$Participants,
+      .data$`Participant-days`,
+      .data$Observations,
+      .data$Sites,
+      .data$`Civil photoperiod (h)`
+    ) |>
+    gt::gt(rowname_col = "Metric", groupname_col = "Group") |>
+    gt::fmt_integer(
+      columns = c(Participants, `Participant-days`, Observations, Sites)
+    ) |>
+    gt::cols_width(
+      Participants ~ gt::pct(12),
+      `Participant-days` ~ gt::pct(14),
+      Observations ~ gt::pct(12),
+      Sites ~ gt::pct(8),
+      `Civil photoperiod (h)` ~ gt::pct(18)
+    ) |>
+    h07_gt(12)
+}
+
+result_reason <- function(disposition) {
+  dplyr::case_when(
+    disposition == "DERIVATIVE_DEFINED_PLATEAU_PATTERN" ~
+      "Positive derivative followed by a zero-compatible tail",
+    disposition == "NO_POINTWISE_DETECTED_PRIOR_INCREASE" ~
+      "No preceding pointwise detected increase",
+    disposition == "POINTWISE_DETECTED_INCREASE_AT_RECORDED_END" ~
+      "Increase remained pointwise detected at the recorded maximum",
+    TRUE ~ disposition
+  )
+}
+
+result_table <- function(placement) {
+  plateau |>
+    filter(.data$placement == .env$placement) |>
+    mutate(
+      Group = metric_group(.data$metric_order),
+      Metric = .data$manuscript_name,
+      Pattern = if_else(.data$revised_plateau_pattern, "Yes", "No"),
+      `Transition bracket (h)` = if_else(
+        .data$revised_plateau_pattern,
+        fmt_range(
+          .data$plateau_transition_lower,
+          .data$plateau_start
+        ),
+        "—"
+      ),
+      `Derivative at maximum` = fmt_ci(
+        .data$derivative_at_recorded_end,
+        .data$derivative_at_recorded_end_lower,
+        .data$derivative_at_recorded_end_upper
+      ),
+      Interpretation = result_reason(.data$disposition)
+    ) |>
+    select(
+      .data$Group,
+      .data$Metric,
+      .data$Pattern,
+      .data$`Transition bracket (h)`,
+      .data$`Derivative at maximum`,
+      .data$Interpretation
+    ) |>
+    gt::gt(rowname_col = "Metric", groupname_col = "Group") |>
+    gt::tab_style(
+      style = gt::cell_fill(color = "#E8F3F8"),
+      locations = gt::cells_body(
+        columns = Pattern,
+        rows = Pattern == "Yes"
+      )
+    ) |>
+    gt::cols_width(
+      Pattern ~ gt::pct(8),
+      `Transition bracket (h)` ~ gt::pct(16),
+      `Derivative at maximum` ~ gt::pct(25),
+      Interpretation ~ gt::pct(31)
+    ) |>
+    gt::tab_source_note(
+      gt::md(
+        paste0(
+          "Derivatives and their 95% confidence intervals are on each ",
+          "model's linear-predictor scale, per hour of civil photoperiod."
+        )
+      )
+    ) |>
+    h07_gt(12)
+}
+
+sensitivity_label <- function(sensitivity, data_scenario) {
+  dplyr::case_when(
+    sensitivity == "paired_common_placement" ~
+      "Paired near-eye/chest common sample",
+    sensitivity == "gap_timing_unaware" ~
+      "Gap-timing-unaware dataset",
+    sensitivity == "preparation_exact_common" &
+      data_scenario == "primary" ~
+      "Preparation exact-common rows: primary dataset",
+    sensitivity == "preparation_exact_common" &
+      data_scenario == "gap_timing_unaware" ~
+      "Preparation exact-common rows: gap-timing-unaware dataset",
+    sensitivity == "longest_period_exact_only" ~
+      "Exactly identified longest-period rows",
+    sensitivity == "observed_dose_common_sample" ~
+      "Observed/corrected dose on common rows",
+    TRUE ~ sensitivity
+  )
+}
+
+sensitivity_summary <- sensitivity_results |>
+  group_by(.data$data_scenario, .data$placement, .data$sensitivity) |>
+  summarise(
+    Evaluable = sum(!is.na(.data$classification_agrees)),
+    Agreements = sum(.data$classification_agrees, na.rm = TRUE),
+    changed = paste(
+      unique(
+        .data$manuscript_name[
+          !is.na(.data$classification_agrees) &
+            !.data$classification_agrees
+        ]
+      ),
+      collapse = "; "
+    ),
+    .groups = "drop"
+  ) |>
+  mutate(
+    Scenario = sensitivity_label(.data$sensitivity, .data$data_scenario),
+    Placement = unname(placement_label[.data$placement]),
+    Agreement = paste0(.data$Agreements, "/", .data$Evaluable),
+    `Changed classifications` = if_else(
+      .data$changed == "",
+      "None",
+      .data$changed
+    ),
+    sensitivity_order = match(
+      .data$sensitivity,
+      c(
+        "gap_timing_unaware",
+        "paired_common_placement",
+        "preparation_exact_common",
+        "longest_period_exact_only",
+        "observed_dose_common_sample"
+      )
+    ),
+    scenario_order = if_else(
+      .data$data_scenario == "primary",
+      1L,
+      2L
+    ),
+    placement_order = if_else(.data$placement == "near_eye", 1L, 2L)
+  ) |>
+  arrange(
+    .data$sensitivity_order,
+    .data$scenario_order,
+    .data$placement_order
+  )
+
+sensitivity_sample_labels <- tibble::tribble(
+  ~run_id, ~Scenario, ~placement_order, ~scenario_order,
+  "gap_timing_unaware__near_eye", "Gap-timing-unaware dataset", 1L, 1L,
+  "gap_timing_unaware__chest", "Gap-timing-unaware dataset", 2L, 1L,
+  "paired__near_eye", "Paired near-eye/chest common sample", 1L, 2L,
+  "paired__chest", "Paired near-eye/chest common sample", 2L, 2L,
+  "prep_common_primary__near_eye", "Preparation exact-common rows", 1L, 3L,
+  "prep_common_primary__chest", "Preparation exact-common rows", 2L, 3L,
+  "exact_period__near_eye", "Exactly identified longest-period rows", 1L, 4L,
+  "exact_period__chest", "Exactly identified longest-period rows", 2L, 4L,
+  "dose_common_corrected__near_eye", "Observed/corrected dose common rows", 1L, 5L,
+  "dose_common_corrected__chest", "Observed/corrected dose common rows", 2L, 5L
+)
+
+range_text <- function(value) {
+  if (min(value) == max(value)) {
+    return(formatC(min(value), format = "d", big.mark = ","))
+  }
+  paste0(
+    formatC(min(value), format = "d", big.mark = ","),
+    "–",
+    formatC(max(value), format = "d", big.mark = ",")
+  )
+}
+
+sensitivity_sample_summary <- sensitivity_samples |>
+  inner_join(sensitivity_sample_labels, by = "run_id") |>
+  group_by(
+    .data$run_id,
+    .data$Scenario,
+    .data$placement_order,
+    .data$scenario_order
+  ) |>
+  summarise(
+    Participants = range_text(.data$participants),
+    `Participant-days` = range_text(.data$participant_days),
+    Observations = range_text(.data$observations),
+    Sites = range_text(.data$sites),
+    .groups = "drop"
+  ) |>
+  mutate(
+    Placement = if_else(.data$placement_order == 1L, "Near eye", "Chest")
+  ) |>
+  arrange(.data$scenario_order, .data$placement_order)
+
+model_form_summary <- model_form_results |>
+  group_by(.data$placement, .data$model_id) |>
+  summarise(
+    Evaluable = sum(!is.na(.data$classification_agrees)),
+    Agreements = sum(.data$classification_agrees, na.rm = TRUE),
+    failures = sum(grepl("^FAIL", .data$fit_status)),
+    changed = paste(
+      unique(
+        .data$manuscript_name[
+          !is.na(.data$classification_agrees) &
+            !.data$classification_agrees
+        ]
+      ),
+      collapse = "; "
+    ),
+    .groups = "drop"
+  ) |>
+  mutate(
+    Model = recode(
+      .data$model_id,
+      adapted_photoperiod_expanded_basis = "Expanded smooth basis (k = 10)",
+      adapted_photoperiod_fixed_site = "Site as a fixed effect"
+    ),
+    Placement = unname(placement_label[.data$placement]),
+    Agreement = paste0(.data$Agreements, "/", .data$Evaluable),
+    `Failed fits` = .data$failures,
+    `Changed classifications` = if_else(
+      .data$changed == "",
+      "None",
+      .data$changed
+    ),
+    placement_order = if_else(.data$placement == "near_eye", 1L, 2L)
+  ) |>
+  arrange(.data$Model, .data$placement_order)
+
+diagnostic_summary <- adapted_diagnostics |>
+  group_by(.data$placement) |>
+  summarise(
+    Converged = paste0(sum(.data$converged), "/", dplyr::n()),
+    `Maximum absolute gradient` = max(.data$gradient_max_abs),
+    `Minimum Hessian eigenvalue` = min(.data$hessian_min_eigenvalue),
+    `Basis-check flags` = sum(.data$k_p_value < 0.05, na.rm = TRUE),
+    `Maximum absolute lag-1` = max(
+      abs(.data$pooled_consecutive_day_lag1),
+      na.rm = TRUE
+    ),
+    .groups = "drop"
+  ) |>
+  left_join(
+    target_concurvity |>
+      group_by(.data$placement) |>
+      summarise(
+        concurvity_min = min(.data$concurvity),
+        concurvity_max = max(.data$concurvity),
+        .groups = "drop"
+      ),
+    by = "placement",
+    relationship = "one-to-one"
+  ) |>
+  left_join(
+    residual_summary |>
+      group_by(.data$placement) |>
+      summarise(
+        deviance_min = min(.data$deviance_explained),
+        deviance_max = max(.data$deviance_explained),
+        qq_min = min(.data$normal_qq_correlation),
+        qq_max = max(.data$normal_qq_correlation),
+        .groups = "drop"
+      ),
+    by = "placement",
+    relationship = "one-to-one"
+  ) |>
+  mutate(
+    Placement = unname(placement_label[.data$placement]),
+    placement_order = if_else(.data$placement == "near_eye", 1L, 2L),
+    `Target/participant concurvity` = fmt_range(
+      .data$concurvity_min,
+      .data$concurvity_max,
+      digits = 4L
+    ),
+    `Deviance explained` = paste0(
+      fmt_number(100 * .data$deviance_min, 1L),
+      "%–",
+      fmt_number(100 * .data$deviance_max, 1L),
+      "%"
+    ),
+    `Normal-reference QQ correlation` = fmt_range(
+      .data$qq_min,
+      .data$qq_max,
+      digits = 3L
+    )
+  ) |>
+  arrange(.data$placement_order)
+
+site_display_lookup <- stats::setNames(
+  site_registry$display_name,
+  site_registry$site
+)
+
+display_omissions <- function(value) {
+  vapply(
+    value,
+    function(one) {
+      if (is.na(one) || one == "None") {
+        return("None")
+      }
+      codes <- strsplit(one, "; ", fixed = TRUE)[[1L]]
+      labels <- unname(site_display_lookup[codes])
+      labels[is.na(labels)] <- codes[is.na(labels)]
+      paste(labels, collapse = "; ")
+    },
+    character(1L)
+  )
+}
+
+loso_table <- function(placement) {
+  loso_results |>
+    filter(.data$placement == .env$placement) |>
+    arrange(.data$metric_order) |>
+    mutate(
+      Group = metric_group(.data$metric_order),
+      Metric = .data$manuscript_name,
+      `Matching omissions` = paste0(
+        .data$omissions_matching_main,
+        "/",
+        .data$omissions
+      ),
+      `Discordant site omissions` = display_omissions(
+        .data$discordant_omissions
+      ),
+      `Transition range when present (h)` = if_else(
+        is.na(.data$plateau_start_min),
+        "—",
+        fmt_range(.data$plateau_start_min, .data$plateau_start_max)
+      )
+    ) |>
+    select(
+      .data$Group,
+      .data$Metric,
+      .data$`Matching omissions`,
+      .data$`Discordant site omissions`,
+      .data$`Transition range when present (h)`
+    ) |>
+    gt::gt(rowname_col = "Metric", groupname_col = "Group") |>
+    gt::cols_width(
+      `Matching omissions` ~ gt::pct(14),
+      `Discordant site omissions` ~ gt::pct(45),
+      `Transition range when present (h)` ~ gt::pct(22)
+    ) |>
+    h07_gt(12)
+}
+
+near_patterns <- plateau |>
+  filter(.data$placement == "near_eye", .data$revised_plateau_pattern)
+chest_patterns <- plateau |>
+  filter(.data$placement == "chest", .data$revised_plateau_pattern)
+
+stopifnot(
+  nrow(plateau) == 18L,
+  nrow(near_patterns) == 6L,
+  nrow(chest_patterns) == 7L,
+  all(table(derivative_reader$placement, derivative_reader$metric_id) == 100L),
+  nrow(sample_display) == 18L,
+  all(sample_display$participant_days == sample_display$observations),
+  nrow(curve_points) == 1872L,
+  nrow(figure_settings) == 2L,
+  all(adapted_diagnostics$converged),
+  all(
+    file.exists(
+      file.path(root, figure_dir, figure_settings$filename)
+    )
+  ),
+  identical(
+    sensitivity_samples |>
+      filter(grepl("^prep_common_primary__", .data$run_id)) |>
+      arrange(.data$run_id, .data$metric_id) |>
+      select(-.data$run_id, -.data$frame_sha256),
+    sensitivity_samples |>
+      filter(grepl("^prep_common_gap__", .data$run_id)) |>
+      mutate(
+        run_id = sub(
+          "^prep_common_gap__",
+          "prep_common_primary__",
+          .data$run_id
+        )
+      ) |>
+      arrange(.data$run_id, .data$metric_id) |>
+      select(-.data$run_id, -.data$frame_sha256)
+  )
+)
+```
+
+## Question
+
+The preregistered hypothesis was:
+
+> “H7: There is a ceiling (nonlinear) effect of absolute latitude and photoperiod on level-, duration-, and exposure-history-based light metrics.”
+
+This report asks the part of that question that these data can address: is a
+pooled association between civil photoperiod and each planned personal
+light-exposure metric visible, and does the fitted association change from a
+pointwise detected increase to a derivative that remains statistically
+compatible with zero through the longest recorded photoperiod?
+
+::: {.callout-note title="Answer in brief"}
+A derivative-defined plateau pattern was visible for **six of nine primary
+near-eye metrics**: mean melEDI, brightest 10 h mean, darkest 10 h mean, time
+above 1,000 lx melEDI, time above 250 lx melEDI during wake, and melEDI dose.
+Their transition brackets ranged from
+`r fmt_range(min(near_patterns$plateau_transition_lower), max(near_patterns$plateau_start))`
+h of civil photoperiod. The complementary chest analysis showed the pattern
+for **seven of nine metrics**: mean melEDI, darkest 10 h mean, both
+above-threshold durations, time below 1 lx melEDI during sleep, the longest
+continuous period above 250 lx melEDI, and melEDI dose. Their transition
+brackets ranged from
+`r fmt_range(min(chest_patterns$plateau_transition_lower), max(chest_patterns$plateau_start))`
+h. These are visible pooled-data patterns under a pointwise derivative rule,
+not evidence that a physiological or environmental ceiling exists. Absolute
+latitude cannot be separated from site in this design, and site, collection
+period, incomplete photoperiod overlap, model form, and influential sites
+materially limit interpretation.
+:::
+
+## What was analysed
+
+All nine planned metrics were analysed independently of fitted results from
+other hypotheses. Near-eye measurements are primary because they more closely
+represent light near the eyes; chest measurements provide complementary
+evidence. The placements were modelled separately. A common-sample sensitivity
+uses the same participants and participant-days for both placements, but it
+does not test or establish placement equivalence.
+
+The primary dataset retains the approved metric-specific treatment of gaps.
+A predefined sensitivity uses the **gap-timing-unaware dataset**. It still
+passed the general 50%-per-hour and 80%-per-day coverage rules. The term means
+that the timing of the remaining missing observations is not used for an
+additional metric-specific adjustment; it does not mean that gaps,
+missingness, or coverage were ignored. For this contrast only, the approved
+primary preparation could be interpreted as a **time-sensitive primary metric
+dataset**, because it uses the timing of remaining missing observations where
+that timing is relevant to the metric. Below, it is called simply the primary
+dataset.
+
+The analysis unit was a participant-day, with one observation for each
+available metric, participant, day, and placement. Repeated days were handled
+with a participant random-effect smooth nested within site. The main near-eye
+samples span 15 August 2023 to 19 October 2025; chest samples span 14 May 2024
+to 19 October 2025. Exact metric-specific counts are reported with each
+placement below.
 
 ```{r}
-#| label: setup-h07
-#| eval: false
+#| label: tbl-h07-response-specifications
+#| tbl-cap: "Response specification for each planned personal light-exposure metric."
 
-root <- normalizePath(Sys.getenv("QUARTO_PROJECT_DIR"), winslash = "/", mustWork = TRUE)
-source(file.path(root, "scripts/pipeline/paths_io.R"))
-source(file.path(root, "scripts/pipeline/assertions.R"))
-source(file.path(root, "scripts/pipeline/multiplicity.R"))
+metric_registry |>
+  mutate(
+    Group = metric_group(.data$metric_order),
+    Metric = .data$manuscript_name,
+    Unit = .data$display_unit,
+    `Model distribution` = recode(
+      .data$response_family,
+      gaussian = "Gaussian",
+      tweedie_log = "Tweedie with log link"
+    ),
+    `Response transformation` = recode(
+      .data$response_transform,
+      log10_offset_0.1 = "log10(metric + 0.1)",
+      identity = "None"
+    )
+  ) |>
+  select(
+    .data$Group,
+    .data$Metric,
+    .data$Unit,
+    .data$`Model distribution`,
+    .data$`Response transformation`
+  ) |>
+  gt::gt(rowname_col = "Metric", groupname_col = "Group") |>
+  gt::cols_width(
+    Unit ~ gt::pct(10),
+    `Model distribution` ~ gt::pct(24),
+    `Response transformation` ~ gt::pct(25)
+  ) |>
+  h07_gt(12)
+```
+
+## Model and plateau rule
+
+Each metric and placement used a separate generalized additive model fitted by
+restricted maximum likelihood. The reported model was:
+
+```{r}
+#| label: code-h07-reported-formula
+#| echo: true
+#| output: asis
+
+formula_registry |>
+  filter(.data$model_id == "adapted_photoperiod_smooth") |>
+  pull(.data$formula) |>
+  cat()
+```
+
+Here, `response_value` is the response shown in the specification table,
+`photoperiod_hours` is civil photoperiod, `site` is the study site, and
+`site_participant` identifies a participant within site. The smooth used a
+thin-plate regression spline with basis dimension *k* = 6. A broader *k* = 10
+smooth and a model treating site as a fixed effect were fitted as model-form
+sensitivities.
+
+Absolute latitude is fixed within site. It is therefore structurally
+confounded with site, and a latitude-by-photoperiod surface cannot separately
+identify a latitude association while accounting for site. The planned joint
+surface was inspected as an identifiability check but is not used for
+inference or for the plateau classification. No temperature or other
+unplanned environmental predictor was added.
+
+For each reported smooth, the first derivative was evaluated at 100 equally
+spaced values over that metric's exact recorded photoperiod range. Central
+finite differences used a step of 0.01 h, with one-sided differences at the
+two boundaries. Unconditional model-coefficient covariance produced
+pointwise 95% confidence intervals on the model's linear-predictor scale.
+
+A **derivative-defined plateau pattern** required all three conditions:
+
+1. the lower pointwise 95% confidence limit for the derivative was above zero
+   at one or more photoperiod values;
+2. a later grid point had a 95% confidence interval containing zero; and
+3. every subsequent interval through the longest recorded photoperiod also
+   contained zero.
+
+The reported transition is the bracket from the last pointwise detected
+increase to the first point of the sustained zero-compatible tail. This is the
+requested change from a statistically supported positive derivative to a
+non-significant derivative that remains non-significant to the end of the
+recorded range. The rule does not define a scientifically negligible slope,
+prove equivalence to zero, locate a true asymptote, or demonstrate a mechanism.
+The 100 pointwise checks and the nine cross-metric classifications were not
+multiplicity-adjusted; the classification is therefore descriptive.
+
+## Primary near-eye result
+
+Depending on the metric, the primary near-eye models used 139–141
+participants, 655–816 participant-days and observations, and all nine sites.
+The modelled civil-photoperiod range was 10.33–20.52 h for every metric.
+
+```{r}
+#| label: tbl-h07-near-samples
+#| tbl-cap: "Exact fitted near-eye sample for each personal light-exposure metric."
+
+sample_table("near_eye")
+```
+
+The exact sample counts are available as
+[source data](../../artifacts/09_tables/H07/H07_main_samples.csv).
+
+```{r}
+#| label: fig-h07-near-smooth-derivative-pairs
+#| fig-cap: "Primary near-eye associations with civil photoperiod. Each row pairs the fitted response-scale smooth (left) with its first derivative on the model scale (right). Grey ribbons are pointwise 95% confidence intervals; blue derivative segments mark a qualifying transition and the sustained zero-compatible tail. Rugs show observed photoperiods."
+#| fig-alt: "Nine paired rows show near-eye metric values against civil photoperiod on the left and first derivatives on the right. Mean melEDI, brightest and darkest 10-hour means, time above 1,000 lx, time above 250 lx during wake, and melEDI dose change from a positive derivative to intervals containing zero through the recorded maximum. Pre-sleep and sleep low-light durations have no preceding detected increase, while the longest continuous period above 250 lx remains increasing at the recorded maximum."
+#| out-width: "100%"
+#| fig-align: center
+#| column: screen-inset
+
+knitr::include_graphics(file.path(
+  root,
+  figure_dir,
+  "H07_revised_smooth_derivative_pairs_near_eye.png"
+))
+```
+
+The fitted smooths answer whether an association is visible in the pooled
+data; the derivative panels apply the stated pattern rule. The figures do not
+require every site to cover every photoperiod, but the rugs make the uneven
+empirical support visible.
+
+```{r}
+#| label: tbl-h07-near-results
+#| tbl-cap: "Near-eye derivative-defined plateau classifications and derivative estimates at the longest recorded photoperiod."
+
+result_table("near_eye")
+```
+
+The endpoint derivative for the longest continuous period above 250 lx melEDI
+remained positive, so this metric did not satisfy the pattern rule. Neither
+low-light duration had a preceding interval with a pointwise detected positive
+derivative. For time below 10 lx melEDI before sleep, the endpoint derivative
+was negative rather than zero-compatible; this is not a positive-to-flat
+pattern.
+
+The plotted response-scale smooths and derivative calculations are available
+as [smooth source data](../../artifacts/09_tables/H07/H07_main_curve_points.csv),
+[derivative source data](../../artifacts/09_tables/H07/H07_revised_derivative_points.csv),
+and [figure settings](../../artifacts/09_tables/H07/H07_revised_paired_figure_settings.csv).
+
+## Complementary chest result
+
+Depending on the metric, the chest models used 153–154 participants, 743–902
+participant-days and observations, and eight sites. The modelled
+civil-photoperiod range was again 10.33–20.52 h. Tübingen contributed near-eye
+but not chest data, which is one reason the chest result is complementary
+rather than a direct replication on an identical sample.
+
+```{r}
+#| label: tbl-h07-chest-samples
+#| tbl-cap: "Exact fitted chest sample for each personal light-exposure metric."
+
+sample_table("chest")
+```
+
+```{r}
+#| label: fig-h07-chest-smooth-derivative-pairs
+#| fig-cap: "Complementary chest associations with civil photoperiod. Each row pairs the fitted response-scale smooth (left) with its first derivative on the model scale (right). Grey ribbons are pointwise 95% confidence intervals; blue derivative segments mark a qualifying transition and the sustained zero-compatible tail. Rugs show observed photoperiods."
+#| fig-alt: "Nine paired rows show chest metric values against civil photoperiod on the left and first derivatives on the right. Mean melEDI, darkest 10-hour mean, time above 1,000 lx, time above 250 lx during wake, time below 1 lx during sleep, the longest continuous period above 250 lx, and melEDI dose change from a positive derivative to intervals containing zero through the recorded maximum. Brightest 10-hour mean remains increasing at the maximum, and pre-sleep low-light duration has no preceding detected increase."
+#| out-width: "100%"
+#| fig-align: center
+#| column: screen-inset
+
+knitr::include_graphics(file.path(
+  root,
+  figure_dir,
+  "H07_revised_smooth_derivative_pairs_chest.png"
+))
+```
+
+```{r}
+#| label: tbl-h07-chest-results
+#| tbl-cap: "Chest derivative-defined plateau classifications and derivative estimates at the longest recorded photoperiod."
+
+result_table("chest")
+```
+
+Brightest 10 h mean remained pointwise increasing at the recorded maximum.
+Time below 10 lx melEDI before sleep again lacked a preceding pointwise
+detected increase. The late transition for time below 1 lx melEDI during sleep
+is especially uncertain because its response-distribution check failed, as
+described below.
+
+## Model checks
+
+All 18 reported models converged. Gradients were small and all reported
+Hessian minima were positive. Consecutive-day residual dependence was modest
+in the pooled descriptive check, with maximum absolute lag-1 correlations of
+`r fmt_number(max(abs(adapted_diagnostics$pooled_consecutive_day_lag1[adapted_diagnostics$placement == "near_eye"])), 3)`
+near eye and
+`r fmt_number(max(abs(adapted_diagnostics$pooled_consecutive_day_lag1[adapted_diagnostics$placement == "chest"])), 3)`
+at the chest. This does not prove temporal independence, but it did not
+indicate a strong residual day-to-day process after participant clustering.
+
+```{r}
+#| label: tbl-h07-diagnostic-summary
+#| tbl-cap: "Summary of convergence, smooth-basis, temporal, concurvity, and residual diagnostics for the reported models."
+
+diagnostic_summary |>
+  select(
+    .data$Placement,
+    .data$Converged,
+    .data$`Maximum absolute gradient`,
+    .data$`Minimum Hessian eigenvalue`,
+    .data$`Basis-check flags`,
+    .data$`Maximum absolute lag-1`,
+    .data$`Target/participant concurvity`,
+    .data$`Deviance explained`,
+    .data$`Normal-reference QQ correlation`
+  ) |>
+  gt::gt(rowname_col = "Placement") |>
+  gt::fmt_number(
+    columns = c(
+      `Maximum absolute gradient`,
+      `Maximum absolute lag-1`
+    ),
+    decimals = 4
+  ) |>
+  gt::fmt_number(
+    columns = `Minimum Hessian eigenvalue`,
+    decimals = 5
+  ) |>
+  gt::fmt_integer(columns = `Basis-check flags`) |>
+  gt::cols_label(
+    `Basis-check flags` = gt::html("Basis flags<br><small>of 9</small>"),
+    `Maximum absolute lag-1` = gt::html("Maximum |lag 1|"),
+    `Target/participant concurvity` = gt::html(
+      "Photoperiod/participant<br>concurvity"
+    ),
+    `Normal-reference QQ correlation` = gt::html(
+      "QQ correlation<br>range"
+    )
+  ) |>
+  gt::cols_width(
+    Converged ~ gt::pct(10),
+    `Basis-check flags` ~ gt::pct(10),
+    `Target/participant concurvity` ~ gt::pct(18),
+    `Deviance explained` ~ gt::pct(14),
+    `Normal-reference QQ correlation` ~ gt::pct(16)
+  ) |>
+  h07_gt(11)
+```
+
+The basis-dimension check flagged three near-eye smooths and one chest smooth.
+The expanded-basis sensitivity therefore carries more weight than a single
+diagnostic threshold: it reproduced 16 of 17 evaluable classifications, with
+one near-eye fit failing its Hessian check and the chest sleep low-light
+classification changing.
+
+Residual normal-reference correlations were generally high, but residuals
+still showed fitted-value dependence and tail departures for some outcomes.
+The Tweedie response checks were adequate for the two above-threshold duration
+metrics. They were not adequate for time below 1 lx melEDI during sleep: each
+placement had four observed zeros, the fitted model expected fewer than 0.0001
+zeros, and none of 100 pilot simulations contained a zero. This distributional
+mismatch makes the chest sleep low-light pattern particularly weak evidence;
+no larger simulation can repair the response model's failure to reproduce the
+observed zero mass.
+
+The photoperiod smooth also had estimated concurvity of approximately 0.9985–
+0.9988 with the participant random-effect smooth. This reflects the clustered,
+repeated-day design and limits separation of between-person photoperiod
+coverage from the pooled smooth. Smooth-term p-values are therefore not used
+or displayed. The derivative intervals remain conditional on the fitted model
+and should be read with this identifiability limitation.
+
+## Sensitivity analyses
+
+The gap-timing-unaware dataset reproduced all nine near-eye classifications
+and eight of nine chest classifications; the chest melEDI-dose pattern was the
+exception. The paired common sample used 110–112 participants, 505–643
+participant-days and observations, and eight sites. It reproduced four of nine
+near-eye and six of nine chest classifications, showing that several pooled
+patterns depend on which participant-days and sites contribute rather than on
+placement alone.
+
+```{r}
+#| label: tbl-h07-sensitivity-samples
+#| tbl-cap: "Fitted sample sizes for the main data and metric-definition sensitivities. Ranges indicate metric-specific counts."
+
+sensitivity_sample_summary |>
+  select(
+    .data$Scenario,
+    .data$Placement,
+    .data$Participants,
+    .data$`Participant-days`,
+    .data$Observations,
+    .data$Sites
+  ) |>
+  gt::gt(groupname_col = "Scenario") |>
+  gt::cols_width(
+    Placement ~ gt::pct(16),
+    Participants ~ gt::pct(18),
+    `Participant-days` ~ gt::pct(21),
+    Observations ~ gt::pct(18),
+    Sites ~ gt::pct(10)
+  ) |>
+  gt::tab_source_note(
+    gt::md(
+      paste0(
+        "Preparation exact-common samples were identical for the primary ",
+        "and gap-timing-unaware datasets. Observed and corrected dose ",
+        "definitions used the same common rows."
+      )
+    )
+  ) |>
+  h07_gt(12)
+```
+
+```{r}
+#| label: tbl-h07-sensitivity-classifications
+#| tbl-cap: "Agreement of sensitivity classifications with the reported pooled photoperiod analysis."
+
+sensitivity_summary |>
+  select(
+    .data$Scenario,
+    .data$Placement,
+    .data$Agreement,
+    .data$`Changed classifications`
+  ) |>
+  gt::gt(groupname_col = "Scenario") |>
+  gt::cols_width(
+    Placement ~ gt::pct(14),
+    Agreement ~ gt::pct(12),
+    `Changed classifications` ~ gt::pct(56)
+  ) |>
+  gt::tab_source_note(
+    gt::md(
+      paste0(
+        "Agreement concerns the yes/no derivative pattern only; transition ",
+        "brackets can move even when the classification agrees."
+      )
+    )
+  ) |>
+  h07_gt(12)
+```
+
+Restricting the longest continuous period above 250 lx melEDI to days whose
+period duration was exactly identified changed the near-eye classification
+from no pattern to a pattern at 15.38–15.48 h; the chest classification was
+unchanged. Comparing the observed and corrected melEDI-dose definitions on
+identical rows left both placement classifications unchanged. Restricting the
+two preparation variants to exact common rows preserved every near-eye
+classification but removed the chest sleep low-light pattern in both variants.
+
+```{r}
+#| label: tbl-h07-model-form-sensitivities
+#| tbl-cap: "Classification stability under broader photoperiod smooths and fixed site effects."
+
+model_form_summary |>
+  select(
+    .data$Model,
+    .data$Placement,
+    .data$Agreement,
+    .data$`Failed fits`,
+    .data$`Changed classifications`
+  ) |>
+  gt::gt(groupname_col = "Model") |>
+  gt::fmt_integer(columns = `Failed fits`) |>
+  gt::cols_width(
+    Placement ~ gt::pct(14),
+    Agreement ~ gt::pct(12),
+    `Failed fits` ~ gt::pct(12),
+    `Changed classifications` ~ gt::pct(48)
+  ) |>
+  h07_gt(12)
+```
+
+The broader smooth reproduced eight of eight evaluable near-eye and eight of
+nine chest classifications; the near-eye longest-period fit failed its Hessian
+check, and the chest sleep low-light pattern disappeared. Treating site as a
+fixed effect reproduced eight of nine classifications at each placement: the
+near-eye longest-period pattern appeared, while the chest sleep low-light
+pattern disappeared. These changes reinforce that both metrics sit near a
+classification boundary.
+
+## Site influence and support
+
+Omitting one site at a time did not act as a new eligibility rule; it tested
+whether a pooled pattern depended strongly on one site's observations. Near-eye
+mean melEDI and both low-light metrics reproduced their main classification in
+all nine omissions. Five positive near-eye patterns changed only when Tübingen
+was omitted. The near-eye longest-period classification changed in four of
+nine omissions. Chest results were less stable for several outcomes, most
+notably time below 1 lx melEDI during sleep, which matched the main
+classification in only three of eight omissions.
+
+```{r}
+#| label: tbl-h07-near-loso
+#| tbl-cap: "Leave-one-site-out influence on near-eye derivative classifications."
+
+loso_table("near_eye")
+```
+
+```{r}
+#| label: tbl-h07-chest-loso
+#| tbl-cap: "Leave-one-site-out influence on chest derivative classifications."
+
+loso_table("chest")
+```
+
+The observed civil-photoperiod range was broad overall but uneven across
+sites. For example, near-eye observations ranged from 10.33 to 12.35 h in
+Madrid, 16.41 to 17.45 h in Munich, and 12.49 to 12.71 h in Kumasi; San José
+contributed only a narrow range around 13.47 h, while Borås covered values up
+to 20.52 h. Sites were also measured in different collection periods and, in some
+cases, different years. Thus the pooled smooth can answer whether an
+association is visible in this dataset, but it cannot separate photoperiod
+from every site-specific or collection-period difference. Leave-one-site-out
+changes show where this limitation affects the descriptive classification.
+
+## Interpretation
+
+The pooled analysis shows several fitted photoperiod associations that rise
+and then meet the prespecified pointwise rule for a sustained
+zero-compatible derivative. The recurring patterns for mean melEDI, darkest
+10 h mean, both above-threshold duration metrics, and melEDI dose across the
+two placements are the most consistent descriptive findings. Brightest 10 h
+mean differs by placement, the longest-period result is sensitive to sample
+definition and model form, and the chest sleep low-light result is undermined
+by distributional failure, common-row analyses, model-form changes, and site
+influence.
+
+The strongest defensible conclusion is therefore that **derivative-defined
+plateau patterns are visible for several personal light-exposure metrics in
+the pooled data**, subject to substantial design and model limitations. The
+results do not establish a ceiling, an equivalence region, a causal effect of
+photoperiod, a distinct latitude effect, a health or clinical consequence, or
+equivalence between near-eye and chest placement.
+
+Exact input identities, metric-specific model frames, evaluated formulas,
+diagnostic provenance, code order, and output identities are documented in
+the [H07 analysis preparation and provenance companion](../../audit/hypotheses/H07/H07_analysis_preparation.html).
+
+Models were fitted with R `r session_record$r_version[[1]]`, mgcv
+`r session_record$mgcv_version[[1]]`, and gratia
+`r session_record$gratia_version[[1]]`.
+
+```{r}
+#| label: session-h07-reader
+#| include: false
+
+sessionInfo()
 ```
