@@ -1,0 +1,1113 @@
+---
+title: "H09 Stage 2: implementation, diagnostics, and V0 comparison"
+subtitle: "Chronotype and timing of personal light exposure — author result gate"
+date: "2026-08-10"
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    embed-resources: true
+    code-fold: true
+    code-summary: "Show audit code"
+    code-overflow: wrap
+    df-print: paged
+bibliography: ../../../bibliography.bib
+execute:
+  echo: false
+  warning: false
+  message: false
+editor: source
+---
+
+```{r}
+#| label: setup
+#| include: false
+
+locate_project_root <- function(start = getwd()) {
+  candidate <- normalizePath(start, winslash = "/", mustWork = TRUE)
+  repeat {
+    if (
+      file.exists(file.path(candidate, "renv.lock")) &&
+        file.exists(file.path(candidate, "_quarto.yml"))
+    ) {
+      return(candidate)
+    }
+    parent <- dirname(candidate)
+    if (identical(parent, candidate)) {
+      stop("Could not locate the project root", call. = FALSE)
+    }
+    candidate <- parent
+  }
+}
+
+configured_root <- Sys.getenv("NATHEALTH_PROJECT_ROOT", unset = "")
+if (
+  nzchar(configured_root) &&
+    file.exists(file.path(configured_root, "renv.lock")) &&
+    file.exists(file.path(configured_root, "_quarto.yml"))
+) {
+  root <- normalizePath(configured_root, winslash = "/", mustWork = TRUE)
+} else {
+  root <- locate_project_root()
+}
+
+project_library <- file.path(
+  root,
+  "renv/library/macos/R-4.6/aarch64-apple-darwin23"
+)
+if (dir.exists(project_library)) {
+  .libPaths(c(project_library, .libPaths()))
+}
+
+suppressPackageStartupMessages({
+  library(dplyr)
+  library(gt)
+  library(purrr)
+  library(readr)
+  library(stringr)
+  library(tibble)
+  library(tidyr)
+})
+
+if (!identical(as.character(getRversion()), "4.6.1")) {
+  stop("H09 Stage 2 report must run under R 4.6.1", call. = FALSE)
+}
+
+source(file.path(root, "scripts", "pipeline", "p_value_display.R"))
+source(file.path(root, "scripts", "hypotheses", "H09", "h09_contract.R"))
+
+h09_artifact <- function(...) file.path(root, "artifacts", ...)
+read_h09 <- function(...) {
+  readr::read_csv(h09_artifact(...), show_col_types = FALSE, na = "")
+}
+
+approvals <- read_h09("06_model_data", "H09", "H09_author_approvals.csv")
+input_audit <- read_h09("06_model_data", "H09", "H09_input_audit.csv")
+base_bundle <- read_h09("06_model_data", "H09", "H09_base_bundle_audit.csv")
+score_audit <- read_h09("08_diagnostics", "H09", "H09_chronotype_score_audit.csv")
+metric_registry <- read_h09("06_model_data", "H09", "H09_metric_registry.csv")
+predictor_registry <- read_h09("06_model_data", "H09", "H09_predictor_registry.csv")
+formula_registry <- read_h09("06_model_data", "H09", "H09_formula_registry.csv")
+sample_index <- read_h09("06_model_data", "H09", "H09_model_frame_index.csv")
+sample_by_site <- read_h09("06_model_data", "H09", "H09_model_frame_by_site.csv")
+paired_audit <- read_h09("06_model_data", "H09", "H09_paired_sample_audit.csv")
+gap_common_audit <- read_h09(
+  "06_model_data", "H09", "H09_gap_common_sample_audit.csv"
+)
+non_estimable <- read_h09(
+  "06_model_data", "H09", "H09_non_estimable_targets.csv"
+)
+
+master <- read_h09("09_tables", "H09", "H09_model_results_master.csv")
+family_audit <- read_h09("09_tables", "H09", "H09_family_audit.csv")
+site_slopes <- read_h09("09_tables", "H09", "H09_site_specific_slopes.csv")
+paired_effects <- read_h09(
+  "09_tables", "H09", "H09_paired_placement_effects.csv"
+)
+gap_sensitivity <- read_h09(
+  "09_tables", "H09", "H09_gap_timing_unaware_sensitivity.csv"
+)
+fifth_outcome <- read_h09(
+  "09_tables", "H09", "H09_fifth_outcome_sensitivity.csv"
+)
+photoperiod <- read_h09(
+  "09_tables", "H09", "H09_photoperiod_sensitivity.csv"
+)
+participant_summary <- read_h09(
+  "09_tables", "H09", "H09_participant_summary_sensitivity.csv"
+)
+ar1 <- read_h09("09_tables", "H09", "H09_ar1_sensitivity.csv")
+l10_cut <- read_h09("09_tables", "H09", "H09_l10_cut_sensitivity.csv")
+v0_reproduction <- read_h09(
+  "09_tables", "H09", "H09_v0_reproduction.csv"
+)
+v0_comparison <- read_h09(
+  "09_tables", "H09", "H09_v0_to_stage2_comparison.csv"
+)
+
+diagnostic_registry <- read_h09(
+  "08_diagnostics", "H09", "H09_diagnostic_assessment_registry.csv"
+)
+diagnostic_summary <- read_h09(
+  "08_diagnostics", "H09", "H09_diagnostic_target_summary.csv"
+)
+diagnostic_adjudication <- read_h09(
+  "08_diagnostics", "H09", "H09_diagnostic_author_adjudication.csv"
+)
+fit_gates <- read_h09("08_diagnostics", "H09", "H09_fit_gates.csv")
+influence <- read_h09(
+  "08_diagnostics", "H09", "H09_participant_influence_summary.csv"
+)
+loo_summary <- read_h09(
+  "08_diagnostics", "H09", "H09_leave_one_site_out_summary.csv"
+)
+linearity <- read_h09(
+  "08_diagnostics", "H09", "H09_linearity_diagnostics.csv"
+)
+serial <- read_h09("08_diagnostics", "H09", "H09_serial_diagnostics.csv")
+
+execution <- read_h09("12_manifests", "H09", "H09_execution_record.csv")
+packages <- read_h09("12_manifests", "H09", "H09_package_versions.csv")
+figure_manifest <- read_h09("12_manifests", "H09", "H09_figure_manifest.csv")
+
+primary_all <- master |>
+  filter(
+    .data$data_scenario_id == "primary",
+    .data$sample_scenario == "all_available"
+  ) |>
+  left_join(
+    diagnostic_summary |>
+      select(
+        .data$frame_id,
+        diagnostic_assessment = .data$overall_assessment,
+        diagnostic_issues = .data$not_acceptable_domain_names
+      ),
+    by = "frame_id",
+    relationship = "one-to-one"
+  ) |>
+  arrange(.data$placement, .data$metric_order, .data$instrument_id)
+
+primary_registered <- primary_all |>
+  filter(.data$primary_family_member)
+primary_near <- primary_registered |>
+  filter(.data$placement == "glasses")
+primary_chest <- primary_registered |>
+  filter(.data$placement == "chest")
+adapted_mean <- primary_all |>
+  filter(.data$metric_id == "mean_timing_above_250")
+
+format_p_cell <- function(value, significant) {
+  display <- nh_p_value_display(value, significant = significant)
+  ifelse(
+    display$p_bold,
+    paste0("**", display$p_display, "**"),
+    display$p_display
+  )
+}
+
+format_effect <- function(estimate, low, high, digits = 3L) {
+  template <- paste0("%+.", digits, "f (%+.", digits, "f to %+.", digits, "f)")
+  sprintf(template, estimate, low, high)
+}
+
+format_sample <- function(participants, days, observations, hours, sites = NULL) {
+  output <- sprintf(
+    "%d / %d / %d / %.1f h",
+    participants,
+    days,
+    observations,
+    hours
+  )
+  if (!is.null(sites)) output <- paste0(output, " / ", sites, " sites")
+  output
+}
+
+format_assessment <- function(value) {
+  if_else(
+    value == "acceptable",
+    "Acceptable",
+    "**Not acceptable**"
+  )
+}
+
+h09_gt <- function(data, title, subtitle = NULL, note = NULL, size = 10) {
+  out <- data |>
+    gt() |>
+    fmt_markdown(columns = where(is.character)) |>
+    opt_align_table_header(align = "left") |>
+    opt_row_striping() |>
+    tab_options(
+      table.width = pct(100),
+      table.font.size = px(size),
+      data_row.padding = px(3),
+      heading.align = "left",
+      source_notes.font.size = px(max(8, size - 2))
+    )
+  if (is.null(subtitle)) {
+    out <- out |> tab_header(title = md(title))
+  } else {
+    out <- out |> tab_header(title = md(title), subtitle = md(subtitle))
+  }
+  if (!is.null(note)) out <- out |> tab_source_note(md(note))
+  out
+}
+
+result_display <- function(data) {
+  data |>
+    transmute(
+      Metric = .data$abbreviation,
+      Instrument = .data$instrument_name,
+      `Effect (95% CI), hours` = format_effect(
+        .data$estimate,
+        .data$conf_low,
+        .data$conf_high
+      ),
+      `Raw p` = format_p_cell(
+        .data$main_p_raw,
+        .data$main_raw_significant
+      ),
+      `BH-adjusted p` = format_p_cell(
+        .data$main_p_adjusted,
+        .data$main_adjusted_significant
+      ),
+      `Interaction raw p` = format_p_cell(
+        .data$interaction_p_raw,
+        .data$interaction_raw_significant
+      ),
+      `Interaction BH p` = format_p_cell(
+        .data$interaction_p_adjusted,
+        .data$interaction_adjusted_significant
+      ),
+      `Participants / days / observations / derivation hours` = format_sample(
+        .data$participants,
+        .data$participant_days,
+        .data$observations,
+        .data$derivation_hours
+      ),
+      Diagnostics = format_assessment(.data$diagnostic_assessment)
+    )
+}
+```
+
+::: {.callout-note}
+## Stage 2 gate closed — approved as amended
+
+This document reports the author-approved H09 implementation, exact fitted
+samples, 95% confidence intervals, four complete five-outcome multiplicity
+families, interpreted diagnostics, V0 reconciliation, and planned
+sensitivities. Under decision H09-002 (2026-08-10), the author accepted the
+result gates and judged the response/residual distributions and residual
+heteroscedasticity acceptable after visually inspecting Figures 2 and 3. The
+quantitative screen flags remain visible in the audit artifacts. This report
+reads frozen H09 artifacts and does not refit models. No bootstrap, simulation,
+or other resampling was run, so the pilot/production resampling gate was not
+needed. The standalone reader report is authorized.
+:::
+
+# Hypothesis, constructs, and estimand
+
+The signed preregistration states:
+
+> **H9: Timing-based metrics are associated with chronotype (MCTQ, MEQ).**
+
+H09 asks whether participant-level chronotype is associated with the local
+clock timing of personal light exposure across participant-days. MCTQ `MSFsc`
+and MEQ remain separate registered constructs. A positive MCTQ coefficient
+means later corrected midsleep is associated with later exposure timing. A
+negative MEQ coefficient means that greater morning preference is associated
+with earlier exposure timing. These are between-participant, site-adjusted
+associations, not within-person day-to-day or causal effects.
+
+Near-eye evidence is primary and chest evidence complementary. Placements are
+not pooled. The **gap-timing-unaware dataset** is the dataset applying the
+50%-per-hour and 80%-per-day coverage rules but not using the remaining gaps'
+time of day in metric-specific support decisions. This contrasts with the
+time-sensitive primary dataset; below it is called simply the primary dataset.
+
+# Frozen implementation contract
+
+## Stage 1 approvals and input identity
+
+```{r}
+#| label: approval-input-audit
+
+tibble(
+  Check = c(
+    "Stage 1 gates approved",
+    "H09-G4 aggregate-score decision",
+    "Pinned analytical inputs",
+    "Preparation 06 input bundle",
+    "R runtime",
+    "Production resampling"
+  ),
+  Result = c(
+    sprintf("%d / %d", sum(approvals$approved), nrow(approvals)),
+    approvals$decision[approvals$gate_id == "H09-G4"],
+    sprintf("%d / %d hashes and row contracts verified", sum(input_audit$hash_verified & input_audit$rows_verified), nrow(input_audit)),
+    if_else(base_bundle$input_bundle_verified, "Identity verified", "Identity mismatch"),
+    paste0("R ", execution$r_version),
+    execution$resampling_gate_status
+  )
+) |>
+  h09_gt(
+    title = "Frozen Stage 2 authorization and identity checks",
+    note = "H09-G4 explicitly accepts the pinned aggregate calculated fields msf_sc and meq. PREP-003/FIND-044 remains a declared shared-provenance qualification; PREP06-BASE-002 authorizes the current bundle for this gated analysis."
+  )
+```
+
+H09-G4 explicitly accepts the pinned aggregate calculated fields `msf_sc`
+for MCTQ and `meq` for MEQ. Item-level questionnaire responses and an
+independent scoring reconstruction are unavailable, so the acceptance applies
+to these exact aggregate values and does not establish item-level scoring
+validity. The source-to-normalized value audit matched every available value.
+
+```{r}
+#| label: score-audit
+
+score_audit |>
+  transmute(
+    Participants = .data$participants,
+    Sites = .data$sites,
+    `MCTQ complete / missing` = paste0(.data$mctq_complete, " / ", .data$mctq_missing),
+    `MCTQ range, h` = sprintf("%.2f–%.2f", .data$mctq_min_hour, .data$mctq_max_hour),
+    `MCTQ centre, h` = sprintf("%.15f", .data$mctq_center_hour),
+    `MEQ complete / missing` = paste0(.data$meq_complete, " / ", .data$meq_missing),
+    `MEQ range` = paste0(.data$meq_min_score, "–", .data$meq_max_score),
+    `MEQ centre` = sprintf("%.14f", .data$meq_center_score),
+    `Item-level reconstruction` = str_to_sentence(.data$item_level_reconstruction)
+  ) |>
+  h09_gt(
+    title = "Pinned MCTQ and MEQ aggregates",
+    note = "MCTQ effects are per one-hour later MSFsc. MEQ effects are per 10 score points greater morning preference. Fixed global centres are used for every placement, metric, and sensitivity."
+  )
+```
+
+## Exact fitted models
+
+The primary Gaussian identity-link mixed models use submitted-site sum
+contrasts and a random intercept for participant nested in site. The site-only
+model and site-plus-chronotype model are compared by maximum-likelihood LRT for
+the main association; the additive and site-interaction models are compared
+separately. Estimates and Wald 95% confidence intervals come from the REML
+site-plus-chronotype model. No outcome-selected model is reported.
+
+```{r}
+#| label: exact-primary-formulas
+#| echo: true
+#| code-fold: false
+
+MCTQ_M0 <- stats::as.formula(
+  "timing_hour ~ site + (1 | site:Id)"
+)
+MCTQ_M1 <- stats::as.formula(
+  "timing_hour ~ site + mctq_hour_centered + (1 | site:Id)"
+)
+MCTQ_M2 <- stats::as.formula(
+  "timing_hour ~ site * mctq_hour_centered + (1 | site:Id)"
+)
+MEQ_M0 <- stats::as.formula(
+  "timing_hour ~ site + (1 | site:Id)"
+)
+MEQ_M1 <- stats::as.formula(
+  "timing_hour ~ site + meq_10_centered + (1 | site:Id)"
+)
+MEQ_M2 <- stats::as.formula(
+  "timing_hour ~ site * meq_10_centered + (1 | site:Id)"
+)
+
+list(
+  MCTQ_M0 = MCTQ_M0,
+  MCTQ_M1 = MCTQ_M1,
+  MCTQ_M2 = MCTQ_M2,
+  MEQ_M0 = MEQ_M0,
+  MEQ_M1 = MEQ_M1,
+  MEQ_M2 = MEQ_M2
+)
+```
+
+The complete formula registry also records the spline-linearity,
+within-site-centred photoperiod, participant-summary, continuous-time AR(1),
+and V0 formulas supplied to their respective R functions.
+
+```{r}
+#| label: formula-registry
+
+formula_registry |>
+  transmute(
+    Analysis = str_replace_all(.data$analysis_kind, "_", " ") |> str_to_sentence(),
+    Instrument = .data$instrument,
+    `Formula / structure` = .data$formula_id,
+    Wilkinson = paste0("`", .data$formula, "`")
+  ) |>
+  h09_gt(
+    title = "Complete evaluated H09 formula registry",
+    size = 8
+  )
+```
+
+## Outcomes, clocks, and multiplicity
+
+The five registered outcomes are M10 midpoint, L10 midpoint, first and last
+timing above 250 lx melEDI, and the exact-identifiable midpoint of the selected
+longest continuous period above 250 lx melEDI. Mean timing above 250 lx melEDI
+is retained as the named adapted alternative and is outside H09-F1–F4.
+Clock responses are linearized only where their observed support permits it.
+L10 uses the registered strict `>16:00` negative-hour conversion; onset and
+offset variants of M10/L10 are excluded.
+
+```{r}
+#| label: metric-family-contract
+
+metric_registry |>
+  transmute(
+    Order = .data$metric_order,
+    Metric = .data$manuscript_name,
+    Branch = if_else(
+      .data$primary_family_member,
+      "Registered five-outcome family member",
+      "Adapted sensitivity outside F1–F4"
+    ),
+    Unit = .data$display_unit,
+    Definition = .data$value_definition
+  ) |>
+  h09_gt(
+    title = "Timing-outcome contract",
+    size = 9
+  )
+```
+
+There are four separately labelled five-member BH families: MCTQ main effects
+(H09-F1), MEQ main effects (H09-F2), MCTQ-by-site interactions (H09-F3), and
+MEQ-by-site interactions (H09-F4). Site-specific slopes are descriptive; the
+90-member H09-F5 family was not activated. Significance was determined from
+the unrounded values before display. In the result tables, raw p-values are
+bold when raw `p < 0.05`; BH values are bold only when adjusted `p < 0.05` in
+the explicitly named five-member family. Scientific conclusions use the BH
+rule.
+
+# Exact fitted samples
+
+Every participant-day model used one observation per participant-day.
+Derivation hours sum the supported hours feeding the outcome in that exact
+frame. MCTQ has one missing participant-level value; consequently its fitted
+samples are usually one participant and several participant-days smaller than
+MEQ samples. Longest-period samples are smaller because only
+exact-identifiable selected periods are admissible.
+
+```{r}
+#| label: exact-primary-samples
+
+primary_all |>
+  transmute(
+    Placement = .data$placement_label,
+    Metric = .data$abbreviation,
+    Instrument = .data$instrument_name,
+    Participants = .data$participants,
+    `Participant-days` = .data$participant_days,
+    Observations = .data$observations,
+    `Derivation hours` = sprintf("%.1f", .data$derivation_hours),
+    Sites = .data$sites,
+    `Days/participant` = paste0(
+      .data$min_days_per_participant,
+      "–",
+      .data$max_days_per_participant,
+      " (median ",
+      .data$median_days_per_participant,
+      ")"
+    )
+  ) |>
+  h09_gt(
+    title = "Exact primary-dataset all-available fitted samples",
+    note = "The adapted mean-timing outcome is shown because it is fitted as a named sensitivity, but it is not a member of F1–F4.",
+    size = 8
+  )
+```
+
+The primary registered near-eye fits contained 131–141 participants,
+478–816 participant-days and observations, 11,326.3–18,851.0 derivation
+hours, and nine sites. Complementary chest fits contained 149–154
+participants, 547–902 participant-days and observations, 12,980.0–20,892.0
+derivation hours, and eight sites.
+
+# Primary near-eye results
+
+Later MCTQ `MSFsc` was associated with later near-eye M10 midpoint, L10
+midpoint, and first-above-250 timing. Greater MEQ morning preference was
+associated with earlier timing for the same three metrics. For example, a
+one-hour later `MSFsc` corresponded to a 0.381-hour (about 23-minute) later
+first-above-250 timing, while 10 more MEQ points corresponded to a 0.444-hour
+(about 27-minute) earlier first-above-250 timing. Last timing and the
+registered longest-period midpoint were inconclusive for both instruments.
+
+```{r}
+#| label: primary-near-eye-results
+
+result_display(primary_near) |>
+  h09_gt(
+    title = "Primary near-eye site-adjusted chronotype associations",
+    subtitle = "MCTQ effects are per one-hour later MSFsc; MEQ effects are per 10 points greater morning preference",
+    note = "Effects are differences in local exposure timing. Confidence intervals are two-sided 95% Wald intervals. Main and interaction BH columns belong to separate five-outcome families. Diagnostics are assessed against the complete prespecified registry.",
+    size = 8
+  )
+```
+
+```{r}
+#| label: fig-primary-effects
+#| fig-cap: "Site-adjusted associations of MCTQ MSFsc and MEQ with the five registered timing metrics. Near-eye measurements are primary and chest measurements complementary. Points are fitted effects and horizontal bars are 95% Wald confidence intervals."
+#| fig-alt: "Two-panel forest plot. For MCTQ, near-eye estimates for M10, L10, and first-above-250 timing are positive with intervals above zero; last timing and longest-period midpoint cross zero. For MEQ, the same first three near-eye estimates are negative with intervals below zero; last and longest-period intervals cross zero. Chest estimates are shown alongside near-eye estimates."
+#| out-width: "100%"
+
+knitr::include_graphics(h09_artifact(
+  "10_figures", "H09", "H09_primary_effects.png"
+))
+```
+
+[Source data for the primary-effect figure](../../../artifacts/11_source_data/H09/H09_primary_effects_data.csv).
+
+# Complementary chest results
+
+Chest first-above-250 timing showed the same directional associations as the
+near-eye result for both instruments. Chest L10 was significant for MEQ but
+not after BH correction for MCTQ (`p = 0.022`, BH-adjusted `p = 0.055`). Chest
+M10 was significant for MEQ but not MCTQ. Last timing and longest-period
+midpoint remained inconclusive. These are complementary results and do not
+replace the near-eye evidence.
+
+```{r}
+#| label: complementary-chest-results
+
+result_display(primary_chest) |>
+  h09_gt(
+    title = "Complementary chest site-adjusted chronotype associations",
+    subtitle = "MCTQ effects are per one-hour later MSFsc; MEQ effects are per 10 points greater morning preference",
+    note = "The placement hierarchy is fixed: near eye is primary and chest complementary. Placements were fitted separately.",
+    size = 8
+  )
+```
+
+# Site interactions and descriptive trends
+
+No site-by-MCTQ or site-by-MEQ interaction survived its five-outcome BH
+family at either placement. The smallest adjusted interaction p-value was
+0.070 for the near-eye longest-period midpoint with MEQ; this remains above
+the fixed 0.05 rule. The chest longest-period/MEQ interaction model was
+singular in the ML comparison, so that interaction assessment is additionally
+not acceptable. The additive main-effect fit for that target was not
+singular. The same interaction form was singular in both paired-common
+longest-period/MEQ runs; the paired-placement display below uses the
+nonsingular additive M1 fits and does not interpret those interaction models.
+
+```{r}
+#| label: primary-family-audit
+
+family_audit |>
+  filter(.data$run_id %in% c(
+    "primary__glasses__all_available",
+    "primary__chest__all_available"
+  )) |>
+  transmute(
+    Placement = if_else(str_detect(.data$run_id, "glasses"), "Near eye", "Chest"),
+    Instrument = .data$instrument_id,
+    Comparison = if_else(.data$comparison_id == "main", "Main association", "Site interaction"),
+    Family = .data$family_id,
+    `Registered / planned` = paste0(.data$registered_rows, " / ", .data$planned_members),
+    `Estimable raw p` = .data$estimable_raw_p,
+    `Non-estimable` = .data$non_estimable_members,
+    `Independent BH check` = if_else(.data$independent_recalculation_matches, "Matches", "Mismatch"),
+    Assessment = str_to_sentence(.data$family_assessment)
+  ) |>
+  h09_gt(
+    title = "Primary-dataset multiplicity audit",
+    note = "All registered rows remain in the family denominator. Every adjusted vector independently reproduces p.adjust(method = 'BH', n = 5)."
+  )
+```
+
+Site-specific slopes are retained only as descriptive quantities. Across the
+primary registered targets, the complete site-specific output contains the
+submitted sites and 95% confidence intervals but no site-specific p-values or
+selective claims.
+
+```{r}
+#| label: site-slope-ranges
+
+site_slopes |>
+  filter(
+    .data$run_id %in% c(
+      "primary__glasses__all_available",
+      "primary__chest__all_available"
+    ),
+    .data$metric_id %in% metric_registry$metric_id[metric_registry$primary_family_member]
+  ) |>
+  left_join(
+    metric_registry |> select(.data$metric_id, .data$metric_order, .data$abbreviation),
+    by = "metric_id",
+    relationship = "many-to-one"
+  ) |>
+  group_by(
+    .data$placement_label,
+    .data$metric_order,
+    .data$abbreviation,
+    .data$instrument_id
+  ) |>
+  summarise(
+    Sites = n(),
+    `Descriptive slope range, h` = sprintf("%+.3f to %+.3f", min(.data$estimate), max(.data$estimate)),
+    .groups = "drop"
+  ) |>
+  arrange(.data$placement_label, .data$metric_order, .data$instrument_id) |>
+  select(
+    Placement = .data$placement_label,
+    Metric = .data$abbreviation,
+    Instrument = .data$instrument_id,
+    .data$Sites,
+    `Descriptive slope range, h`
+  ) |>
+  h09_gt(
+    title = "Descriptive site-specific slope ranges",
+    note = "H09-F5 was not activated. Ranges describe fitted interaction-model components and are not site-specific inferential results.",
+    size = 8
+  )
+```
+
+# Diagnostics and explicit acceptability
+
+The diagnostic registry evaluates 16 domains for each of the 24 primary
+metric × instrument × placement targets. Eighteen targets are acceptable
+across all domains; six have at least one not-acceptable domain. A
+not-acceptable label records a specific limitation and is not silently
+converted into a pass because an estimate is statistically significant.
+
+H09-002 distinguishes intentionally conservative quantitative screens from
+the final scientific assessment. The integrated registry screen flagged
+response/residual distribution for eight targets and residual
+heteroscedasticity for four targets. The lower-level all-threshold residual
+screen additionally flagged six outlier-only targets, for 14 distribution
+flags in that source artifact; those six had already been cleared by stable
+influence checks in the integrated screen. After inspecting the complete
+near-eye and chest panels in Figures 2 and 3, the author judged both domains
+acceptable for all targets. Both screen classifications, all thresholds, and
+the numeric evidence are retained in the residual diagnostic and
+author-adjudication artifacts.
+
+```{r}
+#| label: diagnostic-target-summary
+
+diagnostic_summary |>
+  left_join(
+    metric_registry |> select(.data$metric_id, .data$metric_order, .data$abbreviation),
+    by = "metric_id",
+    relationship = "many-to-one"
+  ) |>
+  arrange(.data$placement_label, .data$metric_order, .data$instrument_id) |>
+  transmute(
+    Placement = .data$placement_label,
+    Metric = .data$abbreviation,
+    Instrument = .data$instrument_id,
+    `Participants / days / observations / derivation hours` = format_sample(
+      .data$participants,
+      .data$participant_days,
+      .data$observations,
+      .data$derivation_hours
+    ),
+    `Acceptable domains` = paste0(.data$acceptable_domains, " / ", .data$domains_assessed),
+    `Overall assessment` = format_assessment(.data$overall_assessment),
+    `Not-acceptable domains` = if_else(
+      .data$not_acceptable_domains == 0,
+      "—",
+      .data$not_acceptable_domain_names
+    )
+  ) |>
+  h09_gt(
+    title = "Interpreted primary-dataset diagnostic registry",
+    note = "Every row has an explicit acceptable/not-acceptable decision. Distribution and heteroscedasticity use the H09-002 visual adjudication; the original quantitative screens remain linked below.",
+    size = 8
+  )
+```
+
+The main limitations are:
+
+- The near-eye last-timing slopes are close to zero and change sign under some
+  participant deletions and leave-one-site-out fits. No deletion changed a
+  slope by the material 0.25-hour threshold, but the already-inconclusive
+  direction is not stable.
+- One of five declared fits for chest longest-period/MEQ—the ML interaction
+  model—was singular; convergence/singularity is therefore not acceptable for
+  that target. Fixed-effect matrices were full rank for all 540 fits and all
+  Hessians were positive definite.
+- The registered longest-period midpoint cannot be checked in the
+  gap-timing-unaware artifact because that artifact contains neither the
+  metric nor the endpoints required to reconstruct it. This makes the
+  prepared-data-sensitivity domain not acceptable for all four
+  longest-period placement/instrument targets.
+
+Conversely, clock representation, chronotype linearity, temporal dependence,
+questionnaire/sample identity, site support, fixed-effect rank, paired/common
+sample identity, multiplicity, response/residual distribution, and residual
+heteroscedasticity were acceptable for all 24 targets. All
+participant-deletion refits completed; only the two near-eye last-timing
+targets failed the fixed direction-stability rule. Continuous-time AR(1)
+corrections changed slopes by at most 0.016 hours.
+
+```{r}
+#| label: fig-diagnostics-near-eye
+#| fig-cap: "Near-eye residual-versus-fitted and normal-score Q-Q diagnostics for all six timing outcomes and both chronotype instruments. Under H09-002, visual inspection judged response/residual distribution and heteroscedasticity acceptable; the quantitative screen flags remain retained separately."
+#| fig-alt: "Twenty-four near-eye diagnostic panels. Residual-versus-fitted plots occupy the upper half and Q-Q plots the lower half. Some first-above-250 and L10 panels depart more at the tails than the other timing outcomes, while the overall residual patterns were visually judged acceptable."
+#| out-width: "100%"
+
+knitr::include_graphics(h09_artifact(
+  "10_figures", "H09", "H09_diagnostics_near_eye.png"
+))
+```
+
+```{r}
+#| label: fig-diagnostics-chest
+#| fig-cap: "Chest residual-versus-fitted and normal-score Q-Q diagnostics for all six timing outcomes and both chronotype instruments. Under H09-002, visual inspection judged response/residual distribution and heteroscedasticity acceptable; the quantitative screen flags remain retained separately."
+#| fig-alt: "Twenty-four chest diagnostic panels. Some first-above-250 and L10 normal-score Q-Q panels depart more at the tails than the other outcomes, while the overall residual patterns were visually judged acceptable."
+#| out-width: "100%"
+
+knitr::include_graphics(h09_artifact(
+  "10_figures", "H09", "H09_diagnostics_chest.png"
+))
+```
+
+[Source data for both diagnostic figures](../../../artifacts/11_source_data/H09/H09_primary_diagnostic_figure_data.csv).
+
+# Placement-matched evidence
+
+The paired-placement analysis fits near-eye and chest models separately on
+identical participant-day keys. Sample identity is exact for every metric and
+instrument. The display compares component estimates and component 95%
+confidence intervals; it does not estimate a between-placement difference
+interval because Stage 1 did not approve a joint covariance model. No
+equivalence margin was prespecified, so similarity is not equivalence.
+
+```{r}
+#| label: paired-placement-table
+
+paired_effects |>
+  arrange(.data$metric_order, .data$instrument_id) |>
+  transmute(
+    Metric = .data$abbreviation,
+    Instrument = .data$instrument_name,
+    `Exact paired sample` = format_sample(
+      .data$participants_glasses,
+      .data$participant_days_glasses,
+      .data$observations_glasses,
+      .data$derivation_hours_glasses
+    ),
+    `Near-eye effect (95% CI), h` = format_effect(
+      .data$estimate_glasses,
+      .data$conf_low_glasses,
+      .data$conf_high_glasses
+    ),
+    `Chest effect (95% CI), h` = format_effect(
+      .data$estimate_chest,
+      .data$conf_low_chest,
+      .data$conf_high_chest
+    ),
+    `Chest − near-eye point difference, h` = sprintf("%+.3f", .data$chest_minus_near_eye_point_difference),
+    `Sample keys` = if_else(.data$exact_sample_match, "Exact match", "Mismatch"),
+    `Difference interval` = "Not estimated",
+    Equivalence = "Not assessed"
+  ) |>
+  h09_gt(
+    title = "Exact paired-placement estimates",
+    note = "Component intervals are not an interval for the chest-minus-near-eye difference. No equivalence claim is made.",
+    size = 8
+  )
+```
+
+```{r}
+#| label: fig-paired-placement
+#| fig-cap: "Near-eye and chest chronotype associations from separately fitted models using identical participant-day samples. Horizontal and vertical bars are the two component 95% confidence intervals; the diagonal is an identity reference, not an equivalence region."
+#| fig-alt: "Two-panel scatter plot comparing near-eye estimates on the horizontal axis with chest estimates on the vertical axis. MCTQ is on the left and MEQ on the right. Points for five timing metrics lie around the identity line, with broad component intervals; no equivalence bounds are shown."
+#| out-width: "90%"
+
+knitr::include_graphics(h09_artifact(
+  "10_figures", "H09", "H09_paired_placement_effects.png"
+))
+```
+
+[Source data for the paired-placement figure](../../../artifacts/11_source_data/H09/H09_paired_placement_effects_data.csv).
+
+# Sensitivity findings
+
+## Gap-timing-unaware dataset
+
+For the five outcomes available in both prepared datasets, exact common-key
+frames were created and fitted in addition to all-available frames. Most
+comparisons were stable within model uncertainty. Chest MCTQ L10 was
+precision-sensitive; chest MEQ mean timing was precision-sensitive in both
+all-available and common-sample comparisons; near-eye MEQ mean timing was
+precision-sensitive on the exact common sample. None of these changes creates
+an adjusted primary-family result because mean timing is outside F1–F4 and
+chest is complementary.
+
+```{r}
+#| label: gap-sensitivity-table
+
+gap_sensitivity |>
+  arrange(.data$placement_label, .data$metric_order, .data$instrument_id) |>
+  transmute(
+    Placement = .data$placement_label,
+    Metric = .data$abbreviation,
+    Instrument = .data$instrument_name,
+    `Primary all-available sample` = if_else(
+      is.finite(.data$primary_all_estimate),
+      format_sample(
+        .data$primary_all_participants,
+        .data$primary_all_participant_days,
+        .data$primary_all_observations,
+        .data$primary_all_derivation_hours
+      ),
+      "—"
+    ),
+    `Primary effect (95% CI), h` = if_else(
+      is.finite(.data$primary_all_estimate),
+      format_effect(
+        .data$primary_all_estimate,
+        .data$primary_all_conf_low,
+        .data$primary_all_conf_high
+      ),
+      "—"
+    ),
+    `Gap all-available sample` = if_else(
+      is.finite(.data$gap_all_estimate),
+      format_sample(
+        .data$gap_all_participants,
+        .data$gap_all_participant_days,
+        .data$gap_all_observations,
+        .data$gap_all_derivation_hours
+      ),
+      "Not estimable"
+    ),
+    `Gap effect (95% CI), h` = if_else(
+      is.finite(.data$gap_all_estimate),
+      format_effect(
+        .data$gap_all_estimate,
+        .data$gap_all_conf_low,
+        .data$gap_all_conf_high
+      ),
+      "Not estimable"
+    ),
+    `All-available stability` = str_to_sentence(.data$all_available_stability),
+    `Exact common days` = if_else(
+      is.finite(.data$primary_common_participant_days),
+      as.character(.data$primary_common_participant_days),
+      "—"
+    ),
+    `Common-sample stability` = str_to_sentence(.data$common_sample_stability)
+  ) |>
+  h09_gt(
+    title = "Primary versus gap-timing-unaware sensitivity",
+    note = "Every reported common-sample comparison has identical participant-day keys. The registered longest-period midpoint is retained as explicitly non-estimable rather than substituted or imputed.",
+    size = 7
+  )
+```
+
+## Photoperiod, participant weighting, temporal dependence, and L10 clock cut
+
+Within-site-centred photoperiod adjustment was stable for 21 of 24 targets.
+Only the already near-zero near-eye last-timing slopes changed direction; the
+adapted chest MEQ mean-timing result was precision-sensitive. Equal-weight
+participant summaries were stable for 20 of 24 targets; directional changes
+again occurred only for near-zero last-timing or longest-period chest slopes.
+All 24 continuous-time AR(1) fits were stable. The strict `>16:00` and noon-cut
+L10 analyses differed by at most 0.037 hours and all four L10 clock-cut checks
+were acceptable.
+
+```{r}
+#| label: other-sensitivity-summary
+
+bind_rows(
+  photoperiod |>
+    count(.data$stability_classification, name = "Targets") |>
+    mutate(Sensitivity = "Within-site photoperiod"),
+  participant_summary |>
+    count(.data$stability_classification, name = "Targets") |>
+    mutate(Sensitivity = "Equal-weight participant summary"),
+  ar1 |>
+    count(.data$stability_classification, name = "Targets") |>
+    mutate(Sensitivity = "Continuous-time AR(1)")
+) |>
+  transmute(
+    Sensitivity = .data$Sensitivity,
+    Classification = str_to_sentence(.data$stability_classification),
+    Targets = .data$Targets
+  ) |>
+  arrange(.data$Sensitivity, .data$Classification) |>
+  h09_gt(
+    title = "Sensitivity classifications across 24 primary targets"
+  )
+```
+
+## Registered fifth outcome versus V0 mean timing
+
+The registered exact-identifiable longest-period midpoint and V0 mean timing
+above 250 lx are different estimands and use different samples. The registered
+outcome is the fifth member of each primary family; mean timing remains a raw-p
+sensitivity only. The near-eye mean-timing MEQ raw p-value is 0.041, but it is
+not a registered-family finding and its diagnostic/sensitivity context does
+not justify replacing the preregistered outcome.
+
+```{r}
+#| label: fifth-outcome-table
+
+fifth_outcome |>
+  arrange(.data$placement, .data$instrument_id, .data$metric_id) |>
+  transmute(
+    Placement = .data$placement_label,
+    Instrument = .data$instrument_name,
+    Outcome = .data$manuscript_name,
+    Branch = if_else(
+      .data$analysis_branch == "registered",
+      "Registered fifth outcome",
+      "Adapted V0 alternative"
+    ),
+    `Participants / days / observations / derivation hours` = format_sample(
+      .data$participants,
+      .data$participant_days,
+      .data$observations,
+      .data$derivation_hours
+    ),
+    `Effect (95% CI), h` = format_effect(
+      .data$estimate,
+      .data$conf_low,
+      .data$conf_high
+    ),
+    `Raw p` = format_p_cell(.data$main_p_raw, .data$main_p_raw < 0.05),
+    `BH-adjusted p` = if_else(
+      is.finite(.data$main_p_adjusted),
+      format_p_cell(.data$main_p_adjusted, .data$main_adjusted_significant),
+      "— (outside F1–F4)"
+    )
+  ) |>
+  h09_gt(
+    title = "Registered longest-period midpoint and adapted mean timing",
+    note = "Rows are separate estimands and samples. Differences are descriptive, not a robustness test of a common outcome.",
+    size = 8
+  )
+```
+
+# V0 reconstruction and reconciliation
+
+V0 used MCTQ only, substituted mean timing for the registered longest-period
+midpoint, tested a chronotype-only comparison that omitted site, reported its
+slope regardless of significance-driven model selection, and adjusted each
+p-value separately with `p.adjust(p, method = "fdr", n = 5)`. A scalar call
+cannot reproduce vector-wide BH ranks and is not an acceptable family-wide
+FDR adjustment. The audited implementation restores site adjustment, the MEQ
+construct, fixed estimands and samples, and complete family vectors.
+
+```{r}
+#| label: v0-comparison-table
+
+v0_comparison |>
+  arrange(.data$placement, .data$metric_order) |>
+  transmute(
+    Placement = .data$placement_label,
+    Metric = .data$abbreviation,
+    `V0 sample: participants / days` = paste0(.data$participants, " / ", .data$participant_days),
+    `V0 MCTQ effect (95% CI), h` = format_effect(
+      .data$estimate,
+      .data$conf_low,
+      .data$conf_high
+    ),
+    `V0 raw p` = format_p_cell(.data$p_raw, .data$p_raw < 0.05),
+    `V0 scalar adjusted display` = nh_format_p_value(.data$p_scalar_fdr_n5),
+    `Audited sample: participants / days` = paste0(.data$new_participants, " / ", .data$new_participant_days),
+    `Audited MCTQ effect (95% CI), h` = format_effect(
+      .data$new_estimate,
+      .data$new_conf_low,
+      .data$new_conf_high
+    ),
+    `Audited BH p` = if_else(
+      is.finite(.data$new_main_p_adjusted),
+      format_p_cell(.data$new_main_p_adjusted, .data$new_main_adjusted_significant),
+      "— (adapted mean)"
+    ),
+    `Audited − V0 effect, h` = sprintf("%+.3f", .data$estimate_change_hour)
+  ) |>
+  h09_gt(
+    title = "Exact V0 reproduction and audited MCTQ comparison",
+    note = "V0 scalar-adjusted values are shown only to reproduce the legacy calculation; they are not accepted BH family results. V0 and audited effects differ in model, prepared data, and for some outcomes sample.",
+    size = 7
+  )
+```
+
+The recreated V0 figures retain all five V0 outcomes rather than repeating
+the original result-dependent omission of last timing. Their black lines
+faithfully reproduce the pooled ordinary-`lm` display and are labelled as not
+representing the mixed models. Site labels, ordering, and colours are corrected
+to the submitted-manuscript registry. The audited mixed-model effects are
+shown in the primary forest plot above.
+
+```{r}
+#| label: fig-v0-near-eye
+#| fig-cap: "Near-eye V0 figure recreation. All five V0 outcomes are retained. Black pooled ordinary-regression lines reproduce the legacy visual but do not represent the audited mixed models; the right panel shows MCTQ MSFsc by submitted-manuscript site."
+#| fig-alt: "Near-eye V0 recreation with five site-coloured timing scatterplots and pooled black regression lines, plus a site-labelled MCTQ distribution panel. Positive pooled trends appear for M10, L10, mean timing, first timing, and more weakly last timing."
+#| out-width: "100%"
+
+knitr::include_graphics(h09_artifact(
+  "10_figures", "H09", "H09_v0_near_eye_recreation.png"
+))
+```
+
+```{r}
+#| label: fig-v0-chest
+#| fig-cap: "Chest V0 figure recreation with all five legacy outcomes and corrected submitted-manuscript site display."
+#| fig-alt: "Chest V0 recreation with five site-coloured timing scatterplots and pooled black regression lines, plus a site-labelled MCTQ distribution panel. Pooled positive trends are clearest for first timing and weaker for last timing."
+#| out-width: "100%"
+
+knitr::include_graphics(h09_artifact(
+  "10_figures", "H09", "H09_v0_chest_recreation.png"
+))
+```
+
+[Observed source data for both V0 figures](../../../artifacts/11_source_data/H09/H09_v0_observed_figure_data.csv) and [pooled line coordinates](../../../artifacts/11_source_data/H09/H09_v0_prediction_figure_data.csv).
+
+# Reproducibility and artifact map
+
+The H09 runner verified 16 pinned input identities, created 108 immutable model
+frames, stored 540 fitted model objects, and evaluated 24 primary diagnostic
+targets under R 4.6.1 and the project library. All durable figures have paired
+source CSVs and both PNG and PDF exports. Final-size QA used the established
+export scaling rule; effective essential text is at least 5.10 points at a
+170-mm display width.
+
+```{r}
+#| label: execution-environment
+
+packages |>
+  transmute(Package = .data$package, Version = .data$version) |>
+  h09_gt(
+    title = "Consequential package versions",
+    subtitle = paste0(
+      "R ",
+      execution$r_version,
+      "; ",
+      execution$model_frames,
+      " frames; ",
+      execution$fitted_model_objects,
+      " stored model objects; ",
+      execution$production_resampling_replicates,
+      " resampling replicates"
+    ),
+    size = 9
+  )
+```
+
+Durable audit links:
+
+- [Complete model results](../../../artifacts/09_tables/H09/H09_model_results_master.csv)
+- [Complete main and interaction tests](../../../artifacts/09_tables/H09/H09_model_tests.csv)
+- [Complete diagnostic assessment registry](../../../artifacts/08_diagnostics/H09/H09_diagnostic_assessment_registry.csv)
+- [Author diagnostic adjudication and retained numeric screens](../../../artifacts/08_diagnostics/H09/H09_diagnostic_author_adjudication.csv)
+- [Participant influence summary](../../../artifacts/08_diagnostics/H09/H09_participant_influence_summary.csv)
+- [Leave-one-site-out summary](../../../artifacts/08_diagnostics/H09/H09_leave_one_site_out_summary.csv)
+- [Gap-timing-unaware sensitivity](../../../artifacts/09_tables/H09/H09_gap_timing_unaware_sensitivity.csv)
+- [Figure manifest, physical-size metadata, QA, and alt text](../../../artifacts/12_manifests/H09/H09_figure_manifest.csv)
+- [Artifact checksums](../../../artifacts/12_manifests/H09/H09_stage2_artifacts.csv)
+
+The declared shared preparation qualification remains unchanged:
+`r base_bundle$provenance_qualification`. It is neither repaired nor hidden by
+this H09-owned analysis.
+
+# Stage 2 disposition and reader-report authorization
+
+::: {.callout-important}
+## H09-002 — approved as amended on 2026-08-10
+
+The author accepted all result gates and authorized the standalone reader
+report, with one diagnostic amendment: visual inspection of Figures 2 and 3
+supports an **acceptable** final assessment for response/residual distribution
+and residual heteroscedasticity. The integrated quantitative heuristic still
+records eight distribution flags and four heteroscedasticity flags, while the
+lower-level all-threshold file retains 14 distribution flags; both are
+preserved as audit evidence rather than treated as the final verdict. This amendment
+does not alter any fitted model, sample, estimate, 95% confidence interval,
+p-value, multiplicity decision, sensitivity result, or the six targets that
+remain not acceptable because of influence, convergence/singularity, or the
+unavailable registered longest-period gap sensitivity.
+:::
