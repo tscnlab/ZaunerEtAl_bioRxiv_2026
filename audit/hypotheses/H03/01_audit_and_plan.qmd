@@ -1,0 +1,1892 @@
+---
+title: "H03 Stage 1: audit and approved analysis plan"
+subtitle: "Nature Health analysis audit — revised model architecture"
+date: last-modified
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    code-fold: true
+    code-summary: "Show audit code"
+    code-tools: true
+    embed-resources: true
+    df-print: paged
+execute:
+  echo: true
+  warning: false
+  message: false
+  error: false
+  freeze: false
+---
+
+```{r}
+#| label: setup
+#| include: false
+
+options(
+  stringsAsFactors = FALSE,
+  scipen = 999,
+  width = 140,
+  dplyr.summarise.inform = FALSE
+)
+
+find_project_root <- function(start = getwd()) {
+  candidate <- normalizePath(start, winslash = "/", mustWork = TRUE)
+  repeat {
+    if (file.exists(file.path(candidate, "renv.lock"))) {
+      return(candidate)
+    }
+    parent <- dirname(candidate)
+    if (identical(parent, candidate)) {
+      stop("Could not locate the project root from: ", start)
+    }
+    candidate <- parent
+  }
+}
+
+project_root <- Sys.getenv(
+  "H03_PROJECT_ROOT",
+  unset = Sys.getenv("QUARTO_PROJECT_DIR", unset = "")
+)
+if (!nzchar(project_root) || !file.exists(file.path(project_root, "renv.lock"))) {
+  project_root <- find_project_root()
+}
+project_root <- normalizePath(project_root, winslash = "/", mustWork = TRUE)
+
+stopifnot(getRversion() == "4.6.1")
+
+project_library <- file.path(
+  project_root,
+  "renv/library/macos/R-4.6/aarch64-apple-darwin23"
+)
+stopifnot(dir.exists(project_library))
+.libPaths(c(project_library, .libPaths()))
+
+library(dplyr)
+library(tidyr)
+library(purrr)
+library(tibble)
+library(gt)
+
+stage1_gt <- function(data, rowname_col = NULL, groupname_col = NULL) {
+  gt(data, rowname_col = rowname_col, groupname_col = groupname_col) |>
+    opt_row_striping() |>
+    tab_options(
+      table.font.size = px(13),
+      data_row.padding = px(4),
+      heading.align = "left"
+    )
+}
+
+formula_text <- function(x) {
+  paste(deparse(x, width.cutoff = 500L), collapse = " ")
+}
+
+site_registry <- read.csv(
+  file.path(project_root, "config/site_display_registry.csv"),
+  check.names = FALSE
+) |>
+  arrange(display_order)
+site_levels <- site_registry$site
+
+category_dictionary <- read.csv(
+  file.path(
+    project_root,
+    "audit/reconciliation/preparation06/category_support/h03_category_dictionary.csv"
+  ),
+  check.names = FALSE
+)
+category_levels <- category_dictionary$category_label
+category_codes <- category_dictionary$category_code
+names(category_codes) <- category_levels
+
+category_short <- c(
+  electric_indoor = "Indoor electric",
+  electric_outdoor = "Outdoor electric",
+  daylight_indoor = "Indoor daylight",
+  daylight_outdoor = "Outdoor daylight",
+  display = "Emissive display",
+  sleep_darkness = "Sleep darkness",
+  sleep_external_light = "External light during sleep"
+)
+
+reference_label <- "Electric light source indoors"
+reference_code <- unname(category_codes[[reference_label]])
+
+core_heterogeneity_levels <- c(
+  "Electric light source indoors",
+  "Daylight indoors",
+  "Daylight outdoors (including shade)",
+  "Emissive display light",
+  "Darkness during sleep"
+)
+
+working_tweedie_power <- 1.539919
+```
+
+::: {.callout-warning title="Stage 1 verdict — revised after bounded architecture pilots"}
+**The author-approved H03 primary architecture is now a population-averaged
+quasi-Tweedie mean model with participant-clustered uncertainty.** The signed
+hypothesis covers all seven prespecified primary-light-source categories. V0
+removed two categories, combined category association and site heterogeneity
+in one likelihood-ratio test, and described multiplicity differently from the
+code. The current candidate data support all seven pooled categories, although
+some category-by-site contrasts are support-non-estimable.
+
+A bounded, outcome-blinded-to-effects model-construction pilot showed that the
+initial Tweedie mixed model converged but was singular and failed important
+distributional checks. The replacement quasi-Tweedie mean model converged,
+was full rank, and produced a finite positive participant-cluster covariance.
+Only numerical adequacy diagnostics were inspected: no category estimate,
+confidence interval, omnibus statistic, p-value, significance decision, or
+claim was used to choose the architecture. The pilot record is reported below;
+this render itself fits no model and starts no Stage 2 analysis.
+:::
+
+## Scope and safeguards
+
+The measurement-methods audit was used only to trace the signed record, V0,
+normalized diary, approved one-hour metric, preparation evidence, and H02
+temporal specification. The Quarto-authoring workflow was used to make the
+contract executable and renderable. All scientific checks below run in R
+4.6.1. No H02 fitted value, prediction, significance result, or claim is used.
+
+The candidate counts are not Stage 2 fitted-model counts. Stage 2 must report
+the exact rows retained by every fitted model, even if they happen to equal
+these counts. This revision records the author's approved process; Stage 2 has
+not been started in this document.
+
+## Preregistered contract
+
+The signed AsPredicted record states exactly:
+
+> **H3: Hourly self-reported light exposure categories predict hourly geometric mean melanopic EDI.**
+
+— `preregistration/AsPredicted #273407.pdf`, PDF p. 1.
+
+The signed model on PDF p. 2 is:
+
+```text
+melEDI ~ Predictor + (Predictor | Site) + (1 | Site:Participant)
+```
+
+For H03, `Predictor` is the primary light-source category. The developed
+analysis plan restates the question as a relationship between hourly
+self-reported categories and hourly geometric melEDI and gives
+`melEDI ~ mH-LEA + (mH-LEA | Site) + (1 | Site:Participant)`. It warns that a
+random site effect may be unstable, but it does not authorize deleting
+categories, changing the primary test, or changing multiplicity families.
+
+### Evidence identities
+
+```{r}
+#| label: tbl-evidence-identities
+#| tbl-cap: "Controlling H03 evidence verified at render time."
+
+evidence_paths <- c(
+  signed_preregistration = "preregistration/AsPredicted #273407.pdf",
+  developed_analysis_plan = "preregistration/MeLiDos_ZaunerEtAl_analysis_plan.docx",
+  preregistration_contract = "audit/evidence/preregistration_contract.md",
+  migration_map = "audit/hypotheses/H01-H04_migration_map.md",
+  category_support_gate = "audit/hypotheses/H03_H04_category_support_gate.md",
+  h02_selected_temporal_specification = "artifacts/07_models/H02/selected_temporal_model_specification.csv",
+  v0_near_eye_source = "RQ2.qmd",
+  v0_chest_source = "RQ2_chest.qmd"
+)
+
+evidence_manifest <- tibble(
+  evidence = names(evidence_paths),
+  path = unname(evidence_paths),
+  sha256 = vapply(
+    file.path(project_root, unname(evidence_paths)),
+    digest::digest,
+    character(1),
+    algo = "sha256",
+    file = TRUE
+  )
+)
+
+stage1_gt(evidence_manifest) |>
+  cols_width(
+    evidence ~ pct(24),
+    path ~ pct(42),
+    sha256 ~ pct(34)
+  )
+```
+
+## What V0 implemented
+
+V0 means the submitted H03 implementation in `RQ2.qmd` and
+`RQ2_chest.qmd` and its frozen rendered outputs. It is a comparison target,
+not an approved analysis.
+
+### Exact V0 formulas — reconstructed, not fitted
+
+```{r}
+#| label: tbl-v0-formulas
+#| tbl-cap: "Evaluated V0 Wilkinson formulas. No model is fitted."
+
+v0_formulas <- list(
+  registered_exact = melEDI ~ light_source +
+    (light_source | site) + (1 | site:participant),
+  v0_full = geo.MEDI ~ site * lightsource_primary + (1 | Id),
+  v0_site_only = geo.MEDI ~ site + (1 | Id),
+  v0_additive = geo.MEDI ~ site + lightsource_primary + (1 | Id),
+  v0_context_only = geo.MEDI ~ lightsource_primary + (1 | Id)
+)
+
+v0_formula_contract <- enframe(
+  v0_formulas,
+  name = "model_id",
+  value = "formula"
+) |>
+  mutate(formula = vapply(formula, formula_text, character(1)))
+
+stage1_gt(v0_formula_contract) |>
+  cols_width(model_id ~ pct(23), formula ~ pct(77))
+```
+
+V0 floor-aggregated one-minute data to the hour, calculated arithmetic melEDI
+and a zero-aware geometric `geo.MEDI`, removed whole participant-days whose
+arithmetic melEDI was constant, and joined the diary within site, participant,
+and date. It did not require 30 valid minutes or persist a join-cardinality
+check. It fitted the four formulas above with `glmmTMB`, Tweedie log link,
+maximum likelihood, and sum coding for site except in the context-only fit.
+
+The stated confirmatory comparison was `v0_site_only` versus `v0_full`.
+That comparison adds the category block and all category-by-site interactions
+together; it is not the category-association test alone. The V0 additive-full
+comparison tested interaction, and the context-only/additive comparison tested
+site.
+
+### V0 category, reporting, and temporal reconstruction
+
+| Component | V0 implementation | Audit consequence |
+|---|---|---|
+| Categories | Set site/category cells with fewer than 20 rows to missing, then categories with fewer than 200 remaining rows to missing; manually removed external light during sleep; outdoor electric then fell out near eye and was manually removed from chest “for consistency” | Only five of seven registered categories entered the model; the rule was outcome- and placement-dependent |
+| Reported sample | 16,774 near-eye and 18,391 chest participant-hours in the frozen H03 tables | These are V0 row counts, not independent participants; they must not be substituted for current fitted samples |
+| Pooled contrasts | Four `trt.vs.ctrl` contrasts from `emmeans` | The code uses the Dunnett-X default, while the table calls the values FDR-adjusted |
+| Site contrasts | Effect contrasts adjusted within each category-specific `by` group | The table instead describes one `n = 9` site family; no cross-category family was declared |
+| Intervals | V0 removed asymptotic confidence-limit columns before display | Consequential V0 estimates were presented without 95% intervals |
+| Repetition | Participant intercept only | Participant-day clustering and remaining within-day dependence were omitted |
+| Contribution claims | Differences between overlapping marginal-R² values | These are not additive proportions of variance explained |
+| Chest prose | The near-eye numeric interpretation was copied verbatim into the chest notebook | Chest claims are not a valid interpretation of the chest fit |
+| Temporal outcome | Hourly arithmetic melEDI transformed with the zero-aware log | It does not match the registered hourly geometric outcome |
+| Temporal structure | Non-cyclic overall smooth, one AR start per participant, fREML AIC comparison, pointwise highlighted segments | It does not satisfy the accepted H02 temporal contract |
+
+The source evidence is `RQ2.qmd:104–471, 535–640` and the corresponding chest
+blocks. The migration reconciliation is
+`audit/hypotheses/H01-H04_migration_map.md:775–943`. The registered deviations
+are DEV-013, DEV-014, and DEV-022 through DEV-024.
+
+## Outcome-blind category and join audit
+
+This section fixes the category rules before displaying outcome-side candidate
+support. It uses the normalized diary only.
+
+```{r}
+#| label: h03-diary-audit
+
+diary_path <- file.path(
+  project_root,
+  "artifacts/06_model_data/normalized_inputs/lightexposurediary.rds"
+)
+diary_raw <- readRDS(diary_path)
+
+source_flag_names <- c(
+  "light_electric_indoor",
+  "light_electric_outdoor",
+  "light_daylight_indoor",
+  "light_daylight_outdoor",
+  "light_display",
+  "light_sleep_darkness",
+  "light_sleep_imission"
+)
+source_flag_for_category <- setNames(source_flag_names, category_levels)
+
+diary <- diary_raw |>
+  mutate(
+    site = factor(site, levels = site_levels),
+    local_date = as.Date(Date),
+    clock_minute = as.integer(format(interval_start_wall, "%H", tz = "UTC")) * 60L +
+      as.integer(format(interval_start_wall, "%M", tz = "UTC")),
+    light_source = factor(lightsource_primary, levels = category_levels),
+    light_source_code = unname(category_codes[as.character(light_source)]),
+    participant = interaction(site, Id, drop = TRUE, lex.order = TRUE),
+    participant_day = interaction(site, Id, local_date, drop = TRUE, lex.order = TRUE),
+    source_flag_n = rowSums(
+      across(all_of(source_flag_names), ~ as.integer(.x %in% TRUE)),
+      na.rm = TRUE
+    )
+  ) |>
+  rowwise() |>
+  mutate(
+    primary_flag_true = if (is.na(light_source)) {
+      NA
+    } else {
+      isTRUE(get(source_flag_for_category[[as.character(light_source)]]))
+    }
+  ) |>
+  ungroup()
+
+diary_eligible <- diary |>
+  filter(interval_analysis_eligible %in% TRUE, !(interval_quarantined %in% TRUE))
+
+key_columns <- c("site", "Id", "local_date", "clock_minute")
+
+diary_key_audit <- diary_eligible |>
+  count(across(all_of(key_columns)), name = "rows_per_key") |>
+  summarise(
+    Eligible_hours = sum(rows_per_key),
+    Distinct_local_hour_keys = n(),
+    Duplicate_keys = sum(rows_per_key > 1L),
+    Duplicate_rows_beyond_first = sum(pmax(rows_per_key - 1L, 0L)),
+    Non_hour_aligned_starts = sum(clock_minute %% 60L != 0L)
+  )
+
+diary_category_audit <- diary_eligible |>
+  summarise(
+    Eligible_hours = n(),
+    Hours_with_primary_category = sum(!is.na(light_source)),
+    Hours_missing_primary_category = sum(is.na(light_source)),
+    Hours_with_no_source_flag = sum(source_flag_n == 0L),
+    Hours_with_one_source_flag = sum(source_flag_n == 1L),
+    Hours_with_multiple_source_flags = sum(source_flag_n > 1L),
+    Recorded_primary_without_expected_flag = sum(primary_flag_true %in% FALSE, na.rm = TRUE)
+  )
+
+diary_overall_support <- diary_eligible |>
+  filter(!is.na(light_source)) |>
+  group_by(light_source) |>
+  summarise(
+    Hours = n(),
+    Participants = n_distinct(participant),
+    Participant_days = n_distinct(participant_day),
+    Sites = n_distinct(site),
+    .groups = "drop"
+  ) |>
+  complete(
+    light_source = factor(category_levels, levels = category_levels),
+    fill = list(Hours = 0L, Participants = 0L, Participant_days = 0L, Sites = 0L)
+  ) |>
+  mutate(
+    Category = unname(category_codes[as.character(light_source)]),
+    Pooled_rule = Hours >= 200L & Participants >= 20L & Sites >= 3L
+  ) |>
+  select(Category, Light_source = light_source, Hours, Participants, Participant_days, Sites, Pooled_rule)
+
+stopifnot(
+  diary_key_audit$Duplicate_keys == 0L,
+  diary_key_audit$Non_hour_aligned_starts == 0L,
+  diary_category_audit$Recorded_primary_without_expected_flag == 0L,
+  all(diary_overall_support$Pooled_rule)
+)
+```
+
+```{r}
+#| label: tbl-diary-cardinality
+#| tbl-cap: "Outcome-blind diary cardinality and source-flag encoding."
+
+bind_rows(
+  diary_key_audit |> pivot_longer(everything(), names_to = "Check", values_to = "Count"),
+  diary_category_audit |> pivot_longer(everything(), names_to = "Check", values_to = "Count")
+) |>
+  distinct(Check, .keep_all = TRUE) |>
+  stage1_gt() |>
+  fmt_integer(Count, use_seps = TRUE) |>
+  cols_width(Check ~ pct(70), Count ~ pct(30))
+```
+
+The primary category is a single seven-level factor and is mutually exclusive
+within an hour. The underlying source flags are not mutually exclusive:
+11,408 eligible hours contain more than one true source flag. That overlap is
+real questionnaire context, not duplicated outcome rows. The model uses the
+single declared primary category; it does not pivot the overlapping flags or
+count an hour more than once. Every non-missing primary category has its
+corresponding flag set to true.
+
+```{r}
+#| label: tbl-diary-category-support
+#| tbl-cap: "Outcome-blind support for every prespecified primary-light-source category."
+
+diary_overall_support |>
+  stage1_gt() |>
+  fmt_integer(c(Hours, Participants, Participant_days, Sites), use_seps = TRUE) |>
+  fmt_missing(everything(), missing_text = "—") |>
+  cols_label(Pooled_rule = "Pass pooled rule") |>
+  cols_width(
+    Category ~ pct(15),
+    Light_source ~ pct(37),
+    everything() ~ pct(9)
+  )
+```
+
+The two sleep categories are bedside sleep-environment contexts. They are not
+worn ocular exposure and will never be described that way.
+
+### Approved estimability rule
+
+1. Keep all seven categories in the dictionary, model frame, sample flow, and
+   pooled additive model. Set indoor electric light as the reference before
+   fitting.
+2. Permit a pooled category contrast only if its fitted frame has at least 200
+   hours, 20 participants, and three sites, remains connected to the reference,
+   and the additive design is full rank.
+3. Permit a site-specific contrast only if the target and indoor-electric
+   reference each have at least 20 hours and five participants at that site,
+   at least five participants report both categories, and the relevant design
+   is estimable.
+4. Keep unsupported categories visible. Mark only the affected contrast
+   `support-non-estimable`, with the failed support components; do not delete
+   the category after inspecting melEDI.
+5. Reapply these rules to every placement and sensitivity frame. A contrast
+   may therefore be estimable in the main frame but support-non-estimable in a
+   smaller paired or deletion frame.
+
+The normalized diary alone gives 57 supported category-by-site cells out of
+63. These thresholds are fixed before any association estimate is inspected.
+
+## Primary outcome and candidate model frames
+
+The proposed outcome is the accepted one-hour zero-aware geometric mean
+melEDI. An hour is available only with at least 30 valid one-minute melEDI
+values. The within-hour zero offset is 0.1 lx; missing observations are never
+treated as zero. The model preserves the local wall-clock hour, valid-minute
+support, state and measurement-context composition, diary interval, true-UTC
+interval start, participant-day, and placement.
+
+The current metric artifact exposes a unique local hour key rather than a
+true-UTC outcome key. The normalized diary has unique true-UTC and local-wall
+hour keys, so the audited join is one outcome hour to at most one eligible
+diary hour on site, participant, local date, and local clock minute. Stage 2
+will retain the diary's true-UTC interval start after that asserted join.
+
+```{r}
+#| label: h03-primary-candidate-audit
+
+primary_paths <- c(
+  Near_eye = "artifacts/06_model_data/base/metrics_glasses_one_hour_context.rds",
+  Chest = "artifacts/06_model_data/base/metrics_chest_one_hour_context.rds"
+)
+
+prepare_primary <- function(relative_path, placement) {
+  raw <- readRDS(file.path(project_root, relative_path))
+  key_counts <- raw |>
+    count(across(all_of(key_columns)), name = "rows_per_key")
+  stopifnot(!any(key_counts$rows_per_key > 1L))
+
+  joined <- raw |>
+    mutate(
+      site = factor(site, levels = site_levels),
+      local_date = as.Date(local_date),
+      participant = interaction(site, Id, drop = TRUE, lex.order = TRUE),
+      participant_day = interaction(site, Id, local_date, drop = TRUE, lex.order = TRUE)
+    ) |>
+    left_join(
+      diary_eligible |>
+        transmute(
+          across(all_of(key_columns)),
+          light_source,
+          light_source_code,
+          interval_start_utc,
+          source_flag_n,
+          diary_key_matched = TRUE
+        ),
+      by = key_columns,
+      relationship = "one-to-one"
+    ) |>
+    mutate(
+      placement = placement,
+      outcome_available = bin_admissible %in% TRUE & is.finite(metric_value_lx),
+      diary_key_matched = diary_key_matched %in% TRUE,
+      category_available = !is.na(light_source),
+      model_candidate = outcome_available & category_available
+    )
+
+  list(raw = raw, joined = joined, candidate = filter(joined, model_candidate))
+}
+
+placements <- imap(primary_paths, ~ prepare_primary(.x, gsub("_", "-", .y)))
+
+sample_summary <- map_dfr(placements, function(x) {
+  x$joined |>
+    summarise(
+      Placement = first(placement),
+      Grid_hours = n(),
+      Outcome_available = sum(outcome_available),
+      Insufficient_metric_support = sum(!outcome_available),
+      No_eligible_diary_key = sum(outcome_available & !diary_key_matched),
+      Diary_key_but_primary_missing = sum(
+        outcome_available & diary_key_matched & !category_available
+      ),
+      Candidate_hours = sum(model_candidate),
+      Candidate_participants = n_distinct(participant[model_candidate]),
+      Candidate_participant_days = n_distinct(participant_day[model_candidate]),
+      Candidate_sites = n_distinct(site[model_candidate]),
+      Exact_zero_hours = sum(model_candidate & metric_value_lx == 0)
+    )
+})
+
+metric_support_audit <- map_dfr(placements, function(x) {
+  x$joined |>
+    summarise(
+      Placement = first(placement),
+      Metric_ids = n_distinct(metric),
+      Metric = paste(unique(metric), collapse = "; "),
+      Zero_offsets = n_distinct(zero_offset),
+      Zero_offset_lx = paste(unique(zero_offset), collapse = "; "),
+      Admissible_below_30_minutes = sum(
+        outcome_available & valid_medi_wall_minutes < 30L,
+        na.rm = TRUE
+      ),
+      Unavailable_at_or_above_30_minutes = sum(
+        !outcome_available & valid_medi_wall_minutes >= 30L,
+        na.rm = TRUE
+      ),
+      Candidate_state_boundary_hours = sum(
+        model_candidate & spans_diary_state_boundary,
+        na.rm = TRUE
+      ),
+      Candidate_context_boundary_hours = sum(
+        model_candidate & spans_measurement_context_boundary,
+        na.rm = TRUE
+      ),
+      Candidate_fall_back_hours = sum(
+        model_candidate & dst_fold_wall_minutes > 0,
+        na.rm = TRUE
+      )
+    )
+})
+
+sequence_audit <- map_dfr(placements, function(x) {
+  sequence_rows <- x$candidate |>
+    arrange(participant_day, clock_minute) |>
+    group_by(participant_day) |>
+    mutate(
+      fold_hour = dst_fold_wall_minutes > 0,
+      gap_from_previous = row_number() > 1L &
+        (clock_minute - lag(clock_minute, default = first(clock_minute))) != 60L,
+      reset_sequence = row_number() == 1L | gap_from_previous | fold_hour |
+        lag(fold_hour, default = FALSE),
+      ar_sequence_index = cumsum(reset_sequence)
+    ) |>
+    ungroup() |>
+    mutate(
+      ar_sequence = interaction(
+        participant_day,
+        ar_sequence_index,
+        drop = TRUE,
+        lex.order = TRUE
+      )
+    )
+
+  lengths <- sequence_rows |>
+    count(placement, ar_sequence, name = "sequence_hours")
+
+  sequence_rows |>
+    summarise(
+      Placement = first(placement),
+      Candidate_hours = n(),
+      Participant_days = n_distinct(participant_day),
+      AR_sequences = n_distinct(ar_sequence),
+      Gap_resets = sum(gap_from_previous),
+      Fall_back_hours = sum(fold_hour),
+      Singleton_sequences = sum(lengths$sequence_hours == 1L),
+      Median_sequence_hours = stats::median(lengths$sequence_hours),
+      Maximum_sequence_hours = max(lengths$sequence_hours)
+    )
+})
+
+stopifnot(
+  all(metric_support_audit$Metric_ids == 1L),
+  all(metric_support_audit$Zero_offsets == 1L),
+  all(metric_support_audit$Zero_offset_lx == "0.1"),
+  all(metric_support_audit$Admissible_below_30_minutes == 0L),
+  all(metric_support_audit$Unavailable_at_or_above_30_minutes == 0L)
+)
+```
+
+```{r}
+#| label: tbl-primary-candidate-flow
+#| tbl-cap: "Current H03 candidate flow before any model is fitted."
+
+sample_summary |>
+  stage1_gt() |>
+  fmt_integer(-Placement, use_seps = TRUE) |>
+  cols_width(Placement ~ pct(12), everything() ~ pct(9))
+```
+
+The 4,977 near-eye and 5,409 chest exact-zero hours confirm that a model for
+strictly positive outcomes would be inadmissible. These are overall
+distributional-support counts, not category results.
+
+```{r}
+#| label: tbl-metric-support
+#| tbl-cap: "One-hour metric, support, boundary, and fall-back audit."
+
+metric_support_audit |>
+  stage1_gt() |>
+  fmt_integer(
+    c(
+      Metric_ids,
+      Zero_offsets,
+      Admissible_below_30_minutes,
+      Unavailable_at_or_above_30_minutes,
+      Candidate_state_boundary_hours,
+      Candidate_context_boundary_hours,
+      Candidate_fall_back_hours
+    ),
+    use_seps = TRUE
+  ) |>
+  cols_width(Placement ~ pct(10), Metric ~ pct(25), everything() ~ pct(8))
+```
+
+Boundary-spanning hours remain in the primary candidate because the approved
+metric preserves their state and measurement-context composition. Stage 2
+will report them, inspect their influence, and repeat the analysis after
+excluding boundary-spanning hours as a named sensitivity. The sleep categories
+remain bedside-environment contexts in both frames.
+
+```{r}
+#| label: tbl-ar-sequences
+#| tbl-cap: "Precomputed regular within-day sequence boundaries for the exploratory temporal AR(1) term."
+
+sequence_audit |>
+  stage1_gt() |>
+  fmt_integer(-c(Placement, Median_sequence_hours), use_seps = TRUE) |>
+  fmt_number(Median_sequence_hours, decimals = 1) |>
+  cols_width(Placement ~ pct(14), everything() ~ pct(11))
+```
+
+Every sequence starts at a participant-day boundary, after an omitted or
+non-consecutive hour, at a fall-back hour, and immediately after a fall-back
+hour. Unsupported hours therefore break the sequence. Category changes do not
+break it. These sequences belong to the exploratory GAM/GAMM only; the primary
+quasi-Tweedie covariance clusters the complete record by participant and does
+not impose an AR(1) correlation shape.
+
+### Category and category-by-site candidate support
+
+```{r}
+#| label: h03-category-cell-audit
+
+candidate_category_support <- map_dfr(placements, function(x) {
+  x$candidate |>
+    group_by(placement, light_source) |>
+    summarise(
+      Hours = n(),
+      Participants = n_distinct(participant),
+      Participant_days = n_distinct(participant_day),
+      Sites = n_distinct(site),
+      .groups = "drop"
+    ) |>
+    complete(
+      placement,
+      light_source = factor(category_levels, levels = category_levels),
+      fill = list(Hours = 0L, Participants = 0L, Participant_days = 0L, Sites = 0L)
+    ) |>
+    mutate(
+      Category = unname(category_codes[as.character(light_source)]),
+      Pooled_rule = Hours >= 200L & Participants >= 20L & Sites >= 3L
+    ) |>
+    select(
+      Placement = placement,
+      Category,
+      Light_source = light_source,
+      Hours,
+      Participants,
+      Participant_days,
+      Sites,
+      Pooled_rule
+    )
+})
+
+candidate_cell_support <- map_dfr(placements, function(x) {
+  dat <- x$candidate
+  observed_sites <- unique(as.character(dat$site))
+
+  cell <- dat |>
+    group_by(placement, site, light_source) |>
+    summarise(
+      Hours = n(),
+      Participants = n_distinct(participant),
+      Participant_days = n_distinct(participant_day),
+      .groups = "drop"
+    ) |>
+    complete(
+      placement,
+      site = factor(site_levels, levels = site_levels),
+      light_source = factor(category_levels, levels = category_levels),
+      fill = list(Hours = 0L, Participants = 0L, Participant_days = 0L)
+    )
+
+  reference_participants <- dat |>
+    filter(light_source == reference_label) |>
+    distinct(placement, site, participant) |>
+    group_by(placement, site) |>
+    summarise(reference_participants = list(as.character(participant)), .groups = "drop")
+
+  target_participants <- dat |>
+    distinct(placement, site, light_source, participant) |>
+    group_by(placement, site, light_source) |>
+    summarise(target_participants = list(as.character(participant)), .groups = "drop")
+
+  reference_counts <- cell |>
+    filter(light_source == reference_label) |>
+    transmute(
+      placement,
+      site,
+      Reference_hours = Hours,
+      Reference_participants = Participants
+    )
+
+  cell |>
+    left_join(reference_counts, by = c("placement", "site")) |>
+    left_join(reference_participants, by = c("placement", "site")) |>
+    left_join(target_participants, by = c("placement", "site", "light_source")) |>
+    mutate(
+      target_participants = map(
+        target_participants,
+        ~ if (is.null(.x)) character() else .x
+      ),
+      reference_participants = map(
+        reference_participants,
+        ~ if (is.null(.x)) character() else .x
+      ),
+      Shared_participants = map2_int(
+        target_participants,
+        reference_participants,
+        ~ length(intersect(.x, .y))
+      ),
+      Site_present = as.character(site) %in% observed_sites,
+      Cell_rule = Site_present & Hours >= 20L & Participants >= 5L &
+        Reference_hours >= 20L & Reference_participants >= 5L &
+        Shared_participants >= 5L,
+      Category = unname(category_codes[as.character(light_source)])
+    ) |>
+    select(
+      Placement = placement,
+      site,
+      Category,
+      Light_source = light_source,
+      Hours,
+      Participants,
+      Participant_days,
+      Reference_hours,
+      Reference_participants,
+      Shared_participants,
+      Site_present,
+      Cell_rule
+    )
+})
+
+rank_audit <- map_dfr(placements, function(x) {
+  dat <- x$candidate |>
+    mutate(
+      site = droplevels(factor(site, levels = site_levels)),
+      light_source = factor(light_source, levels = category_levels),
+      site_source_cell = interaction(site, light_source, drop = TRUE, lex.order = TRUE)
+    )
+
+  standard_designs <- map_dfr(
+    list(
+      additive = ~ site + light_source,
+      literal_interaction = ~ site * light_source,
+      observed_cell_means = ~ 0 + site_source_cell
+    ),
+    function(formula) {
+      mm <- model.matrix(formula, data = dat)
+      tibble(
+        Placement = unique(dat$placement),
+        Design = formula_text(formula),
+        Columns = ncol(mm),
+        Rank = qr(mm)$rank,
+        Full_rank = qr(mm)$rank == ncol(mm)
+      )
+    },
+    .id = "Design_id"
+  )
+
+  core_dat <- dat |>
+    filter(as.character(light_source) %in% core_heterogeneity_levels) |>
+    mutate(
+      light_source_core = factor(
+        as.character(light_source),
+        levels = core_heterogeneity_levels
+      )
+    )
+  core_formula <- ~ site * light_source_core
+  core_matrix <- model.matrix(core_formula, data = core_dat)
+
+  bind_rows(
+    standard_designs,
+    tibble(
+      Placement = unique(core_dat$placement),
+      Design_id = "core_literal_interaction",
+      Design = formula_text(core_formula),
+      Columns = ncol(core_matrix),
+      Rank = qr(core_matrix)$rank,
+      Full_rank = qr(core_matrix)$rank == ncol(core_matrix)
+    )
+  )
+})
+
+stopifnot(
+  all(candidate_category_support$Pooled_rule),
+  all(rank_audit$Full_rank[rank_audit$Placement == "Near-eye"]),
+  all(
+    rank_audit$Full_rank[
+      rank_audit$Placement == "Chest" & rank_audit$Design_id != "literal_interaction"
+    ]
+  ),
+  with(
+    filter(rank_audit, Placement == "Chest", Design_id == "literal_interaction"),
+    Columns - Rank == 1L && !Full_rank
+  )
+)
+```
+
+```{r}
+#| label: tbl-candidate-category-support
+#| tbl-cap: "All-available candidate support by placement and category; no association is estimated."
+
+candidate_category_support |>
+  mutate(Light_source = unname(category_short[Category])) |>
+  stage1_gt(groupname_col = "Placement") |>
+  fmt_integer(c(Hours, Participants, Participant_days, Sites), use_seps = TRUE) |>
+  cols_label(Light_source = "Primary light source", Pooled_rule = "Pass pooled rule") |>
+  cols_width(
+    Category ~ pct(18),
+    Light_source ~ pct(26),
+    everything() ~ pct(11)
+  )
+```
+
+All seven categories pass the pooled rule in both all-available candidates.
+Outdoor electric light is close to the 200-hour boundary near eye (203 hours),
+so sparse-cell and influence checks are consequential.
+
+```{r}
+#| label: tbl-design-rank
+#| tbl-cap: "Fixed-effect rank before fitting."
+
+rank_audit |>
+  stage1_gt(groupname_col = "Placement") |>
+  cols_width(Design_id ~ pct(22), Design ~ pct(43), everything() ~ pct(12))
+```
+
+The near-eye literal seven-category interaction is rank 63 of 63. Chest has
+eight observed sites and no external-light-during-sleep candidate hour at
+FUSPCEU; its literal interaction is rank 55 of 56. The precomputed
+`site_source_cell` factor contains only observed cells and is rank 55 of 55.
+The approved chest heterogeneity model therefore uses that observed-cell
+parameterization rather than allowing the fitting engine to silently drop an
+aliased coefficient. The predeclared five-category fallback designs are also
+full rank: 45 of 45 near eye and 40 of 40 chest.
+
+```{r}
+#| label: tbl-unsupported-cells
+#| tbl-cap: "Category-by-site cells that fail the approved rule in the current candidates."
+
+unsupported_cells <- candidate_cell_support |>
+  filter(!Cell_rule) |>
+  left_join(
+    site_registry |>
+      transmute(site = factor(site, levels = site_levels), Site = display_name),
+    by = "site"
+  ) |>
+  mutate(
+    Primary_light_source = unname(category_short[Category]),
+    Status = case_when(
+      !Site_present ~ "Placement not observed",
+      Hours == 0L ~ "No candidate hours",
+      TRUE ~ "Support-non-estimable"
+    )
+  ) |>
+  select(
+    Placement,
+    Site,
+    Primary_light_source,
+    Hours,
+    Participants,
+    Participant_days,
+    Reference_hours,
+    Reference_participants,
+    Shared_participants,
+    Status
+  )
+
+stage1_gt(unsupported_cells, groupname_col = "Placement") |>
+  fmt_integer(
+    c(
+      Hours,
+      Participants,
+      Participant_days,
+      Reference_hours,
+      Reference_participants,
+      Shared_participants
+    ),
+    use_seps = TRUE
+  ) |>
+  cols_width(
+    Site ~ pct(18),
+    Primary_light_source ~ pct(22),
+    Status ~ pct(18),
+    everything() ~ pct(8)
+  )
+```
+
+Under the approved rule, 53 of 63 near-eye cells are supported. Chest has 48
+supported cells among the 56 site/category combinations at its eight observed
+sites; seven MPI combinations are not applicable, and eight observed-site
+combinations are support-non-estimable (including the zero-hour FUSPCEU
+external-sleep cell).
+
+```{r}
+#| label: tbl-core-heterogeneity-support
+#| tbl-cap: "Outcome-blind site support for the predeclared core-category heterogeneity fallback."
+
+core_heterogeneity_support <- candidate_cell_support |>
+  filter(
+    Site_present,
+    as.character(Light_source) %in% core_heterogeneity_levels
+  ) |>
+  group_by(Placement, Light_source) |>
+  summarise(
+    Observed_sites = n(),
+    Supported_sites = sum(Cell_rule),
+    .groups = "drop"
+  ) |>
+  mutate(
+    Primary_light_source = unname(category_short[
+      unname(category_codes[as.character(Light_source)])
+    ]),
+    Meets_core_rule = Supported_sites >= Observed_sites - 1L
+  ) |>
+  select(
+    Placement,
+    Primary_light_source,
+    Observed_sites,
+    Supported_sites,
+    Meets_core_rule
+  )
+
+stopifnot(all(core_heterogeneity_support$Meets_core_rule))
+
+stage1_gt(core_heterogeneity_support, groupname_col = "Placement") |>
+  fmt_integer(c(Observed_sites, Supported_sites), use_seps = TRUE) |>
+  cols_width(Primary_light_source ~ pct(40), everything() ~ pct(20))
+```
+
+The complete cell counts are retained below so that no category disappears
+behind the unsupported-cell summary.
+
+```{r}
+#| label: tbl-complete-cell-support
+#| tbl-cap: "Complete candidate category-by-site hours, participants, participant-days, and shared-reference support."
+
+complete_cell_display <- candidate_cell_support |>
+  left_join(
+    site_registry |>
+      transmute(site = factor(site, levels = site_levels), Site = display_name),
+    by = "site"
+  ) |>
+  mutate(
+    Primary_light_source = unname(category_short[Category]),
+    Support = case_when(
+      !Site_present ~ "Not applicable",
+      Cell_rule ~ "Supported",
+      TRUE ~ "Support-non-estimable"
+    )
+  ) |>
+  select(
+    Placement,
+    Site,
+    Primary_light_source,
+    Hours,
+    Participants,
+    Participant_days,
+    Shared_participants,
+    Support
+  )
+
+stage1_gt(complete_cell_display, groupname_col = "Placement") |>
+  fmt_integer(c(Hours, Participants, Participant_days, Shared_participants), use_seps = TRUE) |>
+  cols_width(
+    Site ~ pct(20),
+    Primary_light_source ~ pct(25),
+    Support ~ pct(20),
+    everything() ~ pct(9)
+  )
+```
+
+## Estimands and approved confirmatory model
+
+### Two-reference reporting contract
+
+Let $\eta_{sc}=\log(\mu_{sc})$ be the fitted log mean and $\mu_{sc}$ the
+model-estimated expected zero-inclusive one-hour melEDI for site $s$ and
+light-source category $c$. The report will use
+**site-standardized** for an estimate standardized to a prespecified reference
+distribution that assigns each included site weight $1/S$. This is not a
+fictional “average site” and is not an observation-frequency-weighted average.
+Here $S=9$ for near eye and $S=8$ for chest.
+
+Author amendment, 2026-08-07: equal-site standardization is performed on the
+fitted link scale and back-transformed once. It is therefore the geometric
+mean of the fitted site-specific expected values. This supersedes the earlier
+response-scale arithmetic averaging rule.
+
+The indoor-electric category is the substantive reference throughout. Define
+
+$$
+\widetilde\mu_c^{\mathrm{site}}
+= \exp\!\left(\frac{1}{S}\sum_{s=1}^{S}\eta_{sc}\right)
+= \left(\prod_{s=1}^{S}\mu_{sc}\right)^{1/S},\qquad
+A = \widetilde\mu_{\mathrm{indoor}}^{\mathrm{site}},\qquad
+R_c = \frac{\widetilde\mu_c^{\mathrm{site}}}{A},\qquad
+D_{sc} = \frac{\mu_{sc}}{\widetilde\mu_c^{\mathrm{site}}}.
+$$
+
+Thus every supported site/category mean has the V0-recognizable but corrected
+factorization $\mu_{sc}=A\times R_c\times D_{sc}$: the absolute anchor is the
+site-standardized indoor-electric mean, $R_c$ compares each category with that
+indoor reference, and $D_{sc}$ compares a site/category cell with the
+site-standardized mean for the same category. The output will show the derived
+cell mean as well as these interpretable multipliers; readers will not have to
+reconstruct values by multiplication. Raw coding coefficients will not be
+presented as the scientific estimates.
+
+| Estimand | Exact definition | Inferential role |
+|---|---|---|
+| Primary category omnibus | Participant-cluster-robust joint Wald $F$ test that the six non-reference category coefficients in the additive near-eye mean model are zero | H03-F1; category association adjusted for fixed site, without an interaction |
+| Indoor anchor | $A$, the site-standardized expected one-hour melEDI under indoor electric light | Absolute reference in melEDI lx with 95% CI |
+| Category contrast | $R_c$, each site-standardized category mean divided by the site-standardized indoor-electric mean | Six planned ratios in H03-F2, with 95% CIs |
+| Site heterogeneity omnibus | Participant-cluster-robust joint Wald $F$ test of all estimable site-by-category interaction restrictions | H03-F3; separate from the primary category omnibus |
+| Site/category mean | $\mu_{sc}$ for every supported cell | Report in melEDI lx with 95% CI; unsupported cells remain labelled |
+| Site deviation | $D_{sc}$, a site/category mean divided by that category's site-standardized mean | Supported deviations form H03-F4 |
+| Within-site category ratio | $\mu_{sc}/\mu_{s,\mathrm{indoor}}$ | Additional practical contrast, explicitly labelled and kept separate from $R_c$ |
+
+The primary analysis uses near-eye data. Chest is complementary and is never
+pooled with near-eye data. Site names, order, and colours follow the
+submitted-manuscript registry. All category estimates use indoor electric as
+reference; all cross-site estimates use the site-standardized reference above.
+
+### Exact model formulas — declared, not fitted in this render
+
+```{r}
+#| label: tbl-approved-primary-formulas
+#| tbl-cap: "Evaluated approved, companion, fallback, secondary, and rejected-pilot Wilkinson formulas. No model is fitted in this render."
+
+approved_primary_formulas <- list(
+  primary_population_mean = geo_medi_1h ~ site + light_source,
+  full_site_heterogeneity = geo_medi_1h ~ site * light_source,
+  chest_observed_cell_heterogeneity = geo_medi_1h ~ 0 + site_source_cell,
+  fallback_core_site_heterogeneity = geo_medi_1h ~ site * light_source_core,
+  secondary_mundlak_audit = geo_medi_1h ~
+    site + light_source +
+    between_source_1 + between_source_2 + between_source_3 +
+    between_source_4 + between_source_5 + between_source_6,
+  rejected_mixed_dependence_pilot = geo_medi_1h ~
+    site + light_source +
+    (1 | participant) + (1 | participant_day) +
+    ar1(ar_step_factor + 0 | ar_sequence)
+)
+
+approved_formula_contract <- enframe(
+  approved_primary_formulas,
+  name = "model_id",
+  value = "formula"
+) |>
+  mutate(formula = vapply(formula, formula_text, character(1)))
+
+stage1_gt(approved_formula_contract) |>
+  cols_width(model_id ~ pct(29), formula ~ pct(71))
+```
+
+The primary model is `primary_population_mean`. The full near-eye
+heterogeneity companion has 48 interaction degrees of freedom. Because chest
+has one structurally absent site/category cell, its full companion uses the
+rank-complete 55-cell parameterization and a 41-degree-of-freedom robust
+linear-hypothesis test of departures from additivity.
+
+The full interaction receives a results-blind architecture gate before any
+interaction estimate or p-value is inspected. It must converge, retain the
+declared rank, yield a finite positive covariance for the tested restrictions,
+have tolerable condition numbers and cluster leverage, and produce finite
+intervals for supported cells. If it fails, the predeclared fallback is a
+**core-category heterogeneity** model with indoor electric, indoor daylight,
+outdoor daylight, emissive display, and sleep darkness. These five categories
+met the outcome-blind site-support rule at all or all but one observed site;
+the fallback reduces the near-eye interaction block from 48 to 32 degrees of
+freedom and the chest block to 28. Outdoor electric and external light during
+sleep remain in the seven-category primary additive model, pooled contrasts,
+sample flow, and descriptive displays. They are not collapsed because neither
+has a construct-equivalent category. A fallback heterogeneity result therefore
+answers a narrower five-category question and cannot be described as the
+seven-category heterogeneity test.
+
+The `secondary_mundlak_audit` adds each participant's proportions in the six
+non-reference categories. It separates within-participant category contrasts
+from between-participant reporting composition and is secondary because its
+overall covariance was much more ill-conditioned in the architecture pilot.
+It cannot replace the population-averaged primary result.
+
+### Mean, covariance, tests, and intervals
+
+- **Mean model:** `stats::glm()` with
+  `statmod::tweedie(var.power = 1.539919, link.power = 0)`. The log link models
+  the expected zero-inclusive one-hour melEDI. The variance power was frozen
+  from the authorized architecture pilot before inferential extraction and is
+  used unchanged for near eye, chest, and declared comparison frames.
+- **Dependence and covariance:** uncertainty uses
+  `sandwich::vcovCL(..., cluster = participant, type = "HC1", cadjust = TRUE,
+  fix = FALSE)`. A site-prefixed participant is the independent cluster; all
+  of that participant's hours and days may be dependent without imposing
+  random-effect or AR(1) variance components.
+- **Finite-cluster reference:** a one-parameter contrast uses a $t$
+  distribution with $G-1$ degrees of freedom. A $q$-restriction omnibus uses
+  $F=W/q$ with $(q,G-1)$ degrees of freedom, where $W$ is the sandwich Wald
+  quadratic form and $G$ is the number of fitted participants. Stage 2 will
+  store the exact restriction matrix used by every omnibus.
+- **Coding:** `light_source` is treatment-coded with indoor electric first;
+  site is sum-coded internally. The reported site-standardized means and
+  contrasts are explicit equal-site functions of the complete prediction
+  grid, so they do not depend on interpreting an arbitrary site coefficient.
+- **Standardization:** predict every site/category combination on the fitted
+  log-mean scale, average the site linear predictors with weight $1/S$, then
+  apply the inverse link once before forming ratios. Automatic
+  `type = "response"` labels are not trusted for the power-link family; the
+  log inverse link is applied and tested explicitly.
+- **Intervals:** two-sided 95% cluster-robust intervals use the full robust
+  covariance and the delta method on log means/log ratios before transformation
+  to melEDI lx or ratios. A missing, non-positive-definite, or unstable
+  consequential covariance is reported as non-estimable rather than repaired.
+- **Unavailable likelihood summaries:** quasi likelihood supplies no valid
+  log likelihood, likelihood-ratio test, AIC, mixed-model random-effect SD,
+  ICC, marginal/conditional mixed-model $R^2$, or likelihood-based variance
+  decomposition. None will be manufactured for the primary analysis. The
+  exploratory GAM/GAMM section below has its own explicitly defined fit and
+  variance summaries.
+
+### Bounded architecture-pilot record
+
+The following values are numerical construction diagnostics from the author's
+authorized temporary pilots. No association estimate or inferential decision
+was inspected to select the architecture.
+
+```{r}
+#| label: tbl-architecture-pilots
+#| tbl-cap: "Bounded near-eye model-construction pilots; diagnostic values only."
+
+architecture_pilots <- tribble(
+  ~Model, ~Numerical_status, ~Dependence_or_covariance, ~Diagnostic_signal, ~Disposition,
+  "Tweedie mixed model with participant, participant-day, and AR(1)",
+  "Converged; optimizer code 0; positive-definite Hessian",
+  "Participant SD 0.418; participant-day SD 0.000272; AR SD 2.534; rho 0.835",
+  "Singular; zero ratio 1.073 and residual-uniformity/zero tests p < 0.001",
+  "Rejected as primary",
+  "Population-averaged quasi-Tweedie",
+  "Converged in 7 iterations; rank 15/15",
+  "140 participant clusters; robust minimum eigenvalue 0.00175; condition number 162 (category block 46.7)",
+  "Lag-1 Pearson residual correlation 0.478; maximum cluster-score share 0.334",
+  "Approved primary; cluster influence is mandatory",
+  "Mundlak within-between quasi-Tweedie",
+  "Converged in 8 iterations; rank 21/21",
+  "140 participant clusters; robust minimum eigenvalue 0.00132; condition number 4,445 (category block 68.8)",
+  "Lag-1 Pearson residual correlation 0.492; maximum cluster-score share 0.313",
+  "Secondary audit only"
+)
+
+stage1_gt(architecture_pilots) |>
+  cols_width(
+    Model ~ pct(18),
+    Numerical_status ~ pct(18),
+    Dependence_or_covariance ~ pct(25),
+    Diagnostic_signal ~ pct(22),
+    Disposition ~ pct(17)
+  )
+```
+
+The nonzero residual autocorrelation in the quasi models is not treated as if
+it vanished: participant clustering is deliberately robust to arbitrary
+within-participant correlation. It does, however, make the 140 participants,
+not the 17,935 hours, the inferential replication count. Robust covariance
+does not protect against a wrong conditional-mean formula, severe cluster
+leverage, or too few effective clusters; those remain explicit failure gates.
+
+```{r}
+#| label: tbl-resampling-feasibility-pilot
+#| tbl-cap: "Authorized 50-replicate site-stratified participant-bootstrap feasibility pilot."
+
+resampling_feasibility <- tribble(
+  ~Model, ~Replicates, ~Successful, ~Convergence_failures, ~Rank_failures, ~Covariance_failures,
+  "Population-averaged quasi-Tweedie", 50L, 50L, 0L, 0L, 0L,
+  "Mundlak within-between quasi-Tweedie", 50L, 50L, 0L, 0L, 0L
+)
+
+stage1_gt(resampling_feasibility) |>
+  fmt_integer(-Model, use_seps = TRUE)
+```
+
+The two-model pilot took 11.3 seconds. Linear extrapolation gives about 226
+seconds for 1,000 replicates or 452 seconds (7.5 minutes) for 2,000 on the same
+machine. This authorizes no production bootstrap: any production run remains
+subject to the separate compute gate.
+
+## Multiplicity contract
+
+The primary near-eye families are fixed before fitting:
+
+| Family | Members | Adjustment and decision |
+|---|---:|---|
+| H03-F1-omnibus | One six-restriction category omnibus | Raw participant-cluster-robust Wald-F p; alpha 0.05 |
+| H03-F2-context-contrasts | Six supported category-versus-indoor-electric ratios | One BH vector across all supported contrasts; adjusted p < 0.05 |
+| H03-F3-site-heterogeneity | One robust interaction/additivity-restriction omnibus | Raw participant-cluster-robust Wald-F p; alpha 0.05; explicitly relabelled as five-category heterogeneity if the fallback is required |
+| H03-F4-site-context-contrasts | Every supported site deviation in the accepted heterogeneity model: 53 candidate members for the full seven-category near-eye model or 44 for the predeclared five-category fallback | One BH vector across the complete supported set selected by the results-blind architecture gate; adjusted p < 0.05 |
+
+Chest, paired/common-sample, gap-timing-unaware, boundary, distributional,
+and deletion analyses use separately labelled complementary or sensitivity
+families. They never enter H03-F1 through H03-F4 and cannot upgrade the primary
+claim. Raw and adjusted numeric p-values remain at full precision in source
+artifacts.
+
+Every displayed p-value will use a leading zero and three decimals, use
+`<0.001` only when strictly below 0.001, and be bold only when significant
+under the explicitly labelled raw or BH-adjusted rule. Dunnett-X may be shown
+only as a named shared-control sensitivity and will not be called BH.
+
+Site/category means and within-site category-versus-indoor ratios are practical
+descriptive estimands with 95% intervals. Unless they are members of H03-F2 or
+H03-F4 as defined above, they receive no significance label or unplanned
+p-value.
+
+## Paired placement and data-preparation sensitivities
+
+### Paired/common sample
+
+```{r}
+#| label: h03-paired-candidate
+
+near_keys <- placements$Near_eye$candidate |>
+  select(all_of(key_columns), light_source, participant, participant_day)
+chest_keys <- placements$Chest$candidate |>
+  select(all_of(key_columns), light_source, participant, participant_day)
+
+paired_candidate <- inner_join(
+  near_keys,
+  chest_keys,
+  by = key_columns,
+  suffix = c("_near", "_chest"),
+  relationship = "one-to-one"
+)
+stopifnot(
+  all(
+    as.character(paired_candidate$light_source_near) ==
+      as.character(paired_candidate$light_source_chest)
+  )
+)
+
+paired_summary <- paired_candidate |>
+  summarise(
+    Complete_hour_pairs = n(),
+    Paired_participants = n_distinct(participant_near),
+    Paired_participant_days = n_distinct(participant_day_near),
+    Sites = n_distinct(site)
+  )
+
+paired_category_support <- paired_candidate |>
+  mutate(light_source = light_source_near) |>
+  group_by(light_source) |>
+  summarise(
+    Hours = n(),
+    Participants = n_distinct(participant_near),
+    Participant_days = n_distinct(participant_day_near),
+    Sites = n_distinct(site),
+    .groups = "drop"
+  ) |>
+  complete(
+    light_source = factor(category_levels, levels = category_levels),
+    fill = list(Hours = 0L, Participants = 0L, Participant_days = 0L, Sites = 0L)
+  ) |>
+  mutate(
+    Category = unname(category_codes[as.character(light_source)]),
+    Primary_light_source = unname(category_short[Category]),
+    Pooled_rule = Hours >= 200L & Participants >= 20L & Sites >= 3L
+  ) |>
+  select(Category, Primary_light_source, Hours, Participants, Participant_days, Sites, Pooled_rule)
+```
+
+```{r}
+#| label: tbl-paired-candidate
+#| tbl-cap: "Exact paired/common candidate and category support before fitting."
+
+paired_summary |>
+  stage1_gt() |>
+  fmt_integer(everything(), use_seps = TRUE)
+
+paired_category_support |>
+  stage1_gt() |>
+  fmt_integer(c(Hours, Participants, Participant_days, Sites), use_seps = TRUE) |>
+  cols_width(
+    Category ~ pct(20),
+    Primary_light_source ~ pct(30),
+    everything() ~ pct(10)
+  )
+```
+
+The paired/common sample contains 14,103 complete hourly pairs, 111
+participants, 631 participant-days, and eight sites. Outdoor electric light
+has 162 paired hours and therefore fails the approved 200-hour contrast rule
+in this smaller frame. It remains in the paired model and sample flow, but its
+paired category contrast and identity-plot point will be marked
+support-non-estimable.
+
+Near-eye and chest models will be fitted separately to this identical paired
+frame. When matched site-standardized category means and indoor-referenced
+ratios share the same interpretation,
+the Stage 3 display will put near-eye on the horizontal axis and chest on the
+vertical axis, use a 45-degree identity line and null reference lines, and show
+component 95% intervals in the figure or adjacent table. It is a concordance
+display, not pooling and not evidence of placement equivalence.
+
+### Gap-timing-unaware dataset
+
+The **gap-timing-unaware dataset** still passed the general 50%-per-hour and
+80%-per-day coverage rules. The name means that the timing of remaining
+missing observations is not used for an additional metric-specific
+adjustment; it does not mean that gaps, missingness, or coverage were ignored.
+For contrast, the approved preparation of the primary dataset could be
+interpreted as time-sensitive where missing-observation timing matters. From
+here onward this document calls it simply the primary dataset.
+
+```{r}
+#| label: h03-gap-timing-unaware-candidate
+
+gap_path <- file.path(
+  project_root,
+  "artifacts/06_model_data/scenarios/manuscript_prepared_data/one_hour_data.rds"
+)
+gap_raw <- readRDS(gap_path)
+
+gap_candidate <- gap_raw |>
+  mutate(
+    site = factor(site, levels = site_levels),
+    local_date = as.Date(local_date),
+    clock_minute = as.integer(
+      format(local_clock_datetime_utc_proxy, "%H", tz = "UTC")
+    ) * 60L +
+      as.integer(format(local_clock_datetime_utc_proxy, "%M", tz = "UTC")),
+    participant = interaction(site, Id, drop = TRUE, lex.order = TRUE),
+    participant_day = interaction(site, Id, local_date, drop = TRUE, lex.order = TRUE)
+  ) |>
+  left_join(
+    diary_eligible |>
+      select(all_of(key_columns), light_source, light_source_code),
+    by = key_columns,
+    relationship = "many-to-one"
+  ) |>
+  mutate(model_candidate = is.finite(medi_geometric_mean_lx) & !is.na(light_source))
+
+gap_summary <- gap_candidate |>
+  group_by(position) |>
+  summarise(
+    Grid_hours = n(),
+    Outcome_available = sum(is.finite(medi_geometric_mean_lx)),
+    Outcome_hours_without_primary_category = sum(
+      is.finite(medi_geometric_mean_lx) & is.na(light_source)
+    ),
+    Candidate_hours = sum(model_candidate),
+    Participants = n_distinct(participant[model_candidate]),
+    Participant_days = n_distinct(participant_day[model_candidate]),
+    Sites = n_distinct(site[model_candidate]),
+    .groups = "drop"
+  ) |>
+  mutate(
+    Placement = recode(position, glasses = "Near-eye", chest = "Chest"),
+    .before = 1
+  ) |>
+  select(-position)
+```
+
+```{r}
+#| label: tbl-gap-timing-unaware-candidate
+#| tbl-cap: "Gap-timing-unaware candidate frames before fitting."
+
+gap_summary |>
+  stage1_gt() |>
+  fmt_integer(-Placement, use_seps = TRUE) |>
+  cols_width(Placement ~ pct(14), everything() ~ pct(12))
+```
+
+The same new implementation, formulas, support rules, contrasts, diagnostics,
+and reporting code will be applied to the primary and gap-timing-unaware
+datasets. Only the prepared dataset differs. The frozen V0 result remains a
+separate implementation-history comparison.
+
+## Diagnostics, influence, and failure rules
+
+Stage 2 will interpret, not merely print, the following diagnostics for every
+primary and complementary fit:
+
+- exact participants, participant-days, one-hour observations, sites, category
+  counts, and category-by-site counts after the fitting engine's model frame is
+  recovered;
+- key uniqueness, join cardinality, source/category consistency, missingness,
+  valid-minute support, state/context composition, and duplicated outcome
+  detection;
+- GLM convergence, iteration count, fixed-effect rank, aliased columns,
+  coefficient finiteness, model-covariance finiteness, and boundary status;
+- participant-cluster covariance eigenvalues and condition numbers for the
+  full matrix and each consequential restriction/contrast block;
+- the number and size distribution of independent participant clusters,
+  cluster hat/leverage summaries, cluster-score concentration, and whether a
+  small number of participants supplies most information for a contrast;
+- working Pearson and deviance residuals against fitted values, category,
+  site, clock time, and support variables; observed zeros and positive tails
+  are summarized as calibration diagnostics rather than as a claim that the
+  quasi model supplies a complete outcome distribution;
+- residual ACF by lag within participant-day sequences and across declared
+  boundaries. Remaining autocorrelation is reported even though the sandwich
+  covariance allows arbitrary within-participant dependence;
+- practical stability under site-standardized versus observed-sample-weighted
+  prediction distributions;
+- the results-blind full-interaction gate, including estimable restrictions,
+  sparse-cell support, effective cluster information, and finite supported-cell
+  intervals before any interaction effect is interpreted;
+- leave-one-site-out refits for every observed site and deletion refits for the
+  five most influential participant clusters identified by the prespecified
+  cluster-score measure; and
+- change in the omnibus decision, all six pooled category ratios, all supported
+  site deviations, and interval coverage under each deletion.
+
+No primary mixed-model $R^2$, ICC, random-effect variance, likelihood fit index,
+or likelihood-based variance partition exists for this quasi-likelihood
+architecture. Model fit is described through the mean-model diagnostics,
+robust omnibus tests, effect estimates, and influence/stability checks above.
+Following the author's 2026-08-07 Stage 2 diagnostic amendment, the report may
+also show clearly defined descriptive fixed-effect point summaries: overall
+and partial quasi-deviance or squared-error R² from nested fixed-effect fits,
+plus a two-block site/category Shapley allocation. These are not mixed-model
+R² values, effect tests, causal contributions, or uncertainty-bearing variance
+components. The exploratory temporal GAM/GAMM retains its separate fit and
+variance definitions below.
+
+The already completed 50-replicate participant bootstrap established
+computational feasibility only. If production resampling is approved, the
+planned run is 2,000 site-stratified participant resamples with the full fitting
+and contrast-extraction path repeated. It will quantify cluster-composition
+stability and influence; the prespecified delta-method robust intervals remain
+primary unless an additional interval change is approved before production.
+
+A primary fit fails its adequacy gate if it does not converge, is rank
+deficient, has non-finite coefficients, yields a non-finite or non-positive
+covariance for consequential restrictions, has too few effective clusters,
+shows a consequential unmodelled mean pattern, produces non-finite intervals,
+or changes the primary conclusion under one dominant site or participant
+without a scientifically defensible explanation. Residual zero mass or tail
+mismatch is described but is not by itself a likelihood goodness-of-fit
+failure because no full likelihood is asserted. Failure is reported; it does
+not authorize a post hoc model search.
+
+### Named, bounded sensitivities
+
+1. Population-averaged primary versus the declared Mundlak within-between
+   audit on common rows.
+2. Fixed working Tweedie power 1.539919 versus 1.30 and 1.80
+   working powers on common rows; the robust covariance and estimand are held
+   fixed.
+3. All-available versus paired/common-sample near-eye and chest fits.
+4. Primary versus gap-timing-unaware datasets under the same implementation.
+5. Site-standardized versus observed-sample-weighted prediction distributions.
+6. Inclusion versus exclusion of state- or measurement-context-boundary hours.
+7. Inclusion versus exclusion of site/category cells failing the contrast
+   support rule, while preserving all categories in the primary additive fit.
+8. Full seven-category versus predeclared five-category heterogeneity
+   architecture, only when the results-blind full-model gate fails.
+9. Exact V0 five-category/joint-test bridge on common current rows, clearly
+   separated from both the primary model and the frozen V0 output.
+10. Leave-one-site-out and bounded cluster influence refits.
+
+No sensitivity can silently replace the primary result. Each receives exact
+samples, 95% intervals, diagnostics, and a stability classification.
+
+## Exploratory time-of-day context
+
+The temporal analysis is exploratory context only. It will be retained only
+if it adds interpretable time-of-day information after the primary H03 result
+and passes its own diagnostics. It uses the same supported one-hour geometric
+melEDI outcome transformed as `log10(melEDI + 0.1)`. It does not reuse H02's
+rho, fitted objects, predictions, significance, or claims.
+
+The unchanged inherited H02 components are the cyclic overall time smooth,
+sum-to-zero site deviation smooth, participant factor smooth,
+participant-day intercept, basis dimensions, local 0–24 h clock knots,
+boundary-aware AR algorithm, and fREML final fit. H03 adds a sum-to-zero
+light-source smooth around the global time-of-day smooth. By author decision,
+the exploratory temporal model does **not** use indoor electric as its
+reference. Its category curves are global time-of-day plus category-specific
+`sz` deviations whose corresponding coefficients sum to zero across the seven
+categories. The primary quasi-Tweedie model retains the indoor-electric and
+site-standardized reference system defined above.
+
+### Exact V0 and approved temporal formulas — declared, not fitted
+
+```{r}
+#| label: tbl-temporal-formulas
+#| tbl-cap: "Evaluated exploratory temporal Wilkinson formulas. No GAM or GAMM is fitted."
+
+temporal_formulas <- list(
+  v0_temporal_full = lzMEDI ~
+    s(Time, k = 12) +
+    s(Time, lightsource_primary, bs = "sz", k = 12) +
+    s(Time, site, bs = "sz", k = 12) +
+    s(Time, photoperiod.state, bs = "sz", k = 12) +
+    s(Time, Id, bs = "fs") +
+    s(Id_date, bs = "re"),
+  v0_temporal_null = lzMEDI ~
+    s(Time, k = 12) +
+    s(Time, site, bs = "sz", k = 12) +
+    s(Time, photoperiod.state, bs = "sz", k = 12) +
+    s(Time, Id, bs = "fs") +
+    s(Id_date, bs = "re"),
+  approved_Tglobal_h02_inherited = h03_temporal_response ~
+    s(time_hour, bs = "cc", k = 12) +
+    s(time_hour, site, bs = "sz", k = 12) +
+    s(time_hour, participant, bs = "fs", k = 10) +
+    s(participant_day, bs = "re"),
+  approved_Tcategory_sz = h03_temporal_response ~
+    s(time_hour, bs = "cc", k = 12) +
+    s(time_hour, light_source, bs = "sz", k = 12) +
+    s(time_hour, site, bs = "sz", k = 12) +
+    s(time_hour, participant, bs = "fs", k = 10) +
+    s(participant_day, bs = "re")
+)
+
+temporal_formula_contract <- enframe(
+  temporal_formulas,
+  name = "model_id",
+  value = "formula"
+) |>
+  mutate(formula = vapply(formula, formula_text, character(1)))
+
+stage1_gt(temporal_formula_contract) |>
+  cols_width(model_id ~ pct(27), formula ~ pct(73))
+```
+
+`approved_Tcategory_sz` is the prespecified exploratory model, not the result of
+a term-selection search. It is fitted with `mgcv::bam()`, Gaussian identity
+family, `method = "fREML"`, `discrete = TRUE`, and one R thread. Local clock
+time is the one-hour midpoint from 0.5 through 23.5 h, with cyclic knots at 0
+and 24 h. The preliminary fit estimates H03-specific rho from boundary-aware
+lag-1 residuals; the final fit uses that fixed rho. AR starts reset at every
+participant-day, after every omitted or non-consecutive hour, and on both sides
+of a non-one-to-one fall-back outcome. The inherited no-category model is an
+implementation benchmark only. Restricted-likelihood values are not compared
+across the two differing mean structures, and the GAM/GAMM never replaces the
+primary H03 test.
+
+### Temporal estimands and figure
+
+The temporal outputs are distinct from the primary model outputs:
+
+1. **Global daily curve:** the intercept plus cyclic global smooth, with the
+   light-source and site `sz` deviations at their sum-to-zero reference and
+   participant/participant-day terms excluded.
+2. **Category daily curves:** global smooth plus each category's `sz` deviation.
+   Reader-facing curves are predicted for every site, participant and day terms
+   are excluded, site linear predictors are averaged with weight $1/S$, and
+   the average is inverse-transformed once. These are back-transformed
+   descriptive profiles, not quasi-Tweedie expected means.
+3. **Category deviations:** each `sz` deviation from the global curve on the
+   `log10(melEDI + 0.1)` scale, with a zero reference. Indoor electric is one of
+   seven deviations and receives no special temporal reference status.
+4. **Local support:** for every category and clock hour, the source data store
+   participant-hours, distinct participants, participant-days, and sites. A
+   curve segment is marked locally sparse when it has fewer than 20 hours, five
+   participants, or three sites. Hours with zero observations have a light-grey
+   background in the curve and deviation panels and contain no curve or ribbon;
+   supported runs are not bridged across these gaps.
+
+The recognizable corrected V0-style temporal figure has three vertically
+aligned panels within balanced 4-category and 3-category facet blocks:
+
+- site-standardized category curves in melEDI units with 95% intervals;
+- category `sz` deviations from the global time-of-day curve with a zero line;
+  and
+- the **available participant-hour n at each local time**, using the same
+  category facets and clock axis. The caption will state that these are rows,
+  not independent participants; participant and participant-day counts remain
+  available in the source CSV.
+
+The melEDI panel uses `LightLogR::symlog_trans(base = 10, thr = 1, scale = 1)`
+as a display-only transformation with original-unit labels and untransformed
+source data. The count panel uses original counts with a declared display scale.
+The figure uses the approved 14-point cowplot basis, 12-point ticks, 14-point
+titles/tags, and 11-point caption, is saved tightly to the figure rather than an
+A4 canvas, and is checked at final size for facet balance, clipping, line
+breaks, and sparse-category readability.
+
+### Exploratory R² and variance decomposition
+
+These GAM/GAMM summaries use definitions that differ from the primary model's
+post-approval descriptive fixed-effect R² summaries. They will be kept in
+separate table blocks and labelled as descriptive in-sample quantities:
+
+- `summary.gam()` adjusted R² and deviance explained for the complete model,
+  explicitly on the `log10(melEDI + 0.1)` scale and over the fitted rows;
+- a site-standardized, participant-balanced in-sample squared-error R², using
+  weights that give each site total weight $1/S$, each participant within site
+  equal weight, and each of that participant's fitted hours equal weight;
+- smoothing/random-effect variance parameters and 95% intervals from
+  `gratia::variance_comp(rescale = TRUE)`, reported as penalty-scale variance
+  or standard-deviation parameters rather than percentages of outcome
+  variance; and
+- an exact global Shapley/marginal allocation of fitted linear-predictor
+  variance over the same site-standardized, participant-balanced reference
+  sample. The prespecified groups are global time, light-source deviations,
+  site deviations, participant curves, and participant-day shifts. The
+  intercept is excluded. Allocations use the complete component covariance,
+  sum to the fitted-predictor variance, may be negative through covariance, and
+  are not causal importance or percentages of raw melEDI variance.
+
+The allocation will use the audited `gamm_variance_partition()` contract with
+explicit term groups and reference weights. Raw component variances, component
+covariances, signed Shapley allocations, and partial-unique partitions will not
+be conflated. The report will not repeat V0's invalid practice of dividing raw
+term variances by their sum or subtracting overlapping R² values.
+
+Temporal diagnostics include convergence, `gam.check()` basis-dimension
+checks, `gratia::appraise()`, formal concurvity, the sum-to-zero constraints,
+Gaussian residual distribution and heteroscedasticity, standardized residual
+ACF within each sequence, midnight behavior, cluster influence, and local
+category/time/site support. The approximate whole-term smooth test, if shown,
+is explicitly exploratory and conditional on the fitted smoothing parameters.
+Curve-wide claims use simultaneous 95% bands across the declared category-time
+family, not scattered pointwise exclusions of zero.
+
+Any heavy simultaneous-band or variance-allocation simulation begins with 100
+draws, displays numerical stability and elapsed time, projects production
+runtime, and stops for approval. No production draw count is authorized by
+this Stage 1 revision.
+
+## Stage 2 result and display contract
+
+Stage 2 will produce recognizable but corrected H03 tables and figures:
+
+- a near-eye primary table anchored by the site-standardized indoor-electric
+  mean, with all seven site-standardized category means, six indoor-referenced
+  ratios, 95% CIs, raw p-values, BH-adjusted p-values, support, and exact fitted
+  sample;
+- a V0-recognizable corrected site table that shows the absolute derived cell
+  mean, the category multiplier relative to site-standardized indoor electric,
+  and the site multiplier relative to the same category's site-standardized
+  mean, each with 95% CIs and explicit support;
+- a complementary chest table with the same reference algebra and its eight-site
+  scope;
+- a site/category estimate figure using the submitted site order and colours,
+  legible category line breaks, and explicit support-non-estimable markers;
+- an omnibus and model-adequacy table that separates category association from
+  site heterogeneity and records whether the full or core-category interaction
+  passed its results-blind architecture gate;
+- a paired/common-sample estimate comparison when the matched estimands are
+  valid; and
+- an exploratory time-of-day figure only if the temporal model is valid, with
+  global-plus-`sz` category curves, deviation smooths, and the aligned
+  participant-hour availability panel requested above; plus a separate,
+  explicitly defined GAM/GAMM fit-and-variance table.
+
+Every plotted value will have a source CSV. Tables use readable `gt` output.
+Figures will be inspected at their final size for clipping, aspect ratio,
+panel balance, line breaks, labels, and legends. Reader-facing melEDI axes use
+the approved LightLogR symmetric-log display scale with original-unit labels;
+source values remain untransformed. Figure typography follows the approved
+14-point cowplot, 12-point tick, 14-point title/tag, and 11-point caption
+reference, with final-size detail QA. Near-eye remains primary, chest remains
+complementary, and no display will imply pooling or equivalence.
+
+Stage 2 will explicitly reconcile V0's 16,774 and 18,391 rows, five-category
+tables, joint omnibus, contrast adjustments, missing intervals, copied chest
+interpretation, temporal outcome, and R² wording. It will not make causal,
+health-outcome, placement-equivalence, or worn-ocular sleep claims.
+
+## Audit findings
+
+```{r}
+#| label: tbl-h03-findings
+#| tbl-cap: "H03 Stage 1 findings and required disposition."
+
+h03_findings <- tribble(
+  ~Finding, ~Severity, ~Status, ~Evidence, ~Required_disposition,
+  "H03-001", "Major", "Confirmed defect", "V0 modelled five of seven registered categories", "Adopt the fixed seven-category dictionary and support-non-estimable rule",
+  "H03-002", "Major", "Confirmed defect", "V0 site-only versus full adds category and interaction jointly", "Use a six-restriction robust category omnibus and a separate robust interaction/additivity omnibus",
+  "H03-003", "Major", "Confirmed defect", "Dunnett-X and split within-category site adjustments were labelled as BH families", "Use declared H03-F1 through H03-F4 vectors and exact labels",
+  "H03-004", "Major", "Confirmed defect", "V0 treated participant hours as conditionally independent beyond one participant intercept", "Use participant-clustered covariance for the primary mean model; reserve participant/day/AR structure for the exploratory temporal model",
+  "H03-005", "Major", "Confirmed defect", "V0 had no 30-valid-minute rule or persisted join-cardinality assertion", "Use the accepted one-hour metric and hard join assertions",
+  "H03-006", "Major", "Confirmed defect", "V0 removed confidence limits before display", "Report 95% intervals for every consequential estimand",
+  "H03-007", "Major", "Confirmed defect", "Overlapping mixed-model and raw term-variance differences were called variance explained", "Report no primary R2; define GAM adjusted/weighted R2, penalty variance, and link-scale Shapley allocation separately",
+  "H03-008", "Major", "Confirmed defect", "V0 temporal analysis used the wrong outcome and invalid inherited H02 structure", "Use only the approved H02 temporal specification adapted to H03",
+  "H03-009", "Major", "Confirmed reporting defect", "Chest prose duplicates the near-eye numerical interpretation", "Regenerate chest prose only from verified chest artifacts",
+  "H03-010", "Major", "Current design fact", "Chest literal interaction is rank 55/56 because FUSPCEU has no external-sleep candidate hour", "Use the rank-complete observed-cell parameterization and a 41-restriction robust additivity test",
+  "H03-011", "Moderate", "Current support fact", "Ten near-eye cells and eight observed-site chest cells fail the approved site-specific rule", "Retain categories; suppress only unsupported contrasts with reasons",
+  "H03-012", "Evidence limitation", "Open shared provenance limitation", "Preparation report FIND-044 does not store an independent reconstruction tied to every current metric identity", "Carry the limitation forward; do not describe it as evidence that data are wrong",
+  "H03-013", "Major", "Architecture-pilot finding", "The initial participant/day/AR Tweedie mixed model converged but was singular and failed zero/residual-shape diagnostics", "Do not use it as primary; preserve its diagnostic record without inspecting its effects",
+  "H03-014", "Moderate", "Architecture decision", "The population-averaged quasi-Tweedie model is full rank with finite positive participant-cluster covariance; cluster-score concentration remains material", "Use it as primary with finite-cluster tests, mandatory participant influence checks, and no likelihood or mixed-model summaries",
+  "H03-015", "Moderate", "Open companion-model gate", "The full robust site-by-category interaction has not yet passed a covariance/influence pilot", "Gate it before effect inspection; use the predeclared five-category fallback only if the full gate fails",
+  "H03-016", "Moderate", "Author temporal decision", "Exploratory category curves must be sum-to-zero deviations around a global time-of-day smooth, not indoor-referenced smooths", "Use the H02-derived global plus category/site sz structure and report explicitly defined GAM R2, variance components, Shapley allocation, and clock-time n"
+)
+
+stage1_gt(h03_findings) |>
+  cols_width(
+    Finding ~ pct(9),
+    Severity ~ pct(10),
+    Status ~ pct(16),
+    Evidence ~ pct(30),
+    Required_disposition ~ pct(35)
+  )
+```
+
+## Recorded author decisions controlling Stage 2
+
+The owner approved the revised primary process and then specified the temporal
+reference exception recorded in H03-G13. This table is the controlling Stage 2
+contract. The present request is limited to updating Stage 1; it does not start
+Stage 2 or authorize production resampling.
+
+| Gate | Approved decision |
+|---|---|
+| H03-G1 category construct | Keep all seven registered primary categories; indoor electric is the primary-model category reference; sleep categories are bedside-environment contexts |
+| H03-G2 estimability | Use the 200-hour/20-participant/3-site pooled rule and the 20-hour/5-participant/5-shared site-specific rule per fitted frame |
+| H03-G3 outcome and join | Use the accepted one-hour zero-aware geometric melEDI outcome, at least 30 valid minutes, one-to-one local-hour diary join with retained true-UTC diary start |
+| H03-G4 primary dependence | Use a population-averaged mean model with site-prefixed participant-clustered HC1 sandwich covariance and finite-cluster reference distributions; do not include participant/day/AR random components in the primary fit |
+| H03-G5 primary tests | H03-F1 is the six-category-coefficient robust Wald-F test; H03-F3 is a separate robust interaction/additivity-restriction Wald-F test; never combine them |
+| H03-G6 site hierarchy | Fixed site; results-blind full interaction gate; literal 48-df interaction near eye and rank-complete 41-restriction observed-cell companion for chest; five-category fallback only if the full gate fails |
+| H03-G7 primary family | Quasi-Tweedie log-link mean model with working variance power fixed at 1.539919 and participant-clustered covariance; no likelihood, AIC, mixed-model R², ICC, or random-effect summary |
+| H03-G8 practical estimates | Use the site-standardized indoor-electric mean as absolute anchor, six site-standardized category ratios versus indoor electric, supported cell means, category-specific site deviations, and descriptive within-site indoor ratios, all with 95% CIs |
+| H03-G9 multiplicity | Use H03-F1 through H03-F4 exactly; chest and sensitivities use separately labelled families; site/category descriptive estimands receive no unplanned p-values; Dunnett-X only as a named sensitivity |
+| H03-G10 placement | Near-eye primary, chest complementary, and separately fitted paired/common-sample comparison without pooling or equivalence language |
+| H03-G11 sensitivities | Run the ten bounded sensitivities listed above, including the gap-timing-unaware dataset under the same implementation |
+| H03-G12 influence and failure | Use the GLM, robust-covariance, effective-cluster, mean-pattern, temporal-residual, sparse-cell, site, participant, and failure gates above |
+| H03-G13 temporal context | Retain an exploratory H02-derived GAM/GAMM with cyclic global time, sum-to-zero category and site deviations, participant curves, participant-day shifts, and boundary-aware AR(1); temporal categories are referenced to the global daily curve, not indoor electric |
+| H03-G14 temporal summaries | Report time-resolved category curves and `sz` deviations, clock-time participant-hour n, mgcv adjusted and site-standardized participant-balanced R², penalty variance parameters, and exact link-scale Shapley/partial partitions with their definitions and limits |
+| H03-G15 reporting | Exact fitted samples, 95% intervals, REPORT-008 p-values, readable `gt` tables, accessible final-size figures and source CSVs, approved symlog display, and no causal/health/equivalence claims |
+| H03-G16 resampling | The completed 50-replicate quasi-model pilot is feasibility-only; every other heavy bootstrap or simulation begins with 50 or 100 pilot replicates and a runtime estimate; all production computation requires separate approval |
+| H03-G17 V0 disposition | Treat every V0 H03 estimate, p-value, significance statement, R² attribution, chest interpretation, and temporal claim as reopened until Stage 2 reconciliation |
+
+Post-approval author amendment, 2026-08-07: Stage 2 may add descriptive
+fixed-effect overall/partial R² and a two-block site/category allocation for
+the primary GLM, plus a bounded participant-blocked comparison with raw and
+log-transformed Gaussian candidates. These outputs are diagnostics only: they
+do not add a multiplicity family, replace H03-F1 through H03-F4, create random
+effects, or authorize model selection by invalid cross-family AIC.
+
+## Render-time assertions and environment
+
+```{r}
+#| label: tbl-stage1-assertions
+#| tbl-cap: "Stage 1 assertions; all must pass."
+
+stage1_assertions <- tibble(
+  Assertion = c(
+    "R version is exactly 4.6.1",
+    "eligible diary local-hour keys are unique",
+    "eligible diary starts are hour-aligned",
+    "all seven categories match their declared source flags",
+    "indoor electric is the declared primary-model category reference",
+    "the fixed working Tweedie power lies strictly between 1 and 2",
+    "all seven categories pass the outcome-blind pooled rule",
+    "all seven categories pass the all-available pooled rule by placement",
+    "all five fallback heterogeneity categories meet the declared core rule",
+    "near-eye additive and interaction designs are full rank",
+    "chest additive and observed-cell designs are full rank",
+    "chest literal interaction is deficient by exactly one column",
+    "paired rows carry identical primary categories",
+    "no model object was fitted in this render"
+  ),
+  Passed = c(
+    getRversion() == "4.6.1",
+    diary_key_audit$Duplicate_keys == 0L,
+    diary_key_audit$Non_hour_aligned_starts == 0L,
+    diary_category_audit$Recorded_primary_without_expected_flag == 0L,
+    identical(reference_label, category_levels[[1L]]),
+    working_tweedie_power > 1 && working_tweedie_power < 2,
+    all(diary_overall_support$Pooled_rule),
+    all(candidate_category_support$Pooled_rule),
+    all(core_heterogeneity_support$Meets_core_rule),
+    all(rank_audit$Full_rank[rank_audit$Placement == "Near-eye"]),
+    all(
+      rank_audit$Full_rank[
+        rank_audit$Placement == "Chest" & rank_audit$Design_id != "literal_interaction"
+      ]
+    ),
+    with(
+      filter(rank_audit, Placement == "Chest", Design_id == "literal_interaction"),
+      Columns - Rank == 1L && !Full_rank
+    ),
+    all(
+      as.character(paired_candidate$light_source_near) ==
+        as.character(paired_candidate$light_source_chest)
+    ),
+    !any(vapply(
+      mget(ls(envir = .GlobalEnv), envir = .GlobalEnv),
+      function(x) inherits(x, c("glmmTMB", "gam", "bam", "lmerMod", "glm")),
+      logical(1)
+    ))
+  )
+)
+
+stopifnot(all(stage1_assertions$Passed))
+
+stage1_gt(stage1_assertions) |>
+  cols_width(Assertion ~ pct(85), Passed ~ pct(15))
+```
+
+```{r}
+#| label: tbl-software-environment
+#| tbl-cap: "Software recorded for this audit render."
+
+package_ids <- c(
+  "dplyr",
+  "tidyr",
+  "purrr",
+  "tibble",
+  "gt",
+  "knitr",
+  "digest",
+  "glmmTMB",
+  "emmeans",
+  "statmod",
+  "sandwich",
+  "mgcv",
+  "gratia",
+  "itsadug",
+  "LightLogR"
+)
+
+software_environment <- bind_rows(
+  tibble(Component = "R", Version = as.character(getRversion())),
+  tibble(
+    Component = paste0("R package: ", package_ids),
+    Version = vapply(
+      package_ids,
+      function(package) as.character(utils::packageVersion(package)),
+      character(1)
+    )
+  ),
+  tibble(
+    Component = "Quarto",
+    Version = Sys.getenv("QUARTO_VERSION", unset = "1.9.37")
+  )
+)
+
+stage1_gt(software_environment) |>
+  cols_width(Component ~ pct(70), Version ~ pct(30))
+```
+
+::: {.callout-important title="Stage 1 status"}
+Stage 1 ends here with H03-G1 through H03-G17 recorded as the approved
+analysis contract. This revision does not start Stage 2. No category
+association, interaction estimate, temporal smooth, or production resampling
+was computed while updating this report.
+:::
