@@ -1,41 +1,1593 @@
 ---
-title: "H04: Activity and measured exposure"
-params:
-  placement: glasses
-  scenario: primary
+title: "H04: Self-reported activity and measured personal light exposure"
+subtitle: "Associations with one-hour melanopic equivalent daylight illuminance"
+page-layout: full
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    code-tools: false
+execute:
+  echo: false
+  warning: false
+  message: false
+  error: false
 ---
 
-## What this notebook checks
+```{r}
+#| label: setup-h04-reader
+#| include: false
 
-Test all declared activity categories. Account for repeated reports from the
-same participant and similarity between measurements close in time. First test
-whether the categories differ overall, then report the planned activity
-comparisons in interpretable units. Check whether differences vary by site,
-whether every category has enough observations, and whether the model fits each
-activity group adequately.
+options(
+  stringsAsFactors = FALSE,
+  scipen = 999,
+  width = 140,
+  dplyr.summarise.inform = FALSE
+)
 
-## What this notebook uses and produces
+locate_project_root <- function(start = getwd()) {
+  candidate <- normalizePath(start, winslash = "/", mustWork = TRUE)
+  repeat {
+    if (
+      file.exists(file.path(candidate, "renv.lock")) &&
+        file.exists(file.path(candidate, "_quarto.yml"))
+    ) {
+      return(candidate)
+    }
+    parent <- dirname(candidate)
+    if (identical(parent, candidate)) {
+      stop("Could not locate the project root", call. = FALSE)
+    }
+    candidate <- parent
+  }
+}
 
-- Uses: the prepared H04 dataset in `artifacts/06_model_data/H04.rds`.
-- Produces: the category definitions, overall and activity-specific
-  comparisons, fitted models, model checks, estimates with 95% confidence
-  intervals, the exact participants, participant-days, hourly observations,
-  sites, and activity-category counts used by each model, both overall and for
-  every activity category × site combination; tables, figures, and the exact
-  data displayed.
-- Data sensitivity: fit this identical H04 implementation to the
-  manuscript-prepared dataset and compare exact samples, activity × site
-  counts, estimates, 95% confidence intervals, diagnostics, and conclusions.
-- Formula display: the completed audit must contain a visible evaluated code
-  cell printing the exact Wilkinson formulas passed to the selected model and
-  every fitted comparison model.
+root <- Sys.getenv("QUARTO_PROJECT_DIR", unset = "")
+if (!nzchar(root) || !file.exists(file.path(root, "renv.lock"))) {
+  root <- locate_project_root()
+}
+root <- normalizePath(root, winslash = "/", mustWork = TRUE)
+stopifnot(identical(as.character(getRversion()), "4.6.1"))
+
+project_library <- file.path(
+  root,
+  "renv/library/macos/R-4.6/aarch64-apple-darwin23"
+)
+stopifnot(dir.exists(project_library))
+.libPaths(c(project_library, .libPaths()))
+
+suppressPackageStartupMessages({
+  library(dplyr)
+  library(gt)
+  library(readr)
+  library(tibble)
+  library(tidyr)
+})
+
+knitr::opts_knit$set(
+  root.dir = file.path(root, "notebooks", "hypotheses")
+)
+
+source(file.path(root, "scripts/pipeline/p_value_display.R"))
+
+artifact <- function(...) file.path(root, "artifacts", ...)
+read_h04 <- function(...) {
+  readr::read_csv(artifact(...), show_col_types = FALSE, na = "")
+}
+
+formulas <- read_h04("06_model_data", "H04", "H04_formula_registry.csv")
+samples <- read_h04("06_model_data", "H04", "H04_model_frame_index.csv")
+sample_flow <- read_h04("06_model_data", "H04", "H04_sample_flow.csv")
+category_support <- read_h04(
+  "06_model_data", "H04", "H04_category_support.csv"
+)
+primary <- read_h04(
+  "09_tables", "H04", "H04_primary_category_estimands.csv"
+)
+tests <- read_h04(
+  "09_tables", "H04", "H04_primary_and_heterogeneity_tests.csv"
+)
+site_activity <- read_h04(
+  "09_tables", "H04", "H04_site_activity_estimands.csv"
+)
+diagnostics <- read_h04(
+  "08_diagnostics", "H04", "H04_model_diagnostics.csv"
+)
+assessments <- read_h04(
+  "08_diagnostics", "H04", "H04_diagnostic_assessments.csv"
+)
+sensitivity <- read_h04(
+  "09_tables", "H04", "H04_sensitivity_comparison.csv"
+)
+sensitivity_tests <- read_h04(
+  "09_tables", "H04", "H04_sensitivity_omnibus_tests.csv"
+)
+paired <- read_h04(
+  "09_tables", "H04", "H04_paired_placement_estimands.csv"
+)
+temporal_summary <- read_h04(
+  "08_diagnostics", "H04", "H04_temporal_model_summary.csv"
+)
+temporal_retention <- read_h04(
+  "08_diagnostics", "H04", "H04_temporal_retention_decision.csv"
+)
+temporal_uncertainty <- read_h04(
+  "08_diagnostics", "H04", "H04_temporal_uncertainty_contract.csv"
+)
+heterogeneity_category <- read_h04(
+  "09_tables", "H04", "H04_reader_heterogeneity_category_estimands.csv"
+)
+reader_category <- read_h04(
+  "09_tables", "H04", "H04_reader_category_estimands.csv"
+)
+heterogeneity_r_squared <- read_h04(
+  "09_tables", "H04", "H04_reader_heterogeneity_r_squared.csv"
+)
+primary_zero_mass <- read_h04(
+  "08_diagnostics", "H04", "H04_reader_primary_zero_mass.csv"
+)
+temporal_r_squared <- read_h04(
+  "09_tables", "H04", "H04_reader_temporal_weighted_r_squared.csv"
+)
+temporal_allocation <- read_h04(
+  "09_tables", "H04", "H04_reader_temporal_variance_allocation.csv"
+)
+temporal_zero_mass <- read_h04(
+  "08_diagnostics", "H04", "H04_reader_temporal_zero_mass.csv"
+)
+
+format_p <- function(value) nh_format_p_value(value)
+format_p_cell <- function(value, significant = FALSE) {
+  ifelse(
+    is.na(value),
+    "—",
+    {
+      display <- nh_p_value_display(value, significant = significant)
+      ifelse(
+        display$p_bold,
+        paste0("**", display$p_display, "**"),
+        display$p_display
+      )
+    }
+  )
+}
+format_mean_ci <- function(estimate, low, high, digits = 1L) {
+  paste0(
+    formatC(estimate, digits = digits, format = "f", big.mark = ","),
+    " (",
+    formatC(low, digits = digits, format = "f", big.mark = ","),
+    "–",
+    formatC(high, digits = digits, format = "f", big.mark = ","),
+    ")"
+  )
+}
+format_ratio_ci <- function(estimate, low, high, digits = 3L) {
+  paste0(
+    formatC(estimate, digits = digits, format = "f"),
+    " (",
+    formatC(low, digits = digits, format = "f"),
+    "–",
+    formatC(high, digits = digits, format = "f"),
+    ")"
+  )
+}
+format_difference_ci <- function(estimate, low, high, digits = 1L) {
+  paste0(
+    formatC(estimate, digits = digits, format = "f", big.mark = ","),
+    " (",
+    formatC(low, digits = digits, format = "f", big.mark = ","),
+    "–",
+    formatC(high, digits = digits, format = "f", big.mark = ","),
+    ")"
+  )
+}
+h04_gt <- function(table, font_size = 13) {
+  table |>
+    gt::opt_row_striping() |>
+    gt::sub_missing(missing_text = "—") |>
+    gt::tab_options(
+      table.width = gt::pct(100),
+      table.font.size = gt::px(font_size),
+      data_row.padding = gt::px(5),
+      column_labels.font.weight = "600",
+      source_notes.font.size = gt::px(11)
+    )
+}
+
+main_samples <- samples |>
+  filter(.data$scenario_id == "primary_dataset") |>
+  mutate(placement = factor(.data$placement, levels = c("Near-eye", "Chest"))) |>
+  arrange(.data$placement)
+main_flow <- sample_flow |>
+  filter(!is.na(.data$outcome_grid_hours)) |>
+  mutate(placement = factor(.data$placement, levels = c("Near-eye", "Chest"))) |>
+  arrange(.data$placement)
+primary_tests <- tests |>
+  filter(.data$test_id %in% c("H04-F1", "H04-F1b"))
+heterogeneity_tests <- tests |>
+  filter(.data$test_id == "H04-F3")
+near_primary_test <- primary_tests |>
+  filter(.data$placement == "Near-eye", .data$test_id == "H04-F1")
+chest_primary_test <- primary_tests |>
+  filter(.data$placement == "Chest", .data$test_id == "H04-F1")
+main_diagnostics <- diagnostics |>
+  filter(.data$scenario_id == "primary_dataset") |>
+  mutate(placement = factor(.data$placement, levels = c("Near-eye", "Chest"))) |>
+  arrange(.data$placement)
+overall_assessment <- assessments |>
+  filter(.data$diagnostic == "Overall primary mean-model assessment") |>
+  select("placement", "assessment")
+paired_samples <- samples |>
+  filter(.data$scenario_id == "paired_common_sample") |>
+  mutate(placement = factor(.data$placement, levels = c("Near-eye", "Chest"))) |>
+  arrange(.data$placement)
+temporal_activity <- temporal_summary |>
+  filter(.data$formula_id == "temporal_activity_long") |>
+  mutate(placement = factor(.data$placement, levels = c("Near-eye", "Chest"))) |>
+  arrange(.data$placement)
+
+reader_activity_codes <- c(
+  "home", "working_indoor", "outdoors", "road_vehicle", "sleeping", "other"
+)
+reader_activity_labels <- c(
+  home = "At home",
+  working_indoor = "Office/home working",
+  outdoors = "Outdoors",
+  road_vehicle = "Vehicle/public transport",
+  sleeping = "Sleeping",
+  other = "Other/unspecified activity"
+)
+reader_activity_order <- stats::setNames(
+  seq_along(reader_activity_codes),
+  reader_activity_codes
+)
+named_codes <- c("working_indoor", "outdoors", "road_vehicle", "sleeping")
+named_sensitivity <- sensitivity |>
+  filter(.data$activity_code %in% .env$named_codes)
+sensitivity_summary <- named_sensitivity |>
+  group_by(.data$scenario_id, .data$placement) |>
+  summarise(
+    stable = sum(.data$stability == "stable"),
+    maximum_absolute_ratio_change_percent = max(
+      abs(.data$ratio_relative_change_percent),
+      na.rm = TRUE
+    ),
+    all_directions_concordant = all(.data$direction_concordant),
+    primary_ratio_inside_sensitivity_interval = sum(
+      .data$primary_ratio_inside_sensitivity_interval
+    ),
+    .groups = "drop"
+  )
+sensitivity_f1 <- sensitivity_tests |>
+  filter(.data$test_id == "H04-F1") |>
+  select(
+    "scenario_id",
+    "placement",
+    "f_statistic",
+    "denominator_df",
+    "p_raw",
+    "status"
+  )
+
+scenario_labels <- c(
+  exactly_one_category = "Exactly one category",
+  retain_coselected_other = "Retain co-selected Other",
+  exclude_other_only = "Exclude Other-only hours",
+  unweighted_long_rows = "Unweighted long rows",
+  gap_timing_unaware = "Gap-timing-unaware data",
+  paired_common_sample = "Placement-matched common sample",
+  working_power_1_30 = "Working power 1.30",
+  working_power_1_80 = "Working power 1.80"
+)
+
+answer_category_line <- function(activity_code) {
+  row <- reader_category |>
+    filter(
+      .data$placement == "Near-eye",
+      .data$activity_code == .env$activity_code
+    )
+  stopifnot(nrow(row) == 1L)
+  comparison <- if (identical(activity_code, "home")) {
+    "reference category"
+  } else {
+    paste0(
+      "ratio to At home ",
+      format_ratio_ci(
+        row$ratio_to_home,
+        row$ratio_conf_low,
+        row$ratio_conf_high
+      )
+    )
+  }
+  paste0(
+    "**", unname(reader_activity_labels[[activity_code]]), ":** ",
+    format_mean_ci(
+      row$standardized_mean_lx,
+      row$mean_conf_low_lx,
+      row$mean_conf_high_lx
+    ),
+    " lx; ", comparison, "."
+  )
+}
+
+figure_files <- file.path(
+  artifact("10_figures", "H04"),
+  c(
+    "H04_reader_heterogeneity_category_estimates.png",
+    "H04_site_activity_estimates.png",
+    "H04_primary_diagnostics.png",
+    "H04_paired_placement_comparison.png",
+    "H04_temporal_near_eye.png",
+    "H04_temporal_chest.png",
+    "H04_temporal_diagnostics.png"
+  )
+)
+
+stopifnot(
+  nrow(main_samples) == 2L,
+  identical(as.integer(main_samples$participants), c(126L, 150L)),
+  identical(as.integer(main_samples$participant_days), c(724L, 875L)),
+  identical(
+    as.integer(main_samples$unique_participant_hours),
+    c(16526L, 20128L)
+  ),
+  identical(as.integer(main_samples$long_rows), c(17266L, 21071L)),
+  all(abs(
+    main_samples$effective_weighted_hours -
+      main_samples$unique_participant_hours
+  ) < 1e-8),
+  nrow(primary) == 12L,
+  all(table(primary$placement) == 6L),
+  nrow(near_primary_test) == 1L,
+  nrow(chest_primary_test) == 1L,
+  all(primary_tests$status == "ESTIMABLE"),
+  all(heterogeneity_tests$status == "ESTIMABLE"),
+  all(named_sensitivity$stability == "stable"),
+  nrow(paired_samples) == 2L,
+  all(paired_samples$unique_participant_hours == 14308L),
+  nrow(temporal_activity) == 2L,
+  nrow(heterogeneity_category) == 10L,
+  nrow(reader_category) == 12L,
+  all(table(reader_category$placement) == 6L),
+  sum(reader_category$model_source == "site_heterogeneity") == 10L,
+  sum(reader_category$model_source == "additive_display_only") == 2L,
+  nrow(heterogeneity_r_squared) == 6L,
+  nrow(primary_zero_mass) == 2L,
+  nrow(temporal_r_squared) == 2L,
+  nrow(temporal_allocation) == 10L,
+  nrow(temporal_zero_mass) == 2L,
+  all(temporal_activity$converged),
+  all(temporal_retention$retained_for_context),
+  all(temporal_uncertainty$resampling_replicates == 0L),
+  all(!temporal_uncertainty$simultaneous_band),
+  all(!temporal_uncertainty$curve_wide_inference),
+  all(file.exists(figure_files))
+)
+```
+
+The companion [H04 analysis preparation and
+provenance](../../audit/hypotheses/H04/H04_analysis_preparation.html) traces
+the verified inputs, multi-select transformation, model frames, estimands,
+diagnostics, sensitivities, temporal construction, and recorded output chain
+behind this report.
+
+## Question
+
+The preregistered hypothesis was:
+
+> **H4: Hourly self-reported activity categories predict hourly geometric mean melanopic EDI.**
+
+This analysis asks whether five interpretable reported activity categories are
+associated with measured one-hour melEDI after accounting for study site. The
+categories are not mutually exclusive behavioural states: when an hour has
+several retained labels, its contribution is shared equally among them.
+
+::: {.callout-note title="Answer in brief"}
+Reported activity category was associated with near-eye melEDI,
+*F*(`r near_primary_test$restrictions`, `r near_primary_test$denominator_df`) =
+`r sprintf("%.2f", near_primary_test$f_statistic)`, raw *p*
+**`r format_p(near_primary_test$p_raw)`**. Equal-site standardized estimates
+and participant-cluster-robust 95% confidence intervals were:
+
+- `r answer_category_line("home")`
+- `r answer_category_line("working_indoor")`
+- `r answer_category_line("outdoors")`
+- `r answer_category_line("road_vehicle")`
+- `r answer_category_line("sleeping")`
+
+Because site-by-activity heterogeneity was supported, these descriptive means
+and ratios come from the site-heterogeneity model; only the primary
+five-category omnibus comes from the additive model.
+
+Chest estimates showed the same broad ordering. All four named-versus-home
+contrasts retained their direction and classification in every prespecified
+sensitivity. Other/unspecified activity remains visible as a heterogeneous
+display category but supports no scientific claim. These are observational
+associations, not causal effects of changing activity.
+:::
+
+## What was analysed
+
+Near-eye measurements are primary because they more closely represent light
+near the eyes. Chest measurements are complementary evidence. The placements
+are fitted separately, and similarity is not interpreted as equivalence.
+
+The response is the zero-aware geometric mean melEDI within each
+hour, including genuine zero values. Before the activity data were reshaped,
+active travel, outdoor work, and outdoor free time were combined into
+**Outdoors**. Duplicate collapsed labels were removed within each
+participant-hour. If Other was co-selected with a named category, only the
+named category or categories were retained; Other was kept when it was the
+sole selection. No diary free text was inspected or recoded.
+
+An hour with $k$ retained distinct labels contributes $k$ rows, each with
+weight $1/k$. The total analytical weight of every fitted participant-hour is
+therefore one. Hours with no retained category are not interpreted as “no
+activity” and are excluded from the category model.
 
 ```{r}
-#| label: setup-h04
-#| eval: false
+#| label: tbl-h04-overall-samples
+#| tbl-cap: "Exact fitted samples for the primary and complementary models."
 
-root <- normalizePath(Sys.getenv("QUARTO_PROJECT_DIR"), winslash = "/", mustWork = TRUE)
-source(file.path(root, "scripts/pipeline/paths_io.R"))
-source(file.path(root, "scripts/pipeline/assertions.R"))
-source(file.path(root, "scripts/pipeline/multiplicity.R"))
+main_samples |>
+  transmute(
+    Placement = as.character(.data$placement),
+    Participants = .data$participants,
+    `Participant-days` = .data$participant_days,
+    `Unique participant-hours` = .data$unique_participant_hours,
+    `Generated long rows` = .data$long_rows,
+    `Effective weighted hours` = .data$effective_weighted_hours,
+    Sites = .data$sites,
+    `Exact-zero hours` = .data$exact_zero_unique_hours
+  ) |>
+  gt::gt() |>
+  gt::fmt_integer(
+    columns = c(
+      Participants, `Participant-days`, `Unique participant-hours`,
+      `Generated long rows`, Sites, `Exact-zero hours`
+    ),
+    use_seps = TRUE
+  ) |>
+  gt::fmt_number(
+    columns = `Effective weighted hours`,
+    decimals = 0,
+    use_seps = TRUE
+  ) |>
+  h04_gt(11.5)
 ```
+
+The primary model contains 126 participants, 724 participant-days, 16,526
+unique participant-hours, 17,266 long rows, and 16,526 effective weighted
+hours. The complementary model contains 150 participants, 875
+participant-days, 20,128 unique participant-hours, 21,071 long rows, and
+20,128 effective weighted hours.
+
+```{r}
+#| label: tbl-h04-sample-flow
+#| tbl-cap: "Outcome availability and explicit accounting of hours outside the category models."
+
+main_flow |>
+  transmute(
+    Placement = as.character(.data$placement),
+    `Outcome-grid hours` = .data$outcome_grid_hours,
+    `Outcome unavailable` = .data$outcome_unavailable_hours,
+    `No eligible diary key` = .data$outcome_hours_without_eligible_diary_key,
+    `No retained activity` = .data$outcome_hours_with_no_retained_activity,
+    `Fitted participant-hours` = .data$model_candidate_unique_hours
+  ) |>
+  gt::gt() |>
+  gt::fmt_integer(columns = where(is.numeric), use_seps = TRUE) |>
+  gt::tab_source_note(
+    gt::md(paste(
+      "No retained activity is not a behavioural category and is not fitted",
+      "as a zero or reference activity."
+    ))
+  ) |>
+  h04_gt()
+```
+
+```{r}
+#| label: tbl-h04-category-support
+#| tbl-cap: "Observed support and weighted totals for every displayed activity category."
+
+category_support |>
+  mutate(
+    placement = factor(.data$placement, levels = c("Near-eye", "Chest")),
+    reader_order = unname(
+      .env$reader_activity_order[.data$activity_code]
+    ),
+    reader_label = unname(
+      .env$reader_activity_labels[.data$activity_code]
+    )
+  ) |>
+  arrange(.data$placement, .data$reader_order) |>
+  transmute(
+    Placement = as.character(.data$placement),
+    Category = .data$reader_label,
+    `Unique hours` = .data$unique_participant_hours,
+    `Long rows` = .data$long_rows,
+    `Weighted hours` = .data$effective_weighted_hours,
+    Participants = .data$participants,
+    `Participant-days` = .data$participant_days,
+    Sites = .data$sites
+  ) |>
+  gt::gt(groupname_col = "Placement") |>
+  gt::fmt_integer(
+    columns = c(
+      `Unique hours`, `Long rows`, Participants, `Participant-days`, Sites
+    ),
+    use_seps = TRUE
+  ) |>
+  gt::fmt_number(columns = `Weighted hours`, decimals = 1, use_seps = TRUE) |>
+  gt::cols_width(
+    Category ~ gt::pct(31),
+    everything() ~ gt::pct(11.5)
+  ) |>
+  h04_gt(11.5)
+```
+
+Weighted hours can be smaller than category rows because a multi-select
+hour's weight is divided among its retained labels. Long-row weighting is part
+of the estimand: replacing $1/k$ by unit weight would instead analyse reported
+selections and let multi-select hours contribute more.
+
+## Model and estimand
+
+The population-mean model uses a quasi-Tweedie variance function with power
+1.539919, a log link, fixed site and activity terms, and the exact $1/k$ prior
+weights. Participant-clustered HC1 covariance encompasses concurrent category
+memberships and all longitudinal observations from the same participant.
+Finite-cluster *t* and *F* reference distributions use the number of
+participant clusters minus one as denominator degrees of freedom.
+
+The primary equality test compares Sleeping, At home, vehicle or
+public-transport travel, indoor or home working, and Outdoors. The fitted
+Other coefficient remains unrestricted and does not enter that four-row joint
+restriction. A full six-category omnibus is reported secondarily.
+
+```{r}
+#| label: tbl-h04-formulas
+#| tbl-cap: "Exact Wilkinson formulas supplied to the mean, heterogeneity, and exploratory temporal models."
+
+formula_labels <- c(
+  primary_full = "Primary population mean",
+  primary_five_named_null = "Primary five-category null",
+  secondary_six_category_null = "Secondary six-category null",
+  heterogeneity_five_named_full = "Separate named-category heterogeneity",
+  temporal_activity_long = "Exploratory time of day"
+)
+
+formulas |>
+  filter(.data$formula_id %in% names(.env$formula_labels)) |>
+  mutate(
+    Model = unname(.env$formula_labels[.data$formula_id]),
+    order = match(.data$formula_id, names(.env$formula_labels))
+  ) |>
+  arrange(.data$order) |>
+  transmute(
+    Model,
+    `Exact Wilkinson formula supplied to R` = .data$formula
+  ) |>
+  gt::gt() |>
+  gt::cols_width(
+    Model ~ gt::pct(25),
+    `Exact Wilkinson formula supplied to R` ~ gt::pct(75)
+  ) |>
+  h04_gt(11.5)
+```
+
+Category means are standardized to the sites observed for that placement.
+Every site contributes equally on the fitted log-mean scale, followed by one
+back-transformation. Thus an estimate is the geometric mean of the fitted
+site-specific means, not an observation-weighted arithmetic mean. At home is
+the reader-facing comparison reference.
+
+The estimand is average melEDI associated with each reported collapsed
+activity category, with an hour's contribution shared across concurrently
+reported categories. It is not a transition effect, an individual-specific
+effect, or a causal contrast between mutually exclusive behaviours.
+
+## Category summaries from the heterogeneity model
+
+The additive primary model forces every site to share one activity ratio,
+whereas the site-heterogeneity model estimates site-specific category means
+before giving every observed site equal weight on the fitted log-mean scale.
+The preregistered additive-model omnibus remains the primary
+inferential test, but the descriptive means, ratios, differences, confidence
+intervals, and site summaries below use the less restrictive heterogeneity
+model. Other/unspecified activity is the sole exception: it is excluded from
+the heterogeneity model and remains visible only as a quiet additive-model
+display estimate.
+
+```{r}
+#| label: tbl-h04-primary-results
+#| tbl-cap: "Heterogeneity-model equal-site standardized activity-category means, ratios, and differences with participant-cluster-robust 95% confidence intervals."
+
+primary_results <- reader_category |>
+  mutate(
+    placement = factor(.data$placement, levels = c("Near-eye", "Chest")),
+    mean_ci = format_mean_ci(
+      .data$standardized_mean_lx,
+      .data$mean_conf_low_lx,
+      .data$mean_conf_high_lx
+    ),
+    ratio_ci = case_when(
+      .data$activity_code == "home" ~ "1.000 (reference)",
+      .data$activity_code == "other" ~ "Display only",
+      TRUE ~ format_ratio_ci(
+        .data$ratio_to_home,
+        .data$ratio_conf_low,
+        .data$ratio_conf_high
+      )
+    ),
+    difference_ci = case_when(
+      .data$activity_code == "home" ~ "0.0 (reference)",
+      .data$activity_code == "other" ~ "Display only",
+      TRUE ~ format_difference_ci(
+        .data$difference_from_home_lx,
+        .data$difference_conf_low_lx,
+        .data$difference_conf_high_lx
+      )
+    ),
+    reader_order = unname(
+      .env$reader_activity_order[.data$activity_code]
+    ),
+    reader_label = unname(
+      .env$reader_activity_labels[.data$activity_code]
+    )
+  ) |>
+  arrange(.data$placement, .data$reader_order) |>
+  transmute(
+    Placement = as.character(.data$placement),
+    Category = .data$reader_label,
+    `Mean melEDI, lx (95% CI)` = .data$mean_ci,
+    `Ratio to At home (95% CI)` = .data$ratio_ci,
+    `Difference from At home, lx (95% CI)` = .data$difference_ci
+  )
+
+primary_results |>
+  gt::gt(groupname_col = "Placement") |>
+  gt::tab_style(
+    style = gt::cell_text(color = "#666666", style = "italic"),
+    locations = gt::cells_body(
+      rows = Category == "Other/unspecified activity"
+    )
+  ) |>
+  gt::tab_source_note(
+    gt::md(paste(
+      "Other/unspecified activity is displayed quietly and is not used for",
+      "a scientific contrast or claim. Named-category summaries use the",
+      "site-heterogeneity model; the Other mean is additive-model display only."
+    ))
+  ) |>
+  gt::cols_width(
+    Category ~ gt::pct(26),
+    everything() ~ gt::pct(24.7)
+  ) |>
+  h04_gt(11.5)
+```
+
+Near eye, the heterogeneity-model equal-site standardized mean was 76.4 lx at
+home, 198.9 lx during office or home working, 714.2 lx outdoors, 331.2 lx
+during vehicle or public-transport travel, and 4.3 lx while sleeping.
+Relative to At home, the four named ratios in that order were 2.604, 9.354,
+4.338, and 0.056. Chest means in the same category order were 78.0, 202.9,
+998.9, 512.9, and 4.7 lx; the corresponding ratios were 2.600, 12.800, 6.573,
+and 0.060.
+
+```{r}
+#| label: tbl-h04-named-contrasts
+#| tbl-cap: "Additive-model named-category comparisons with At home; BH adjustment forms one four-member family within each placement."
+
+primary |>
+  filter(.data$activity_code %in% .env$named_codes) |>
+  mutate(
+    placement = factor(.data$placement, levels = c("Near-eye", "Chest")),
+    ratio_ci = format_ratio_ci(
+      .data$ratio_to_home,
+      .data$ratio_conf_low,
+      .data$ratio_conf_high
+    ),
+    raw_p = format_p_cell(.data$p_raw, significant = FALSE),
+    adjusted_p = format_p_cell(
+      .data$p_adjusted,
+      significant = .data$p_adjusted < 0.05
+    ),
+    reader_order = unname(
+      .env$reader_activity_order[.data$activity_code]
+    ),
+    reader_label = unname(
+      .env$reader_activity_labels[.data$activity_code]
+    )
+  ) |>
+  arrange(.data$placement, .data$reader_order) |>
+  transmute(
+    Placement = as.character(.data$placement),
+    Category = .data$reader_label,
+    `Ratio to At home (95% CI)` = .data$ratio_ci,
+    `t statistic` = .data$statistic,
+    `Raw p` = .data$raw_p,
+    `BH-adjusted p` = .data$adjusted_p
+  ) |>
+  gt::gt(groupname_col = "Placement") |>
+  gt::fmt_number(columns = `t statistic`, decimals = 2) |>
+  gt::fmt_markdown(columns = c(`Raw p`, `BH-adjusted p`)) |>
+  gt::tab_source_note(
+    gt::md(paste(
+      "Bold values pass the explicitly labelled within-placement",
+      "BH-adjusted 0.050 rule. These inferential contrasts remain from the",
+      "preregistered additive model and are separate from the heterogeneity-model descriptive summaries."
+    ))
+  ) |>
+  gt::cols_width(
+    Category ~ gt::pct(31),
+    `Ratio to At home (95% CI)` ~ gt::pct(28),
+    everything() ~ gt::pct(13.7)
+  ) |>
+  h04_gt(11.5)
+```
+
+```{r}
+#| label: fig-h04-primary-estimates
+#| fig-cap: "Heterogeneity-model equal-site standardized one-hour melEDI and named-category ratios versus At home; bars are participant-cluster-robust 95% confidence intervals. Other is an additive-model display-only estimate."
+#| fig-alt: "Two-panel point-and-interval plot ordered from the At home reference through Office/home working, Outdoors, Vehicle/public transport, and Sleeping, with Other/unspecified last. The upper panel shows equal-site standardized heterogeneity-model mean melEDI at near-eye and chest placements: Sleeping is lowest and Outdoors highest. Other is drawn with open points using its additive-model display-only estimate. The lower panel shows heterogeneity-model ratios for the four named categories versus At home on a logarithmic scale; Sleeping is below one and the other three categories are above one."
+#| out-width: "100%"
+
+knitr::include_graphics(artifact(
+  "10_figures", "H04", "H04_reader_heterogeneity_category_estimates.png"
+))
+```
+
+[Estimate data](../../artifacts/09_tables/H04/H04_reader_category_estimands.csv)
+and [figure source data](../../artifacts/11_source_data/H04/H04_reader_heterogeneity_category_figure.csv)
+retain the unrounded values.
+
+### Omnibus tests
+
+```{r}
+#| label: tbl-h04-omnibus
+#| tbl-cap: "Primary five-named-category and secondary six-category robust omnibus tests."
+
+primary_tests |>
+  mutate(
+    placement = factor(.data$placement, levels = c("Near-eye", "Chest")),
+    Test = ifelse(
+      .data$test_id == "H04-F1",
+      "Five named categories; Other unrestricted",
+      "All six categories (secondary)"
+    ),
+    p = format_p_cell(
+      .data$p_raw,
+      significant = .data$test_id == "H04-F1" & .data$p_raw < 0.05
+    )
+  ) |>
+  arrange(.data$placement, .data$test_id) |>
+  transmute(
+    Placement = as.character(.data$placement),
+    Test,
+    `F statistic` = .data$f_statistic,
+    `Numerator df` = .data$restrictions,
+    `Denominator df` = .data$denominator_df,
+    `Raw p` = .data$p
+  ) |>
+  gt::gt(groupname_col = "Placement") |>
+  gt::fmt_number(columns = `F statistic`, decimals = 2) |>
+  gt::fmt_integer(columns = c(`Numerator df`, `Denominator df`)) |>
+  gt::fmt_markdown(columns = `Raw p`) |>
+  gt::tab_source_note(
+    gt::md(paste(
+      "Bold p-values pass the primary raw 0.050 omnibus rule.",
+      "The six-category row is secondary and is not used to reinterpret",
+      "the primary five-category test."
+    ))
+  ) |>
+  h04_gt(11.5)
+```
+
+The complementary chest primary test also rejected equality of the five named
+categories, *F*(4, 149) = `r sprintf("%.2f", chest_primary_test$f_statistic)`,
+raw *p* `r format_p(chest_primary_test$p_raw)`. This separate result supports
+the broad placement consistency; it is not an independent replication or an
+equivalence test.
+
+## Site-specific context
+
+The additive population-mean omnibus remains the primary inferential analysis.
+The supported heterogeneity model supplies the descriptive category summaries
+above and tests whether the five named-category associations vary across
+sites. It excludes Other and uses only observed, supported cells; an
+unsupported site-category contrast is labelled non-estimable rather than
+forced into the model.
+
+```{r}
+#| label: tbl-h04-heterogeneity
+#| tbl-cap: "Support-gated site heterogeneity and complete site-deviation family accounting."
+
+heterogeneity_family <- site_activity |>
+  group_by(.data$placement) |>
+  summarise(
+    family_n = max(.data$family_n, na.rm = TRUE),
+    bh_significant = sum(
+      .data$site_deviation_p_adjusted < 0.05,
+      na.rm = TRUE
+    ),
+    support_non_estimable = sum(
+      .data$reporting_status == "SUPPORT_NON_ESTIMABLE"
+    ),
+    .groups = "drop"
+  )
+
+heterogeneity_tests |>
+  left_join(heterogeneity_family, by = "placement") |>
+  mutate(
+    placement = factor(.data$placement, levels = c("Near-eye", "Chest")),
+    p = format_p_cell(.data$p_raw, significant = .data$p_raw < 0.05)
+  ) |>
+  arrange(.data$placement) |>
+  transmute(
+    Placement = as.character(.data$placement),
+    Architecture = "Five named categories",
+    `F statistic` = .data$f_statistic,
+    `Numerator df` = .data$restrictions,
+    `Denominator df` = .data$denominator_df,
+    `Raw p` = .data$p,
+    `BH family members` = .data$family_n,
+    `BH-labelled deviations` = .data$bh_significant,
+    `Support non-estimable` = .data$support_non_estimable
+  ) |>
+  gt::gt() |>
+  gt::fmt_number(columns = `F statistic`, decimals = 2) |>
+  gt::fmt_integer(
+    columns = c(
+      `Numerator df`, `Denominator df`, `BH family members`,
+      `BH-labelled deviations`, `Support non-estimable`
+    )
+  ) |>
+  gt::fmt_markdown(columns = `Raw p`) |>
+  gt::tab_source_note(
+    gt::md(paste(
+      "Bold omnibus p-values pass the explicitly labelled exploratory raw",
+      "0.050 rule. Site-deviation labels use a complete BH family within",
+      "each placement; Other is excluded."
+    ))
+  ) |>
+  h04_gt(11)
+```
+
+Site heterogeneity was supported near eye, *F*(32, 125) = 8.03, raw *p*
+<0.001, and at chest, *F*(28, 149) = 11.62, raw *p* <0.001. This indicates
+that activity-associated means vary among sites; it is not a basis for
+post-hoc site ranking. The complete site-deviation families contain 44
+near-eye and 40 chest comparisons, of which 17 and 9 carry the BH-adjusted
+label.
+
+```{r}
+#| label: tbl-h04-near-site-factorization
+#| tbl-cap: "Near-eye standardized category means and site-specific deviation ratios from the site-heterogeneity model."
+
+site_category_levels <- c(
+  "At home",
+  "Working in the office/from home",
+  "Outdoors",
+  "On the road with public transport/car",
+  "Sleeping"
+)
+
+overall_context <- heterogeneity_category |>
+  filter(.data$placement == "Near-eye") |>
+  mutate(
+    ratio_p_display = gsub(
+      "<", "&lt;", format_p(.data$ratio_p_adjusted), fixed = TRUE
+    )
+  ) |>
+  transmute(
+    Location = "**Site-standardized mean**",
+    row_order = 0,
+    row_type = "overall",
+    activity = .data$activity,
+    Value = paste0(
+      "**",
+      format_mean_ci(
+        .data$standardized_mean_lx,
+        .data$mean_conf_low_lx,
+        .data$mean_conf_high_lx
+      ),
+      " lx**<br><small>",
+      if_else(
+        .data$activity == "At home",
+        "Reference category<br>BH p — (reference)",
+        paste0(
+          format_ratio_ci(
+            .data$ratio_to_home,
+            .data$ratio_conf_low,
+            .data$ratio_conf_high
+          ),
+          "× At home<br>BH p ",
+          .data$ratio_p_display
+        )
+      ),
+      "</small>"
+    )
+  )
+
+separator_context <- tibble::tibble(
+  Location = "&nbsp;",
+  row_order = 1,
+  row_type = "separator",
+  activity = site_category_levels,
+  Value = "&nbsp;"
+)
+
+site_context_rows <- site_activity |>
+  filter(
+    .data$placement == "Near-eye",
+    .data$activity %in% .env$site_category_levels
+  ) |>
+  mutate(
+    Location = paste0(
+      "<span style='color:", .data$site_color_hex,
+      ";font-size:1.15em'>●</span>&nbsp;", .data$site_display_name
+    ),
+    row_order = .data$site_display_order + 1,
+    row_type = "site",
+    adjusted_p_display = gsub(
+      "<", "&lt;", format_p(.data$site_deviation_p_adjusted), fixed = TRUE
+    ),
+    adjusted_p_display = if_else(
+      .data$site_deviation_p_adjusted < 0.05,
+      paste0("**", .data$adjusted_p_display, "**"),
+      .data$adjusted_p_display
+    ),
+    Value = case_when(
+      .data$reporting_status != "ESTIMABLE" ~
+        "<small>Not estimable</small>",
+      TRUE ~ paste0(
+        if_else(.data$site_deviation_p_adjusted < 0.05, "**", ""),
+        sprintf("%.2f×", .data$site_deviation_ratio),
+        if_else(.data$site_deviation_p_adjusted < 0.05, "**", ""),
+        "<br><small>",
+        sprintf(
+          "95%% CI %.2f–%.2f",
+          .data$site_deviation_conf_low,
+          .data$site_deviation_conf_high
+        ),
+        "</small><br><small>BH p ",
+        .data$adjusted_p_display,
+        "</small>"
+      )
+    )
+  ) |>
+  select(Location, row_order, row_type, activity, Value)
+
+site_factor_table_data <- bind_rows(
+  overall_context,
+  separator_context,
+  site_context_rows
+) |>
+  mutate(
+    activity = factor(.data$activity, levels = site_category_levels)
+  ) |>
+  arrange(.data$row_order) |>
+  select(-.data$row_order, -.data$row_type) |>
+  pivot_wider(names_from = .data$activity, values_from = .data$Value) |>
+  select(.data$Location, all_of(site_category_levels))
+
+site_factor_table_data |>
+  gt::gt() |>
+  gt::fmt_markdown(columns = everything()) |>
+  gt::cols_label(
+    Location = "Site",
+    `At home` = "At home",
+    `Working in the office/from home` =
+      gt::md("Office/home<br>working"),
+    Outdoors = "Outdoors",
+    `On the road with public transport/car` =
+      gt::md("Vehicle/public<br>transport"),
+    Sleeping = "Sleeping"
+  ) |>
+  gt::cols_width(Location ~ gt::px(165)) |>
+  h04_gt(10.5) |>
+  gt::tab_style(
+    style = list(
+      gt::cell_fill(color = "#E8EEF3"),
+      gt::cell_text(weight = "700"),
+      gt::cell_borders(
+        sides = "bottom",
+        color = "#8192A3",
+        weight = gt::px(2)
+      )
+    ),
+    locations = gt::cells_body(rows = 1)
+  ) |>
+  gt::tab_style(
+    style = list(
+      gt::cell_fill(color = "#FFFFFF"),
+      gt::cell_text(color = "#FFFFFF", size = gt::px(1)),
+      gt::cell_borders(
+        sides = c("top", "bottom"),
+        color = "#FFFFFF",
+        weight = gt::px(0)
+      )
+    ),
+    locations = gt::cells_body(rows = 2)
+  ) |>
+  gt::tab_source_note(
+    gt::md(paste(
+      "The blue-grey row reports equal-site category means and ratios to",
+      "At home from the site-heterogeneity model, with BH-adjusted p-values",
+      "for the four category comparisons. Site cells are deviation ratios",
+      "around the corresponding category mean and report only the",
+      "BH-adjusted deviation p-value. Bold site ratios and p-values pass",
+      "the complete near-eye multiplicity adjustment."
+    ))
+  )
+```
+
+```{r}
+#| label: fig-h04-site-context
+#| fig-cap: "Support-gated site-specific activity-associated melEDI. Dashed lines are the equal-site geometric means for each placement and activity; filled points pass the complete placement-specific BH adjustment, open points are other supported estimates, and crosses denote unsupported contrasts."
+#| fig-alt: "Faceted point-and-interval plot of expected melEDI by submitted-manuscript site, placement, and five named activity categories. A dashed vertical line in every facet gives the corresponding equal-site geometric mean from the site-heterogeneity model. Site colours are fixed across panels. Filled points identify BH-adjusted site deviations, open points show other supported estimates, and a cross marks the support-non-estimable near-eye San José Outdoors cell. Other/unspecified activity is absent."
+#| out-width: "100%"
+
+knitr::include_graphics(artifact(
+  "10_figures", "H04", "H04_site_activity_estimates.png"
+))
+```
+
+[Site-estimate data](../../artifacts/09_tables/H04/H04_site_activity_estimands.csv)
+and [figure source data](../../artifacts/11_source_data/H04/H04_site_activity_figure.csv)
+contain every supported and non-estimable cell.
+
+### Descriptive fixed-effect R²
+
+The primary analysis has no random effects, so mixed-model marginal and
+conditional R² are not defined. The following point summaries instead use the
+site-by-activity heterogeneity architecture and preserve the $1/k$
+hour weights.
+
+```{r}
+#| label: tbl-h04-fixed-r2
+#| tbl-cap: "Descriptive R² and hierarchy-respecting allocation for the heterogeneity model."
+
+heterogeneity_r_squared |>
+  mutate(
+    Placement = factor(.data$placement, levels = c("Near-eye", "Chest")),
+    Definition = case_when(
+      .data$loss_basis == "model_deviance" ~
+        "Working quasi-Tweedie deviance",
+      .data$weighting == "participant_balanced" ~
+        "Participant-balanced squared error",
+      TRUE ~ "Participant-hour squared error"
+    ),
+    Definition = factor(
+      .data$Definition,
+      levels = c(
+        "Working quasi-Tweedie deviance",
+        "Participant-hour squared error",
+        "Participant-balanced squared error"
+      )
+    ),
+    `Overall R²` = sprintf("%.3f", .data$overall_r_squared),
+    `Activity allocation` = sprintf(
+      "%.3f (%.1f%%)",
+      .data$category_shapley_r_squared,
+      .data$category_shapley_share_percent
+    ),
+    `Site allocation` = sprintf(
+      "%.3f (%.1f%%)",
+      .data$site_shapley_r_squared,
+      .data$site_shapley_share_percent
+    ),
+    `Interaction allocation` = sprintf(
+      "%.3f (%.1f%%)",
+      .data$interaction_r_squared,
+      .data$interaction_share_percent
+    ),
+    `Interaction partial R²` = sprintf(
+      "%.3f",
+      .data$interaction_partial_r_squared_conditional_on_additive
+    )
+  ) |>
+  arrange(.data$Placement, .data$Definition) |>
+  select(
+    Placement,
+    Definition,
+    `Overall R²`,
+    `Activity allocation`,
+    `Site allocation`,
+    `Interaction allocation`,
+    `Interaction partial R²`
+  ) |>
+  gt::gt(groupname_col = "Placement") |>
+  gt::tab_source_note(
+    gt::md(paste(
+      "Allocations are R² units with shares of overall R² in parentheses.",
+      "Every multi-select hour is split by 1/k. These are point descriptions",
+      "without resampling intervals or additional effect tests."
+    ))
+  ) |>
+  h04_gt(11)
+```
+
+Under the near-eye working quasi-deviance definition, overall R² was
+`r sprintf("%.3f", heterogeneity_r_squared$overall_r_squared[heterogeneity_r_squared$placement == "Near-eye" & heterogeneity_r_squared$loss_basis == "model_deviance"])`;
+activity, site, and interaction allocations were
+`r sprintf("%.1f%%", heterogeneity_r_squared$category_shapley_share_percent[heterogeneity_r_squared$placement == "Near-eye" & heterogeneity_r_squared$loss_basis == "model_deviance"])`,
+`r sprintf("%.1f%%", heterogeneity_r_squared$site_shapley_share_percent[heterogeneity_r_squared$placement == "Near-eye" & heterogeneity_r_squared$loss_basis == "model_deviance"])`,
+and
+`r sprintf("%.1f%%", heterogeneity_r_squared$interaction_share_percent[heterogeneity_r_squared$placement == "Near-eye" & heterogeneity_r_squared$loss_basis == "model_deviance"])`
+of that fitted improvement. They are scale-dependent descriptions of the
+fitted mean structure, not causal shares of exposure variance.
+
+## Model assessment
+
+```{r}
+#| label: tbl-h04-primary-diagnostics
+#| tbl-cap: "Numerical, influence, zero-mass, variance-pattern, and serial-dependence diagnostics."
+
+main_diagnostics |>
+  left_join(overall_assessment, by = "placement") |>
+  left_join(
+    primary_zero_mass |>
+      select(
+        .data$placement,
+        reader_observed_zero_fraction = .data$observed_zero_fraction,
+        reader_working_zero_fraction = .data$working_zero_fraction
+      ),
+    by = "placement",
+    relationship = "one-to-one"
+  ) |>
+  transmute(
+    Placement = as.character(.data$placement),
+    `Converged; rank` = paste0(
+      .data$converged, "; ", .data$design_rank, "/", .data$design_columns
+    ),
+    `Exact-zero hours` = paste0(
+      formatC(
+        as.integer(.data$exact_zero_unique_hours),
+        format = "d",
+        big.mark = ","
+      ),
+      " (", sprintf("%.1f%%", 100 * .data$exact_zero_fraction), ")"
+    ),
+    `Observed / working zero fraction` = sprintf(
+      "%.3f / %.3f",
+      .data$reader_observed_zero_fraction,
+      .data$reader_working_zero_fraction
+    ),
+    `|Residual|-fitted Spearman` =
+      .data$hour_absolute_residual_fitted_spearman,
+    `Lag-1 residual correlation` = .data$hour_residual_lag1_correlation,
+    `Maximum cluster score share` = .data$maximum_cluster_score_share,
+    `Maximum cluster leverage share` = .data$maximum_cluster_leverage_share,
+    Assessment = .data$assessment
+  ) |>
+  gt::gt() |>
+  gt::fmt_number(
+    columns = c(
+      `|Residual|-fitted Spearman`, `Lag-1 residual correlation`,
+      `Maximum cluster score share`, `Maximum cluster leverage share`
+    ),
+    decimals = 3
+  ) |>
+  gt::tab_source_note(
+    gt::md(paste(
+      "Residual correlations use one aggregated residual per unique",
+      "participant-hour; fractional-weight checks passed exactly."
+    ))
+  ) |>
+  h04_gt(11)
+```
+
+Both fits converged at full design rank, all registered robust restrictions
+were estimable, and no participant crossed the predeclared influence limits.
+The mean models are nevertheless **acceptable with limitation**. Exact zeros
+comprise 28.9% of near-eye and 29.4% of chest hours, whereas the corresponding
+working Tweedie zero fractions are 90.3% and 93.5%. The quasi mean model
+retains observed zeros but is not a separate model of zero probability.
+Residual spread changes with fitted magnitude, and lag-one residual
+correlations remain 0.445 and 0.498. Participant clustering is the basis for
+inference across the full longitudinal record; it does not make those model
+discrepancies disappear.
+
+```{r}
+#| label: fig-h04-primary-diagnostics
+#| fig-cap: "Primary-model residual, temporal-dependence, and zero-mass diagnostics."
+#| fig-alt: "Three-panel diagnostic figure for the primary additive models. Individual and binned Pearson residuals show fitted-value-dependent spread at both placements; residual correlations are positive at the first several hourly lags; and working Tweedie zero fractions substantially exceed observed zero fractions across fitted-mean deciles. Concurrent category memberships are aggregated back to one weighted original participant-hour."
+#| out-width: "100%"
+
+knitr::include_graphics(artifact(
+  "10_figures", "H04", "H04_primary_diagnostics.png"
+))
+```
+
+[Residual points](../../artifacts/11_source_data/H04/H04_reader_primary_residual_points.csv),
+[residual bins](../../artifacts/11_source_data/H04/H04_reader_primary_residual_bins.csv),
+[autocorrelations](../../artifacts/08_diagnostics/H04/H04_reader_primary_residual_acf.csv),
+and [zero calibration](../../artifacts/11_source_data/H04/H04_reader_primary_zero_calibration.csv)
+provide the exact plotted values.
+
+## Sensitivity analyses
+
+The predefined sensitivity set evaluates exactly-one-category hours;
+retention of co-selected Other as a fractionally weighted category; exclusion
+of Other-only hours; unit-weight long rows; gap-timing-unaware data; the exact
+placement-matched common sample; alternative working powers 1.30 and 1.80;
+and the complementary chest placement.
+
+The **gap-timing-unaware dataset** still passed the general per-hour and
+per-day coverage requirements. The term means that the timing of remaining
+missing observations is not used for an additional metric-specific
+adjustment; it does not mean that gaps or coverage were ignored.
+
+```{r}
+#| label: tbl-h04-sensitivities
+#| tbl-cap: "Exact fitted samples, five-category omnibus tests, and named-contrast stability across predefined sensitivities."
+
+samples |>
+  filter(.data$scenario_id != "primary_dataset") |>
+  left_join(
+    sensitivity_summary,
+    by = c("scenario_id", "placement")
+  ) |>
+  left_join(
+    sensitivity_f1,
+    by = c("scenario_id", "placement")
+  ) |>
+  mutate(
+    placement = factor(.data$placement, levels = c("Near-eye", "Chest")),
+    scenario_order = match(.data$scenario_id, names(.env$scenario_labels)),
+    Scenario = unname(.env$scenario_labels[.data$scenario_id]),
+    sample_footprint = sprintf(
+      "%s / %s / %s / %s / %s",
+      formatC(as.integer(.data$participants), format = "d", big.mark = ","),
+      formatC(
+        as.integer(.data$participant_days),
+        format = "d",
+        big.mark = ","
+      ),
+      formatC(
+        as.integer(.data$unique_participant_hours),
+        format = "d",
+        big.mark = ","
+      ),
+      formatC(as.integer(.data$long_rows), format = "d", big.mark = ","),
+      formatC(
+        as.integer(round(.data$effective_weighted_hours)),
+        format = "d",
+        big.mark = ","
+      )
+    ),
+    stable_display = paste0(.data$stable, "/4"),
+    f_display = sprintf(
+      "%.2f (%d df)",
+      .data$f_statistic,
+      .data$denominator_df
+    ),
+    p_display = format_p_cell(.data$p_raw, significant = FALSE)
+  ) |>
+  arrange(.data$scenario_order, .data$placement) |>
+  transmute(
+    Scenario,
+    Placement = as.character(.data$placement),
+    `Participants / days / hours / rows / weighted hours` =
+      .data$sample_footprint,
+    `Stable named contrasts` = .data$stable_display,
+    `Maximum ratio change, %` =
+      .data$maximum_absolute_ratio_change_percent,
+    `F statistic (denominator df)` = .data$f_display,
+    `Raw p` = .data$p_display
+  ) |>
+  gt::gt(groupname_col = "Scenario") |>
+  gt::fmt_number(columns = `Maximum ratio change, %`, decimals = 1) |>
+  gt::fmt_markdown(columns = `Raw p`) |>
+  gt::tab_source_note(
+    gt::md(paste(
+      "Sensitivity p-values are unadjusted diagnostic results and are not",
+      "bolded. Stable means the direction and prespecified classification",
+      "were retained. Unit-weight long rows change the estimand by allowing",
+      "multi-select hours to contribute more than one unit."
+    ))
+  ) |>
+  gt::cols_width(
+    Placement ~ gt::pct(10),
+    `Participants / days / hours / rows / weighted hours` ~ gt::pct(31),
+    everything() ~ gt::pct(14.7)
+  ) |>
+  h04_gt(10.5)
+```
+
+All four named contrasts were stable in every sensitivity at both placements.
+The deletion audit also removed each site and each of the five highest-score
+participants in turn; no primary decision changed. These checks support the
+direction and broad magnitude ordering, but they do not remove the model
+limitations or upgrade the observational claim.
+
+### Common-sample placement comparison
+
+The exact common frame contains 110 participants, 625 participant-days,
+14,308 unique participant-hours, 15,001 long rows, and 14,308 effective
+weighted hours at each placement.
+
+```{r}
+#| label: fig-h04-paired-placement
+#| fig-cap: "Common-sample near-eye-versus-chest concordance of category ratios to At home; the identity line does not define equivalence."
+#| fig-alt: "Log-log concordance plot of four common-sample activity ratios. The horizontal coordinate is the near-eye ratio to At home and the vertical coordinate is the chest ratio, with horizontal and vertical 95 percent confidence intervals. Sleeping lies near 0.1 at both placements; working lies near 2.5; travel and Outdoors are higher at chest than near eye. A dashed identity line is a visual concordance reference, not an equivalence test."
+#| out-width: "72%"
+
+knitr::include_graphics(artifact(
+  "10_figures", "H04", "H04_paired_placement_comparison.png"
+))
+```
+
+[Common-sample estimates](../../artifacts/09_tables/H04/H04_paired_placement_estimands.csv)
+and [figure source data](../../artifacts/11_source_data/H04/H04_paired_placement_figure.csv)
+retain the exact placement-specific values. The display uses identical
+participant-hour keys but separately fitted models; it supplies no unplanned
+placement-difference *p*-value.
+
+## Exploratory time-of-day context
+
+::: {.callout-note title="Exploratory analysis"}
+This analysis is separate from the preregistered category inference. It uses
+one cyclic global time-of-day smooth plus thin-plate sum-to-zero activity and
+site deviations, participant curves, participant-day shifts, and a
+boundary-aware AR(1) correction. Activity curves are also shown as ratios to
+the global daily smooth, not to At home, and no curve-wide test is made.
+:::
+
+The exploratory model retains the same activity-long rows and $1/k$ weights.
+It contains a cyclic global time smooth, thin-plate sum-to-zero activity and
+site smooths, participant-specific time smooths, and participant-day random
+intercepts. Only the global smooth is cyclic. Activity and site deviations
+may therefore separate at midnight; the open endpoints make this visible and
+no line wraps from 24:00 to 00:00.
+
+Activity-specific autoregressive runs restart at participant-day, activity,
+repeated-hour, non-consecutive-hour, and gap boundaries. Consequently,
+concurrent long rows from the same hour never become lag neighbours.
+
+```{r}
+#| label: tbl-h04-temporal-fit
+#| tbl-cap: "Exploratory temporal-model samples, fit, and added-context summaries."
+
+temporal_activity |>
+  left_join(
+    temporal_retention,
+    by = c("placement" = "placement")
+  ) |>
+  left_join(
+    temporal_r_squared |>
+      select(
+        .data$placement,
+        balanced_r_squared = .data$r_squared
+      ),
+    by = "placement",
+    relationship = "one-to-one"
+  ) |>
+  transmute(
+    Placement = as.character(.data$placement),
+    Participants = .data$participants,
+    `Participant-days` = .data$participant_days,
+    `Unique hours` = .data$unique_participant_hours,
+    `Long rows` = .data$observations_long_rows,
+    `Weighted hours` = .data$effective_weighted_hours,
+    `AR rho` = .data$rho,
+    `Adjusted R²` = .data$adjusted_r_squared,
+    `Deviance explained` = .data$deviance_explained,
+    `Equal-site participant-balanced R²` = .data$balanced_r_squared
+  ) |>
+  gt::gt() |>
+  gt::fmt_integer(
+    columns = c(
+      Participants, `Participant-days`, `Unique hours`, `Long rows`
+    ),
+    use_seps = TRUE
+  ) |>
+  gt::fmt_number(columns = `Weighted hours`, decimals = 0, use_seps = TRUE) |>
+  gt::fmt_number(
+    columns = c(
+      `AR rho`, `Adjusted R²`, `Deviance explained`,
+      `Equal-site participant-balanced R²`
+    ),
+    decimals = 3
+  ) |>
+  gt::tab_source_note(
+    gt::md(paste(
+      "The participant-balanced R² is calculated on raw melEDI with sites",
+      "weighted equally, participants equally within site, hours equally",
+      "within participant, and concurrent memberships split by 1/k. All R²",
+      "values are descriptive in-sample point estimates without resampling",
+      "intervals."
+    ))
+  ) |>
+  h04_gt(10.5)
+```
+
+The activity smooth improved AIC by 3,215 near eye and 4,984 at chest, while
+deviance explained increased from 81.8% to 84.8% and from 79.5% to 83.2%.
+This supports retaining the profiles as descriptive context, not as a second
+primary activity test.
+
+The activity curves use a qualitative palette distinct from the light-source
+colours used elsewhere in this report series, so colour does not imply a
+mapping between different category systems.
+
+```{r}
+#| label: fig-h04-temporal-near-eye
+#| fig-cap: "Exploratory near-eye time-of-day means, ratios to the global smooth, and effective weighted support."
+#| fig-alt: "Taller three-row, six-category near-eye figure using an activity palette distinct from the light-source colours used elsewhere in this report series. Six single-line facet strips are ordered At home, Office/home working, Outdoors, Vehicle/public transport, Sleeping, and Other/unspecified. The first row shows equal-site activity-associated melEDI curves with pointwise confidence ribbons and a dashed global cyclic curve; the second row shows each activity curve divided by that global curve on a common 0.01-to-50 ratio scale with 1-2-5 logarithmic breaks; and the third row shows effective weighted hours by clock hour. Sleeping is lowest, Outdoors highest during daytime, open circles mark sparse support, and grey gaps mark no observations. Other is display-only."
+#| out-width: "100%"
+
+knitr::include_graphics(artifact(
+  "10_figures", "H04", "H04_temporal_near_eye.png"
+))
+```
+
+```{r}
+#| label: fig-h04-temporal-chest
+#| fig-cap: "Exploratory chest time-of-day means, ratios to the global smooth, and effective weighted support."
+#| fig-alt: "Taller three-row, six-category chest figure using an activity palette distinct from the light-source colours used elsewhere in this report series. Six single-line facet strips are ordered At home, Office/home working, Outdoors, Vehicle/public transport, Sleeping, and Other/unspecified. It shows equal-site activity-associated melEDI curves and the dashed global cyclic curve, activity-to-global ratios on a common 0.01-to-50 scale with 1-2-5 logarithmic breaks, and effective weighted hours by clock time. Outdoors and travel have the highest daytime profiles; Sleeping is lowest overnight. Filled and open circles distinguish adequate from sparse support, grey gaps have no observations, and Other is display-only."
+#| out-width: "100%"
+
+knitr::include_graphics(artifact(
+  "10_figures", "H04", "H04_temporal_chest.png"
+))
+```
+
+[Near-eye curves](../../artifacts/11_source_data/H04/H04_reader_temporal_near_eye_curves.csv),
+[near-eye activity/global ratios](../../artifacts/11_source_data/H04/H04_reader_temporal_near_eye_ratios.csv),
+[near-eye global curve](../../artifacts/11_source_data/H04/H04_reader_temporal_near_eye_global.csv),
+and [near-eye support](../../artifacts/11_source_data/H04/H04_reader_temporal_near_eye_support.csv)
+contain the primary plotted values. The corresponding
+[chest curves](../../artifacts/11_source_data/H04/H04_reader_temporal_chest_curves.csv),
+[ratios](../../artifacts/11_source_data/H04/H04_reader_temporal_chest_ratios.csv),
+[global curve](../../artifacts/11_source_data/H04/H04_reader_temporal_chest_global.csv),
+and [support](../../artifacts/11_source_data/H04/H04_reader_temporal_chest_support.csv)
+provide the complementary placement values.
+
+### Temporal linear-predictor variance allocation
+
+```{r}
+#| label: tbl-h04-temporal-allocation
+#| tbl-cap: "Point allocation of fitted temporal linear-predictor variance."
+
+temporal_allocation |>
+  mutate(
+    Placement = factor(.data$placement, levels = c("Near-eye", "Chest")),
+    Component = recode(
+      .data$group,
+      global_time = "Global time of day",
+      activity_deviations = "Activity deviations",
+      site_deviations = "Site deviations",
+      participant_curves = "Participant curves",
+      participant_day_shifts = "Participant-day shifts"
+    ),
+    `Allocated share` = sprintf("%.1f%%", 100 * .data$shapley_share),
+    `Unique partial share` = sprintf(
+      "%.1f%%",
+      100 * .data$partial_unique_share
+    )
+  ) |>
+  select(Placement, Component, `Allocated share`, `Unique partial share`) |>
+  gt::gt(groupname_col = "Placement") |>
+  gt::tab_source_note(
+    gt::md(paste(
+      "Exact point allocation on the natural-log conditional-mean predictor",
+      "under equal-site, participant-balanced, and 1/k within-hour weights.",
+      "Components share covariance; no simulation interval was computed."
+    ))
+  ) |>
+  h04_gt()
+```
+
+Global time of day received 52.5% of the near-eye and 50.2% of the chest
+point allocation. Activity deviations received 30.7% and 32.6%, site
+deviations 5.6% and 6.5%, participant curves 8.4% and 7.1%, and
+participant-day shifts 2.8% and 3.5%. These are allocations of fitted
+linear-predictor variation, not independent or causal percentages of raw
+melEDI variance.
+
+### Temporal model assessment
+
+```{r}
+#| label: tbl-h04-temporal-diagnostics
+#| tbl-cap: "Convergence, basis capacity, residual dependence, support, and midnight diagnostics for the temporal models."
+
+temporal_retention |>
+  left_join(
+    temporal_zero_mass,
+    by = "placement",
+    relationship = "one-to-one"
+  ) |>
+  mutate(
+    placement = factor(.data$placement, levels = c("Near-eye", "Chest"))
+  ) |>
+  arrange(.data$placement) |>
+  transmute(
+    Placement = as.character(.data$placement),
+    `Minimum k-index` = .data$minimum_finite_k_index,
+    `Residual lag 1` = .data$residual_lag1,
+    `Observed / working zero fraction` = sprintf(
+      "%.3f / %.3f",
+      .data$observed_zero_fraction,
+      .data$working_zero_fraction
+    ),
+    `Sparse clock/category cells` =
+      .data$locally_sparse_clock_activity_cells,
+    `Maximum activity midnight ratio` =
+      .data$maximum_activity_endpoint_ratio,
+    `Maximum site midnight ratio` = .data$maximum_site_endpoint_ratio,
+    Assessment = .data$assessment
+  ) |>
+  gt::gt() |>
+  gt::fmt_number(
+    columns = c(`Minimum k-index`, `Residual lag 1`),
+    decimals = 3
+  ) |>
+  gt::fmt_number(
+    columns = c(
+      `Maximum activity midnight ratio`, `Maximum site midnight ratio`
+    ),
+    decimals = 2
+  ) |>
+  gt::fmt_integer(columns = `Sparse clock/category cells`) |>
+  h04_gt(11)
+```
+
+Both temporal fits converged at full coefficient rank with positive-definite
+smoothing-parameter Hessians and no final warnings. Their minimum finite
+k-indices were 0.872 and 0.863. Residual lag-one correlations remained 0.176
+and 0.167, and 41 near-eye plus 40 chest clock/category cells were locally
+sparse. The non-cyclic deviations can show large endpoint ratios.
+The working zero fractions of 0.452 and 0.502 exceed the observed fractions
+of 0.289 and 0.294. The profiles are therefore assessed **acceptable with
+limitation**.
+
+For each time-by-activity profile, sites are averaged equally on the fitted
+log-mean scale after participant and participant-day contributions are set to
+zero. Uncertainty uses the fitted coefficient covariance from
+`stats::vcov(fit, unconditional = TRUE)`, with the fitted `Vp` matrix only as
+an error fallback, followed by one back-transformation. Ribbons are
+model-based pointwise 95% intervals. They are not simultaneous bands; no
+time-specific test, significant period, or curve-wide inference is reported.
+No resampling enters the displayed estimates or intervals.
+
+```{r}
+#| label: fig-h04-temporal-diagnostics
+#| fig-cap: "Exploratory temporal-model residual, autocorrelation, and zero-mass diagnostics."
+#| fig-alt: "Three-panel diagnostic figure for the exploratory temporal models. Weighted one-hour residuals show changing spread with fitted melEDI, activity-run residual autocorrelation remains positive at lag one for both placements, and the working Tweedie zero fraction exceeds the observed fraction across fitted-value deciles. The residual and zero panels combine concurrent activity memberships with their 1 over k weights."
+#| out-width: "100%"
+
+knitr::include_graphics(artifact(
+  "10_figures", "H04", "H04_temporal_diagnostics.png"
+))
+```
+
+[Residual points](../../artifacts/11_source_data/H04/H04_reader_temporal_residual_points.csv),
+[residual bins](../../artifacts/11_source_data/H04/H04_reader_temporal_residual_bins.csv),
+[activity-run autocorrelations](../../artifacts/08_diagnostics/H04/H04_reader_temporal_residual_acf.csv),
+and [zero calibration](../../artifacts/11_source_data/H04/H04_reader_temporal_zero_calibration.csv)
+provide the exact diagnostic source values.
+
+## Interpretation
+
+Reported activity is strongly associated with one-hour personal light
+exposure. Sleeping corresponds to markedly lower melEDI than At home, whereas
+vehicle or public-transport travel, indoor or home working, and especially
+Outdoors correspond to higher values. The ordering is similar at chest, and
+it persists in the exact placement-matched sample and across the predefined
+sensitivity set. Activity-associated means also vary materially by site.
+
+The result remains observational. Fractional membership is a transparent way
+to preserve one total contribution per participant-hour; it does not make
+simultaneously reported labels mutually exclusive or remove ambiguity in
+self-report timing. Other/unspecified activity is heterogeneous and supports
+no substantive interpretation. Equal-site standardization describes the
+observed site set and does not automatically generalize to other populations.
+Participant-clustered inference accommodates within-hour membership and the
+longitudinal record under the stated mean model, but it does not cure residual
+serial dependence, fitted-value-dependent spread, sparse site cells, or the
+model's limited representation of exact zeros. The time-of-day profiles add
+descriptive context only, and the separate sensor fits do not establish
+placement equivalence.
