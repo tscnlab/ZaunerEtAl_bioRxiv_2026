@@ -1,0 +1,606 @@
+---
+title: "H06 daily metrics — remaining non-L10 bounded pilot"
+subtitle: "Current-source reuse, clock-family diagnostics, and production runtime gate"
+date: 2026-08-12
+engine: knitr
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    code-fold: true
+    code-summary: "Show audit R code"
+    code-tools: true
+    embed-resources: true
+    page-layout: full
+execute:
+  echo: false
+  warning: false
+  message: false
+  error: false
+  freeze: false
+tbl-cap-location: top
+---
+
+```{r}
+#| label: setup
+#| include: false
+
+options(
+  stringsAsFactors = FALSE,
+  scipen = 999,
+  width = 120,
+  dplyr.summarise.inform = FALSE
+)
+
+find_project_root <- function(start = getwd()) {
+  candidate <- normalizePath(start, winslash = "/", mustWork = TRUE)
+  repeat {
+    if (file.exists(file.path(candidate, "renv.lock"))) return(candidate)
+    parent <- dirname(candidate)
+    if (identical(parent, candidate)) {
+      stop("Could not locate the project root", call. = FALSE)
+    }
+    candidate <- parent
+  }
+}
+
+project_root <- Sys.getenv(
+  "H06_DAILY_PROJECT_ROOT",
+  unset = Sys.getenv("QUARTO_PROJECT_DIR", unset = "")
+)
+if (!nzchar(project_root) ||
+    !file.exists(file.path(project_root, "renv.lock"))) {
+  project_root <- find_project_root()
+}
+project_root <- normalizePath(project_root, winslash = "/", mustWork = TRUE)
+.libPaths(c(
+  file.path(project_root, "renv/library/macos/R-4.6/aarch64-apple-darwin23"),
+  .libPaths()
+))
+
+library(digest)
+library(dplyr)
+library(gt)
+library(readr)
+library(tibble)
+library(tidyr)
+
+stopifnot(
+  identical(as.character(getRversion()), "4.6.1"),
+  identical(as.character(packageVersion("lme4")), "2.0.1"),
+  identical(as.character(packageVersion("glmmTMB")), "1.1.14")
+)
+
+artifact <- function(stage, file) {
+  file.path(project_root, "artifacts", stage, "H06_daily", file)
+}
+read_h06d <- function(stage, file) {
+  readr::read_csv(
+    artifact(stage, file),
+    show_col_types = FALSE,
+    na = c("", "NA")
+  )
+}
+sha256 <- function(path) digest::digest(path, algo = "sha256", file = TRUE)
+verify_relative_manifest <- function(manifest, hash_column = "sha256") {
+  paths <- file.path(project_root, manifest$relative_path)
+  stopifnot(all(file.exists(paths)))
+  actual <- unname(vapply(paths, sha256, character(1)))
+  stopifnot(identical(actual, manifest[[hash_column]]))
+  invisible(TRUE)
+}
+compact_gt <- function(table) {
+  table |>
+    gt::tab_options(
+      table.font.size = gt::px(12),
+      data_row.padding = gt::px(3),
+      heading.padding = gt::px(4),
+      column_labels.padding = gt::px(4),
+      table.width = gt::pct(100),
+      source_notes.font.size = gt::px(11)
+    )
+}
+format_seconds <- function(value) {
+  dplyr::case_when(
+    is.na(value) ~ "—",
+    value < 60 ~ sprintf("%.1f s", value),
+    TRUE ~ sprintf("%.1f min", value / 60)
+  )
+}
+format_number <- function(value, digits = 3L) {
+  ifelse(is.na(value), "—", sprintf(paste0("%.", digits, "f"), value))
+}
+
+input_manifest <- read_h06d(
+  "12_manifests",
+  "H06_daily_non_l10_pilot_input_manifest.csv"
+)
+code_manifest <- read_h06d(
+  "12_manifests",
+  "H06_daily_non_l10_pilot_code_manifest.csv"
+)
+output_manifest <- read_h06d(
+  "12_manifests",
+  "H06_daily_non_l10_pilot_output_manifest.csv"
+)
+software_manifest <- read_h06d(
+  "12_manifests",
+  "H06_daily_non_l10_pilot_software_manifest.csv"
+)
+stopifnot(
+  all(input_manifest$verification_status == "PASS"),
+  identical(input_manifest$expected_sha256, input_manifest$actual_sha256)
+)
+verify_relative_manifest(code_manifest)
+verify_relative_manifest(output_manifest)
+
+frame_inventory <- read_h06d(
+  "06_model_data",
+  "H06_daily_non_l10_pilot_frame_inventory.csv"
+)
+reconciliation <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_non_l10_pilot_source_reconciliation.csv"
+)
+reuse <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_non_l10_pilot_reuse_verification.csv"
+)
+diagnostics <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_non_l10_pilot_timing_diagnostics.csv"
+)
+model_counts <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_non_l10_pilot_timing_model_counts.csv"
+)
+registered <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_non_l10_pilot_timing_registered_benchmarks.csv"
+)
+deletions <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_non_l10_pilot_deletion_checkpoint.csv"
+)
+deletion_runtime <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_non_l10_pilot_deletion_runtime_by_class.csv"
+)
+runtime <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_non_l10_pilot_runtime_and_projection.csv"
+)
+preservation <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_non_l10_pilot_preservation_final.csv"
+)
+verdict <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_non_l10_pilot_verdict.csv"
+)
+
+stopifnot(
+  nrow(frame_inventory) == 468L,
+  all(reconciliation$exact_reconciliation),
+  nrow(reuse) == 3L,
+  all(
+    reuse$reuse_disposition ==
+      "REUSE_EXACT_HISTORICAL_REML_ADDITIVE_OBJECT"
+  ),
+  nrow(diagnostics) == 15L,
+  nrow(deletions) == 50L,
+  all(preservation$identity_status == "BYTE_IDENTICAL"),
+  verdict$bh_update[[1L]] == "NOT_RUN_NOT_AUTHORIZED",
+  verdict$full_grid[[1L]] == "NOT_RUN_AWAITING_AUTHOR_APPROVAL"
+)
+
+predictor_labels <- c(
+  work_free_day = "Work/free day",
+  activity_status = "Daily activity status",
+  previous_sleep_duration_centered_h = "Previous-night sleep duration"
+)
+class_labels <- c(
+  gaussian_offset = "Shifted-log Gaussian",
+  tweedie_log = "Tweedie log",
+  gaussian_identity = "Identity Gaussian",
+  ordinary_clock = "Ordinary clock-hour Gaussian",
+  strict_clock = "Strict-after-16:00 clock-hour Gaussian"
+)
+
+metric_verdict <- diagnostics |>
+  dplyr::summarise(
+    predictor_cells = dplyr::n(),
+    acceptable = sum(grepl("^ACCEPTABLE", .data$diagnostic_disposition)),
+    gaussian_core_failures = sum(
+      .data$diagnostic_disposition == "NOT_ACCEPTABLE_GAUSSIAN_CORE"
+    ),
+    temporal_failures = sum(
+      .data$diagnostic_disposition == "NOT_ACCEPTABLE_TEMPORAL_STABILITY"
+    ),
+    ar_triggers = sum(.data$ar_trigger),
+    .by = c("metric_slot", "manuscript_name")
+  ) |>
+  dplyr::arrange(.data$metric_slot)
+
+deletion_summary <- deletions |>
+  dplyr::summarise(
+    refits = dplyr::n(),
+    failures = sum(!.data$converged | !is.na(.data$fit_error)),
+    warnings = sum(.data$warning_count),
+    maximum_shift_se = max(.data$absolute_shift_in_full_se, na.rm = TRUE),
+    direction_reversals = sum(.data$direction_reversal, na.rm = TRUE),
+    .by = "class_id"
+  )
+
+all_deletion_projection <- runtime |>
+  dplyr::filter(grepl("all_authorized_scenarios", .data$component))
+base_projection_seconds <- runtime |>
+  dplyr::filter(grepl("^full base-grid projection", .data$component)) |>
+  dplyr::summarise(seconds = sum(.data$projected_seconds)) |>
+  dplyr::pull("seconds")
+```
+
+::: {.callout-important title="H06-D-G2P-NONL10 — author stop gate"}
+The bounded pilot is complete, but the remaining daily grid has **not** been
+released for production. The source and preservation contracts pass, all 50
+representative deletion refits complete, and all three predictor models for
+mean timing above 250 lx melEDI pass the declared diagnostics. M10 midpoint,
+L10 midpoint, first timing above 250 lx melEDI, and last timing above 250 lx
+melEDI do not pass the current response-family or temporal-stability rules.
+No BH family was assembled and no pilot association p-value is interpreted.
+:::
+
+# What this pilot did
+
+This is the bounded pilot authorized by `H06-D-007`. It concerns the 13
+unfinished **non-L10-mean, non-MDER** daily registry slots. It does not refit
+L10 mean melEDI (slot 3), MDER (slot 15), the accepted 30-minute temporal
+analysis, the pre-sleep no-nugget sensitivity, or the main hourly H06
+analysis. The hourly H06 analysis remains primary; this branch remains
+complementary, preregistration-oriented participant-day evidence.
+
+The pilot performed four tasks:
+
+1. verified the current shared inputs and the METRIC-010/METRIC-011 non-L10
+   invariance evidence;
+2. constructed the full candidate inventory without fitting the production
+   grid;
+3. fitted the five timing outcomes × three predictors on primary near-eye
+   all-available frames; and
+4. ran exactly 50 serial participant/site deletion refits across five
+   consequential response-family classes.
+
+There was no bootstrap, simulation, full production batch, BH update, or
+reader-report work.
+
+# Current-source and preservation contract
+
+All `r nrow(input_manifest)` pinned inputs match their sealed SHA-256
+identities. The inventory contains `r nrow(frame_inventory)` exact candidate
+frames: 13 metrics × 3 predictors × 12 declared scenario/placement/sample
+roles. Frame sizes range from `r min(frame_inventory$participant_days)` to
+`r max(frame_inventory$participant_days)` participant-days.
+
+The long CSV and wide RDS metric representations agree in missingness,
+estimability, and values under the project numerical-representation contract.
+They are not bit-identical after decimal parsing in
+`r sum(reconciliation$representation_differences)` cells; the maximum scaled
+difference is `r format(max(reconciliation$maximum_relative_difference), scientific = TRUE, digits = 3)`,
+far below the prespecified $10^{-12}$ representation tolerance. This is a
+serialization distinction, not a scientific-value difference.
+
+```{r}
+#| label: tbl-frame-inventory
+#| tbl-cap: "Exact candidate-frame inventory by scenario role."
+
+frame_inventory |>
+  dplyr::summarise(
+    `Metric × predictor frames` = dplyr::n(),
+    `Participant-days, range` = sprintf(
+      "%d–%d",
+      min(.data$participant_days),
+      max(.data$participant_days)
+    ),
+    `Participants, range` = sprintf(
+      "%d–%d",
+      min(.data$participants),
+      max(.data$participants)
+    ),
+    Sites = paste(range(.data$sites), collapse = "–"),
+    .by = c("run_order", "run_id", "analysis_role")
+  ) |>
+  dplyr::arrange(.data$run_order) |>
+  dplyr::select(-"run_order") |>
+  gt::gt() |>
+  gt::cols_label(
+    run_id = "Scenario",
+    analysis_role = "Role"
+  ) |>
+  compact_gt()
+```
+
+The current state-support reconstruction qualification under
+`PREP06-BASE-002` remains a provenance limitation. It is not treated as
+evidence that these values are wrong.
+
+All `r nrow(preservation)` pre-existing H06_daily files in the protected
+scope remained byte-identical across the pilot. That includes the accepted
+L10 and MDER histories, temporal outputs, and pre-sleep no-nugget object.
+
+## Exact reuse of three earlier family pilots
+
+The three representative additive objects were reused rather than refitted.
+Their analytical frames, response/source vectors, fitted model frames,
+formulas, design matrices, site contrasts, family/links, optimizers, warnings,
+convergence states, and software identities are exact. The raw tibble object
+is not byte-identical because the current wide source carries an updated
+global `metric_settings` attribute after the shared MDER/L10 repins; removing
+that unrelated global attribute leaves the complete analytical frame
+identical. This exception is recorded rather than hidden.
+
+```{r}
+#| label: tbl-reuse
+#| tbl-cap: "Exact analytical-object reuse verification."
+
+reuse |>
+  dplyr::transmute(
+    Family = unname(class_labels[.data$reuse_id]),
+    Metric = .data$metric_id,
+    Predictor = unname(predictor_labels[.data$predictor_id]),
+    `Days / participants / sites` = sprintf(
+      "%d / %d / %d",
+      .data$participant_days,
+      .data$participants,
+      .data$sites
+    ),
+    `Raw frame object` = ifelse(
+      .data$raw_frame_object_identical,
+      "Identical",
+      "Global metric-settings attribute repinned"
+    ),
+    `Analytical model contract` = ifelse(
+      .data$reuse_disposition ==
+        "REUSE_EXACT_HISTORICAL_REML_ADDITIVE_OBJECT",
+      "Exact — reused",
+      "Failed"
+    )
+  ) |>
+  gt::gt() |>
+  compact_gt()
+```
+
+# Clock-family pilot
+
+The clock outcomes use their already-approved linearized local-clock
+estimands. M10 midpoint and the three above-250-lx timing metrics use ordinary
+clock hours. L10 midpoint uses the strict after-16:00 unwrap. All 15 source
+frames pass the source-clock span and cut-point rules; failures below arise
+from response-distribution or residual temporal criteria, not an unnoticed
+midnight split.
+
+```{r}
+#| label: tbl-clock-metric-verdict
+#| tbl-cap: "Timing-family diagnostic verdict across the three predictors."
+
+metric_verdict |>
+  dplyr::transmute(
+    Slot = .data$metric_slot,
+    Outcome = .data$manuscript_name,
+    `Predictor cells` = .data$predictor_cells,
+    Acceptable = .data$acceptable,
+    `Gaussian-core failure` = .data$gaussian_core_failures,
+    `Temporal-stability failure` = .data$temporal_failures,
+    `AR triggers` = .data$ar_triggers
+  ) |>
+  gt::gt() |>
+  compact_gt()
+```
+
+Mean timing above 250 lx melEDI is acceptable for all three predictors. M10
+midpoint and last timing above 250 lx melEDI pass the ordinary Gaussian checks
+but their triggered AR counterparts leave excessive site-specific residual
+dependence. L10 midpoint fails Gaussian residual-shape/tail rules in all three
+cells; its activity cell also fails the AR criterion. First timing has two
+Gaussian-core failures and one temporal-stability failure.
+
+```{r}
+#| label: tbl-clock-cell-diagnostics
+#| tbl-cap: "Per-predictor timing diagnostics on primary near-eye frames."
+
+diagnostics |>
+  dplyr::transmute(
+    Outcome = .data$manuscript_name,
+    Predictor = unname(predictor_labels[.data$predictor_id]),
+    Days = .data$participant_days,
+    `Q–Q r` = format_number(.data$residual_qq_correlation),
+    `|spread trend|` = format_number(
+      abs(.data$absolute_residual_fitted_spearman)
+    ),
+    `Tail > |4|` = sprintf(
+      "%.1f%%",
+      100 * .data$standardized_residual_gt4_fraction
+    ),
+    `Max site lag-1` = format_number(
+      .data$independent_maximum_absolute_site_lag1
+    ),
+    `AR rho` = format_number(.data$ar_rho),
+    `Post-AR max site lag-1` = format_number(
+      .data$post_ar_maximum_absolute_site_lag1
+    ),
+    Verdict = dplyr::recode(
+      .data$diagnostic_disposition,
+      ACCEPTABLE = "Acceptable",
+      NOT_ACCEPTABLE_GAUSSIAN_CORE = "Not acceptable — Gaussian core",
+      NOT_ACCEPTABLE_TEMPORAL_STABILITY =
+        "Not acceptable — temporal stability"
+    )
+  ) |>
+  gt::gt() |>
+  compact_gt()
+```
+
+The 15 cells attempted and fitted
+`r sum(model_counts$model_components_fitted)` model components. Nine cells
+triggered the actual-date, gap-aware AR counterpart; none of those nine met
+the post-AR site-specific residual rule, and one was singular. The exact
+registered random-site/random-slope benchmark was estimable in only
+`r sum(registered$benchmark_disposition == "ESTIMABLE_BENCHMARK_ONLY")` of 15
+cells. It therefore remains a benchmark rather than a substitute for the
+approved fixed-site primary hierarchy.
+
+The pipeline stored 30 reduced-versus-additive or additive-versus-site-
+interaction pilot likelihood-ratio tests solely to verify production code.
+They are raw pilot values: they are not displayed, interpreted, adjusted, or
+used to select a model. No BH field exists in that table.
+
+# Fifty-refit deletion pilot
+
+All 50 scheduled refits completed serially: five participant and five site
+deletions in each of five response-family classes. There were no fit failures,
+optimizer warnings, or direction reversals. The strict-clock representative
+is the already non-acceptable L10-midpoint work/free fit and is included only
+to measure runtime; its deletion result cannot rescue its failed Gaussian
+diagnostics.
+
+```{r}
+#| label: tbl-deletion-pilot
+#| tbl-cap: "Representative participant/site deletion pilot."
+
+deletion_summary |>
+  dplyr::transmute(
+    Class = unname(class_labels[.data$class_id]),
+    Refits = .data$refits,
+    Failures = .data$failures,
+    Warnings = .data$warnings,
+    `Maximum shift (full-model SE)` = sprintf(
+      "%.2f",
+      .data$maximum_shift_se
+    ),
+    `Direction reversals` = .data$direction_reversals,
+    Assessment = dplyr::case_when(
+      .data$class_id == "strict_clock" ~
+        "1–2 SE major limitation; runtime-only failed family",
+      .data$maximum_shift_se < 1 ~ "Acceptable in this representative pilot",
+      TRUE ~ "Requires review"
+    )
+  ) |>
+  gt::gt() |>
+  compact_gt()
+```
+
+The largest shift among the four otherwise usable representative classes is
+`r sprintf("%.2f", max(deletion_summary$maximum_shift_se[deletion_summary$class_id != "strict_clock"]))`
+full-model SE. The strict-clock runtime representative shifts by
+`r sprintf("%.2f", deletion_summary$maximum_shift_se[deletion_summary$class_id == "strict_clock"])`
+SE under its largest tested deletion, reinforcing that it must not be promoted
+from this pilot.
+
+# Runtime and production boundary
+
+The 15-cell timing pilot used `r format_seconds(runtime$measured_seconds[runtime$component == "15-cell primary near-eye clock-family pilot"])`.
+The 50 fitted deletion models used a cumulative
+`r format_seconds(runtime$measured_seconds[runtime$component == "five-class deletion pilot"])`.
+Checkpoint output was written after every refit and round-tripped with all
+task IDs 1–50.
+
+Across all 468 candidate frames, a complete participant/site deletion battery
+would require `r format(all_deletion_projection$projected_units, big.mark = ",")`
+serial refits and is projected at
+`r format_seconds(all_deletion_projection$projected_seconds)`. The base model
+grid is projected at `r format_seconds(base_projection_seconds)`. Together
+these imply a lower-bound fit time of
+`r format_seconds(all_deletion_projection$projected_seconds + base_projection_seconds)`,
+before triggered-AR overhead, diagnostics, source tables, and rendering.
+
+```{r}
+#| label: tbl-runtime
+#| tbl-cap: "Measured pilot time and projected full-grid computation."
+
+runtime |>
+  dplyr::filter(
+    .data$component %in% c(
+      "15-cell primary near-eye clock-family pilot",
+      "five-class deletion pilot"
+    ) |
+      grepl("all_authorized_scenarios", .data$component) |
+      grepl("^full base-grid projection", .data$component)
+  ) |>
+  dplyr::transmute(
+    Component = .data$component,
+    `Completed units` = ifelse(
+      .data$completed_units == 0,
+      "—",
+      format(.data$completed_units, big.mark = ",")
+    ),
+    `Measured time` = format_seconds(.data$measured_seconds),
+    `Projected units` = ifelse(
+      is.na(.data$projected_units),
+      "—",
+      format(.data$projected_units, big.mark = ",")
+    ),
+    `Projected time` = format_seconds(.data$projected_seconds),
+    Scope = .data$projection_scope
+  ) |>
+  gt::gt() |>
+  compact_gt()
+```
+
+# Recommendation and H06-D-G2P-NONL10 decisions
+
+The recommended disposition is to **accept the bounded pilot but not release
+the unchanged full 13-slot production batch**.
+
+1. Accept the current-source contract, 468-frame inventory, exact reuse of the
+   three historical analytical objects, and byte-for-byte preservation audit.
+2. Accept mean timing above 250 lx melEDI as the only clock-family outcome
+   currently cleared across all three predictor cells.
+3. Keep M10 midpoint, L10 midpoint, first timing, and last timing on hold. A
+   new bounded, prespecified repair pilot is needed before any of these can
+   enter production; failed AR or Gaussian diagnostics must not be repaired by
+   deletion, predictor-specific model selection, or an unregistered family.
+4. Accept the 50-refit checkpoint/runtime evidence. The strict-clock 1.10-SE
+   deletion shift is a major limitation attached to an already failed model,
+   not an accepted influence result.
+5. Keep BH unchanged. L10 mean remains the named missing slot 3, MDER remains
+   frozen in slot 15, and all 12 completed families remain blocked until the
+   production grid itself is authorized and complete.
+
+Two scientifically coherent next actions would require explicit author
+authorization: either (a) authorize production for the eight non-timing
+outcomes plus mean timing while the four failed timing outcomes remain on a
+separate repair hold, or (b) first authorize a bounded repair pilot for the
+four failed timing outcomes and decide production only after that result. The
+second route preserves a single production gate and is recommended.
+
+::: {.callout-warning title="Stop"}
+This report stops at `H06-D-G2P-NONL10`. It does not authorize the full
+remaining grid, any BH update, Stage 3, Stage 4, changes to main H06, or final
+H06 integration.
+:::
+
+# Reproducibility record
+
+The authoritative command was:
+
+```text
+Rscript --vanilla scripts/hypotheses/H06_daily/run_h06_daily_non_l10_pilot.R
+Rscript --vanilla scripts/hypotheses/H06_daily/postprocess_h06_daily_non_l10_pilot.R
+```
+
+R 4.6.1 and the synchronized project library were used. The input manifest
+contains `r nrow(input_manifest)` identities, the code manifest contains
+`r nrow(code_manifest)` identities, and the non-circular output manifest
+contains `r nrow(output_manifest)` identities. The pilot report reads sealed
+artifacts only and performs no model fit, diagnostic recomputation, deletion,
+or multiplicity adjustment.
+
+```{r}
+#| label: tbl-software
+#| tbl-cap: "Authoritative software identity."
+
+software_manifest |>
+  dplyr::select(Item = "item", Version = "version", Role = "role") |>
+  gt::gt() |>
+  compact_gt()
+```

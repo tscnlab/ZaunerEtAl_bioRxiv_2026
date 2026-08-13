@@ -1,0 +1,844 @@
+---
+title: "H06 daily metrics — corrected temporal pilot reconciliation"
+subtitle: "H02-aligned arithmetic-mean melEDI GAMM with working AR(1) correction"
+date: 2026-08-11
+engine: knitr
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    code-fold: true
+    code-summary: "Show audit R code"
+    code-tools: true
+    embed-resources: true
+    page-layout: full
+execute:
+  echo: false
+  warning: false
+  message: false
+  error: false
+  freeze: false
+tbl-cap-location: top
+---
+
+```{r}
+#| label: setup
+#| include: false
+
+options(
+  stringsAsFactors = FALSE,
+  scipen = 999,
+  width = 120,
+  dplyr.summarise.inform = FALSE
+)
+
+find_project_root <- function(start = getwd()) {
+  candidate <- normalizePath(start, winslash = "/", mustWork = TRUE)
+  repeat {
+    if (file.exists(file.path(candidate, "renv.lock"))) {
+      return(candidate)
+    }
+    parent <- dirname(candidate)
+    if (identical(parent, candidate)) {
+      stop("Could not locate the project root", call. = FALSE)
+    }
+    candidate <- parent
+  }
+}
+
+project_root <- Sys.getenv(
+  "H06_DAILY_PROJECT_ROOT",
+  unset = Sys.getenv("QUARTO_PROJECT_DIR", unset = "")
+)
+if (!nzchar(project_root) || !file.exists(file.path(project_root, "renv.lock"))) {
+  project_root <- find_project_root()
+}
+project_root <- normalizePath(project_root, winslash = "/", mustWork = TRUE)
+project_library <- file.path(
+  project_root,
+  "renv/library/macos/R-4.6/aarch64-apple-darwin23"
+)
+.libPaths(c(project_library, .libPaths()))
+
+library(digest)
+library(dplyr)
+library(gt)
+library(readr)
+library(tibble)
+library(tidyr)
+
+stopifnot(
+  identical(as.character(getRversion()), "4.6.1"),
+  identical(as.character(packageVersion("mgcv")), "1.9.4"),
+  identical(as.character(packageVersion("melidosData")), "1.0.6")
+)
+
+read_h06d <- function(stage, file) {
+  readr::read_csv(
+    file.path(project_root, "artifacts", stage, "H06_daily", file),
+    show_col_types = FALSE,
+    na = ""
+  )
+}
+sha256 <- function(path) {
+  digest::digest(path, algo = "sha256", file = TRUE)
+}
+verify_manifest <- function(path, allowed_mismatch = character()) {
+  manifest <- readr::read_csv(path, show_col_types = FALSE, na = "")
+  observed <- vapply(
+    file.path(project_root, manifest$relative_path),
+    sha256,
+    character(1)
+  )
+  checked <- manifest |>
+    mutate(
+      observed_sha256 = unname(observed),
+      hash_match = .data$sha256 == .data$observed_sha256
+    )
+  mismatched_paths <- checked$relative_path[!checked$hash_match]
+  stopifnot(setequal(mismatched_paths, allowed_mismatch))
+  checked
+}
+
+manifest_names <- c(
+  "H06_daily_temporal_h02_input_manifest.csv",
+  "H06_daily_temporal_h02_code_manifest.csv",
+  "H06_daily_temporal_h02_output_manifest.csv",
+  "H06_daily_temporal_h02_basis_repair_input_manifest.csv",
+  "H06_daily_temporal_h02_basis_repair_code_manifest.csv",
+  "H06_daily_temporal_h02_basis_repair_output_manifest.csv",
+  "H06_daily_temporal_h02_reconciliation_input_manifest.csv",
+  "H06_daily_temporal_h02_reconciliation_code_manifest.csv",
+  "H06_daily_temporal_h02_reconciliation_output_manifest.csv",
+  "H06_daily_temporal_h02_production_gate_input_manifest.csv",
+  "H06_daily_temporal_h02_production_gate_code_manifest.csv",
+  "H06_daily_temporal_h02_production_gate_output_manifest.csv",
+  "H06_daily_temporal_h02_upstream_repin_input_manifest.csv",
+  "H06_daily_temporal_h02_upstream_repin_code_manifest.csv",
+  "H06_daily_temporal_h02_upstream_repin_output_manifest.csv"
+)
+manifest_paths <- file.path(
+  project_root,
+  "artifacts/12_manifests/H06_daily",
+  manifest_names
+)
+selected_input_manifest_path <- manifest_paths[
+  manifest_names == "H06_daily_temporal_h02_input_manifest.csv"
+]
+selected_input_check <- verify_manifest(
+  selected_input_manifest_path,
+  allowed_mismatch = c(
+    "artifacts/06_model_data/base/metrics_glasses_30_minute_context.rds",
+    "artifacts/12_manifests/base_model_data_artifacts.csv",
+    "artifacts/12_manifests/metric_artifacts.csv",
+    "audit/decisions/preparation06_current_base_model_gate.md"
+  )
+)
+qualified_input_mismatch <- selected_input_check |>
+  filter(!.data$hash_match)
+expected_qualified_mismatch <- tibble::tribble(
+  ~relative_path, ~sha256, ~observed_sha256,
+  "artifacts/06_model_data/base/metrics_glasses_30_minute_context.rds",
+  "afa5a23308744ae495ef07a521c99e11bd7296aa855c5cb773f71f2b68eeb8e5",
+  "0ad121f104af7ae885016e4dd82f62e94e94daabd01128ed8c76407bfbc54249",
+  "artifacts/12_manifests/base_model_data_artifacts.csv",
+  "142d1044dd7e6a566e45e3a5c56033b1e8251e100c0d7c7523564c824950a0e4",
+  "6cfbfb18a2f6b1e31613e3fba803c3fbf64eb63e37155ae4fffd437a213b3ad0",
+  "artifacts/12_manifests/metric_artifacts.csv",
+  "6ec3185620d921e1f81b8464e850249613deb823988187d58794b3471303f4e8",
+  "7bb2830c695e5600f0877acca500a187a040fe727a029bdb069f69099abe4f43",
+  "audit/decisions/preparation06_current_base_model_gate.md",
+  "4bc007db330b953a090985765b090d2a166515bbf056f4a56d3c44ea01426944",
+  "789c1b2e0e52f1a22ed407096f0ebe1c239ee1c954197a880c19a9c32780626e"
+)
+stopifnot(
+  nrow(qualified_input_mismatch) == 4L,
+  nrow(dplyr::anti_join(
+    qualified_input_mismatch |>
+      select(.data$relative_path, .data$sha256, .data$observed_sha256),
+    expected_qualified_mismatch,
+    by = c("relative_path", "sha256", "observed_sha256")
+  )) == 0L,
+  nrow(dplyr::anti_join(
+    expected_qualified_mismatch,
+    qualified_input_mismatch |>
+      select(.data$relative_path, .data$sha256, .data$observed_sha256),
+    by = c("relative_path", "sha256", "observed_sha256")
+  )) == 0L
+)
+verified_manifests <- lapply(
+  setdiff(manifest_paths, selected_input_manifest_path),
+  verify_manifest
+)
+stopifnot(all(vapply(
+  verified_manifests,
+  function(manifest) all(manifest$hash_match),
+  logical(1)
+)))
+
+input_manifest <- selected_input_check |>
+  select(-dplyr::all_of(c("observed_sha256", "hash_match")))
+upstream_repin_comparison <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_temporal_h02_upstream_repin_frame_comparison.csv"
+)
+upstream_repin_drift <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_temporal_h02_upstream_repin_drift_registry.csv"
+)
+stopifnot(
+  nrow(upstream_repin_comparison) == 6L,
+  all(upstream_repin_comparison$exact_row_value_and_attribute_identity),
+  all(!upstream_repin_comparison$mder_read_or_used),
+  all(!upstream_repin_comparison$frame_written),
+  all(!upstream_repin_comparison$model_refitted),
+  all(upstream_repin_comparison$qualification == "PASS"),
+  nrow(upstream_repin_drift) == 5L,
+  all(upstream_repin_drift$current_hash_verified),
+  all(upstream_repin_drift$qualification == "PASS_NO_REFIT")
+)
+software <- read_h06d(
+  "12_manifests",
+  "H06_daily_temporal_h02_software_manifest.csv"
+)
+formula_registry <- read_h06d(
+  "06_model_data",
+  "H06_daily_temporal_h02_formula_registry.csv"
+)
+specification <- read_h06d(
+  "06_model_data",
+  "H06_daily_temporal_h02_specification.csv"
+)
+support <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_temporal_h02_support_overall.csv"
+)
+context <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_temporal_h02_context_cells.csv"
+)
+sleep_support <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_temporal_h02_sleep_support_by_site.csv"
+)
+boundaries <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_temporal_h02_ar_boundaries.csv"
+)
+component <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_temporal_h02_component_diagnostics.csv"
+)
+smooth_registry <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_temporal_h02_smooth_registry.csv"
+)
+basis <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_temporal_h02_basis_repair_comparison.csv"
+)
+basis_models <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_temporal_h02_basis_repair_model_diagnostics.csv"
+)
+reconciled <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_temporal_h02_reconciled_verdict.csv"
+)
+gate_contract <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_temporal_h02_production_gate_contract.csv"
+)
+runtime <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_temporal_h02_reconciled_runtime.csv"
+)
+
+stopifnot(
+  nrow(formula_registry) == 1L,
+  nrow(component) == 1L,
+  nrow(basis) == 1L,
+  all(smooth_registry$xt_is_null),
+  identical(
+    basis$basis_repair_status,
+    "K12_RETAINED_AFTER_K16_SENSITIVITY"
+  ),
+  identical(
+    reconciled$assessment[reconciled$domain == "Overall corrected pilot gate"],
+    "ACCEPTABLE_FOR_EFFECT_EXTRACTION_AFTER_APPROVAL"
+  )
+)
+
+compact_gt <- function(data, title = NULL, subtitle = NULL, source_note = NULL) {
+  output <- data |>
+    gt::gt() |>
+    gt::opt_row_striping() |>
+    gt::sub_missing(missing_text = "—") |>
+    gt::tab_options(
+      table.font.size = gt::px(12),
+      table.width = gt::pct(100),
+      data_row.padding = gt::px(3),
+      heading.align = "left",
+      source_notes.font.size = gt::px(10),
+      column_labels.font.weight = "bold"
+    )
+  if (!is.null(title)) {
+    output <- output |>
+      gt::tab_header(
+        title = gt::md(title),
+        subtitle = if (is.null(subtitle)) NULL else gt::md(subtitle)
+      )
+  }
+  if (!is.null(source_note)) {
+    output <- output |>
+      gt::tab_source_note(gt::md(source_note))
+  }
+  output
+}
+
+status_gt <- function(data, title = NULL, subtitle = NULL, source_note = NULL) {
+  output <- compact_gt(data, title, subtitle, source_note)
+  status_column <- intersect(c("Assessment", "Status"), names(data))
+  if (length(status_column) == 1L) {
+    output <- output |>
+      gt::data_color(
+        columns = dplyr::all_of(status_column),
+        fn = function(value) {
+          dplyr::case_when(
+            grepl(
+              "acceptable|closed|completed|retained",
+              value,
+              ignore.case = TRUE
+            ) ~ "#D9F2E6",
+            grepl(
+              "pending|withheld|hold|not authorized",
+              value,
+              ignore.case = TRUE
+            ) ~ "#FFF1CC",
+            TRUE ~ "#EEEEEE"
+          )
+        }
+      )
+  }
+  output
+}
+```
+
+# Reconciliation verdict
+
+::: {.callout-important title="H06-D-G2P-H02 — production approved with pointwise uncertainty"}
+The corrected exploratory temporal pilot is diagnostically acceptable after
+one bounded basis-capacity sensitivity. The selected model uses the 30-minute
+**arithmetic mean** melEDI response and the H02 shifted-log Gaussian
+architecture. Only its global time smooth is cyclic.
+
+The author approved the four context-association functions and six declared
+placement/scenario frames. Uncertainty is restricted to pointwise 95%
+confidence intervals. Heavy deletion or resampling remains separately
+withheld, and no day-type, activity, or sleep association had been extracted
+when this pilot verdict was made.
+:::
+
+The temporal sections of `02_stage2_pilot.qmd` and its HTML are superseded by
+this reconciliation. Their zero-aware geometric-mean, Tweedie, two-part, and
+cyclic-`sz`/`fs` proposals remain frozen engineering history only. The
+participant-day pilot in that report is unchanged. MDER remains on its
+separate upstream hold and is absent here.
+
+::: {.callout-warning title="Qualified upstream manifest change; no local repinning"}
+The 11 August shared Preparation 06 repin changed four historical near-eye
+pilot pins: the direct 30-minute object, base-model manifest, metric manifest,
+and Preparation 06 gate. Its production counterpart also changed the chest
+30-minute object's file identity. The shared gate records zero changed cells
+across the non-MDER metric fields.
+
+A no-refit R 4.6.1 qualification reconstructed all six declared temporal
+frames in memory from the current shared inputs. Every row, value, factor
+attribute, and frame attribute exactly matched the frozen H06_daily production
+frame. The qualification did not read or use MDER, write a model frame, or
+refit a model. The existing temporal frames and fits therefore remain frozen;
+this is not a local repin of MDER. MDER-specific work still waits for targeted
+H06_daily instructions.
+:::
+
+```{r}
+#| label: tbl-upstream-repin-qualification
+#| tbl-cap: "No-refit qualification of the shared Preparation 06 repin against the six frozen temporal frames."
+
+upstream_repin_comparison |>
+  transmute(
+    Frame = .data$run_id,
+    Rows = .data$frozen_rows,
+    `Exact current-to-frozen identity` = if_else(
+      .data$exact_row_value_and_attribute_identity,
+      "Pass",
+      "Fail"
+    ),
+    `MDER used` = if_else(.data$mder_read_or_used, "Yes", "No"),
+    `Model refitted` = if_else(.data$model_refitted, "Yes", "No")
+  ) |>
+  compact_gt(
+    source_note = paste(
+      "Exact identity includes rows, values, factor attributes, and frame",
+      "attributes; the comparison used R 4.6.1."
+    )
+  )
+```
+
+```{r}
+#| label: tbl-reconciled-verdict
+#| tbl-cap: "Final diagnostic assessment of the corrected near-eye temporal pilot."
+
+reconciled |>
+  transmute(
+    Domain = .data$domain,
+    Evidence = .data$evidence,
+    Assessment = recode(
+      .data$assessment,
+      ACCEPTABLE = "Acceptable",
+      ACCEPTABLE_WITH_NUMERICAL_TOLERANCE =
+        "Acceptable; numerical tolerance disclosed",
+      ACCEPTABLE_AFTER_BOUNDED_SENSITIVITY =
+        "Acceptable after bounded sensitivity",
+      ACCEPTABLE_FOR_EXPLORATORY_MODEL =
+        "Acceptable for exploratory model",
+      ACCEPTABLE_FOR_EFFECT_EXTRACTION_AFTER_APPROVAL =
+        "Acceptable for association extraction after approval"
+    ),
+    Implication = .data$implication
+  ) |>
+  status_gt(
+    source_note = paste0(
+      "‘Acceptable’ means adequate for the bounded exploratory claim under ",
+      "the stated rules; it does not mean the model is true. No association ",
+      "estimate or predictor p-value was inspected for this verdict."
+    )
+  )
+```
+
+# What is now being estimated
+
+Let $Y$ be an admissible bin's 30-minute arithmetic mean melEDI in lx. The
+model response is
+
+$$
+Z = \log_{10}(Y + 0.1\ \mathrm{lx}).
+$$
+
+The proposed exploratory estimand is the conditional expected transformed
+profile
+
+$$
+\begin{aligned}
+E[Z \mid\;& \text{local time, day type, daily activity,}\\
+&\text{within- and between-person sleep duration,}\\
+&\text{site, participant, participant-day}].
+\end{aligned}
+$$
+
+For fitted linear predictor $\eta$, the reader-facing inverse transform is
+$\max(0, 10^\eta - 0.1)$ lx. This is the back-transform of a mean log response:
+it is geometric-mean-like for $Y + 0.1$ and, under the fitted Gaussian log
+model, conditional-median-like. It is **not** the raw-scale arithmetic
+expectation $E[Y]$.
+
+```{r}
+#| label: tbl-estimand-separation
+#| tbl-cap: "The three H06 estimands are not numerically interchangeable."
+
+tibble::tribble(
+  ~Analysis, ~Row, ~Question, ~Weighting, ~Relationship,
+  "Preregistration-aligned H06_daily",
+  "One metric-specific participant-day",
+  "How a day-level context is associated with a daily light-exposure metric",
+  "Each admissible participant-day contributes one row per metric",
+  "Primary scientific variant; not yet in production",
+  "Approved hourly H06",
+  "One supported hour",
+  "How contexts are associated with repeated hourly melEDI",
+  "Days contribute according to supported hourly rows",
+  "Separate approved analysis; no estimate transfers",
+  "Exploratory temporal GAMM",
+  "One supported 30-minute bin",
+  "How context-associated transformed profiles vary over local clock time",
+  "Days contribute according to supported half-hour bins",
+  "Separate exploratory amendment outside the daily BH families"
+) |>
+  compact_gt()
+```
+
+Day type is a Work day/Free day label, and activity is the day-level
+Sedentary/Active label—not a contemporaneous half-hour state. Previous-night
+sleep duration is separated into the participant's mean across equally
+weighted fitted days, centred on an equally participant-weighted grand mean,
+and the day's deviation from that participant mean. Thus the sleep functions
+distinguish between-participant from within-participant associations.
+
+All wording remains observational: these are associations with recorded
+contexts, not causal effects or health outcomes.
+
+# Exact H02 inheritance and H06 extension
+
+The authoritative H02 specification and stored near-eye fit were pinned before
+the pilot. The model did not copy H02's numerical $\rho$; it inherited the
+algorithm and estimated $\rho$ anew on the complete H06_daily frame.
+
+```{r}
+#| label: tbl-h02-pins
+#| tbl-cap: "Frozen H02 sources used for the structural cross-check."
+
+input_manifest |>
+  filter(.data$input_id %in% c(
+    "h02_selected_specification",
+    "h02_selected_near_eye_fit"
+  )) |>
+  transmute(
+    Source = recode(
+      .data$input_id,
+      h02_selected_specification = "Selected temporal specification",
+      h02_selected_near_eye_fit = "Stored selected near-eye fit"
+    ),
+    Path = .data$relative_path,
+    `SHA-256` = .data$sha256
+  ) |>
+  compact_gt()
+```
+
+The exact evaluated corrected formula is:
+
+```{r}
+#| label: corrected-formula
+#| echo: true
+
+selected_formula <- stats::as.formula(formula_registry$formula[[1L]])
+selected_formula
+```
+
+Only `s(time_hour, bs = "cc", k = 12)` is cyclic. The work/free, activity,
+site, participant, and two sleep terms have no `xt` argument and use the
+documented default thin-plate time marginals. This is the exact correction
+requested after the H02 cross-check.
+
+```{r}
+#| label: tbl-smooth-registry
+#| tbl-cap: "Fitted smooth bases and effective dimensions in the selected pilot."
+
+smooth_registry |>
+  transmute(
+    Term = .data$term,
+    `Smooth class` = .data$smooth_class,
+    `Time marginal` = .data$declared_time_margin,
+    `xt is NULL` = if_else(.data$xt_is_null, "Yes", "No"),
+    `Coefficient columns` = .data$coefficient_columns,
+    EDF = .data$effective_df
+  ) |>
+  compact_gt(
+    source_note = paste0(
+      "EDF is shown as a capacity diagnostic, not as evidence of a context ",
+      "association. The participant factor smooth retains H02's k = 10."
+    )
+  ) |>
+  gt::fmt_number(columns = EDF, decimals = 2)
+```
+
+The context smooths are additive and common across sites. The site smooth
+allows each submitted site its own overall clock profile, but the selected
+formula does **not** estimate context-by-site heterogeneity. Setting site,
+participant, and participant-day terms to zero yields the sum-to-zero,
+equal-site-centred display curve; it is not an observation-weighted site
+average.
+
+# Exact fitted frame and AR(1) construction
+
+```{r}
+#| label: tbl-support
+#| tbl-cap: "Exact complete-core near-eye sample used by both corrected pilot fits."
+
+support |>
+  transmute(
+    Placement = .data$placement,
+    `30-minute bins` = .data$observations_30_minute,
+    `Participant-days` = .data$participant_days,
+    Participants = .data$participants,
+    Sites = .data$sites,
+    `Exact-zero bins` = .data$exact_zero_bins,
+    `Exact-zero fraction` = .data$exact_zero_fraction,
+    `AR sequences` = .data$ar_sequences,
+    `Sleep grand mean (h)` = .data$sleep_grand_mean_h
+  ) |>
+  compact_gt() |>
+  gt::fmt_percent(columns = `Exact-zero fraction`, decimals = 1) |>
+  gt::fmt_number(columns = `Sleep grand mean (h)`, decimals = 2) |>
+  gt::fmt_integer(columns = c(
+    `30-minute bins`, `Participant-days`, Participants, Sites,
+    `Exact-zero bins`, `AR sequences`
+  ))
+```
+
+```{r}
+#| label: tbl-context-cells
+#| tbl-cap: "Joint day-type and daily-activity support in the fitted frame."
+
+context |>
+  transmute(
+    `Day type` = .data$work_free_day,
+    `Daily activity` = .data$activity_status,
+    `30-minute bins` = .data$observations_30_minute,
+    `Participant-days` = .data$participant_days,
+    Participants = .data$participants,
+    Sites = .data$sites
+  ) |>
+  compact_gt() |>
+  gt::fmt_integer(columns = where(is.numeric))
+```
+
+All four day-type-by-activity cells occur at all nine sites; the smallest has
+91 participant-days. Of 137 participants, 135 have at least two fitted days
+and within-participant sleep-duration variation. Every site has both within-
+and between-participant sleep-duration variation in this frame.
+
+Rows were ordered by site, participant, local date, true UTC start, and clock
+bin. `AR.start` resets at the first row of each participant-day, around any
+non-one-to-one wall-clock outcome, when elapsed-time provenance is missing, or
+after any physical discontinuity. It is false only for exactly contiguous
+true-time outcomes.
+
+```{r}
+#| label: tbl-ar-boundaries
+#| tbl-cap: "Reasons for starting a new working-AR sequence."
+
+boundaries |>
+  transmute(
+    Reason = recode(
+      .data$ar_start_reason,
+      participant_day_start = "Participant-day start",
+      elapsed_discontinuity = "Elapsed-time gap or unsupported interval",
+      non_one_to_one_wall_outcome = "Non-one-to-one wall-clock outcome",
+      after_non_one_to_one_wall_outcome = "After non-one-to-one outcome",
+      continuous = "Physically contiguous"
+    ),
+    Observations = .data$observations
+  ) |>
+  compact_gt() |>
+  gt::fmt_integer(columns = Observations)
+```
+
+The exact full formula was first fitted with $\rho=0$. Response residuals from
+adjacent rows within those sequences gave $\rho=0.579$, after which the
+identical formula was refitted using that fixed value. The final standardized
+residual lag-1 correlation was 0.090, and the largest absolute site-specific
+value was 0.159.
+
+# Why `k = 12` is retained
+
+The initial automatic screen flagged work/free because its EDF used 94.6% of
+the available basis dimension. `mgcv::k.check()` does not return a `k`-index
+for this factor smooth, so EDF proximity alone could not establish inadequate
+capacity. A single diagnostic model therefore increased only the work/free
+smooth from `k = 12` to `k = 16`, retained the exact rows and fixed $\rho$, and
+compared the Free-day-minus-Work-day curve on the 48 half-hour midpoints.
+
+```{r}
+#| label: tbl-basis-sensitivity
+#| tbl-cap: "Bounded same-row work/free basis-capacity sensitivity."
+
+basis |>
+  transmute(
+    `Same rows` = if_else(.data$exact_same_rows, "Yes", "No"),
+    `Fixed rho` = .data$common_fixed_rho,
+    `Selected k-prime / EDF` = sprintf(
+      "%.0f / %.2f",
+      .data$selected_work_k_prime,
+      .data$selected_work_edf
+    ),
+    `Diagnostic k-prime / EDF` = sprintf(
+      "%.0f / %.2f",
+      .data$diagnostic_work_k_prime,
+      .data$diagnostic_work_edf
+    ),
+    `Max |curve difference|` =
+      .data$maximum_absolute_work_contrast_difference_link,
+    `Curve-difference RMSE` = .data$work_contrast_difference_rmse_link,
+    `Curve correlation` = .data$work_contrast_curve_correlation,
+    `Global k-index` = .data$selected_global_k_index,
+    `Global k-check p` = .data$selected_global_k_p_value,
+    Status = recode(
+      .data$basis_repair_status,
+      K12_RETAINED_AFTER_K16_SENSITIVITY =
+        "k = 12 retained after k = 16 sensitivity"
+    )
+  ) |>
+  status_gt(
+    source_note = paste0(
+      "Prespecified stability limits were 0.05 maximum absolute link ",
+      "difference and 0.02 curve RMSE. The p-value is a fixed-seed, ",
+      "400-permutation basis diagnostic—not a context-association test."
+    )
+  ) |>
+  gt::fmt_number(
+    columns = c(
+      `Fixed rho`, `Max |curve difference|`, `Curve-difference RMSE`,
+      `Curve correlation`, `Global k-index`, `Global k-check p`
+    ),
+    decimals = 3
+  )
+```
+
+The maximum link-scale difference was 0.035, the difference RMSE was 0.016,
+and the curves correlated at 0.998. The diagnostic model's conditional AIC was
+2.97 lower, but AIC was not a prespecified selection gate. Because the direct
+curve-stability rules passed and the global `k` check was adequate, the
+H02-comparable `k = 12` model is retained. The `k = 16` fit is not a production
+model and generated no scientific result.
+
+Both fits converged without model warnings. The selected model's smoothing
+Hessian had a minimum relative eigenvalue of $-1.95 \times 10^{-15}$, a tiny
+negative value at numerical tolerance; this is disclosed rather than silently
+called positive definite. Residual diagnostics are acceptable for this
+exploratory transformed-response architecture, with visible scale-pattern
+limitations retained in any later report.
+
+# Approved production estimands
+
+The reader-facing production analysis extracts four distinct common
+context-association functions:
+
+1. Free day minus Work day over local clock time;
+2. Active minus Sedentary daily status over local clock time;
+3. the association per one-hour greater previous-night sleep duration within
+   the same participant; and
+4. the association per one-hour greater participant-mean sleep duration
+   between participants.
+
+The factor terms use sum-to-zero coding, but those directional contrasts fix
+their reader-facing interpretation. Because the model is additive, the
+work/free contrast does not depend on which activity level is used for its
+construction, and vice versa. Population displays would marginalize sites and
+the other binary context equally, set participant and participant-day terms to
+zero, and evaluate sleep at its centred zero unless a sleep contrast is being
+shown.
+
+On the transformed scale, categorical differences and one-hour sleep slopes
+can be exponentiated as ratios for $Y + 0.1$. Parallel inverse-transformed
+profiles may be shown in lx, but neither representation is a raw-scale mean
+association. The author approved pointwise 95% confidence intervals only.
+Four whole-function tests form one explicitly exploratory BH family, separate
+from every preregistration-aligned daily family. No coefficient enters that
+family merely because it was estimated.
+
+The declared production frames are near-eye and chest all available,
+paired/common near-eye and chest, and gap-timing-unaware near-eye and chest.
+Each frame must reconstruct its own sleep decomposition, re-estimate its own
+$\rho$, retain exact samples, and repeat the full diagnostic rules. Chest is
+complementary; it is not a second discovery screen.
+
+# Runtime and compute boundary
+
+```{r}
+#| label: tbl-runtime
+#| tbl-cap: "Measured pilot time and bounded production projection."
+
+runtime |>
+  transmute(
+    Scope = .data$scope,
+    Fits = .data$fits,
+    Time = if_else(
+      is.na(.data$minutes),
+      "Not timed",
+      if_else(
+        .data$minutes < 1,
+        sprintf("%.1f s", .data$seconds),
+        sprintf("%.1f min", .data$minutes)
+      )
+    ),
+    Basis = case_when(
+      .data$scope == "Prediction, simultaneous-interval, or deletion work" ~
+        "Pointwise intervals are model-based; heavy deletion or resampling remains separately gated",
+      TRUE ~ .data$basis
+    ),
+    Status = case_when(
+      .data$scope == "Corrected near-eye pilot plus basis sensitivity" ~
+        "Completed",
+      .data$scope == "Six-frame base-model batch" ~ "Approved",
+      TRUE ~ "Heavy work withheld"
+    )
+  ) |>
+  status_gt(
+    source_note = paste0(
+      "The six-frame estimate is linear and fit-only. It excludes prediction, ",
+      "pointwise-interval extraction, deletion refits, rendering, failed-",
+      "fit overhead, and any required repair."
+    )
+  )
+```
+
+The corrected near-eye pilot and basis sensitivity together took 3.4 minutes
+on one R thread. The approved six-frame base-model projection is 10.1 minutes
+for 12 fits. Pointwise intervals use model-based covariance rather than a
+resampling batch. Before heavy resampling or a site-deletion batch, production
+code must first run the required bounded representative or 50/100-resample
+pilot and return for a separate compute decision.
+
+# H06-D-G2P-H02 decision record
+
+```{r}
+#| label: tbl-gate-contract
+#| tbl-cap: "Approved and withheld decisions after the corrected temporal pilot gate."
+
+gate_contract |>
+  transmute(
+    ID = .data$decision_id,
+    Decision = .data$decision,
+    Contract = .data$approved_contract,
+    Status = recode(
+      .data$status,
+      CLOSED_BY_AUTHOR_CONFIRMATION = "Closed by author confirmation",
+      APPROVED = "Approved",
+      APPROVED_POINTWISE_ONLY = "Approved: pointwise intervals only",
+      WITHHELD_PENDING_PILOT = "Withheld pending pilot",
+      UPSTREAM_HOLD = "Upstream hold"
+    )
+  ) |>
+  status_gt()
+```
+
+::: {.callout-important title="Production transition recorded"}
+H06-D-G2P-H02 items 02–05 are approved. Production uses pointwise 95%
+confidence intervals only. Item 06 remains withheld until its own runtime
+pilot, and MDER remains held under item 07.
+
+The pilot gate itself inspected no context-association estimate or predictor
+p-value; scientific interpretation begins only after the approved production
+fits and diagnostics are complete.
+:::
+
+# Reproducibility and scope record
+
+```{r}
+#| label: tbl-software
+#| tbl-cap: "Authoritative software for the selected corrected pilot."
+
+software |>
+  transmute(Item = .data$item, Version = .data$version, Role = .data$role) |>
+  compact_gt(
+    source_note = paste0(
+      "All direct selected-pilot inputs and all code/output, basis-sensitivity, ",
+      "reconciliation, and production-gate manifests were verified during ",
+      "this render. The one ",
+      "qualified shared-manifest change is disclosed above. No package was ",
+      "installed or updated."
+    )
+  )
+```
+
+The corrected pilot used current prepared metrics and context artifacts
+unchanged. It did not fetch or rebuild data. It did not fit or summarize MDER,
+inspect predictor-association estimates, run chest/paired/gap models, perform
+deletion or uncertainty resampling, edit shared preparation, touch main-H06
+outputs, modify the manuscript, or request site integration.
+
+No figure is produced at this gate, so no figure source-data CSV or alt text is
+applicable. Any later durable figure must pair its source-data CSV with
+publication-scale clipping, wrapping, panel-balance, final-size legibility,
+and alt-text QA.

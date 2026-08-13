@@ -1,0 +1,1216 @@
+---
+title: "H06 daily metrics — METRIC-010 MDER amendment"
+subtitle: "Preregistration-aligned participant-day analysis under the mean-of-viable-ratios rule"
+date: 2026-08-11
+engine: knitr
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    code-fold: true
+    code-summary: "Show audit R code"
+    code-tools: true
+    embed-resources: true
+    page-layout: full
+execute:
+  echo: false
+  warning: false
+  message: false
+  error: false
+  freeze: false
+tbl-cap-location: top
+---
+
+```{r}
+#| label: setup
+#| include: false
+
+options(
+  stringsAsFactors = FALSE,
+  scipen = 999,
+  width = 120,
+  dplyr.summarise.inform = FALSE
+)
+
+find_project_root <- function(start = getwd()) {
+  candidate <- normalizePath(start, winslash = "/", mustWork = TRUE)
+  repeat {
+    if (file.exists(file.path(candidate, "renv.lock"))) {
+      return(candidate)
+    }
+    parent <- dirname(candidate)
+    if (identical(parent, candidate)) {
+      stop("Could not locate the project root", call. = FALSE)
+    }
+    candidate <- parent
+  }
+}
+
+project_root <- Sys.getenv(
+  "H06_DAILY_PROJECT_ROOT",
+  unset = Sys.getenv("QUARTO_PROJECT_DIR", unset = "")
+)
+if (!nzchar(project_root) ||
+    !file.exists(file.path(project_root, "renv.lock"))) {
+  project_root <- find_project_root()
+}
+project_root <- normalizePath(project_root, winslash = "/", mustWork = TRUE)
+project_library <- file.path(
+  project_root,
+  "renv/library/macos/R-4.6/aarch64-apple-darwin23"
+)
+.libPaths(c(project_library, .libPaths()))
+
+library(digest)
+library(dplyr)
+library(gt)
+library(readr)
+library(tibble)
+library(tidyr)
+
+stopifnot(
+  identical(as.character(getRversion()), "4.6.1"),
+  identical(as.character(packageVersion("lme4")), "2.0.1"),
+  identical(as.character(packageVersion("glmmTMB")), "1.1.14"),
+  identical(as.character(packageVersion("melidosData")), "1.0.6")
+)
+
+source(file.path(
+  project_root,
+  "scripts/hypotheses/H06_daily/h06_daily_mder_metric010_contract.R"
+))
+
+read_h06d <- function(stage, file) {
+  readr::read_csv(
+    file.path(project_root, "artifacts", stage, "H06_daily", file),
+    show_col_types = FALSE,
+    na = ""
+  )
+}
+sha256 <- function(path) {
+  digest::digest(path, algo = "sha256", file = TRUE)
+}
+verify_manifest <- function(
+  path,
+  allowed_mismatch = character(),
+  allowed_role_pattern = NULL
+) {
+  manifest <- readr::read_csv(path, show_col_types = FALSE, na = "")
+  observed <- vapply(
+    file.path(project_root, manifest$relative_path),
+    sha256,
+    character(1)
+  )
+  checked <- manifest |>
+    dplyr::mutate(
+      observed_sha256 = unname(observed),
+      hash_match = .data$sha256 == .data$observed_sha256
+    )
+  if (!is.null(allowed_role_pattern)) {
+    allowed_mismatch <- union(
+      allowed_mismatch,
+      manifest$relative_path[
+        grepl(allowed_role_pattern, manifest$role)
+      ]
+    )
+  }
+  stopifnot(setequal(
+    checked$relative_path[!checked$hash_match],
+    allowed_mismatch
+  ))
+  checked
+}
+p_display <- function(value) {
+  ifelse(
+    is.na(value),
+    "—",
+    ifelse(value < 0.001, "<0.001", sprintf("%.3f", value))
+  )
+}
+ci_display <- function(lower, upper, digits = 4L) {
+  sprintf(
+    paste0("%.", digits, "f to %.", digits, "f"),
+    lower,
+    upper
+  )
+}
+compact_gt <- function(table) {
+  table |>
+    gt::tab_options(
+      table.font.size = gt::px(12),
+      data_row.padding = gt::px(3),
+      heading.padding = gt::px(4),
+      column_labels.padding = gt::px(4),
+      table.width = gt::pct(100)
+    )
+}
+
+manifest_names <- c(
+  "H06_daily_mder_metric010_static_input_manifest.csv",
+  "H06_daily_mder_metric010_static_code_manifest.csv",
+  "H06_daily_mder_metric010_static_output_manifest.csv",
+  "H06_daily_mder_metric010_family_pilot_input_manifest.csv",
+  "H06_daily_mder_metric010_family_pilot_code_manifest.csv",
+  "H06_daily_mder_metric010_family_pilot_output_manifest.csv",
+  "H06_daily_mder_metric010_influence_pilot_input_manifest.csv",
+  "H06_daily_mder_metric010_influence_pilot_code_manifest.csv",
+  "H06_daily_mder_metric010_influence_pilot_output_manifest.csv",
+  "H06_daily_mder_metric010_production_input_manifest.csv",
+  "H06_daily_mder_metric010_production_code_manifest.csv",
+  "H06_daily_mder_metric010_production_output_manifest.csv",
+  "H06_daily_mder_metric010_gap_refresh_input_manifest.csv",
+  "H06_daily_mder_metric010_gap_refresh_code_manifest.csv",
+  "H06_daily_mder_metric010_gap_refresh_output_manifest.csv",
+  "H06_daily_mder_metric010_reader_input_manifest.csv",
+  "H06_daily_mder_metric010_reader_code_manifest.csv",
+  "H06_daily_mder_metric010_reader_output_manifest.csv"
+)
+pilot_historical_code_manifests <- c(
+  "H06_daily_mder_metric010_family_pilot_code_manifest.csv",
+  "H06_daily_mder_metric010_influence_pilot_code_manifest.csv"
+)
+frame_registry_path <- paste0(
+  "artifacts/06_model_data/H06_daily/",
+  "H06_daily_mder_metric010_frame_registry.csv"
+)
+verified_manifests <- Map(
+  function(path, name) {
+    verify_manifest(
+      path,
+      allowed_mismatch = if (name %in% pilot_historical_code_manifests) {
+        paste0(
+          "scripts/hypotheses/H06_daily/",
+          c(
+            "h06_daily_mder_metric010_contract.R",
+            "h06_daily_mder_metric010_data.R",
+            "h06_daily_mder_metric010_modeling.R"
+          )
+        )
+      } else if (
+        name == "H06_daily_mder_metric010_family_pilot_input_manifest.csv"
+      ) {
+        c(
+          frame_registry_path,
+          paste0(
+            "artifacts/12_manifests/H06_daily/",
+            "H06_daily_mder_metric010_static_output_manifest.csv"
+          )
+        )
+      } else if (
+        name == "H06_daily_mder_metric010_influence_pilot_input_manifest.csv"
+      ) {
+        frame_registry_path
+      } else {
+        character()
+      },
+      allowed_role_pattern = if (
+        name == "H06_daily_mder_metric010_production_input_manifest.csv"
+      ) {
+        "^pre-refresh"
+      } else {
+        NULL
+      }
+    )
+  },
+  file.path(
+    project_root,
+    "artifacts/12_manifests/H06_daily",
+    manifest_names
+  ),
+  manifest_names
+)
+
+input_contract <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_mder_metric010_input_contract.csv"
+)
+metric_contract <- read_h06d(
+  "06_model_data",
+  "H06_daily_mder_metric010_metric_contract.csv"
+)
+support <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_mder_metric010_support_summary.csv"
+)
+support_failures <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_mder_metric010_support_failure_summary.csv"
+)
+static_verdict <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_mder_metric010_static_verdict.csv"
+)
+frames <- read_h06d(
+  "06_model_data",
+  "H06_daily_mder_metric010_frame_registry.csv"
+)
+effects <- read_h06d(
+  "09_tables",
+  "H06_daily_mder_metric010_effect_estimates.csv"
+)
+tests <- read_h06d(
+  "09_tables",
+  "H06_daily_mder_metric010_model_tests.csv"
+)
+bh_slots <- read_h06d(
+  "09_tables",
+  "H06_daily_mder_metric010_bh_slot_families.csv"
+)
+diagnostics <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_mder_metric010_model_diagnostics.csv"
+)
+ar_counterparts <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_mder_metric010_ar_counterparts.csv"
+)
+influence <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_mder_metric010_influence_summary.csv"
+)
+production_verdict <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_mder_metric010_production_verdict.csv"
+)
+registered_benchmark <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_mder_metric010_registered_benchmark.csv"
+)
+site_estimates <- read_h06d(
+  "09_tables",
+  "H06_daily_mder_metric010_site_heterogeneity_estimates.csv"
+)
+runtime <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_mder_metric010_production_runtime.csv"
+)
+figure_qa <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_mder_metric010_figure_readability_qa.csv"
+)
+frame_comparison <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_mder_metric010_gap_refresh_frame_comparison.csv"
+)
+refresh_preservation <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_mder_metric010_gap_refresh_preservation.csv"
+)
+refresh_provenance <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_mder_metric010_gap_refresh_provenance.csv"
+)
+
+primary_effects <- effects |>
+  dplyr::filter(
+    .data$dataset_id == "primary",
+    .data$placement_id == "near_eye",
+    .data$sample_role == "all_available"
+  )
+primary_gaussian <- primary_effects |>
+  dplyr::filter(.data$family == "Gaussian")
+primary_t <- primary_effects |>
+  dplyr::filter(.data$family == "Student-t")
+primary_tests <- tests |>
+  dplyr::filter(.data$dataset_id == "primary")
+primary_diagnostics <- diagnostics |>
+  dplyr::filter(
+    .data$dataset_id == "primary",
+    .data$placement_id == "near_eye",
+    .data$sample_role == "all_available"
+  )
+primary_ar <- ar_counterparts |>
+  dplyr::filter(
+    .data$dataset_id == "primary",
+    .data$placement_id == "near_eye",
+    .data$sample_role == "all_available"
+  )
+gap_gaussian <- effects |>
+  dplyr::filter(
+    .data$dataset_id == "gap_timing_unaware",
+    .data$placement_id == "near_eye",
+    .data$sample_role == "all_available",
+    .data$family == "Gaussian"
+  )
+gap_t <- effects |>
+  dplyr::filter(
+    .data$dataset_id == "gap_timing_unaware",
+    .data$placement_id == "near_eye",
+    .data$sample_role == "all_available",
+    .data$family == "Student-t"
+  )
+gap_tests <- tests |>
+  dplyr::filter(.data$dataset_id == "gap_timing_unaware")
+gap_diagnostics <- diagnostics |>
+  dplyr::filter(
+    .data$dataset_id == "gap_timing_unaware",
+    .data$placement_id == "near_eye",
+    .data$sample_role == "all_available"
+  )
+gap_ar <- ar_counterparts |>
+  dplyr::filter(
+    .data$dataset_id == "gap_timing_unaware",
+    .data$placement_id == "near_eye",
+    .data$sample_role == "all_available"
+  )
+
+stopifnot(
+  nrow(input_contract) == 16L,
+  all(input_contract$verified),
+  nrow(metric_contract) == 1L,
+  metric_contract$metric_id == "mder_mean_of_viable_ratios",
+  metric_contract$display_unit == "dimensionless",
+  nrow(frames) == 36L,
+  nrow(effects) == 72L,
+  nrow(primary_gaussian) == 3L,
+  nrow(primary_t) == 3L,
+  all(primary_gaussian$lower_95 < 0),
+  all(primary_gaussian$upper_95 > 0),
+  all(primary_t$lower_95 < 0),
+  all(primary_t$upper_95 > 0),
+  all(primary_gaussian$student_t_shift_in_gaussian_se < 1),
+  nrow(primary_tests) == 6L,
+  nrow(bh_slots) == 180L,
+  all(is.na(bh_slots$bh_adjusted_p_value)),
+  all(bh_slots$family_slots_available == 1L),
+  all(bh_slots$family_slots_required == 15L),
+  all(bh_slots$family_status == "INCOMPLETE_1_OF_15_NO_BH_DECISION"),
+  nrow(primary_diagnostics) == 3L,
+  all(primary_diagnostics$gaussian_converged),
+  all(primary_diagnostics$student_t_converged),
+  all(primary_diagnostics$ar_acceptable),
+  nrow(primary_ar) == 3L,
+  all(primary_ar$ar_trigger),
+  all(primary_ar$ar_acceptable),
+  nrow(gap_gaussian) == 3L,
+  nrow(gap_t) == 3L,
+  isTRUE(all.equal(
+    setNames(gap_gaussian$estimate, gap_gaussian$predictor_id)[c(
+      "work_free_day",
+      "activity_status",
+      "previous_sleep_duration_centered_h"
+    )],
+    c(
+      work_free_day = -0.001619123155536,
+      activity_status = 0.009020499990256,
+      previous_sleep_duration_centered_h = 0.001818193389273
+    ),
+    tolerance = 1e-12
+  )),
+  all(gap_gaussian$lower_95 < 0),
+  all(gap_gaussian$upper_95 > 0),
+  gap_t$lower_95[
+    gap_t$predictor_id == "previous_sleep_duration_centered_h"
+  ] > 0,
+  nrow(gap_tests) == 6L,
+  nrow(gap_diagnostics) == 3L,
+  all(gap_diagnostics$diagnostic_disposition ==
+    "ACCEPTABLE_WITH_HEAVY_TAIL_LIMITATION"),
+  nrow(gap_ar) == 3L,
+  all(gap_ar$ar_trigger),
+  all(gap_ar$ar_acceptable),
+  nrow(influence) == 3L,
+  all(influence$estimate_magnitude_reportable),
+  nrow(production_verdict) == 3L,
+  all(production_verdict$claim_disposition != "NO_ASSOCIATION_CLAIM"),
+  all(figure_qa$verdict == "PASS"),
+  identical(support$available_days, c(702, 732, 687, 723)),
+  identical(support$participants_with_value, c(137, 152, 137, 152)),
+  support$exact_zeros[
+    support$dataset_id == "gap_timing_unaware" &
+      support$placement_id == "chest"
+  ] == 0L,
+  nrow(frame_comparison) == 36L,
+  sum(!frame_comparison$object_identical) == 24L,
+  all(refresh_preservation$preserved),
+  all(refresh_provenance$verdict %in% c(
+    "PASS",
+    "INCOMPLETE_NO_BH_DECISION"
+  ))
+)
+
+predictor_labels <- c(
+  work_free_day = "Free day minus Work day",
+  activity_status = "Active minus Sedentary",
+  previous_sleep_duration_centered_h = "+1 h previous-night sleep"
+)
+```
+
+::: {.callout-important appearance="simple" title="Answer in brief"}
+Under the replacement METRIC-010 definition, the primary near-eye estimates
+were -0.0013 MDER for Free day minus Work day (95% CI -0.0134 to
+0.0108), 0.0083 for Active minus Sedentary (-0.0070 to 0.0235), and
+0.0017 per one hour greater previous-night sleep (-0.0028 to 0.0063).
+All three intervals include zero.
+
+After the corrected gap-branch rebuild, the corresponding near-eye Gaussian
+estimates are -0.0016, 0.0090, and 0.0018; their 95% intervals also
+include zero. The mandatory Student-t sleep interval is only just above zero,
+which is reported as tail-model sensitivity rather than a multiplicity-based
+finding. The corrected gap samples contain 687 MDER days near eye and 723 at
+the chest, with no finite nonpositive value.
+
+The work/free and sleep estimates remain reportable as magnitudes, but their
+directions reversed in at least one leave-one-site refit, so no stable
+cross-site directional claim is defensible. The activity direction was stable,
+but its generality is limited by site influence and all three Gaussian fits
+retain a heavy-tail limitation. The mandatory Student-t and actual-date AR(1)
+checks did not materially move the primary estimates.
+
+These are **raw MDER-slot results only**. Each prespecified BH family currently
+contains one of 15 required metric slots, so no adjusted p-value or
+multiplicity-based decision exists. The associations are observational and do
+not support causal or health claims.
+:::
+
+# Scope and supersession rule
+
+This amendment analyzes MDER only. All MDER-independent H06_daily work is
+frozen. No prior estimate, tail conclusion, device-day conclusion, or
+time-profile threshold result from the superseded ratio-of-integrals
+implementation is transferred.
+
+The analysis unit is one admissible MDER-specific participant-day. Days are not
+weighted by supported hours or by the number of viable minutes beyond the
+admissibility threshold. This is the preregistration-aligned participant-day
+route, not the approved hourly H06 model and not the exploratory 30-minute
+GAMM.
+
+# Exact replacement metric and provenance
+
+Daily MDER is the arithmetic mean of viable one-minute melEDI/illuminance
+ratios. A minute is viable only when both channels are finite and strictly
+positive. The upstream preparation uses a complete 1,440-minute local
+wall-clock grid, averages fall-back duplicate local minutes channel-wise
+before forming a ratio, and leaves spring-forward absent minutes missing. MDER
+is retained at **at least 720 viable ratios**, including exactly 720; otherwise
+MDER alone is missing. There is no profile weighting, gating, scaling, or ratio
+of daily integrals.
+
+```{r}
+#| label: tbl-mder-provenance
+#| tbl-cap: "Pinned controlling METRIC-010 inputs."
+
+input_contract |>
+  dplyr::filter(.data$input_id %in% c(
+    "metric010_decision", "metric_manifest", "mder_audit_manifest",
+    "base_manifest", "gap_manifest", "h01_gap_manifest",
+    "gap_repair_evidence", "gap_participant_day", "gap_mder_support"
+  )) |>
+  dplyr::transmute(
+    Input = .data$input_id,
+    Path = .data$relative_path,
+    `SHA-256` = .data$observed_sha256,
+    Verified = ifelse(.data$verified, "Yes", "No")
+  ) |>
+  gt::gt() |>
+  gt::tab_style(
+    style = gt::cell_text(font = "monospace", size = 10),
+    locations = gt::cells_body(columns = `SHA-256`)
+  ) |>
+  compact_gt()
+```
+
+All 16 direct inputs matched their pinned SHA-256 identities. The controlling
+decision is `audit/decisions/mder_mean_of_viable_ratios.md` with SHA-256
+`1664347de976057807fcb5ac6e24bd4b66af1fe32378fabd1f2acafcfc9266de`.
+The current metric, independent MDER-audit, base-model, gap-preparation, and
+independent H01 gap manifests, together with the repair-evidence manifest and
+both gap MDER objects, match the coordinator-supplied identities exactly. The
+base input-bundle identity is
+`168f25e18b6e494aa7a0272923041ad8249e25adb9ff3742d22e2f4cacf1bdf8`.
+
+# Metric availability and exact fitted samples
+
+```{r}
+#| label: tbl-mder-availability
+#| tbl-cap: "METRIC-010 availability before predictor-specific complete-case selection."
+
+support |>
+  dplyr::transmute(
+    Dataset = .data$dataset_label,
+    Placement = .data$placement,
+    `Available days` = sprintf(
+      "%s / %s",
+      .data$available_days,
+      .data$base_days
+    ),
+    `Participants with MDER` = .data$participants_with_value,
+    `Sites with MDER` = .data$sites_with_value,
+    `Exact zeros` = .data$exact_zeros
+  ) |>
+  gt::gt() |>
+  gt::fmt_integer(
+    columns = c(`Participants with MDER`, `Sites with MDER`, `Exact zeros`)
+  ) |>
+  compact_gt()
+```
+
+The primary values reproduce the independent verification: 702 of 816
+near-eye participant-days from 137 participants and 732 of 902 chest days from
+152 participants. Among retained primary days, viable-minute counts ranged
+from 721 to 1,440 near eye and 721 to 1,334 at the chest.
+
+The repaired gap branch contains 687 of 811 near-eye days from 137
+participants and 723 of 897 chest days from 152 participants. Every retained
+value is finite and strictly positive. The former THUAS chest zero is now
+missing because it has no viable momentary ratios; no local repair was made in
+H06_daily.
+
+```{r}
+#| label: tbl-mder-gap-support-flow
+#| tbl-cap: "Exact repaired gap-branch MDER support flow."
+
+support_failures |>
+  dplyr::filter(.data$dataset_id == "gap_timing_unaware") |>
+  dplyr::transmute(
+    Placement = .data$placement,
+    Status = dplyr::recode(
+      .data$support_status,
+      available = "Available",
+      below_viable_ratio_fraction = "Below 720 viable ratios",
+      no_viable_momentary_ratio = "No viable momentary ratios"
+    ),
+    `Participant-days` = .data$participant_days,
+    Participants = .data$participants,
+    Sites = .data$sites
+  ) |>
+  gt::gt(groupname_col = "Placement") |>
+  gt::fmt_integer(columns = c(`Participant-days`, Participants, Sites)) |>
+  compact_gt()
+```
+
+```{r}
+#| label: tbl-mder-primary-samples
+#| tbl-cap: "Exact all-available fitted samples for each predictor."
+
+frames |>
+  dplyr::filter(.data$sample_role == "all_available") |>
+  dplyr::transmute(
+    Dataset = dplyr::recode(
+      .data$dataset_id,
+      primary = "Primary",
+      gap_timing_unaware = "Gap-timing-unaware"
+    ),
+    Placement = dplyr::recode(
+      .data$placement_id,
+      near_eye = "Near eye",
+      chest = "Chest"
+    ),
+    Predictor = unname(predictor_labels[.data$predictor_id]),
+    `Participant-days` = .data$participant_days,
+    Participants = .data$participants,
+    Sites = .data$sites
+  ) |>
+  gt::gt(groupname_col = "Dataset") |>
+  gt::fmt_integer(
+    columns = c(`Participant-days`, Participants, Sites)
+  ) |>
+  compact_gt()
+```
+
+For primary near eye, the work/free and sleep models each used 679 days from
+136 participants across nine sites; the activity model used 645 days from 133
+participants across nine sites. These are predictor-specific complete-case
+samples after the MDER support rule; no day was weighted by its viable-minute
+count.
+
+# Model hierarchy and estimands
+
+For predictor `X`, the exact registered benchmark was retained unchanged:
+
+```{r}
+#| label: exact-mder-formulas
+#| echo: true
+
+registered_random_site <-
+  response_value ~ X + (X | site) + (1 | site:participant_key)
+
+fixed_site_additive <-
+  response_value ~ site + X + (1 | participant_key)
+
+fixed_site_heterogeneity <-
+  response_value ~ site * X + (1 | participant_key)
+
+gap_aware_ar1_counterpart <-
+  response_value ~ site + X + (1 | participant_key) +
+    ar1(day_index_factor + 0 | day_sequence_id)
+```
+
+The fixed-site additive Gaussian identity-link model is the selected primary
+candidate. It estimates an absolute, dimensionless MDER difference common to
+the nine submitted sites after fixed-site adjustment and accounts for repeated
+days with a participant random intercept. Practical contrasts are Free day
+minus Work day, Active minus Sedentary, and the slope per one hour greater
+previous-night sleep duration. Work day, Sedentary, and 8 h sleep are the
+registered reference codings.
+
+The fixed-site interaction model separately describes predictor-by-site
+heterogeneity. Its site-specific estimates do not replace the common primary
+contrast. The exact random-site/random-slope formula is a labelled registered
+benchmark only; it is never silently simplified or called the primary model.
+
+# Primary near-eye results
+
+```{r}
+#| label: fig-mder-primary-effects
+#| fig-cap: "Near-eye primary MDER estimates and mandatory heavy-tail sensitivities. Bars are 95% confidence intervals."
+#| fig-alt: "Forest plot of three near-eye primary MDER associations with 95% confidence intervals and Student-t sensitivity estimates. The selected Gaussian estimates are minus 0.0013 for Free day minus Work day, 0.0083 for Active minus Sedentary, and 0.0017 per one hour greater previous-night sleep. Every selected and sensitivity interval crosses zero."
+#| out-width: 100%
+
+knitr::include_graphics(file.path(
+  project_root,
+  "artifacts/10_figures/H06_daily/",
+  "H06_daily_mder_metric010_primary_effects.png"
+))
+```
+
+```{r}
+#| label: tbl-mder-primary-effects
+#| tbl-cap: "Primary near-eye estimates with Gaussian selection and Student-t sensitivity."
+
+primary_effects |>
+  dplyr::transmute(
+    Contrast = unname(predictor_labels[.data$predictor_id]),
+    Model = dplyr::recode(
+      .data$family,
+      Gaussian = "Gaussian identity (selected)",
+      `Student-t` = "Student-t identity (sensitivity)"
+    ),
+    Estimate = .data$estimate,
+    `95% CI` = ci_display(.data$lower_95, .data$upper_95),
+    `Days / participants / sites` = sprintf(
+      "%d / %d / %d",
+      .data$participant_days,
+      .data$participants,
+      .data$sites
+    )
+  ) |>
+  gt::gt(groupname_col = "Contrast") |>
+  gt::fmt_number(columns = Estimate, decimals = 4) |>
+  compact_gt()
+```
+
+The Student-t estimates moved by 0.125, 0.628, and 0.645 primary Gaussian
+standard errors for work/free, activity, and sleep, respectively. All shifts
+were below the prespecified one-standard-error stability threshold, and all
+Student-t intervals also included zero.
+
+# Raw tests and incomplete multiplicity families
+
+```{r}
+#| label: tbl-mder-primary-tests
+#| tbl-cap: "Raw MDER-slot tests; no BH-adjusted decision is available."
+
+primary_tests |>
+  dplyr::transmute(
+    Predictor = unname(predictor_labels[.data$predictor_id]),
+    Test = dplyr::recode(
+      .data$test_type,
+      association = "Common association",
+      site_heterogeneity = "Predictor-by-site heterogeneity"
+    ),
+    `Raw p` = p_display(.data$raw_p_value),
+    `BH-adjusted p` = "—",
+    Status = "1 of 15 slots; no decision"
+  ) |>
+  gt::gt(groupname_col = "Predictor") |>
+  compact_gt()
+```
+
+The raw common-association p-values were 0.830, 0.275, and 0.483. The raw
+heterogeneity p-values were 0.005, 0.053, and 0.778. None is a multiplicity-
+adjusted finding. For each activated predictor, association and heterogeneity
+are separate named 15-metric BH vectors, and the gap-timing-unaware dataset has
+its own separate vectors. Only the MDER slot is available in this amendment;
+the other 14 slots are explicitly retained as unavailable, not silently
+removed. Consequently, every adjusted value and every adjusted decision is
+missing by design. No raw p-value is bolded or promoted to a primary decision.
+
+# Family and residual diagnostics
+
+```{r}
+#| label: tbl-mder-family-diagnostics
+#| tbl-cap: "Primary near-eye family diagnostics and sensitivity disposition."
+
+primary_diagnostics |>
+  dplyr::transmute(
+    Predictor = unname(predictor_labels[.data$predictor_id]),
+    `Gaussian Q-Q r` = .data$gaussian_residual_qq_correlation,
+    `|residual|-fitted rho` =
+      .data$gaussian_absolute_residual_fitted_spearman,
+    `|standardized residual| > 4` =
+      .data$gaussian_standardized_residual_gt4_fraction,
+    `Student-t df` = .data$student_t_t_degrees_of_freedom,
+    `Student-t Q-Q r` =
+      .data$student_t_quantile_residual_qq_correlation,
+    Assessment = "Acceptable with heavy-tail limitation"
+  ) |>
+  gt::gt() |>
+  gt::fmt_number(
+    columns = c(
+      `Gaussian Q-Q r`, `|residual|-fitted rho`,
+      `|standardized residual| > 4`, `Student-t df`, `Student-t Q-Q r`
+    ),
+    decimals = 3
+  ) |>
+  compact_gt()
+```
+
+All selected Gaussian and Student-t models converged, had positive-definite
+Hessians, finite coefficients and standard errors, and nonsingular participant
+random intercepts. Gaussian spread trends, extreme-residual fractions, and
+physical-bound checks passed, but Gaussian Q--Q correlations of 0.870--0.879
+failed the nominal 0.95 normal-tail rule. The Student-t quantile-residual Q--Q
+correlations were 0.997. The Gaussian identity model is therefore reportable
+only with the explicit heavy-tail limitation and mandatory Student-t
+sensitivity; Gaussian adequacy is not claimed.
+
+# Actual-date temporal check
+
+```{r}
+#| label: tbl-mder-ar-check
+#| tbl-cap: "Primary near-eye actual-date residual screen and gap-aware AR(1) counterpart."
+
+primary_ar |>
+  dplyr::transmute(
+    Predictor = unname(predictor_labels[.data$predictor_id]),
+    `One-day pairs` = .data$adjacent_pairs,
+    `Participants with pair` = .data$participants,
+    `Pooled lag-1 r` = .data$independent_residual_lag1,
+    `Maximum site |r|` =
+      .data$independent_maximum_absolute_site_lag1,
+    `AR(1) rho` = .data$ar_rho,
+    `Effect shift (primary SE)` = .data$ar_effect_shift_in_primary_se,
+    Assessment = "Stable sensitivity; structured-covariance singularity flagged"
+  ) |>
+  gt::gt() |>
+  gt::fmt_integer(columns = c(`One-day pairs`, `Participants with pair`)) |>
+  gt::fmt_number(
+    columns = c(
+      `Pooled lag-1 r`, `Maximum site |r|`, `AR(1) rho`,
+      `Effect shift (primary SE)`
+    ),
+    decimals = 3
+  ) |>
+  compact_gt()
+```
+
+Each primary frame exceeded 100 true one-day pairs and 20 participants. The
+pooled correlations were below 0.20 in absolute value, but site maxima near
+0.39 crossed the 0.30 trigger, so actual-date, gap-aware AR(1) counterparts
+were fitted. They converged with positive-definite Hessians, absolute rho below
+0.95, and changed the associations by only 0.015--0.056 primary standard
+errors.
+
+The automated structured-covariance singularity diagnostic was `TRUE` for all
+three AR(1) counterparts even though the participant and AR standard
+deviations were finite. These models are therefore retained only as temporal-
+stability sensitivities, not promoted as preferred primary models. The tiny
+effect shifts support stability of the reported primary magnitudes, but no
+claim of a fully adequate AR generative model is made.
+
+# Influence and site heterogeneity
+
+```{r}
+#| label: tbl-mder-influence
+#| tbl-cap: "Primary near-eye deletion diagnostics and claim disposition."
+
+influence |>
+  dplyr::transmute(
+    Predictor = unname(predictor_labels[.data$predictor_id]),
+    `Maximum participant shift (SE)` =
+      .data$maximum_participant_shift_in_full_se,
+    `Participant reversals` = .data$participant_direction_reversal_count,
+    `Maximum site shift (SE)` = .data$maximum_site_shift_in_full_se,
+    `Most influential site` = .data$maximum_shift_site,
+    `Site reversals` = .data$site_direction_reversal_count,
+    Disposition = dplyr::recode(
+      .data$influence_disposition,
+      MAGNITUDE_REPORTABLE_CROSS_SITE_DIRECTION_UNSTABLE =
+        "Magnitude reportable; cross-site direction unstable",
+      MAGNITUDE_REPORTABLE_SITE_GENERALITY_LIMITED =
+        "Magnitude reportable; site generality limited"
+    )
+  ) |>
+  gt::gt() |>
+  gt::fmt_number(
+    columns = c(
+      `Maximum participant shift (SE)`, `Maximum site shift (SE)`
+    ),
+    decimals = 2
+  ) |>
+  gt::fmt_integer(
+    columns = c(`Participant reversals`, `Site reversals`)
+  ) |>
+  compact_gt()
+```
+
+All 405 participant deletions and 27 site deletions fitted without failure.
+Maximum participant shifts were below one primary standard error. Site shifts
+were between 1.05 and 1.22 standard errors, which limits generality. The
+work/free estimate reversed under deletion of KNUST, MPI, or RISE; the sleep
+estimate reversed after deleting IZTECH. Their magnitudes and intervals are
+reportable, but their cross-site directions are not stable. Activity had no
+participant or site reversal, so its association estimate is reportable with
+the stated site-influence and heavy-tail limitations.
+
+The descriptive site-specific work/free estimates ranged from -0.0703 at
+KNUST to 0.0460 at IZTECH; activity ranged from -0.0381 at BAUA to 0.0818
+at KNUST; and sleep ranged from -0.0063 per hour at RISE to 0.0081 at
+IZTECH. These are unadjusted heterogeneity descriptions, not separately tested
+site claims.
+
+# Registered benchmark
+
+```{r}
+#| label: tbl-mder-registered-benchmark
+#| tbl-cap: "Exact registered random-site/random-slope benchmark disposition."
+
+registered_benchmark |>
+  dplyr::filter(.data$dataset_id == "primary") |>
+  dplyr::transmute(
+    Predictor = unname(predictor_labels[.data$predictor_id]),
+    Formula = .data$formula,
+    `Maximum |site correlation|` =
+      .data$maximum_absolute_random_site_correlation,
+    Converged = ifelse(.data$converged, "Yes", "No"),
+    Singular = ifelse(.data$singular, "Yes", "No"),
+    Disposition = dplyr::recode(
+      .data$disposition,
+      ESTIMABLE_BENCHMARK_ONLY = "Estimable benchmark only",
+      NON_ESTIMABLE = "Non-estimable"
+    )
+  ) |>
+  gt::gt() |>
+  gt::fmt_number(columns = `Maximum |site correlation|`, decimals = 3) |>
+  compact_gt()
+```
+
+The exact work/free and activity benchmarks were estimable but remain
+benchmarks only. The sleep benchmark was singular, had a random-site
+correlation at 1.000, and was classified non-estimable. It was not simplified
+post hoc. The fixed-site route is the approved primary structure for the nine
+submitted sites.
+
+# Placement, paired/common, and dataset comparisons
+
+```{r}
+#| label: tbl-mder-placement-comparisons
+#| tbl-cap: "Selected Gaussian placement estimates in the primary dataset."
+
+effects |>
+  dplyr::filter(
+    .data$dataset_id == "primary",
+    .data$family == "Gaussian",
+    .data$sample_role %in% c("all_available", "paired_common")
+  ) |>
+  dplyr::transmute(
+    Sample = dplyr::recode(
+      .data$sample_role,
+      all_available = "All available",
+      paired_common = "Paired/common"
+    ),
+    Placement = dplyr::recode(
+      .data$placement_id,
+      near_eye = "Near eye",
+      chest = "Chest"
+    ),
+    Contrast = unname(predictor_labels[.data$predictor_id]),
+    Estimate = .data$estimate,
+    `95% CI` = ci_display(.data$lower_95, .data$upper_95),
+    `Days / participants / sites` = sprintf(
+      "%d / %d / %d",
+      .data$participant_days,
+      .data$participants,
+      .data$sites
+    )
+  ) |>
+  gt::gt(groupname_col = "Sample") |>
+  gt::fmt_number(columns = Estimate, decimals = 4) |>
+  compact_gt()
+```
+
+All all-available and paired/common placement intervals included zero. The
+paired/common work/free estimates were nearly identical near eye and at the
+chest; activity and sleep estimates varied modestly by placement but remained
+interval-compatible with zero. These are complementary placement analyses,
+not replacements for near-eye primary.
+
+```{r}
+#| label: tbl-mder-dataset-comparisons
+#| tbl-cap: "Near-eye primary versus gap-timing-unaware estimates on all-available and dataset-common samples."
+
+effects |>
+  dplyr::filter(
+    .data$placement_id == "near_eye",
+    .data$family == "Gaussian",
+    .data$sample_role %in% c("all_available", "dataset_common")
+  ) |>
+  dplyr::transmute(
+    Sample = dplyr::recode(
+      .data$sample_role,
+      all_available = "All available",
+      dataset_common = "Primary/gap common"
+    ),
+    Dataset = dplyr::recode(
+      .data$dataset_id,
+      primary = "Primary",
+      gap_timing_unaware = "Gap-timing-unaware"
+    ),
+    Contrast = unname(predictor_labels[.data$predictor_id]),
+    Estimate = .data$estimate,
+    `95% CI` = ci_display(.data$lower_95, .data$upper_95),
+    `Days / participants / sites` = sprintf(
+      "%d / %d / %d",
+      .data$participant_days,
+      .data$participants,
+      .data$sites
+    )
+  ) |>
+  gt::gt(groupname_col = "Sample") |>
+  gt::fmt_number(columns = Estimate, decimals = 4) |>
+  compact_gt()
+```
+
+On all available repaired near-eye days, the Gaussian estimates were
+-0.0016 for work/free (95% CI -0.0140 to 0.0108), 0.0090 for activity
+(-0.0066 to 0.0246), and 0.0018 per hour of previous-night sleep
+(-0.0028 to 0.0065). All three intervals include zero. The exact
+primary--gap common samples contain 664 work/free and sleep days and 630
+activity days; on those rows the primary and gap estimates differ by at most
+0.0004 MDER.
+
+```{r}
+#| label: tbl-mder-gap-family-results
+#| tbl-cap: "Repaired gap near-eye estimates and mandatory heavy-tail sensitivities."
+
+effects |>
+  dplyr::filter(
+    .data$dataset_id == "gap_timing_unaware",
+    .data$placement_id == "near_eye",
+    .data$sample_role == "all_available"
+  ) |>
+  dplyr::transmute(
+    Contrast = unname(predictor_labels[.data$predictor_id]),
+    Model = dplyr::recode(
+      .data$family,
+      Gaussian = "Gaussian identity (selected)",
+      `Student-t` = "Student-t identity (sensitivity)"
+    ),
+    Estimate = .data$estimate,
+    `95% CI` = ci_display(.data$lower_95, .data$upper_95, digits = 6L),
+    `Days / participants / sites` = sprintf(
+      "%d / %d / %d",
+      .data$participant_days,
+      .data$participants,
+      .data$sites
+    )
+  ) |>
+  gt::gt(groupname_col = "Contrast") |>
+  gt::fmt_number(columns = Estimate, decimals = 6) |>
+  compact_gt()
+```
+
+The Student-t shifts were 0.111, 0.543, and 0.651 Gaussian standard errors,
+all below the prespecified one-standard-error threshold. The Student-t sleep
+interval was 0.000003 to 0.006710, only just above zero; the corresponding
+selected Gaussian interval includes zero. This tail-model sensitivity is
+disclosed explicitly and does not create a BH-adjusted finding.
+
+```{r}
+#| label: tbl-mder-gap-tests
+#| tbl-cap: "Repaired gap MDER-slot raw tests; no BH-adjusted decision is available."
+
+gap_tests |>
+  dplyr::transmute(
+    Predictor = unname(predictor_labels[.data$predictor_id]),
+    Test = dplyr::recode(
+      .data$test_type,
+      association = "Common association",
+      site_heterogeneity = "Predictor-by-site heterogeneity"
+    ),
+    `Raw p` = p_display(.data$raw_p_value),
+    `BH-adjusted p` = "—",
+    Status = "1 of 15 slots; no decision"
+  ) |>
+  gt::gt(groupname_col = "Predictor") |>
+  compact_gt()
+```
+
+The repaired gap raw common-association p-values are 0.804, 0.245, and 0.470.
+The raw heterogeneity p-values are 0.005, 0.046, and 0.808. The work/free and
+activity heterogeneity values are nominal raw signals only: their 15-slot
+heterogeneity families remain incomplete, so neither has an adjusted p-value
+or an inferential decision.
+
+```{r}
+#| label: tbl-mder-gap-diagnostics
+#| tbl-cap: "Repaired gap near-eye residual, Student-t, and actual-date AR(1) checks."
+
+gap_diagnostics |>
+  dplyr::select(
+    "predictor_id",
+    "gaussian_residual_qq_correlation",
+    "gaussian_absolute_residual_fitted_spearman",
+    "student_t_quantile_residual_qq_correlation",
+    "student_t_effect_shift_in_gaussian_se"
+  ) |>
+  dplyr::left_join(
+    gap_ar |>
+      dplyr::select(
+        "predictor_id", "adjacent_pairs", "participants",
+        "independent_residual_lag1",
+        "independent_maximum_absolute_site_lag1",
+        "ar_rho", "ar_effect_shift_in_primary_se", "ar_singular"
+      ),
+    by = "predictor_id",
+    relationship = "one-to-one"
+  ) |>
+  dplyr::transmute(
+    Predictor = unname(predictor_labels[.data$predictor_id]),
+    `Gaussian Q-Q r` = .data$gaussian_residual_qq_correlation,
+    `|residual|-fitted rho` =
+      .data$gaussian_absolute_residual_fitted_spearman,
+    `Student-t Q-Q r` = .data$student_t_quantile_residual_qq_correlation,
+    `One-day pairs / participants` = sprintf(
+      "%d / %d",
+      .data$adjacent_pairs,
+      .data$participants
+    ),
+    `Pooled lag-1 r` = .data$independent_residual_lag1,
+    `Maximum site |r|` =
+      .data$independent_maximum_absolute_site_lag1,
+    `AR(1) rho` = .data$ar_rho,
+    `AR effect shift (SE)` = .data$ar_effect_shift_in_primary_se,
+    Assessment = ifelse(
+      .data$ar_singular,
+      "Acceptable stability sensitivity; covariance singularity flagged",
+      "Acceptable stability sensitivity"
+    )
+  ) |>
+  gt::gt() |>
+  gt::fmt_number(
+    columns = c(
+      `Gaussian Q-Q r`, `|residual|-fitted rho`, `Student-t Q-Q r`,
+      `Pooled lag-1 r`, `Maximum site |r|`, `AR(1) rho`,
+      `AR effect shift (SE)`
+    ),
+    decimals = 3
+  ) |>
+  compact_gt()
+```
+
+All repaired gap Gaussian and Student-t fits passed convergence, spread,
+extreme-residual, bounds, and sensitivity rules. Gaussian Q--Q correlations
+of 0.870--0.880 retain the same heavy-tail limitation as the primary route;
+Student-t Q--Q correlations were 0.996--0.997. Site lag maxima triggered all
+three actual-date AR(1) counterparts. Their rho values ranged from -0.734
+to -0.685, they shifted estimates by only 0.019--0.061 Gaussian standard
+errors, and they carry the structured-covariance singularity flag. They remain
+stability sensitivities only. The exact registered gap sleep benchmark is
+non-estimable because its random-site correlation reached 1.000; it was not
+simplified post hoc.
+
+The repaired chest source has no finite nonpositive MDER value. The previous
+THUAS zero and every other superseded gap result are excluded from this report;
+the corrected THUAS day is missing under the no-viable-ratio rule.
+
+# Bounded refresh and frozen-result integrity
+
+```{r}
+#| label: tbl-mder-gap-refresh-provenance
+#| tbl-cap: "Bounded METRIC-010 gap-refresh execution and preservation record."
+
+refresh_provenance |>
+  dplyr::transmute(
+    Domain = .data$domain,
+    Observed = .data$observed,
+    Verdict = .data$verdict
+  ) |>
+  gt::gt() |>
+  gt::tab_style(
+    style = gt::cell_fill(color = "#E8F3EC"),
+    locations = gt::cells_body(
+      columns = Verdict,
+      rows = Verdict == "PASS"
+    )
+  ) |>
+  compact_gt()
+```
+
+Exactly 24 MDER-dependent frames were refreshed: all 18 gap frames and the six
+primary--gap common-sample frames whose membership necessarily changes with
+gap MDER availability. The 12 primary all-available or placement-paired frames
+are object-identical to their pre-refresh copies. Twelve additional production
+preservation domains verify unchanged primary estimates, model tests,
+heterogeneity rows, participant/site deletion results, claim verdicts, and
+unaffected fitted-model serializations. No primary all-available,
+placement-paired, or deletion model was refitted; the six primary--gap
+common-sample fits were necessarily updated.
+
+The prior production output manifest was reconstructed byte-for-byte from the
+captured pre-refresh input rows and retained under a new immutable task-owned
+path. The targeted refresh completed in 11.7 seconds and used no bootstrap,
+simulation, or resampling.
+
+# Comparison with V0 and the approved hourly analysis
+
+V0 fitted one repeated hourly melEDI outcome and jointly entered context
+predictors. This amendment fits one dimensionless daily MDER value per
+admissible participant-day and one predictor-specific model at a time. V0 days
+with more supported hours contributed more rows; here every admissible MDER day
+contributes one row. V0 coefficients, p-values, and claims therefore do not
+map numerically to these estimates.
+
+The approved hourly H06 analysis also remains a separate estimand. This MDER
+amendment is not its sensitivity analysis and does not replace it.
+
+# Reproducibility and H06-D-G2-MDER-GAP decision record
+
+The static audit, 36 exact frame RDS files, family pilot, 50-deletion runtime
+pilot, original production batch, targeted 24-frame repair-dependent refresh,
+conditional AR counterparts, registered benchmarks, frozen participant/site
+deletion batch, tables, reader figure, paired source CSV, alt text, QA record,
+and stage-specific SHA-256 manifests are confined to H06_daily-owned paths.
+The original production script completed in 31.3 seconds; the targeted refresh
+completed in 11.7 seconds. No bootstrap or heavy resampling was run.
+
+The family and influence pilots retain their original output manifests. Their
+historical code manifests pin the task-local contract, data adapter, and
+modeling helper as they existed at pilot time. The family pilot also pins the
+then-current frame registry and static output manifest; the influence pilot
+pins the then-current frame registry. Those shared task-local files changed
+only for the approved METRIC-010 source/support repin and repair-dependent
+frames. The exact primary pilot frames and pilot outputs remain unchanged. The
+report permits precisely these recorded historical mismatches. The current
+production input manifest additionally retains the 14
+pre-refresh output hashes and the prior output-manifest hash as historical
+inputs. Those paths now correctly differ because the affected artifacts were
+replaced; their prior manifest is reconstructed byte-for-byte and its identity
+is verified by the dedicated gap-refresh provenance manifests. All current
+static, production-output, refresh, and reader hashes match exactly.
+
+The primary H06-D-G2-MDER decisions remain author-approved and unchanged. The
+corrected gap branch stopped at **H06-D-G2-MDER-GAP**, and the author approved
+the following items on 2026-08-11:
+
+1. the repaired gap availability and exact predictor-specific samples;
+2. the three selected Gaussian gap estimates and their explicit heavy-tail
+   limitation;
+3. disclosure that the Student-t sleep interval is only just above zero while
+   the selected Gaussian interval includes zero;
+4. treating the raw work/free and activity heterogeneity p-values as
+   non-decisional because their 15-slot BH families remain incomplete;
+5. retaining the singularly flagged gap AR(1) fits only as temporal-stability
+   sensitivities and the singular gap sleep random-slope fit as a
+   non-estimable registered benchmark; and
+6. the verified preservation of every unaffected primary result, with no
+   primary all-available, placement-paired, or deletion refit.
+
+This approval closes and freezes the corrected MDER-specific branch. It does
+not authorize the separate H06-D-G2P-AR repair decision, another model fit, the
+remaining daily-metric production grid, a Stage 3 reader report, preparation
+companion, site integration, shared preparation change, manuscript edit,
+commit, or upload.

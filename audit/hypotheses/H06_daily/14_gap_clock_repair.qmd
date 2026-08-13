@@ -1,0 +1,583 @@
+---
+title: "H06_daily: gap clock-hour repair"
+subtitle: "Targeted task-owned sensitivity repair and H06-D-G2B author gate"
+date: "2026-08-12"
+engine: knitr
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    code-fold: true
+    code-summary: "Show audit R code"
+    code-tools: true
+    embed-resources: true
+    page-layout: full
+execute:
+  echo: false
+  warning: false
+  message: false
+  error: false
+  freeze: false
+tbl-cap-location: top
+fig-cap-location: bottom
+---
+
+```{r}
+#| label: setup
+#| include: false
+
+options(
+  stringsAsFactors = FALSE,
+  scipen = 999,
+  width = 120,
+  dplyr.summarise.inform = FALSE
+)
+
+find_project_root <- function(start = getwd()) {
+  candidate <- normalizePath(start, winslash = "/", mustWork = TRUE)
+  repeat {
+    if (file.exists(file.path(candidate, "renv.lock"))) return(candidate)
+    parent <- dirname(candidate)
+    if (identical(parent, candidate)) {
+      stop("Could not locate the project root", call. = FALSE)
+    }
+    candidate <- parent
+  }
+}
+
+project_root <- Sys.getenv(
+  "NATHEALTH_PROJECT_ROOT",
+  unset = Sys.getenv("QUARTO_PROJECT_DIR", unset = "")
+)
+if (!nzchar(project_root) ||
+    !file.exists(file.path(project_root, "renv.lock"))) {
+  project_root <- find_project_root()
+}
+project_root <- normalizePath(project_root, winslash = "/", mustWork = TRUE)
+.libPaths(c(
+  file.path(project_root, "renv/library/macos/R-4.6/aarch64-apple-darwin23"),
+  .libPaths()
+))
+
+library(digest)
+library(dplyr)
+library(gt)
+library(readr)
+library(tibble)
+library(tidyr)
+
+artifact <- function(stage, file) {
+  file.path(project_root, "artifacts", stage, "H06_daily", file)
+}
+read_h06d <- function(stage, file) {
+  readr::read_csv(
+    artifact(stage, file),
+    show_col_types = FALSE,
+    na = c("", "NA")
+  )
+}
+sha256 <- function(path) {
+  digest::digest(path, algo = "sha256", file = TRUE, serialize = FALSE)
+}
+compact_gt <- function(data, groupname_col = NULL, source_note = NULL) {
+  output <- data |>
+    gt::gt(groupname_col = groupname_col) |>
+    gt::tab_options(
+      table.font.size = gt::px(12),
+      data_row.padding = gt::px(3),
+      heading.padding = gt::px(4),
+      column_labels.padding = gt::px(4),
+      table.width = gt::pct(100),
+      source_notes.font.size = gt::px(11),
+      row_group.padding = gt::px(4)
+    )
+  if (!is.null(source_note)) {
+    output <- output |> gt::tab_source_note(gt::md(source_note))
+  }
+  output
+}
+format_p <- function(value) {
+  dplyr::case_when(
+    is.na(value) ~ "—",
+    value < 0.001 ~ "<0.001",
+    TRUE ~ sprintf("%.3f", value)
+  )
+}
+format_effect <- function(estimate, lower, upper) {
+  sprintf("%.2f (%.2f to %.2f)", estimate, lower, upper)
+}
+
+classification <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_gap_clock_repair_h01_classification.csv"
+)
+repaired_classification <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_gap_clock_repair_90_cell_classification.csv"
+)
+class_summary <- read_h06d(
+  "09_tables",
+  "H06_daily_gap_clock_repair_classification_summary.csv"
+)
+bh <- read_h06d(
+  "09_tables",
+  "H06_daily_gap_clock_repair_bh_families.csv"
+)
+family_summary <- read_h06d(
+  "09_tables",
+  "H06_daily_gap_clock_repair_bh_family_summary.csv"
+)
+primary_results <- read_h06d(
+  "09_tables",
+  "H06_daily_gap_clock_repair_primary_gap_results.csv"
+)
+samples <- read_h06d(
+  "09_tables",
+  "H06_daily_gap_clock_repair_sample_summary.csv"
+)
+sidecars <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_gap_clock_repair_sidecar_summary.csv"
+)
+scope_audit <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_gap_clock_repair_scope_audit.csv"
+)
+visual_review <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_gap_clock_repair_visual_review.csv"
+)
+plot_index <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_gap_clock_repair_visual_plot_index.csv"
+)
+atlas_index <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_gap_clock_repair_visual_atlas_index.csv"
+)
+scale_equivariance <- read_h06d(
+  "09_tables",
+  "H06_daily_gap_clock_repair_scale_equivariance.csv"
+)
+residual_scale <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_gap_clock_repair_residual_scale_equivariance.csv"
+)
+protected <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_gap_clock_repair_protected_final.csv"
+)
+g2a_outputs <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_gap_clock_repair_g2a_outputs_final.csv"
+)
+runtime <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_gap_clock_repair_runtime.csv"
+)
+
+stopifnot(
+  identical(as.character(getRversion()), "4.6.1"),
+  nrow(classification) == 468L,
+  nrow(repaired_classification) == 90L,
+  nrow(bh) == 180L,
+  nrow(primary_results) == 15L,
+  nrow(visual_review) == 90L,
+  nrow(plot_index) == 90L,
+  nrow(atlas_index) == 10L,
+  all(scope_audit$verified),
+  all(protected$identity_verified),
+  all(g2a_outputs$identity_verified),
+  !any(visual_review$numeric_threshold_set_verdict),
+  !any(repaired_classification$hard_gate_failed),
+  all(bh$multiplicity_family_construct_valid)
+)
+
+predictor_labels <- c(
+  work_free_day = "Work/free day",
+  activity_status = "Daily activity status",
+  previous_sleep_duration_centered_h = "Previous-night sleep duration"
+)
+```
+
+::: {.callout-important title="Answer in brief"}
+The task-owned repair converted the five gap timing outcomes from their
+audited clock-hour source representation to the minute-scale interface
+expected by the frozen H06_daily adapter, after which the adapter converted
+them exactly once back to modeled clock hours. The repair changed only the 90
+authorized gap timing cells. All 90 now pass the hard construct, support, fit,
+and estimability gates; visual review found reportable residual limitations
+but no gross residual failure.
+
+The six gap 15-slot BH families are interpretable again. In the repaired
+near-eye all-available timing results, work/free day and previous-night sleep
+duration were BH-supported for all five outcomes; daily activity status was
+not BH-supported for any of the five. None of the five repaired
+predictor-by-site timing tests was BH-supported. These are observational,
+gap-timing-unaware sensitivity results and do not change the frozen primary
+daily estimates or the selected hourly main H06 analysis.
+:::
+
+# Exact repair boundary
+
+The owner authorized a targeted H06_daily-only repair after the H06-D-G2A
+unit audit. No shared preparation file, other hypothesis, primary H06_daily
+frame, L10 mean result, MDER model or raw result, temporal GAMM, pre-sleep
+sensitivity, or hourly H06 artifact was changed.
+
+The shared gap source stores the five outcomes in clock hours, including the
+declared signed L10 representation. The frozen H06_daily adapter expects a
+minute-scale input and divides by 60. The task-owned normalizer therefore
+multiplies only these gap-source values by 60 immediately before that frozen
+adapter. The modeled response is consequently the original clock-hour value,
+not clock hours divided by 60. Outcomes, rows, dates, sites, predictors,
+contrasts, sample roles, and response-family routes are unchanged.
+
+```{r}
+#| label: tbl-repair-scope
+#| tbl-cap: "Targeted repair and preservation checks."
+
+scope_audit |>
+  transmute(
+    Check = check,
+    Expected = expected,
+    Observed = observed,
+    Verified = if_else(verified, "Yes", "No")
+  ) |>
+  compact_gt() |>
+  cols_align("center", columns = c(Expected, Observed, Verified))
+```
+
+Exactly 378 non-L10 cells are frame-identical to the frozen grid. The repair
+replaced 30 primary-gap raw tests—five metrics by three predictors by two test
+types—and recomputed only the six gap families. The six primary families are
+unchanged. L10 remains the named unavailable slot 3. MDER remains frozen in
+slot 15; only its mathematically dependent gap-family BH fields could change.
+
+# Repaired near-eye gap timing results
+
+The near-eye all-available repaired frames contain 708–777 participant-days,
+137–141 participants, and all nine sites, depending on outcome and predictor.
+Effects are absolute clock-hour differences. For sleep duration, the effect is
+per additional hour of the prespecified day-specific sleep-duration term.
+Intervals are pointwise 95% confidence intervals; no simultaneous intervals
+are used.
+
+```{r}
+#| label: tbl-gap-primary-results
+#| tbl-cap: "Repaired gap-timing-unaware near-eye timing associations."
+
+result_table <- primary_results |>
+  mutate(
+    Outcome = manuscript_name,
+    Predictor = unname(predictor_labels[predictor_id]),
+    Days = participant_days,
+    Participants = participants,
+    Sites = sites,
+    `Difference in clock time, h (95% CI)` = format_effect(
+      display_estimate,
+      display_lower_95,
+      display_upper_95
+    ),
+    `Raw p` = format_p(association_raw_p_value),
+    `BH q` = format_p(association_bh_adjusted_p_value),
+    bh_supported = association_bh_adjusted_p_value < 0.05
+  )
+
+result_table |>
+  select(
+    Outcome,
+    Predictor,
+    Days,
+    Participants,
+    Sites,
+    `Difference in clock time, h (95% CI)`,
+    `Raw p`,
+    `BH q`,
+    bh_supported
+  ) |>
+  compact_gt(
+    groupname_col = "Outcome",
+    source_note = paste(
+      "BH q-values belong to separate 15-slot gap association families by",
+      "predictor. Bold q-values meet the explicitly labelled BH q < 0.05",
+      "rule. Every row remains acceptable with a visual residual limitation."
+    )
+  ) |>
+  cols_hide(columns = bh_supported) |>
+  tab_style(
+    style = cell_text(weight = "bold"),
+    locations = cells_body(columns = `BH q`, rows = bh_supported)
+  ) |>
+  cols_align(
+    "center",
+    columns = c(Days, Participants, Sites, `Raw p`, `BH q`)
+  )
+```
+
+Exact fitted samples for every complementary chest, paired/common, and
+dataset-common cell are retained in
+`artifacts/09_tables/H06_daily/H06_daily_gap_clock_repair_sample_summary.csv`;
+the corresponding 90 point estimates and pointwise intervals are in
+`artifacts/09_tables/H06_daily/H06_daily_gap_clock_repair_effects.csv`.
+
+Across these five repaired timing outcomes:
+
+- Free days were associated with later M10 midpoint, later L10 midpoint,
+  later mean timing above 250 lx melEDI, later first timing above 250 lx
+  melEDI, and earlier last timing above 250 lx melEDI. All five associations
+  retained BH support.
+- A longer previous-night sleep duration was associated with later M10 and
+  L10 midpoints, later mean and first timing above 250 lx melEDI, and earlier
+  last timing above 250 lx melEDI. All five associations retained BH support.
+- Daily Active versus Sedentary status was not BH-supported for any of the
+  five repaired outcomes. The last-timing contrast had raw p = 0.041 but
+  BH q = 0.089, so it is not bolded and does not support a multiplicity-adjusted
+  claim.
+
+All wording describes associations with recorded day-level contexts. It does
+not imply causal effects or health outcomes.
+
+## Site heterogeneity
+
+```{r}
+#| label: tbl-gap-timing-heterogeneity
+#| tbl-cap: "BH-adjusted site-heterogeneity tests for the five repaired timing outcomes."
+
+primary_results |>
+  transmute(
+    Outcome = manuscript_name,
+    Predictor = unname(predictor_labels[predictor_id]),
+    `Heterogeneity BH q` = format_p(heterogeneity_bh_adjusted_p_value),
+    supported = heterogeneity_bh_adjusted_p_value < 0.05
+  ) |>
+  compact_gt(groupname_col = "Outcome", source_note = paste(
+    "No repaired timing heterogeneity q-value is below 0.05. The four HC3",
+    "timing interaction routes remain sensitivity-dependent regardless of",
+    "p-value; no unqualified site-interaction claim is permitted."
+  )) |>
+  cols_hide(columns = supported) |>
+  cols_align("center", columns = `Heterogeneity BH q`)
+```
+
+No repaired timing predictor-by-site test was BH-supported. This does not
+establish identical associations across sites; it means the fitted
+heterogeneity block did not cross the prespecified multiplicity threshold.
+
+# Complete 15-slot gap families
+
+```{r}
+#| label: tbl-gap-family-summary
+#| tbl-cap: "Completed gap-timing-unaware BH families after the targeted repair."
+
+family_summary |>
+  filter(dataset_id == "gap_timing_unaware") |>
+  transmute(
+    Predictor = unname(predictor_labels[predictor_id]),
+    Test = recode(
+      test_type,
+      association = "Association",
+      site_heterogeneity = "Site heterogeneity"
+    ),
+    `Named slots` = named_slots,
+    `Available raw tests` = available_raw_slots,
+    `Named NA slots` = named_na_slots,
+    `BH-supported slots` = fdr_supported_slots,
+    `Claim-eligible slots` = claim_eligible_slots,
+    `Family valid` = if_else(family_construct_valid, "Yes", "No")
+  ) |>
+  compact_gt(groupname_col = "Predictor", source_note = paste(
+    "Each family retains all 15 named slots and uses stats::p.adjust with",
+    "n = 15. Slot 3 (L10 mean) remains NA. Slot 15 (MDER) is frozen and is",
+    "not counted as a new claim even if its derived q-value is below 0.05."
+  )) |>
+  cols_align(
+    "center",
+    columns = c(
+      `Named slots`, `Available raw tests`, `Named NA slots`,
+      `BH-supported slots`, `Claim-eligible slots`, `Family valid`
+    )
+  )
+```
+
+Across the complete gap families, 29 of the 39 estimable non-L10 association
+slots and 11 of the 39 estimable non-L10 site-heterogeneity slots have BH
+q-values below 0.05 and pass the H01-aligned hard gate. Site-interaction
+claims from the HC3 timing route remain explicitly sensitivity-dependent.
+
+# H01-aligned diagnostics
+
+The residual rule was applied exactly as approved: centering,
+homoscedasticity, and gross normality were judged visually from
+residual-versus-fitted and normal Q-Q plots. Numeric summaries did not assign
+any verdict. A gross visual problem could fail a cell; none was observed.
+
+```{r}
+#| label: tbl-final-classification
+#| tbl-cap: "Final H01-aligned classification of the complete 468-cell non-L10 grid."
+
+class_summary |>
+  transmute(
+    Class = h01_reader_label,
+    Cells = cells,
+    `Gross visual failures` = gross_visual_failures,
+    `Hard-gate failures` = hard_gate_failures
+  ) |>
+  compact_gt() |>
+  cols_align(
+    "center",
+    columns = c(Cells, `Gross visual failures`, `Hard-gate failures`)
+  )
+```
+
+After repairing the true unit/construct defect, all 468 non-L10 production
+cells are acceptable with limitations and none fails a hard gate. This does
+not mean the diagnostics are clean: each cell has a recorded visual residual
+limitation, and the sensitivity sidecars remain visible.
+
+```{r}
+#| label: tbl-repair-sidecars
+#| tbl-cap: "Diagnostic and sensitivity sidecars for the 90 repaired cells."
+
+sidecars |>
+  transmute(
+    Sidecar = sidecar,
+    Classification = classification,
+    Cells = cells,
+    `Overall hard-gate input` = if_else(
+      overall_hard_gate_input,
+      "Only if FAIL_GROSS",
+      "No"
+    )
+  ) |>
+  compact_gt(groupname_col = "Sidecar") |>
+  cols_align("center", columns = c(Cells, `Overall hard-gate input`))
+```
+
+For the 72 HC3 cells, the additive Student-t comparison was stable in 70 and
+showed a substantial 1-to-less-than-2-SE shift in two. The gap-aware
+no-nugget AR additive sidecar was stable in 42, substantially shifted in four,
+unstable in five, and numerically unresolved in 21. For the 18 mixed-model
+mean-timing cells, AR was not triggered in 11; three had unresolved AR
+numerics, one was singular, and three retained post-AR residual dependence.
+Deletion influence was stable in 67 cells, a substantial limitation in 19,
+and unstable in four. Under the approved H01 architecture, these findings
+must be reported but do not fail an otherwise estimable cell.
+
+The repaired residuals and fitted values reproduce the historical
+mis-scaled residual geometry after multiplication by 60 to within
+`r sprintf("%.2g", max(residual_scale$fitted_scale_maximum_absolute_error))`
+clock hours for fitted values and
+`r sprintf("%.2g", max(residual_scale$standardized_residual_maximum_absolute_error))`
+for standardized residuals. This scale-equivariance explains why the unit
+repair restores the construct without erasing the previously observed
+residual-shape limitations.
+
+## Residual review atlas
+
+The ten audit atlases below show all 90 repaired cells in indexed order, nine
+cells per atlas. Within each atlas, panels run left-to-right and then
+top-to-bottom. The canonical cell index records outcome, placement, sample,
+predictor, plot SHA-256, paired source-data SHA-256, and cell-specific alt
+text. The atlas is a navigation aid; the individual cell plots are the
+full-resolution audit source.
+
+```{r}
+#| label: tbl-atlas-map
+#| tbl-cap: "Residual atlas index."
+
+atlas_map <- plot_index |>
+  group_by(atlas_group_key) |>
+  summarise(
+    Cells = sprintf("%03d–%03d", min(repair_cell_index), max(repair_cell_index)),
+    Outcomes = paste(unique(manuscript_name), collapse = "; "),
+    `Atlas SHA-256` = first(atlas_sha256),
+    .groups = "drop"
+  ) |>
+  mutate(Atlas = toupper(gsub("_", " ", atlas_group_key)), .before = 1L) |>
+  select(-atlas_group_key)
+
+atlas_map |>
+  compact_gt() |>
+  cols_width(
+    Atlas ~ px(90),
+    Cells ~ px(90),
+    Outcomes ~ px(360),
+    `Atlas SHA-256` ~ px(460)
+  )
+```
+
+```{r}
+#| label: fig-residual-atlases
+#| results: asis
+
+for (index in seq_len(nrow(atlas_index))) {
+  row <- atlas_index[index, ]
+  atlas_name <- toupper(gsub("_", " ", row$atlas_group_key))
+  alt <- paste0(
+    atlas_name,
+    ", repaired residual diagnostics for cells ",
+    sprintf("%03d", row$first_repair_cell),
+    " through ",
+    sprintf("%03d", row$last_repair_cell),
+    ". Each cell shows standardized residuals versus fitted clock hours and ",
+    "a normal Q-Q plot."
+  )
+  source_path <- file.path("..", "..", "..", row$atlas_relative_path)
+  cat(sprintf("\n### %s: cells %03d–%03d\n\n", atlas_name,
+              row$first_repair_cell, row$last_repair_cell))
+  cat(sprintf(
+    "![](%s){fig-alt=\"%s\" width=100%%}\n\n",
+    source_path,
+    alt
+  ))
+}
+```
+
+# Scientific interpretation and comparison boundary
+
+This repair retains the intended gap-timing-unaware sensitivity: it asks
+whether conclusions persist when the gap timing information is ignored while
+keeping the participant-day outcome definitions and predictor hierarchy. It
+does not rebuild shared preparation, alter the primary daily analysis, or
+make the daily and hourly H06 estimands numerically interchangeable.
+
+The corrected p-values are scale-equivariant to the historical values within
+`r sprintf("%.2g", max(scale_equivariance$absolute_raw_p_difference))` for raw
+p-values. That numerical similarity does not excuse the historical unit
+error: clock hours divided by 60 were not a valid reader-facing construct.
+The repaired frame and model objects are newly sealed, while the 378
+unaffected cells remain frozen.
+
+# Reproducibility and preservation
+
+The repair ran serially in R `r as.character(getRversion())`. The 90 repaired
+base cells and embedded sidecars took
+`r sprintf("%.1f", runtime$wall_seconds[runtime$component == "90 repaired base cells and embedded sidecars"])`
+seconds. The complete 12,837-refit participant/site deletion battery took
+`r sprintf("%.1f", runtime$wall_seconds[runtime$component == "complete participant/site deletion battery"])`
+seconds, with no failed refit or repeated checkpoint failure. No bootstrap or
+simulation was run.
+
+Final verification confirms:
+
+- all 1,011 protected historical identities remain exact;
+- all 997 frozen H06-D-G2A output identities remain exact;
+- all 378 unaffected frame objects remain exact;
+- the 30 repaired raw slots are the only replaced raw tests;
+- the six gap families are the only recomputed BH families; and
+- every output written by this amendment is under an H06_daily-owned path.
+
+# H06-D-G2B-GAP-CLOCK-REPAIR author stop gate
+
+The targeted repair is complete and stops here for explicit author review.
+The recommended disposition is to accept the repaired gap clock-hour branch
+as the intended gap-timing-unaware sensitivity, with all visual, AR,
+response-family, influence, and timing-interaction limitations retained in
+the result language.
+
+Acceptance of this gate would permit the coordinator to close the Stage 2
+repair record. It does not by itself authorize Stage 3 reader-report writing,
+Stage 4 provenance writing, website integration, shared preparation edits,
+main-H06 changes, a commit, or a push.

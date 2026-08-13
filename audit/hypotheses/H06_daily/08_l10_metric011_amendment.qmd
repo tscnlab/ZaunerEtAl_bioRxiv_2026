@@ -1,0 +1,827 @@
+---
+title: "H06 daily metrics — METRIC-011 L10 amendment"
+subtitle: "Two-part L10 analysis and estimability stop gate"
+date: 2026-08-12
+engine: knitr
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    code-fold: true
+    code-summary: "Show audit R code"
+    code-tools: true
+    embed-resources: true
+    page-layout: full
+execute:
+  echo: false
+  warning: false
+  message: false
+  error: false
+  freeze: false
+tbl-cap-location: top
+---
+
+```{r}
+#| label: setup
+#| include: false
+
+options(
+  stringsAsFactors = FALSE,
+  scipen = 999,
+  width = 120,
+  dplyr.summarise.inform = FALSE
+)
+
+find_project_root <- function(start = getwd()) {
+  candidate <- normalizePath(start, winslash = "/", mustWork = TRUE)
+  repeat {
+    if (file.exists(file.path(candidate, "renv.lock"))) {
+      return(candidate)
+    }
+    parent <- dirname(candidate)
+    if (identical(parent, candidate)) {
+      stop("Could not locate the project root", call. = FALSE)
+    }
+    candidate <- parent
+  }
+}
+
+project_root <- Sys.getenv(
+  "H06_DAILY_PROJECT_ROOT",
+  unset = Sys.getenv("QUARTO_PROJECT_DIR", unset = "")
+)
+if (!nzchar(project_root) ||
+    !file.exists(file.path(project_root, "renv.lock"))) {
+  project_root <- find_project_root()
+}
+project_root <- normalizePath(project_root, winslash = "/", mustWork = TRUE)
+project_library <- file.path(
+  project_root,
+  "renv/library/macos/R-4.6/aarch64-apple-darwin23"
+)
+.libPaths(c(project_library, .libPaths()))
+
+library(digest)
+library(dplyr)
+library(gt)
+library(readr)
+library(tibble)
+library(tidyr)
+
+stopifnot(
+  identical(as.character(getRversion()), "4.6.1"),
+  identical(as.character(packageVersion("lme4")), "2.0.1"),
+  identical(as.character(packageVersion("glmmTMB")), "1.1.14")
+)
+
+artifact <- function(stage, file) {
+  file.path(project_root, "artifacts", stage, "H06_daily", file)
+}
+read_h06d <- function(stage, file) {
+  readr::read_csv(
+    artifact(stage, file),
+    show_col_types = FALSE,
+    na = c("", "NA")
+  )
+}
+compact_gt <- function(table) {
+  table |>
+    gt::tab_options(
+      table.font.size = gt::px(12),
+      data_row.padding = gt::px(3),
+      heading.padding = gt::px(4),
+      column_labels.padding = gt::px(4),
+      table.width = gt::pct(100),
+      source_notes.font.size = gt::px(11)
+    )
+}
+ratio_ci <- function(estimate, lower, upper) {
+  ifelse(
+    is.na(lower) | is.na(upper),
+    sprintf("%.3f (interval withheld)", estimate),
+    sprintf("%.3f (%.3f to %.3f)", estimate, lower, upper)
+  )
+}
+yes_no <- function(value) ifelse(value, "Yes", "No")
+
+input_contract <- read_h06d(
+  "08_diagnostics", "H06_daily_l10_metric011_input_contract.csv"
+)
+static_verdict <- read_h06d(
+  "08_diagnostics", "H06_daily_l10_metric011_static_verdict.csv"
+)
+exact_zeros <- read_h06d(
+  "08_diagnostics", "H06_daily_l10_metric011_exact_zero_audit.csv"
+)
+change_inventory <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_l10_metric011_scenario_component_change_inventory.csv"
+)
+samples <- read_h06d(
+  "08_diagnostics", "H06_daily_l10_metric011_sample_summary.csv"
+)
+primary_verdict <- read_h06d(
+  "08_diagnostics", "H06_daily_l10_metric011_primary_verdict.csv"
+)
+ar_counterparts <- read_h06d(
+  "08_diagnostics", "H06_daily_l10_metric011_ar_counterparts.csv"
+)
+model_diagnostics <- read_h06d(
+  "08_diagnostics", "H06_daily_l10_metric011_model_diagnostics.csv"
+)
+occurrence_cells <- read_h06d(
+  "08_diagnostics", "H06_daily_l10_metric011_occurrence_site_cells.csv"
+)
+family_sensitivity <- read_h06d(
+  "08_diagnostics", "H06_daily_l10_metric011_positive_family_sensitivity.csv"
+)
+influence <- read_h06d(
+  "08_diagnostics", "H06_daily_l10_metric011_positive_influence_summary.csv"
+)
+map_coefficients <- read_h06d(
+  "08_diagnostics", "H06_daily_l10_metric011_map_occurrence_coefficients.csv"
+)
+map_predictions <- read_h06d(
+  "08_diagnostics", "H06_daily_l10_metric011_map_occurrence_predictions.csv"
+)
+registered_benchmark <- read_h06d(
+  "08_diagnostics", "H06_daily_l10_metric011_registered_benchmark.csv"
+)
+runtime <- read_h06d(
+  "08_diagnostics", "H06_daily_l10_metric011_production_runtime.csv"
+)
+preservation <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_l10_metric011_protected_preservation_after_production.csv"
+)
+model_equivalence <- read_h06d(
+  "08_diagnostics", "H06_daily_l10_metric011_no_refit_model_equivalence.csv"
+)
+figure_qa <- read_h06d(
+  "08_diagnostics", "H06_daily_l10_metric011_figure_readability_qa.csv"
+)
+model_tests <- read_h06d(
+  "09_tables", "H06_daily_l10_metric011_model_tests.csv"
+)
+effects <- read_h06d(
+  "09_tables", "H06_daily_l10_metric011_effect_estimates.csv"
+)
+gap_comparison <- read_h06d(
+  "09_tables", "H06_daily_l10_metric011_gap_comparison.csv"
+)
+bh_slots <- read_h06d(
+  "09_tables", "H06_daily_l10_metric011_bh_slot_families.csv"
+)
+figure_source <- read_h06d(
+  "11_source_data",
+  "H06_daily_l10_metric011_positive_component_figure_source.csv"
+)
+
+primary_joint <- model_tests |>
+  dplyr::filter(
+    .data$run_id == "primary__near_eye__all_available",
+    .data$component == "joint_two_part"
+  )
+gap_joint <- model_tests |>
+  dplyr::filter(
+    .data$run_id == "gap_timing_unaware__near_eye__all_available",
+    .data$component == "joint_two_part"
+  )
+
+stopifnot(
+  nrow(input_contract) == 13L,
+  all(input_contract$identity_pass),
+  static_verdict$component_frames == 36L,
+  static_verdict$current_primary_changed_cells == 8L,
+  static_verdict$gap_components_exactly_invariant,
+  sum(exact_zeros$metric011_changed_source_cell) == 8L,
+  nrow(change_inventory) == 36L,
+  all(change_inventory$exact_frame_identity_to_pre_metric011[
+    change_inventory$dataset_id == "gap_timing_unaware"
+  ]),
+  nrow(primary_joint) == 6L,
+  nrow(gap_joint) == 6L,
+  all(primary_joint$test_status == "NON_ESTIMABLE_COMPONENT_FAILURE"),
+  all(gap_joint$test_status == "NON_ESTIMABLE_COMPONENT_FAILURE"),
+  all(is.na(primary_joint$raw_p_value)),
+  all(is.na(gap_joint$raw_p_value)),
+  all(bh_slots$slot_status[bh_slots$metric_slot == 3L] ==
+        "NON_ESTIMABLE_COMPONENT_FAILURE"),
+  all(is.na(bh_slots$raw_p_value[bh_slots$metric_slot == 3L])),
+  all(is.na(bh_slots$bh_adjusted_p_value)),
+  all(bh_slots$family_slots_required == 15L),
+  all(bh_slots$family_slots_available == 1L),
+  all(preservation$preserved_byte_for_byte),
+  nrow(model_equivalence) == 194L,
+  all(model_equivalence$object_identical),
+  all(figure_qa$disposition == "PASS"),
+  identical(unique(figure_qa$interval_type), "pointwise, not simultaneous"),
+  all(figure_source$interval_available[
+    figure_source$family == "Gaussian primary component"
+  ]),
+  !any(figure_source$interval_available[
+    figure_source$family == "Student-t sensitivity" &
+      grepl("UNRESOLVED", figure_source$inferential_status)
+  ])
+)
+```
+
+::: {.callout-important}
+
+## Answer in brief
+
+The approved METRIC-011 normalization correctly reclassified eight proven
+roundoff remnants as exact zero L10 mean melEDI values. Those participant-days
+were retained: exact zeros entered the occurrence component and only the
+strictly positive magnitude component excluded them.
+
+The prespecified fixed-site occurrence model is nevertheless **not estimable
+for any of the three primary near-eye context tests** because site-specific
+zero patterns cause complete or quasi-complete separation. The work/free
+actual-date AR(1) counterpart also failed at the correlation boundary
+($\rho=-0.999964$). Consequently, the overall two-part L10 association and
+site-heterogeneity tests are `NON_ESTIMABLE_COMPONENT_FAILURE`; their raw and
+adjusted p-values are missing. The named L10 slot remains in each 15-metric
+Benjamini--Hochberg family. No L10 joint association is claimed.
+
+Among participant-days with L10 greater than zero, the Gaussian component can
+be shown descriptively with pointwise 95% intervals, but it cannot replace the
+joint estimand. Its work/free result reverses direction under the Student-t
+sensitivity, the activity result has a 1.04-standard-error site-deletion shift,
+and the sleep Student-t sensitivity fails its numerical gate. None supports a
+standalone confirmatory or directional claim.
+
+This report stops at **H06-D-G2P-L10-METRIC011** for an author decision. It
+does not release the remaining daily-metric grid or alter the approved
+pre-sleep no-nugget sensitivity.
+
+:::
+
+# Scope and controlling METRIC-011 rule
+
+L10 mean melEDI is the arithmetic mean melEDI during the least-active 10-hour
+period of an admissible participant-day, reported in lx. METRIC-011 changes a
+derived L10 value to exact zero only when the value is within the shared
+machine-precision rule **and every contributing source minute is exactly
+zero**. It is not a fitted-model cutoff and does not round genuinely low
+positive exposure.
+
+The shared repair changed three near-eye and five chest participant-day cells.
+All non-L10 scientific values, samples, hourly values, 30-minute values, and
+gap-timing-unaware L10 values were unchanged. H06_daily consumed the sealed
+artifacts; it did not rebuild preparation.
+
+```{r}
+#| label: tbl-l10-input-contract
+#| tbl-cap: "Controlling METRIC-011 inputs. Every displayed identity was verified before fitting."
+
+input_contract |>
+  dplyr::transmute(
+    Input = .data$input_id,
+    Role = .data$role,
+    `SHA-256 (first 12)` = substr(.data$expected_sha256, 1L, 12L),
+    Verified = yes_no(.data$identity_pass)
+  ) |>
+  gt::gt() |>
+  compact_gt()
+```
+
+# Estimand and model contract
+
+Each model frame has one metric-specific participant-day per row. The
+prespecified two-part analysis separates:
+
+1. **Occurrence:** $P(\mathrm{L10}=0\mid X)$, using a binomial logit model in
+   which an exact zero is the event; and
+2. **Positive magnitude:**
+   $E[\log_{10}(\mathrm{L10})\mid \mathrm{L10}>0,X]$, using a Gaussian
+   identity mixed model, with a Student-t identity model as the mandatory
+   response-family sensitivity.
+
+The fixed-site additive formula used in both components was:
+
+```r
+response_value ~ site + predictor + (1 | participant_key)
+```
+
+The site-heterogeneity comparison used:
+
+```r
+response_value ~ site * predictor + (1 | participant_key)
+```
+
+An overall two-part likelihood-ratio test was to combine the component
+likelihood-ratio statistics only if **both** components passed their
+component-appropriate estimability and diagnostic gates. That condition did
+not hold. The Gaussian positive-component ratio is
+$10^{\widehat\beta}$: a conditional geometric-mean ratio among days with
+L10 greater than zero, not a marginal mean ratio across all days.
+
+The exact registered benchmark was retained without simplification:
+
+```r
+response_value ~ predictor + (predictor | site) +
+  (1 | site:participant_key)
+```
+
+It remains a benchmark only. It was not promoted to replace the prespecified
+fixed-site primary model.
+
+# Exact samples and zero handling
+
+The occurrence component keeps every model-eligible day. The positive
+component excludes only exact-zero L10 days. The table gives exact fitted
+support as days / participants / sites.
+
+```{r}
+#| label: tbl-l10-samples
+#| tbl-cap: "Exact component samples for every authorized scenario and predictor."
+
+scenario_labels <- c(
+  primary__near_eye__all_available = "Primary near eye, all available",
+  primary__chest__all_available = "Primary chest, all available",
+  primary__near_eye__paired_common = "Primary near eye, paired/common",
+  primary__chest__paired_common = "Primary chest, paired/common",
+  gap_timing_unaware__near_eye__all_available =
+    "Gap-timing-unaware near eye",
+  gap_timing_unaware__chest__all_available =
+    "Gap-timing-unaware chest"
+)
+predictor_labels <- c(
+  work_free_day = "Work/free day",
+  activity_status = "Activity status",
+  previous_sleep_duration_centered_h = "Previous-night sleep"
+)
+
+sample_table <- samples |>
+  dplyr::mutate(
+    Scenario = unname(scenario_labels[.data$run_id]),
+    Predictor = unname(predictor_labels[.data$predictor_id]),
+    Support = sprintf(
+      "%d / %d / %d",
+      .data$participant_days,
+      .data$participants,
+      .data$sites
+    ),
+    Component = dplyr::recode(
+      .data$component,
+      zero_occurrence = "Occurrence",
+      positive_magnitude = "Positive magnitude"
+    )
+  ) |>
+  dplyr::select(
+    .data$run_order,
+    .data$predictor_order,
+    .data$Scenario,
+    .data$Predictor,
+    .data$Component,
+    .data$Support
+  ) |>
+  tidyr::pivot_wider(names_from = .data$Component, values_from = .data$Support) |>
+  dplyr::arrange(.data$run_order, .data$predictor_order) |>
+  dplyr::select(-.data$run_order, -.data$predictor_order)
+
+sample_table |>
+  gt::gt(groupname_col = "Scenario") |>
+  gt::tab_spanner(
+    label = "Participant-days / participants / sites",
+    columns = c("Occurrence", "Positive magnitude")
+  ) |>
+  compact_gt()
+```
+
+Across all source scenarios and placements, 493 exact-zero L10 rows were
+audited. The eight METRIC-011 reclassifications are included among them. No
+participant-day was discarded merely because L10 equals zero.
+
+# Why the primary joint estimand is not available
+
+The primary near-eye occurrence frames contain substantial overall zero mass,
+but the event is absent in structurally important site cells. In particular,
+UCR has no zero L10 day under either work/free category, either activity
+category, or anywhere over the observed sleep-duration support. With site
+fixed effects in a logistic mixed model, these empty event cells drive fixed
+coefficients toward the boundary: maximum absolute coefficients were
+16.41--16.93 and maximum standard errors were 5,003--6,833.
+
+```{r}
+#| label: tbl-l10-ucr-cells
+#| tbl-cap: "Primary near-eye UCR occurrence support, showing the zero-free site cells central to separation."
+
+occurrence_cells |>
+  dplyr::filter(
+    .data$run_id == "primary__near_eye__all_available",
+    .data$site == "UCR"
+  ) |>
+  dplyr::transmute(
+    Predictor = unname(predictor_labels[.data$predictor_id]),
+    Level = .data$predictor_level,
+    Days = .data$participant_days,
+    `Exact-zero days` = .data$exact_zero_days,
+    `Positive days` = .data$positive_days
+  ) |>
+  gt::gt() |>
+  compact_gt()
+```
+
+```{r}
+#| label: tbl-l10-primary-estimability
+#| tbl-cap: "Primary near-eye component and joint-test dispositions. Missing p-values are intentional estimability decisions."
+
+primary_test_table <- model_tests |>
+  dplyr::filter(
+    .data$run_id == "primary__near_eye__all_available",
+    .data$test_type == "association"
+  ) |>
+  dplyr::mutate(
+    Predictor = unname(predictor_labels[.data$predictor_id]),
+    Component = dplyr::recode(
+      .data$component,
+      joint_two_part = "Overall two-part",
+      zero_occurrence = "Occurrence",
+      positive_magnitude = "Positive magnitude"
+    ),
+    Status = dplyr::recode(
+      .data$test_status,
+      NON_ESTIMABLE_COMPONENT_FAILURE = "Non-estimable: component failure",
+      NON_ESTIMABLE_SEPARATION = "Non-estimable: separation",
+      NON_ESTIMABLE_SEPARATION_AND_AR_FAILURE =
+        "Non-estimable: separation and AR failure",
+      NOT_ACCEPTABLE_FAMILY_SENSITIVITY =
+        "Descriptive only: major family sensitivity",
+      ACCEPTABLE_WITH_FAMILY_SENSITIVITY_LIMITATION =
+        "Descriptive only: family sensitivity",
+      NOT_ACCEPTABLE_T_SENSITIVITY_FAILED =
+        "Descriptive only: Student-t fit failed"
+    ),
+    `Ordinary raw p-value` = ifelse(is.na(.data$raw_p_value), "—", "withheld")
+  ) |>
+  dplyr::select(
+    .data$Predictor,
+    .data$Component,
+    .data$Status,
+    .data$`Ordinary raw p-value`
+  )
+
+primary_test_table |>
+  gt::gt(groupname_col = "Predictor") |>
+  compact_gt()
+```
+
+The small ordinary likelihood-ratio p-values generated before the separation
+gate were retained only in diagnostic provenance. They are **not accepted
+results**, are not displayed as association evidence, and do not enter BH.
+
+## Actual-date AR(1) checks
+
+Actual-date AR(1) counterparts were fitted only when the prespecified residual
+lag screen triggered and calendar adjacency was adequate. For work/free
+occurrence, the fitted $\rho=-0.999964$ is a boundary failure; its likelihood
+and coefficients are unusable for inference and do not repair separation. For
+positive L10 with previous-night sleep, $\rho=0.836$ and the association
+coefficient shifted by only 0.039 Gaussian standard errors; that temporal
+sensitivity passed, but it cannot repair the missing occurrence component.
+
+```{r}
+#| label: tbl-l10-ar
+#| tbl-cap: "Triggered primary near-eye actual-date AR(1) counterparts."
+
+ar_counterparts |>
+  dplyr::filter(
+    .data$run_id == "primary__near_eye__all_available",
+    .data$ar_trigger
+  ) |>
+  dplyr::transmute(
+    Predictor = unname(predictor_labels[.data$predictor_id]),
+    Component = dplyr::recode(
+      .data$component,
+      zero_occurrence = "Occurrence",
+      positive_magnitude = "Positive magnitude"
+    ),
+    Rho = sprintf("%.3f", as.numeric(.data$ar_rho)),
+    `Shift (primary SE)` = sprintf(
+      "%.3f",
+      as.numeric(.data$effect_shift_in_primary_se)
+    ),
+    Disposition = dplyr::recode(
+      .data$disposition,
+      NOT_ACCEPTABLE_RHO_BOUNDARY = "Not acceptable: rho boundary",
+      ACCEPTABLE = "Acceptable temporal sensitivity"
+    )
+  ) |>
+  gt::gt() |>
+  compact_gt()
+```
+
+# Positive-magnitude component: descriptive only
+
+The following ratios condition on L10 being strictly greater than zero. They
+exclude zero days by definition and therefore do not answer the overall L10
+question. All intervals are model-based **pointwise** 95% intervals; no
+simultaneous interval was used.
+
+```{r}
+#| label: tbl-l10-primary-positive
+#| tbl-cap: "Primary near-eye positive-component estimates. Ratios are conditional on L10 greater than zero."
+
+primary_positive_table <- effects |>
+  dplyr::filter(
+    .data$run_id == "primary__near_eye__all_available",
+    .data$component == "positive_magnitude",
+    .data$family %in% c(
+      "Gaussian identity on log10-positive L10",
+      "Student-t identity on log10-positive L10 sensitivity"
+    )
+  ) |>
+  dplyr::mutate(
+    Predictor = unname(predictor_labels[.data$predictor_id]),
+    Family = ifelse(
+      grepl("Student-t", .data$family),
+      "Student-t sensitivity",
+      "Gaussian component"
+    ),
+    failed_t = grepl("Student-t", .data$family) &
+      grepl("UNRESOLVED", .data$inferential_status),
+    `Ratio (95% pointwise interval)` = ratio_ci(
+      .data$estimate,
+      ifelse(.data$failed_t, NA_real_, .data$lower_95),
+      ifelse(.data$failed_t, NA_real_, .data$upper_95)
+    ),
+    Interpretation = dplyr::case_when(
+      .data$predictor_id == "work_free_day" ~
+        "Major family sensitivity; direction reverses",
+      .data$predictor_id == "activity_status" ~
+        "Family and site-influence limitations",
+      TRUE ~ "Student-t numerical failure; sensitivity unresolved"
+    )
+  ) |>
+  dplyr::select(
+    .data$Predictor,
+    .data$Family,
+    .data$`Ratio (95% pointwise interval)`,
+    .data$Interpretation
+  )
+
+primary_positive_table |>
+  gt::gt(groupname_col = "Predictor") |>
+  compact_gt()
+```
+
+For work/free day, the Gaussian ratio was 0.925 (0.759 to 1.128), whereas the
+Student-t ratio was 1.061 (0.922 to 1.220): a 1.35-primary-standard-error shift
+and a direction reversal. For activity, the response-family shift was 0.61
+standard errors, but deleting MPI shifted the Gaussian estimate by 1.04
+standard errors. For sleep, the Gaussian ratio per one hour longer previous
+night was 0.775 (0.722 to 0.832); the Student-t fit reported false convergence
+and a non-positive-definite Hessian, so its nominal interval is withheld and
+the family sensitivity remains unresolved.
+
+```{r}
+#| label: fig-l10-positive-component-sensitivity
+#| fig-cap: "Positive-component response-family and dataset sensitivity. Points are conditional geometric-mean ratios among participant-days with L10 greater than zero. Lines are model-based pointwise 95% intervals; invalid Student-t intervals are withheld. The vertical reference is one. These estimates do not represent the overall L10 association."
+#| fig-alt: "Forest plot of Gaussian and Student-t estimates for the conditional geometric-mean L10 ratio among positive participant-days. Six scenarios are shown for each of three day-level contexts. Pointwise 95% intervals are drawn only for numerically acceptable fits; Student-t points without intervals identify failed sensitivity fits. The reference ratio is one. These positive-only estimates do not represent overall L10 associations."
+#| out-width: 100%
+
+knitr::include_graphics(artifact(
+  "10_figures",
+  "H06_daily_l10_metric011_positive_component_sensitivity.png"
+))
+```
+
+## Influence diagnostics
+
+The prespecified deletion audit fitted 440 positive-Gaussian deletion models
+serially with no failures. It did **not** fit occurrence or joint deletion
+models because those estimands were already non-estimable.
+
+```{r}
+#| label: tbl-l10-influence
+#| tbl-cap: "Primary near-eye influence diagnostics for the positive Gaussian component only."
+
+influence |>
+  dplyr::transmute(
+    Predictor = unname(predictor_labels[.data$predictor_id]),
+    `Participant deletions` = .data$participant_deletions,
+    `Maximum participant shift (SE)` = sprintf(
+      "%.2f",
+      .data$maximum_participant_shift_in_full_se
+    ),
+    `Maximum site shift (SE)` = sprintf(
+      "%.2f",
+      .data$maximum_site_shift_in_full_se
+    ),
+    `Most influential site` = .data$maximum_shift_site,
+    Disposition = dplyr::recode(
+      .data$influence_disposition,
+      ACCEPTABLE_FOR_DESCRIPTIVE_POSITIVE_COMPONENT =
+        "Acceptable for descriptive positive component",
+      MAJOR_INFLUENCE_LIMITATION_NO_DIRECTIONAL_CLAIM =
+        "Major limitation; no directional claim"
+    )
+  ) |>
+  gt::gt() |>
+  compact_gt()
+```
+
+# Regularized occurrence sensitivity
+
+The authorized diagnostic sensitivity used the same fixed-site occurrence
+frame, formula, and contrasts with normal priors on the log-odds fixed effects.
+The intercept was explicitly assigned a prior and the same prior was assigned
+to all remaining conditional fixed effects. The prospective primary scale was
+$N(0,3^2)$, with $N(0,1.5^2)$ and $N(0,6^2)$ checks.
+
+All nine primary near-eye MAP fits converged. Predictor directions and
+equal-site predicted zero probabilities changed little over the three scales,
+but this does not turn a separated ordinary likelihood into an estimable
+confirmatory test. The MAP coefficients, odds ratios, and predicted
+probabilities are diagnostic only; there is no ordinary confidence interval,
+p-value, or BH decision.
+
+```{r}
+#| label: tbl-l10-map
+#| tbl-cap: "Regularized primary near-eye occurrence diagnostic across prior scales; no significance decision follows."
+
+map_table <- map_coefficients |>
+  dplyr::filter(.data$run_id == "primary__near_eye__all_available") |>
+  dplyr::left_join(
+    map_predictions |>
+      dplyr::filter(.data$run_id == "primary__near_eye__all_available") |>
+      dplyr::group_by(
+        .data$predictor_id,
+        .data$prior_standard_deviation
+      ) |>
+      dplyr::summarise(
+        `Equal-site zero probability range` = sprintf(
+          "%.3f to %.3f",
+          min(.data$equal_site_probability_zero),
+          max(.data$equal_site_probability_zero)
+        ),
+        .groups = "drop"
+      ),
+    by = c("predictor_id", "prior_standard_deviation")
+  ) |>
+  dplyr::transmute(
+    Predictor = unname(predictor_labels[.data$predictor_id]),
+    `Prior SD` = .data$prior_standard_deviation,
+    `MAP log-odds coefficient` = sprintf(
+      "%.3f",
+      .data$map_log_odds_coefficient
+    ),
+    `MAP odds ratio` = sprintf("%.3f", .data$map_odds_ratio),
+    .data$`Equal-site zero probability range`
+  )
+
+map_table |>
+  gt::gt(groupname_col = "Predictor") |>
+  compact_gt()
+```
+
+# Complementary scenarios and gap-timing-unaware comparison
+
+The same two-part contract was completed for chest all-available,
+placement-paired/common near-eye and chest, and gap-timing-unaware near-eye and
+chest frames. Any failed occurrence component forced the corresponding joint
+test to missing. No complementary component estimate replaced a failed
+primary slot.
+
+All 12 prespecified primary and gap near-eye joint association/heterogeneity
+tests are non-estimable. The gap L10 scientific values were exactly invariant
+to METRIC-011; their fits were run only because no accepted production L10
+component existed and the previously held branch had to be completed. They are
+not described as a METRIC-011 scientific repair.
+
+For the positive Gaussian component alone, the gap-minus-primary shifts were
+0.45 standard errors for work/free day, 0.63 for activity status, and 0.68 for
+previous-night sleep. These are descriptive conditional comparisons only.
+
+```{r}
+#| label: tbl-l10-gap
+#| tbl-cap: "Positive-only primary versus gap-timing-unaware near-eye comparison. Joint two-part sensitivity remains non-estimable."
+
+gap_comparison |>
+  dplyr::filter(
+    .data$family == "Gaussian identity on log10-positive L10"
+  ) |>
+  dplyr::transmute(
+    Predictor = unname(predictor_labels[.data$predictor_id]),
+    `Primary ratio (95% interval)` = ratio_ci(
+      .data$estimate__primary,
+      .data$lower_95__primary,
+      .data$upper_95__primary
+    ),
+    `Gap-timing-unaware ratio (95% interval)` = ratio_ci(
+      .data$estimate__gap_timing_unaware,
+      .data$lower_95__gap_timing_unaware,
+      .data$upper_95__gap_timing_unaware
+    ),
+    `Absolute shift (primary SE)` = sprintf(
+      "%.2f",
+      .data$absolute_gap_shift_in_primary_se
+    )
+  ) |>
+  gt::gt() |>
+  compact_gt()
+```
+
+# Multiplicity disposition
+
+L10 is metric slot 3 in each 15-slot primary association,
+site-heterogeneity, and gap-timing-unaware family. Its joint raw p-value is
+missing because a component failed; the slot is retained and the family size
+remains 15. No isolated component p-value or regularized diagnostic result was
+substituted.
+
+Within this bounded amendment, only the already frozen MDER slot is otherwise
+available. Thus every affected family is currently incomplete at 1 of 15, and
+no BH-adjusted p-value or adjusted decision is produced.
+
+```{r}
+#| label: tbl-l10-bh
+#| tbl-cap: "L10 multiplicity slots. The family denominator is retained despite non-estimability."
+
+bh_slots |>
+  dplyr::filter(.data$metric_slot == 3L) |>
+  dplyr::transmute(
+    Dataset = dplyr::recode(
+      .data$dataset_id,
+      primary = "Primary",
+      gap_timing_unaware = "Gap-timing-unaware"
+    ),
+    Predictor = unname(predictor_labels[.data$predictor_id]),
+    Test = dplyr::recode(
+      .data$test_type,
+      association = "Association",
+      site_heterogeneity = "Site heterogeneity"
+    ),
+    `L10 slot status` = "Non-estimable: component failure",
+    `Raw p-value` = "—",
+    `BH-adjusted p-value` = "—",
+    `Available / required` = sprintf(
+      "%d / %d",
+      .data$family_slots_available,
+      .data$family_slots_required
+    )
+  ) |>
+  gt::gt(groupname_col = "Dataset") |>
+  compact_gt()
+```
+
+# Diagnostics, preservation, and compute record
+
+The work was bounded to the L10 branch. The production batch completed 18
+scenario-by-predictor analyses in one serial R process. The production-code
+pilot projected 1.59 minutes; the complete production process took 156.67
+seconds, principally because sealing and the additional MAP diagnostics took
+longer than the core fits. No parallel cluster was used. The 50-refit influence
+pilot projected 0.40 minutes; the full 440-refit positive-only deletion batch
+took 38.76 seconds.
+
+The no-refit coordinator finalizer changed disposition strings only. All 194
+serialized fitted-model subobjects were identical before and after that
+change. All 294 pre-existing H06_daily scientific/report files in the
+protected baseline—including the approved pre-sleep no-nugget frame,
+reference, model, report, and manifests—remained byte-for-byte unchanged after
+production. No non-L10 model was fitted or revised.
+
+The figure is paired with PNG, PDF, and SVG exports, source-data CSV, alt text,
+and a passing final-size readability record. Invalid Student-t intervals are
+withheld rather than plotted. Every displayed interval is pointwise.
+
+# Relationship to V0 and the other H06 estimands
+
+V0 did not fit this two-part participant-day L10 model. The approved hourly H06
+analysis estimates context associations in repeated hourly melEDI, and the
+exploratory temporal GAMM estimates transformed 30-minute profiles over local
+clock time. This amendment estimates a different daily-metric estimand with
+one participant-day per row. Their coefficients, weighting, uncertainty, and
+claims are not numerically interchangeable.
+
+All language here is observational. Recorded work/free day, activity status,
+and previous-night sleep duration are associated contexts, not randomized
+exposures; no causal effect or health outcome is inferred.
+
+# H06-D-G2P-L10-METRIC011 stop gate
+
+The bounded L10 branch is complete and sealed. The recommended disposition is:
+
+1. accept the primary occurrence and joint two-part L10 association and
+   site-heterogeneity tests as **non-estimable**, with raw and adjusted
+   p-values missing while retaining the named slot in each 15-metric family;
+2. retain Gaussian and Student-t positive-component estimates only as
+   explicitly conditional, descriptive diagnostics with the family,
+   influence, and numerical limitations stated above;
+3. retain the normal-prior fixed-site MAP occurrence models only as diagnostic
+   sensitivities, with no ordinary interval, p-value, BH entry, or significance
+   decision; and
+4. either leave the L10 joint slot missing or explicitly authorize a new
+   scientific amendment before changing the primary occurrence hierarchy.
+
+Promoting the registered random-site benchmark, deleting UCR, pooling sites,
+changing the fixed-site hierarchy, or adopting the regularized fit as primary
+would change the estimand or inferential contract and is **not authorized** by
+this gate.
+
+No further L10 or remaining-grid work proceeds without an explicit author
+decision at **H06-D-G2P-L10-METRIC011**.

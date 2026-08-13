@@ -1,0 +1,921 @@
+---
+title: "H06 daily metrics — Stage 2 bounded pilot"
+subtitle: "Daily-family checks and the exploratory 30-minute time-of-day GAMM amendment"
+date: last-modified
+engine: knitr
+format:
+  html:
+    toc: true
+    toc-depth: 4
+    number-sections: true
+    code-fold: true
+    code-summary: "Show audit R code"
+    code-tools: true
+    embed-resources: true
+    df-print: paged
+    page-layout: full
+execute:
+  echo: false
+  warning: false
+  message: false
+  error: false
+  freeze: false
+tbl-cap-location: top
+---
+
+```{r}
+#| label: setup
+#| include: false
+
+options(
+  stringsAsFactors = FALSE,
+  scipen = 999,
+  width = 130,
+  dplyr.summarise.inform = FALSE
+)
+
+find_project_root <- function(start = getwd()) {
+  candidate <- normalizePath(start, winslash = "/", mustWork = TRUE)
+  repeat {
+    if (file.exists(file.path(candidate, "renv.lock"))) {
+      return(candidate)
+    }
+    parent <- dirname(candidate)
+    if (identical(parent, candidate)) {
+      stop("Could not locate the project root", call. = FALSE)
+    }
+    candidate <- parent
+  }
+}
+
+project_root <- Sys.getenv(
+  "H06_DAILY_PROJECT_ROOT",
+  unset = Sys.getenv("QUARTO_PROJECT_DIR", unset = "")
+)
+if (!nzchar(project_root) || !file.exists(file.path(project_root, "renv.lock"))) {
+  project_root <- find_project_root()
+}
+project_root <- normalizePath(project_root, winslash = "/", mustWork = TRUE)
+
+project_library <- file.path(
+  project_root,
+  "renv/library/macos/R-4.6/aarch64-apple-darwin23"
+)
+.libPaths(c(project_library, .libPaths()))
+
+library(digest)
+library(dplyr)
+library(gt)
+library(readr)
+library(tibble)
+library(tidyr)
+
+stopifnot(
+  identical(as.character(getRversion()), "4.6.1"),
+  identical(as.character(packageVersion("melidosData")), "1.0.6")
+)
+
+source(file.path(
+  project_root,
+  "scripts/hypotheses/H06_daily/h06_daily_contract.R"
+))
+
+read_h06d <- function(stage, file) {
+  readr::read_csv(
+    file.path(project_root, "artifacts", stage, "H06_daily", file),
+    show_col_types = FALSE,
+    na = ""
+  )
+}
+
+compact_gt <- function(data, title = NULL, subtitle = NULL, source_note = NULL) {
+  output <- data |>
+    gt::gt() |>
+    gt::opt_row_striping() |>
+    gt::sub_missing(missing_text = "—") |>
+    gt::tab_options(
+      table.font.size = gt::px(12),
+      table.width = gt::pct(100),
+      data_row.padding = gt::px(3),
+      heading.align = "left",
+      source_notes.font.size = gt::px(10)
+    )
+  if (!is.null(title)) {
+    output <- output |>
+      gt::tab_header(
+        title = gt::md(title),
+        subtitle = if (is.null(subtitle)) NULL else gt::md(subtitle)
+      )
+  }
+  if (!is.null(source_note)) {
+    output <- output |>
+      gt::tab_source_note(gt::md(source_note))
+  }
+  output
+}
+
+status_gt <- function(data, title, subtitle = NULL, source_note = NULL) {
+  output <- compact_gt(data, title, subtitle, source_note)
+  if ("Status" %in% names(data)) {
+    output <- output |>
+      gt::data_color(
+        columns = "Status",
+        fn = function(value) {
+          dplyr::case_when(
+            grepl("^PASS", value) ~ "#D9F2E6",
+            grepl("WARN|TRIGGER|RETAIN", value) ~ "#FFF1CC",
+            grepl("FAIL|NON_ESTIMABLE", value) ~ "#FADBD8",
+            TRUE ~ "#EEEEEE"
+          )
+        }
+      )
+  }
+  output
+}
+
+input_manifest <- read_h06d(
+  "12_manifests",
+  "H06_daily_stage2_pilot_input_manifest.csv"
+)
+output_manifest <- read_h06d(
+  "12_manifests",
+  "H06_daily_stage2_pilot_output_manifest.csv"
+)
+software <- read_h06d(
+  "12_manifests",
+  "H06_daily_stage2_pilot_software_manifest.csv"
+)
+daily_registry <- read_h06d(
+  "06_model_data",
+  "H06_daily_stage2_pilot_registry.csv"
+)
+temporal_formula_registry <- read_h06d(
+  "06_model_data",
+  "H06_daily_30_minute_temporal_formula_registry.csv"
+)
+daily_diagnostics <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_stage2_pilot_daily_diagnostics.csv"
+)
+daily_verdict <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_stage2_pilot_daily_verdict.csv"
+)
+daily_preview <- read_h06d(
+  "09_tables",
+  "H06_daily_stage2_pilot_effect_preview.csv"
+)
+l10_family <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_l10_zero_mass_family_pilot.csv"
+)
+temporal_component <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_30_minute_temporal_component_diagnostics.csv"
+)
+temporal_calibration <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_30_minute_temporal_calibration.csv"
+)
+temporal_k <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_30_minute_temporal_k_check.csv"
+)
+temporal_verdict <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_30_minute_temporal_diagnostic_verdict.csv"
+)
+temporal_closure <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_30_minute_temporal_cyclic_closure.csv"
+)
+temporal_site_acf <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_30_minute_temporal_site_residual_acf.csv"
+)
+temporal_concurvity <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_30_minute_temporal_concurvity_fallback.csv"
+)
+temporal_boundaries <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_30_minute_temporal_ar_boundaries.csv"
+)
+runtime <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_stage2_pilot_runtime_projection.csv"
+)
+
+input_hashes <- vapply(
+  file.path(project_root, input_manifest$relative_path),
+  digest::digest,
+  character(1),
+  algo = "sha256",
+  file = TRUE
+)
+output_hashes <- vapply(
+  file.path(project_root, output_manifest$relative_path),
+  digest::digest,
+  character(1),
+  algo = "sha256",
+  file = TRUE
+)
+stopifnot(
+  identical(unname(input_hashes), input_manifest$sha256),
+  identical(unname(output_hashes), output_manifest$sha256)
+)
+```
+
+# Pilot verdict
+
+::: {.callout-important title="H06-D-G2P — stop before any full production batch"}
+The Stage 1 plan is author-approved, and the requested exploratory 30-minute
+time-of-day GAMM has been added as a separate estimand. The bounded pilot does
+**not** justify a full run yet.
+
+- Representative fixed-site daily models converged, but the exact signed
+  random-site/random-slope benchmark was singular and is therefore
+  `NON_ESTIMABLE` in the pilot.
+- The mandatory L10 check found 13.3% exact zeros. Its one-part and two-part
+  point estimates had the same direction but materially different magnitude,
+  so the one-part family is not accepted.
+- The 30-minute one-part Tweedie GAMM is rejected because its zero probability
+  is badly miscalibrated, its `k = 12` time functions are capacity-limited, and
+  material residual autocorrelation remains after the working AR correction.
+- A two-part binomial/Gamma architecture is more defensible, converges, and is
+  exactly cyclic at midnight. Its current `k = 12` positive component and
+  residual dependence still fail the production-effect gate. No day-type,
+  activity, or sleep curve is interpreted from this pilot.
+- Six temporal `bam()` fits on the primary near-eye frame took 15.0 minutes.
+  A straight six-frame fit-only projection is about 79 minutes; measured
+  overhead suggests allowing roughly 90 minutes before any uncertainty or
+  deletion work.
+
+The recommended next action is one further **near-eye-only repair pilot**, not
+the full Stage 2 batch.
+:::
+
+# What was approved and what was added
+
+The author approved every H06-D-G1 item on 2026-08-11. The approval is recorded
+in `audit/hypotheses/H06_daily/H06_daily_stage1_gate_and_stage2_transition.md`.
+The amendment asks how the same three core day contexts relate to the supported
+30-minute geometric-mean melEDI metric over local clock time.
+
+```{r}
+#| label: tbl-estimand-separation
+#| tbl-cap: "The three H06 estimands remain scientifically separate."
+
+tibble::tribble(
+  ~Analysis, ~Model_row, ~Question, ~Day_weighting, ~Role,
+  "H06 daily metrics", "One metric-specific participant-day",
+  "How each day-level context is associated with each of 15 daily metrics",
+  "Each admissible metric-day contributes one row",
+  "Preregistration-aligned primary variant",
+  "Approved hourly H06", "One supported one-hour outcome",
+  "How contexts are associated with expected hourly melEDI",
+  "Days with more supported hours contribute more rows",
+  "Separate approved analysis; no estimate transfers",
+  "Exploratory 30-minute GAMM", "One supported 30-minute bin",
+  "How context-associated profiles vary over local clock time",
+  "Days with more supported 30-minute bins contribute more rows",
+  "Exploratory amendment; outside daily BH families"
+) |>
+  compact_gt(
+    source_note = paste0(
+      "The 30-minute response is the zero-aware within-bin geometric mean. ",
+      "A raw-scale model mean is therefore the conditional arithmetic mean ",
+      "of that geometric-mean metric."
+    )
+  )
+```
+
+# Immutable inputs and exact frame
+
+All pilot inputs match their stored SHA-256 identities. Preparation was not
+rebuilt. The diary remains the corrected `melidosData` 1.0.6 source with seven
+TUM S001 exercise rows and zero S101 rows. The H06-local KNUST sedentary-time
+interpretation was not used because sedentary duration is not a pilot
+predictor.
+
+```{r}
+#| label: tbl-pilot-inputs
+#| tbl-cap: "Immutable pilot inputs."
+
+input_manifest |>
+  transmute(
+    Input = .data$input_id,
+    Path = .data$relative_path,
+    `SHA-256` = substr(.data$sha256, 1, 12),
+    `Size (MiB)` = .data$bytes / 1024^2
+  ) |>
+  compact_gt(
+    source_note = "The shortened hashes are display-only; full hashes are stored and verified during render."
+  ) |>
+  gt::fmt_number(columns = `Size (MiB)`, decimals = 2)
+```
+
+The 30-minute complete-core near-eye frame contains **33,057** bins from 715
+participant-days, 137 participants, and nine sites. It contains 10,225 exact
+zeros (30.9%). The positive-magnitude component contains 22,832 bins. No fitted
+row lacks true-time provenance.
+
+```{r}
+#| label: tbl-ar-boundaries
+#| tbl-cap: "Why each 30-minute AR sequence starts."
+
+temporal_boundaries |>
+  transmute(
+    Component = recode(
+      .data$component,
+      all_rows = "All supported bins",
+      positive_rows = "Positive bins"
+    ),
+    Reason = recode(
+      .data$ar_start_reason,
+      participant_day_start = "Participant-day start",
+      elapsed_discontinuity = "Unsupported/removed interval or elapsed gap",
+      non_one_to_one_wall_outcome = "Non-one-to-one fall-back outcome",
+      after_non_one_to_one_wall_outcome = "After fall-back outcome",
+      continuous = "Continuous 30-minute sequence"
+    ),
+    Observations = .data$observations
+  ) |>
+  compact_gt(
+    source_note = paste0(
+      "Positive-magnitude sequences are reconstructed after zero removal. ",
+      "AR(1) never bridges a zero, unsupported bin, day boundary, elapsed gap, ",
+      "or non-one-to-one fall-back outcome."
+    )
+  ) |>
+  gt::fmt_integer(columns = Observations)
+```
+
+# Exact model contracts
+
+## Daily hierarchy exercised by the pilot
+
+The daily pilot used the same generic formulas that production would use.
+They are shown here with work/free day as the evaluated `Measure`; production
+substitutes each metric-specific response and one approved predictor at a time.
+
+```{r}
+#| label: daily-formulas-visible
+#| echo: true
+#| code-fold: false
+
+daily_formulas <- h06d_daily_formula_set("work_free_day")
+daily_formula_table <- tibble::tibble(
+  model_id = names(daily_formulas),
+  formula = vapply(
+    daily_formulas,
+    function(formula) paste(deparse(formula), collapse = " "),
+    character(1)
+  )
+)
+```
+
+```{r}
+#| label: tbl-daily-formulas
+#| tbl-cap: "Evaluated daily pilot formulas."
+
+daily_formula_table |>
+  transmute(
+    Role = recode(
+      .data$model_id,
+      registered_random_site = "Exact signed benchmark",
+      fixed_site_reduced = "Fixed-site reduced",
+      fixed_site_additive = "Fixed-site additive",
+      fixed_site_heterogeneity = "Fixed-site predictor-by-site"
+    ),
+    `Wilkinson formula` = .data$formula
+  ) |>
+  compact_gt(
+    source_note = paste0(
+      "The exact signed benchmark is never silently simplified. ",
+      "The fixed-site additive model remains the proposed primary hierarchy."
+    )
+  )
+```
+
+## Exploratory 30-minute formulas
+
+The H02 precedent supplies 30-minute midpoints, local-clock cyclicity, true UTC
+ordering, participant-day/gap resets, fREML, and `bam(discrete = TRUE)`. The H03
+precedent supplies a raw-outcome mean candidate and global-plus-context/site
+time structure. H06-daily adds separate work/free and activity deviations plus
+a cyclic varying-coefficient sleep term.
+
+```{r}
+#| label: temporal-formulas-visible
+#| echo: true
+#| code-fold: false
+
+evaluated_temporal_formulas <- h06d_temporal_formula_registry()
+```
+
+```{r}
+#| label: tbl-temporal-formulas
+#| tbl-cap: "Evaluated exploratory temporal formulas supplied to bam()."
+
+evaluated_temporal_formulas |>
+  transmute(
+    Candidate = recode(
+      .data$candidate_id,
+      one_part_tweedie = "One-part Tweedie",
+      two_part_occurrence = "Two-part occurrence",
+      two_part_positive = "Two-part positive magnitude"
+    ),
+    Component = .data$component,
+    `Family / link` = .data$response_family,
+    `Wilkinson formula` = .data$formula
+  ) |>
+  compact_gt(
+    source_note = paste0(
+      "Every clock smooth and factor/site deviation is explicitly cyclic. ",
+      "The numeric-by sleep smooth is a time-varying linear association per ",
+      "one-hour longer previous sleep, centered at eight hours."
+    )
+  )
+```
+
+All temporal fits use one R thread, `method = "fREML"`, `discrete = TRUE`, and
+clock knots at 0 and 24 h. The global time smooth, work/free deviations,
+activity deviations, and site deviations use `k = 12`; participant-specific
+cyclic curves use `k = 8`; participant-day shifts use a random-effect smooth.
+No observation weight is supplied.
+
+For the one-part candidate, Tweedie power was estimated in the preliminary
+no-AR fit and fixed at `r sprintf("%.4f", temporal_component$tweedie_power[temporal_component$candidate_id == "one_part_tweedie"])`
+in the final fit. For all non-Gaussian candidates, `rho` acts on working
+residuals as a GEE approximation. It is not an exact non-Gaussian likelihood
+AR(1).
+
+# Daily-family pilot
+
+Four response-family problems were exercised without running the 15 × 3
+production grid.
+
+```{r}
+#| label: tbl-daily-pilot-registry
+#| tbl-cap: "Representative daily-family pilot registry."
+
+daily_registry |>
+  transmute(
+    Pilot = .data$pilot_id,
+    Metric = .data$metric_id,
+    Predictor = .data$predictor_id,
+    Family = .data$response_family,
+    Transform = .data$response_transform,
+    Purpose = .data$purpose
+  ) |>
+  compact_gt()
+```
+
+```{r}
+#| label: tbl-daily-verdict
+#| tbl-cap: "Daily-family pilot verdict."
+
+daily_verdict |>
+  transmute(
+    Problem = .data$pilot_problem,
+    Evidence = .data$evidence,
+    Status = .data$status,
+    `Required action` = .data$required_action
+  ) |>
+  status_gt(
+    "Daily-family gate",
+    source_note = paste0(
+      "These are pilot acceptability decisions, not scientific association ",
+      "decisions. The exact random-site/random-slope benchmark is retained ",
+      "verbatim and labelled NON_ESTIMABLE."
+    )
+  )
+```
+
+The following values show that the production extraction path works. They are
+**engineering pilot output**, not H06-daily results: no 15-slot BH vectors,
+full diagnostic suite, placement comparison, deletion analysis, or sensitivity
+set has been run.
+
+```{r}
+#| label: tbl-daily-effect-preview
+#| tbl-cap: "Engineering-only effect extraction preview."
+
+pilot_labels <- tibble::tribble(
+  ~pilot_id, ~Metric, ~Contrast, ~Scale,
+  "gaussian_offset", "Daily geometric mean melEDI",
+  "Free day versus work day", "Ratio on melEDI + 0.1 lx scale",
+  "tweedie_duration", "Time above 1,000 lx melEDI",
+  "Active versus Sedentary", "Expected-duration ratio",
+  "gaussian_identity", "Time below 10 lx melEDI before sleep",
+  "Per one-hour longer previous sleep", "Difference (h)",
+  "l10_one_part", "Darkest 10 h mean melEDI",
+  "Free day versus work day", "Ratio on melEDI + 0.1 lx scale"
+)
+
+daily_preview |>
+  left_join(pilot_labels, by = "pilot_id") |>
+  transmute(
+    Metric,
+    Contrast,
+    Scale,
+    Estimate = .data$display_estimate,
+    `Lower 95%` = .data$display_lower_95,
+    `Upper 95%` = .data$display_upper_95,
+    Role = .data$inferential_role
+  ) |>
+  compact_gt(
+    source_note = "Intervals only verify extraction; they are not multiplicity-adjusted production intervals."
+  ) |>
+  gt::fmt_number(columns = c(Estimate, `Lower 95%`, `Upper 95%`), decimals = 3)
+```
+
+## Mandatory L10 zero-mass check
+
+L10 contains 13.3% exact zeros in the representative frame. The one-part and
+two-part free/work point contrasts agree in direction but not magnitude: the
+equal-site mean ratio is `r sprintf("%.3f", l10_family$one_part_free_vs_work_ratio)`
+under the one-part shifted-log fit and
+`r sprintf("%.3f", l10_family$two_part_free_vs_work_ratio)` under the two-part
+pilot. The positive-only model also retains true-date residual lag-1
+correlation of -0.340. The current one-part L10 family is therefore not
+accepted; the two-part positive component needs the prespecified daily AR
+counterpart before production.
+
+```{r}
+#| label: tbl-l10-family
+#| tbl-cap: "Bounded L10 one-part versus two-part point comparison."
+
+l10_family |>
+  transmute(
+    `One-part work-day mean (lx)` =
+      .data$`one_part_equal_site_mean_lx__Work day`,
+    `One-part free-day mean (lx)` =
+      .data$`one_part_equal_site_mean_lx__Free day`,
+    `One-part ratio` = .data$one_part_free_vs_work_ratio,
+    `Two-part work-day mean (lx)` =
+      .data$`two_part_equal_site_mean_lx__Work day`,
+    `Two-part free-day mean (lx)` =
+      .data$`two_part_equal_site_mean_lx__Free day`,
+    `Two-part ratio` = .data$two_part_free_vs_work_ratio,
+    `Direction agrees` = .data$direction_agrees
+  ) |>
+  compact_gt(
+    source_note = paste0(
+      "Point comparison only. Random effects are excluded and submitted sites ",
+      "receive equal weight. No uncertainty interval was simulated."
+    )
+  ) |>
+  gt::fmt_number(
+    columns = where(is.numeric),
+    decimals = 3
+  )
+```
+
+# Exploratory 30-minute GAMM family pilot
+
+## Fit and numerical summary
+
+```{r}
+#| label: tbl-temporal-fit-summary
+#| tbl-cap: "Near-eye 30-minute temporal pilot fit summary."
+
+temporal_component |>
+  transmute(
+    Candidate = if_else(
+      .data$candidate_id == "one_part_tweedie",
+      "One-part Tweedie",
+      "Two-part"
+    ),
+    Component = .data$component,
+    Bins = .data$observations,
+    `Participant-days` = .data$participant_days,
+    Participants = .data$participants,
+    Sites = .data$sites,
+    `rho` = .data$rho,
+    `Fit time (s)` = .data$total_elapsed_seconds,
+    Convergence = .data$convergence,
+    `Hessian min` = .data$smoothing_hessian_minimum_eigenvalue,
+    `Adjusted R²` = .data$adjusted_r_squared,
+    `Deviance explained` = .data$deviance_explained,
+    `Final residual lag-1` = .data$standardized_residual_lag1
+  ) |>
+  compact_gt(
+    source_note = paste0(
+      "Adjusted R² and deviance explained are in-sample fit summaries, not ",
+      "effect tests or out-of-sample validation."
+    )
+  ) |>
+  gt::fmt_integer(columns = c(Bins, `Participant-days`, Participants, Sites)) |>
+  gt::fmt_number(
+    columns = c(`rho`, `Adjusted R²`, `Deviance explained`,
+      `Final residual lag-1`),
+    decimals = 3
+  ) |>
+  gt::fmt_number(columns = `Fit time (s)`, decimals = 1) |>
+  gt::fmt_scientific(columns = `Hessian min`, decimals = 2)
+```
+
+The one-part fit estimated `p = 1.7546`. Its fitted compound distribution
+implies 41.1% zeros versus 30.9% observed. Across fitted-mean deciles, observed
+to predicted zero-frequency ratios range from 0.048 to 1.181; that is a
+structural calibration failure, not a cosmetic residual issue.
+
+The two-part occurrence model reproduces the global zero fraction by design,
+but its lowest predicted-positive-probability deciles remain miscalibrated.
+The positive Gamma model underpredicts the highest fitted-mean decile
+(observed/predicted ratio 1.287). These are explicit limitations, not evidence
+about any predictor.
+
+```{r}
+#| label: tbl-calibration-summary
+#| tbl-cap: "Temporal calibration ranges across ten fitted-value bins."
+
+temporal_calibration |>
+  summarise(
+    `Minimum observed/predicted` = min(.data$observed_to_predicted),
+    `Maximum observed/predicted` = max(.data$observed_to_predicted),
+    `Minimum bin n` = min(.data$observations),
+    `Maximum bin n` = max(.data$observations),
+    .by = "component"
+  ) |>
+  transmute(
+    Component = recode(
+      .data$component,
+      one_part_tweedie_zero_probability = "One-part zero probability",
+      two_part_positive_occurrence_probability = "Two-part positive probability",
+      two_part_positive_magnitude_mean = "Two-part positive magnitude"
+    ),
+    `Minimum observed/predicted`,
+    `Maximum observed/predicted`,
+    `Minimum bin n`,
+    `Maximum bin n`
+  ) |>
+  compact_gt() |>
+  gt::fmt_number(
+    columns = c(`Minimum observed/predicted`, `Maximum observed/predicted`),
+    decimals = 3
+  ) |>
+  gt::fmt_integer(columns = c(`Minimum bin n`, `Maximum bin n`))
+```
+
+## Basis, cyclicity, identifiability, and residual dependence
+
+At `k = 12`, the one-part global clock smooth uses 9.94 of ten available
+effective degrees of freedom and the sleep varying-coefficient term uses 9.97
+of 11. The positive Gamma global smooth uses 9.75/10 and sleep uses 9.29/11.
+Their deterministic `k` indices are below 0.90. A larger basis must therefore
+be tested before any profile is interpreted.
+
+```{r}
+#| label: tbl-temporal-k
+#| tbl-cap: "Deterministic basis-capacity screen; no permutation p-value was run."
+
+temporal_k |>
+  filter(
+    .data$term %in% c(
+      "s(time_hour)",
+      "s(time_hour,work_free_day)",
+      "s(time_hour,activity_status)",
+      "s(time_hour):previous_sleep_duration_centered_h"
+    )
+  ) |>
+  transmute(
+    Candidate = if_else(
+      .data$candidate_id == "one_part_tweedie",
+      "One-part Tweedie",
+      paste("Two-part", .data$component)
+    ),
+    Term = recode(
+      .data$term,
+      `s(time_hour)` = "Global time",
+      `s(time_hour,work_free_day)` = "Work/free deviations",
+      `s(time_hour,activity_status)` = "Activity deviations",
+      `s(time_hour):previous_sleep_duration_centered_h` = "Sleep slope over time"
+    ),
+    `k-prime` = .data$k_prime,
+    `Effective df` = .data$effective_df,
+    `k-index` = .data$k_index
+  ) |>
+  compact_gt(
+    source_note = paste0(
+      "A fixed analytical seed selected the 5,000-row k-check subsample. ",
+      "n.rep = 0, so no stochastic permutation p-value was computed."
+    )
+  ) |>
+  gt::fmt_number(columns = c(`k-prime`, `Effective df`, `k-index`), decimals = 3)
+```
+
+All global, context, sleep, and site components close at midnight to numerical
+precision. The maximum 24:00 versus 00:00 link difference is below
+`r format(max(temporal_closure$maximum_absolute_endpoint_difference_link), scientific = TRUE, digits = 2)`.
+The fitted-term multiple-R² fallback is at most
+`r sprintf("%.3f", max(temporal_concurvity$fitted_term_multiple_r_squared, na.rm = TRUE))`.
+This is reassuring but is not the full `mgcv::concurvity()` decomposition.
+
+```{r}
+#| label: tbl-temporal-closure
+#| tbl-cap: "Cyclic closure and bounded fitted-term identifiability checks."
+
+temporal_closure |>
+  left_join(
+    temporal_concurvity |>
+      summarise(
+        `Maximum fitted-term multiple R²` = max(
+          .data$fitted_term_multiple_r_squared,
+          na.rm = TRUE
+        ),
+        .by = c("candidate_id", "component")
+      ),
+    by = c("candidate_id", "component")
+  ) |>
+  transmute(
+    Candidate = if_else(
+      .data$candidate_id == "one_part_tweedie",
+      "One-part Tweedie",
+      "Two-part"
+    ),
+    Component = .data$component,
+    `Endpoint pairs` = .data$endpoint_pairs,
+    `Maximum endpoint difference` =
+      .data$maximum_absolute_endpoint_difference_link,
+    `Closure pass` = .data$cyclic_closure_pass,
+    `Maximum fitted-term multiple R²`
+  ) |>
+  compact_gt(
+    source_note = paste0(
+      "Random participant and participant-day terms are excluded from the ",
+      "population-component closure check. The multiple-R² diagnostic uses a ",
+      "fixed 5,000-row sample and is explicitly a fallback, not full concurvity."
+    )
+  ) |>
+  gt::fmt_integer(columns = `Endpoint pairs`) |>
+  gt::fmt_scientific(columns = `Maximum endpoint difference`, decimals = 2) |>
+  gt::fmt_number(columns = `Maximum fitted-term multiple R²`, decimals = 3)
+```
+
+The estimated working AR coefficients are 0.305 for one-part Tweedie, 0.261
+for occurrence, and 0.308 for positive magnitude. Final standardized-residual
+lag-1 correlations remain 0.315, 0.228, and 0.251. Site-specific maxima are
+0.369, 0.307, and 0.304, respectively. The current correction is therefore
+incomplete under the approved residual thresholds.
+
+```{r}
+#| label: tbl-site-acf
+#| tbl-cap: "Final AR-standardized residual lag-1 correlation by submitted site."
+
+temporal_site_acf |>
+  mutate(
+    Model = case_when(
+      .data$candidate_id == "one_part_tweedie" ~ "One-part Tweedie",
+      .data$component == "occurrence" ~ "Two-part occurrence",
+      TRUE ~ "Two-part positive magnitude"
+    )
+  ) |>
+  select(.data$site, .data$Model, .data$residual_lag1) |>
+  pivot_wider(names_from = .data$Model, values_from = .data$residual_lag1) |>
+  rename(Site = .data$site) |>
+  compact_gt(
+    source_note = paste0(
+      "Each correlation uses adjacent residual pairs within verified AR ",
+      "sequences only; no pair crosses a series boundary."
+    )
+  ) |>
+  gt::fmt_number(columns = -Site, decimals = 3)
+```
+
+## Explicit diagnostic verdict
+
+```{r}
+#| label: tbl-temporal-verdict
+#| tbl-cap: "Exploratory temporal diagnostic verdict."
+
+temporal_verdict |>
+  transmute(
+    Candidate = .data$candidate,
+    Domain = .data$domain,
+    Evidence = .data$evidence,
+    Status = .data$status,
+    Consequence = .data$consequence,
+    `Required action` = .data$required_action
+  ) |>
+  status_gt(
+    "No temporal effect claim passes this pilot gate",
+    source_note = paste0(
+      "The one-part Tweedie family is rejected. The two-part architecture is ",
+      "retained only for a repair pilot; current predictor smooths and ",
+      "approximate p-values are not interpreted."
+    )
+  )
+```
+
+# Runtime and compute gate
+
+```{r}
+#| label: tbl-runtime
+#| tbl-cap: "Measured and projected Stage 2 runtime."
+
+runtime |>
+  transmute(
+    Component = .data$component,
+    Scope = .data$pilot_scope,
+    Units = .data$production_units,
+    `Measured/projected time` = if_else(
+      is.na(.data$observed_or_projected_seconds),
+      "Not timed",
+      if_else(
+        .data$observed_or_projected_seconds < 60,
+        sprintf("%.1f s", .data$observed_or_projected_seconds),
+        sprintf("%.1f min", .data$observed_or_projected_seconds / 60)
+      )
+    ),
+    Basis = .data$basis,
+    Status = .data$approval_status
+  ) |>
+  compact_gt(
+    source_note = paste0(
+      "The six-frame temporal projection is fit-only and linear. It excludes ",
+      "uncertainty simulation, deletion refits, rendering, and failed-fit ",
+      "overhead. A 50/100-replicate pilot remains mandatory before any heavy ",
+      "resampling."
+    )
+  )
+```
+
+The main H06 task was idle at its own approval gate during this run. The pilot
+used one R thread and did not compete with an active heavy batch.
+
+# Proposed bounded repair pilot
+
+The diagnostics support the following next step, still near-eye only:
+
+1. **Reject one-part Tweedie.** Do not carry its `p = 1.7546` fit into
+   production.
+2. **Retain the two-part architecture provisionally.** Keep separate binomial
+   occurrence and Gamma positive-magnitude components.
+3. **Increase temporal capacity to `k = 16`.** Apply it to the global,
+   work/free, activity, sleep-slope, and site clock terms; retain participant
+   cyclic curves at `k = 8` and participant-day random intercepts.
+4. **Keep separate additive context deviations.** This preserves direct
+   work/free and activity estimands. A four-level work/free × activity curve is
+   a different interaction estimand and is not recommended unless the author
+   explicitly prefers it.
+5. **Add one H02-style diagnostic comparator.** Fit
+   `log10(geometric-mean melEDI + 0.1)` with Gaussian identity and the same mean
+   structure. This gives `bam()` its exact Gaussian AR(1) correction but changes
+   the estimand to the conditional shifted-log mean; it cannot silently replace
+   the raw-scale two-part target.
+6. **Apply the existing residual rule.** If final pooled |lag-1| remains at or
+   above 0.20 or any site remains at or above 0.30, retain the temporal analysis
+   as descriptive context only and make no curve-wide inferential claim.
+7. **Repair the daily family pilots in the same bounded run.** Fit the
+   actual-date gap-aware daily AR counterpart for the identity-Gaussian
+   pre-sleep duration and for the positive L10 component. Do not start the full
+   15 × 3 grid yet.
+
+At the observed pilot rate, the repair should be budgeted at approximately
+20–30 minutes. It will use production code, no bootstrap/simulation, and stop
+again with diagnostics and a revised runtime estimate.
+
+# H06-D-G2P author decisions
+
+::: {.callout-important title="Stop gate — explicit approval required"}
+Please approve or amend these decisions before any further fit:
+
+1. Reject the one-part Tweedie temporal family.
+2. Authorize the near-eye-only two-part `k = 16` repair pilot.
+3. Retain separate additive work/free and activity time deviations, with the
+   cyclic one-hour sleep-duration slope, rather than a four-level
+   work/free × activity interaction curve.
+4. Authorize the H02-style shifted-log Gaussian comparator as a diagnostic
+   estimand only.
+5. Authorize the two bounded daily AR repairs for pre-sleep duration and L10
+   positive magnitude.
+6. Continue to withhold the full daily grid, chest/paired/gap temporal fits,
+   deletion batches, and all resampling until the repair pilot passes and its
+   runtime is approved.
+
+No H06-daily or temporal association is accepted at this gate.
+:::
+
+# Reproducibility record
+
+```{r}
+#| label: tbl-software
+#| tbl-cap: "Authoritative pilot software."
+
+software |>
+  transmute(Item = .data$item, Version = .data$version, Role = .data$role) |>
+  compact_gt(
+    source_note = paste0(
+      "No package was installed or updated. Model objects, exact frames, ",
+      "diagnostics, inputs, code hashes, and artifact hashes are stored only ",
+      "under H06_daily-owned paths."
+    )
+  )
+```
+
+The output manifest verifies `r nrow(output_manifest)` frozen pilot artifacts.
+No shared preparation, main-H06, manuscript, bibliography, Quarto
+configuration, or `renv.lock` file was modified.

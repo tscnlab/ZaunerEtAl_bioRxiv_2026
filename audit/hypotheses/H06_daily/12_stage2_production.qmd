@@ -1,0 +1,1248 @@
+---
+title: "H06 daily metrics — complete Stage 2 production"
+subtitle: "Complementary preregistration-oriented participant-day evidence and H06-D-G2 author gate"
+date: 2026-08-12
+engine: knitr
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    code-fold: true
+    code-summary: "Show audit R code"
+    code-tools: true
+    embed-resources: true
+    page-layout: full
+execute:
+  echo: false
+  warning: false
+  message: false
+  error: false
+  freeze: false
+tbl-cap-location: top
+fig-cap-location: bottom
+---
+
+```{r}
+#| label: setup
+#| include: false
+
+options(
+  stringsAsFactors = FALSE,
+  scipen = 999,
+  width = 120,
+  dplyr.summarise.inform = FALSE
+)
+
+find_project_root <- function(start = getwd()) {
+  candidate <- normalizePath(start, winslash = "/", mustWork = TRUE)
+  repeat {
+    if (file.exists(file.path(candidate, "renv.lock"))) return(candidate)
+    parent <- dirname(candidate)
+    if (identical(parent, candidate)) {
+      stop("Could not locate the project root", call. = FALSE)
+    }
+    candidate <- parent
+  }
+}
+
+project_root <- Sys.getenv(
+  "H06_DAILY_PROJECT_ROOT",
+  unset = Sys.getenv("QUARTO_PROJECT_DIR", unset = "")
+)
+if (!nzchar(project_root) ||
+    !file.exists(file.path(project_root, "renv.lock"))) {
+  project_root <- find_project_root()
+}
+project_root <- normalizePath(project_root, winslash = "/", mustWork = TRUE)
+.libPaths(c(
+  file.path(project_root, "renv/library/macos/R-4.6/aarch64-apple-darwin23"),
+  .libPaths()
+))
+
+library(digest)
+library(dplyr)
+library(gt)
+library(readr)
+library(tibble)
+library(tidyr)
+
+stopifnot(
+  identical(as.character(getRversion()), "4.6.1"),
+  identical(as.character(packageVersion("lme4")), "2.0.1"),
+  identical(as.character(packageVersion("glmmTMB")), "1.1.14"),
+  identical(as.character(packageVersion("sandwich")), "3.1.1")
+)
+
+artifact <- function(stage, file) {
+  file.path(project_root, "artifacts", stage, "H06_daily", file)
+}
+read_h06d <- function(stage, file) {
+  readr::read_csv(
+    artifact(stage, file),
+    show_col_types = FALSE,
+    na = c("", "NA")
+  )
+}
+sha256 <- function(path) digest::digest(path, algo = "sha256", file = TRUE)
+verify_relative_manifest <- function(manifest, hash_column = "sha256") {
+  paths <- file.path(project_root, manifest$relative_path)
+  stopifnot(all(file.exists(paths)))
+  actual <- unname(vapply(paths, sha256, character(1)))
+  stopifnot(identical(actual, manifest[[hash_column]]))
+  invisible(TRUE)
+}
+compact_gt <- function(table, source_note = NULL) {
+  output <- table |>
+    gt::gt() |>
+    gt::tab_options(
+      table.font.size = gt::px(12),
+      data_row.padding = gt::px(3),
+      heading.padding = gt::px(4),
+      column_labels.padding = gt::px(4),
+      table.width = gt::pct(100),
+      source_notes.font.size = gt::px(11),
+      row_group.padding = gt::px(4)
+    )
+  if (!is.null(source_note)) {
+    output <- output |> gt::tab_source_note(gt::md(source_note))
+  }
+  output
+}
+format_p <- function(value) {
+  dplyr::case_when(
+    is.na(value) ~ "—",
+    value < 0.001 ~ "<0.001",
+    TRUE ~ sprintf("%.3f", value)
+  )
+}
+`%||%` <- function(x, y) if (length(x) == 0L || is.na(x)) y else x
+format_effect <- function(estimate, lower, upper, scale) {
+  digits <- ifelse(grepl("^ratio", scale), 3L, 2L)
+  ifelse(
+    is.na(estimate),
+    "—",
+    sprintf(
+      paste0("%.", digits, "f (%.", digits, "f to %.", digits, "f)"),
+      estimate,
+      lower,
+      upper
+    )
+  )
+}
+short_status <- function(value) {
+  dplyr::recode(
+    value,
+    ACCEPTABLE = "Acceptable",
+    ACCEPTABLE_WITH_LIMITATION = "Acceptable with limitation",
+    NOT_ACCEPTABLE = "Not acceptable",
+    .default = value
+  )
+}
+
+input_manifest <- read_h06d(
+  "12_manifests",
+  "H06_daily_non_l10_production_input_manifest.csv"
+)
+code_manifest <- read_h06d(
+  "12_manifests",
+  "H06_daily_non_l10_production_code_manifest.csv"
+)
+output_manifest <- read_h06d(
+  "12_manifests",
+  "H06_daily_non_l10_production_output_manifest.csv"
+)
+figure_manifest <- read_h06d(
+  "12_manifests",
+  "H06_daily_non_l10_production_figure_manifest.csv"
+)
+software_manifest <- read_h06d(
+  "12_manifests",
+  "H06_daily_non_l10_production_software_manifest.csv"
+)
+stopifnot(
+  all(input_manifest$verification_status == "PASS"),
+  identical(input_manifest$expected_sha256, input_manifest$actual_sha256)
+)
+verify_relative_manifest(code_manifest)
+verify_relative_manifest(output_manifest)
+verify_relative_manifest(figure_manifest)
+
+effects <- read_h06d(
+  "09_tables",
+  "H06_daily_non_l10_production_effects.csv"
+)
+primary <- read_h06d(
+  "09_tables",
+  "H06_daily_non_l10_production_primary_results.csv"
+)
+families <- read_h06d(
+  "09_tables",
+  "H06_daily_non_l10_production_bh_families.csv"
+)
+marginals <- read_h06d(
+  "09_tables",
+  "H06_daily_non_l10_production_equal_site_marginals.csv"
+)
+samples <- read_h06d(
+  "06_model_data",
+  "H06_daily_non_l10_production_exact_samples.csv"
+)
+diagnostics <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_non_l10_production_diagnostic_assessment.csv"
+)
+influence <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_non_l10_production_influence_summary.csv"
+)
+benchmarks <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_non_l10_production_registered_benchmarks.csv"
+)
+runtime <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_non_l10_production_runtime.csv"
+)
+tweedie <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_non_l10_production_tweedie_diagnostics.csv"
+)
+tweedie_ar <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_non_l10_production_tweedie_ar_sensitivity.csv"
+)
+gaussian_student <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_non_l10_production_gaussian_student_t_sensitivity.csv"
+)
+period_exact <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_non_l10_production_period_exact_sensitivity.csv"
+)
+timing_student <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_non_l10_production_timing_student_t_stability.csv"
+)
+timing_ar <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_non_l10_production_timing_ar_stability.csv"
+)
+timing_ar_models <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_non_l10_production_timing_ar_models.csv"
+)
+preservation <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_non_l10_production_preservation_final.csv"
+)
+mder_effects <- read_h06d(
+  "09_tables",
+  "H06_daily_mder_metric010_effect_estimates.csv"
+)
+state <- readRDS(artifact(
+  "08_diagnostics",
+  "H06_daily_non_l10_production_state.rds"
+))
+
+stopifnot(
+  identical(state$authorization, "H06-D-013"),
+  state$phase == "REPORT_READY",
+  nrow(effects) == 468L,
+  nrow(primary) == 39L,
+  nrow(families) == 180L,
+  dplyr::n_distinct(families$multiplicity_family_id) == 12L,
+  all(table(families$multiplicity_family_id) == 15L),
+  nrow(samples) == 468L,
+  nrow(diagnostics) == 468L,
+  nrow(influence) == 468L,
+  all(preservation$identity_status == "BYTE_IDENTICAL")
+)
+
+predictor_labels <- c(
+  work_free_day = "Work/free day",
+  activity_status = "Daily activity status",
+  previous_sleep_duration_centered_h = "Previous-night sleep duration"
+)
+scenario_labels <- c(
+  primary__near_eye__all_available = "Near eye, all available",
+  primary__chest__all_available = "Chest, all available",
+  primary__near_eye__paired_common = "Near eye, paired/common",
+  primary__chest__paired_common = "Chest, paired/common",
+  gap_timing_unaware__near_eye__all_available =
+    "Gap-timing-unaware near eye, all available",
+  primary__near_eye__dataset_common = "Primary near eye, dataset-common",
+  gap_timing_unaware__near_eye__dataset_common =
+    "Gap-timing-unaware near eye, dataset-common"
+)
+
+family_summary <- families |>
+  dplyr::summarise(
+    named_slots = dplyr::n(),
+    estimable_slots = sum(!is.na(.data$raw_p_value)),
+    raw_p_lt_05 = sum(.data$raw_p_value < 0.05, na.rm = TRUE),
+    bh_q_lt_05 = sum(.data$bh_adjusted_p_value < 0.05, na.rm = TRUE),
+    diagnostically_eligible_bh = sum(
+      .data$adjusted_inferential_decision ==
+        "BH_Q_LT_0.05_AND_DIAGNOSTICALLY_ELIGIBLE",
+      na.rm = TRUE
+    ),
+    .by = c(
+      "dataset_id", "predictor_order", "reader_name", "test_type",
+      "multiplicity_family_id"
+    )
+  ) |>
+  dplyr::arrange(.data$dataset_id, .data$test_type, .data$predictor_order)
+
+diagnostic_summary <- diagnostics |>
+  dplyr::count(
+    .data$metric_slot,
+    .data$manuscript_name,
+    .data$diagnostic_status,
+    name = "cells"
+  ) |>
+  tidyr::pivot_wider(
+    names_from = "diagnostic_status",
+    values_from = "cells",
+    values_fill = 0
+  ) |>
+  dplyr::arrange(.data$metric_slot)
+
+primary_diagnostic_counts <- diagnostics |>
+  dplyr::filter(
+    .data$dataset_id == "primary",
+    .data$placement_id == "near_eye",
+    .data$sample_role == "all_available"
+  ) |>
+  dplyr::count(.data$diagnostic_status, name = "cells")
+```
+
+# Stage 2 verdict
+
+::: {.callout-important title="H06-D-G2 status — author review required"}
+
+The authorized production grid is complete: **468** non-L10 metric × predictor
+× scenario cells, **936** raw omnibus tests, **66,664** participant/site
+deletion refits, and **12 complete named 15-slot Benjamini--Hochberg (BH)
+families**. L10 mean remains the frozen named non-estimable slot 3; MDER raw
+results remain frozen in slot 15, with only its mathematically dependent BH
+fields recalculated.
+
+Of the 39 primary near-eye non-L10 cells,
+`r primary_diagnostic_counts$cells[match("ACCEPTABLE", primary_diagnostic_counts$diagnostic_status)] %||% 0`
+are acceptable,
+`r primary_diagnostic_counts$cells[match("ACCEPTABLE_WITH_LIMITATION", primary_diagnostic_counts$diagnostic_status)] %||% 0`
+are acceptable only with an explicit limitation, and
+`r primary_diagnostic_counts$cells[match("NOT_ACCEPTABLE", primary_diagnostic_counts$diagnostic_status)] %||% 0`
+do not support an unqualified association claim under the prespecified rules.
+The individual estimates and complete multiplicity vectors remain visible
+below so numerical results are not selected after diagnostics.
+
+This document is the mandatory Stage 2 stop. It does **not** authorize the
+compact Stage 3 reader report, the separate Stage 4 provenance companion,
+website integration, or any change to the selected hourly main H06 analysis.
+
+:::
+
+# Scientific target and analysis roles
+
+The daily variant asks how recorded day-level contexts are associated with
+participant-day light-exposure metrics. Each admissible metric-specific day
+contributes exactly one row. It neither models repeated hourly melEDI nor
+weights days by the number of supported hours. Under `H06-007`, the completed
+hourly H06 analysis remains the main analysis; this daily analysis is
+complementary evidence closer to the registered daily-metric outcome wording.
+
+```{r}
+#| label: tbl-analysis-roles
+#| tbl-cap: "Scientific and reporting roles retained in Stage 2."
+
+tibble::tribble(
+  ~Component, ~Role, ~what_it_estimates, ~inferential_use,
+  "Primary near eye, all available",
+  "Primary daily-metric route",
+  "Equal-site association and site heterogeneity on each metric-specific day frame",
+  "Supplies the primary raw slots and primary BH families",
+  "Chest, all available",
+  "Contextual complement",
+  "The same metric/context association at the chest placement",
+  "Estimate and pointwise 95% CI only",
+  "Paired/common near eye and chest",
+  "Placement complement",
+  "Near-eye/chest comparison on common participant-days",
+  "Estimate and pointwise 95% CI only",
+  "Gap-timing-unaware near eye",
+  "Dataset sensitivity",
+  "The same association after ignoring gap timing during metric construction",
+  "Separate 15-slot BH families",
+  "Dataset-common primary/gap frames",
+  "Sample-controlled dataset comparison",
+  "Primary versus gap handling on the same participant-days",
+  "Estimate and pointwise 95% CI only"
+) |>
+  dplyr::rename(
+    `What it estimates` = .data$what_it_estimates,
+    `Inferential use` = .data$inferential_use
+  ) |>
+  compact_gt(
+    source_note = paste0(
+      "All statements concern observational associations with recorded day-level contexts. ",
+      "No causal or health-outcome claim is made."
+    )
+  ) |>
+  gt::cols_width(
+    Component ~ gt::pct(18),
+    Role ~ gt::pct(17),
+    `What it estimates` ~ gt::pct(35),
+    `Inferential use` ~ gt::pct(30)
+  )
+```
+
+# Exact production implementation
+
+## Model routes
+
+The nine non-timing outcomes retain the approved fixed-site mixed-model
+hierarchy, with a participant random intercept:
+
+```r
+response_value ~ site + (1 | participant_key)
+response_value ~ site + predictor + (1 | participant_key)
+response_value ~ site * predictor + (1 | participant_key)
+```
+
+Gaussian comparisons use maximum likelihood and estimates use REML. Tweedie
+models use a log link. The registered random-site/random-slope formula remains
+a visible benchmark and never replaces the fixed-site primary hierarchy.
+
+The four repaired timing outcomes use the uniformly accepted fixed-site linear
+hierarchy:
+
+```r
+response_value ~ site
+response_value ~ site + predictor
+response_value ~ site * predictor
+```
+
+Their covariance is participant-cluster HC3 from
+`sandwich::vcovCL(type = "HC3", cadjust = TRUE, fix = FALSE)`, with
+participant-cluster-minus-one t/F references and **pointwise** 95% confidence
+intervals. No simultaneous interval is used.
+
+Site uses sum-to-zero coding throughout. Categorical effects are Free day
+minus Work day and Active minus Sedentary. Sleep duration is the per-hour
+association for a previous-night duration centered at 8 h. Because this daily
+model does not include separate participant-mean and day-deviation sleep terms,
+that coefficient combines between-participant and within-participant
+comparisons; the participant random intercept does not by itself separate
+them. Equal-site marginalization is used rather than weighting sites by their
+number of observations.
+
+## Exact fitted samples
+
+```{r}
+#| label: tbl-primary-samples
+#| tbl-cap: "Exact primary near-eye fitted samples for the 39 non-L10 cells."
+
+samples |>
+  dplyr::filter(
+    .data$dataset_id == "primary",
+    .data$placement_id == "near_eye",
+    .data$sample_role == "all_available"
+  ) |>
+  dplyr::transmute(
+    Slot = .data$metric_slot,
+    Metric = .data$manuscript_name,
+    Predictor = .data$reader_name,
+    `Participant-days` = .data$participant_days,
+    Participants = .data$participants,
+    Sites = .data$sites,
+    `Exact zeros` = .data$exact_source_zeros
+  ) |>
+  compact_gt(
+    source_note = paste0(
+      "Every row is one exact fitted frame. Exact zeros are retained under the ",
+      "approved outcome-specific response family."
+    )
+  ) |>
+  gt::tab_row_group(group = "Work/free day", rows = Predictor == "Work/free day") |>
+  gt::tab_row_group(
+    group = "Daily activity status",
+    rows = Predictor == "Daily activity status"
+  ) |>
+  gt::tab_row_group(
+    group = "Previous-night sleep duration",
+    rows = Predictor == "Previous-night sleep duration"
+  ) |>
+  gt::cols_hide(columns = Predictor) |>
+  gt::fmt_integer(columns = c(Slot, `Participant-days`, Participants, Sites, `Exact zeros`))
+```
+
+# Primary near-eye estimates
+
+The two figures show adjusted effects and pointwise 95% confidence intervals.
+Ratios refer to the fitted response scale stated in the source table—for
+shifted-log outcomes, the ratio is for the fitted metric plus 0.1, not a raw
+metric ratio. Absolute timing and duration effects are shown in hours.
+
+![Adjusted multiplicative associations for the seven ratio-scale non-L10 daily metrics. Each row shows a point estimate and pointwise 95% confidence interval; the vertical reference at one denotes no association. Panels show Work versus Free day, Active versus Sedentary, and each additional hour of previous-night sleep.](../../../artifacts/10_figures/H06_daily/H06_daily_non_l10_production_primary_ratio_effects.png){#fig-primary-ratio fig-alt="Three-panel forest plot of adjusted ratio-scale daily-metric associations. Seven metric rows per panel have point estimates and horizontal pointwise 95 percent confidence intervals around a vertical no-association line at one." width="100%"}
+
+![Adjusted absolute associations for six duration or timing outcomes. Each row shows a point estimate and pointwise 95% confidence interval; the vertical reference at zero denotes no association.](../../../artifacts/10_figures/H06_daily/H06_daily_non_l10_production_primary_absolute_effects.png){#fig-primary-absolute fig-alt="Three-panel forest plot of adjusted absolute daily duration and timing associations in hours. Six metric rows per panel have point estimates and horizontal pointwise 95 percent confidence intervals around a vertical no-association line at zero." width="100%"}
+
+The paired source-data CSVs are sealed with the figures. The tables below give
+the exact samples, p-values, BH values, and diagnostic claim status behind the
+plots.
+
+::: {.panel-tabset}
+
+## Work/free day
+
+```{r}
+#| label: tbl-primary-work-free
+#| tbl-cap: "Primary near-eye associations with Work versus Free day."
+
+primary |>
+  dplyr::filter(.data$predictor_id == "work_free_day") |>
+  dplyr::mutate(
+    Effect = format_effect(
+      .data$display_estimate,
+      .data$display_lower_95,
+      .data$display_upper_95,
+      .data$effect_scale
+    ),
+    `Raw p` = format_p(.data$association_raw_p),
+    `BH q` = format_p(.data$association_bh_q),
+    Assessment = short_status(.data$diagnostic_status)
+  ) |>
+  dplyr::select(
+    Slot = .data$metric_slot,
+    Metric = .data$manuscript_name,
+    `Participant-days` = .data$participant_days,
+    Effect,
+    `Raw p`,
+    `BH q`,
+    Assessment
+  ) |>
+  compact_gt(
+    source_note = paste0(
+      "Effect is estimate (pointwise 95% CI). BH uses the complete primary ",
+      "Work/free-day 15-slot association family; slot 3 is retained as NA."
+    )
+  ) |>
+  gt::fmt_integer(columns = c(Slot, `Participant-days`))
+```
+
+## Activity status
+
+```{r}
+#| label: tbl-primary-activity
+#| tbl-cap: "Primary near-eye associations with Active versus Sedentary days."
+
+primary |>
+  dplyr::filter(.data$predictor_id == "activity_status") |>
+  dplyr::mutate(
+    Effect = format_effect(
+      .data$display_estimate,
+      .data$display_lower_95,
+      .data$display_upper_95,
+      .data$effect_scale
+    ),
+    `Raw p` = format_p(.data$association_raw_p),
+    `BH q` = format_p(.data$association_bh_q),
+    Assessment = short_status(.data$diagnostic_status)
+  ) |>
+  dplyr::select(
+    Slot = .data$metric_slot,
+    Metric = .data$manuscript_name,
+    `Participant-days` = .data$participant_days,
+    Effect,
+    `Raw p`,
+    `BH q`,
+    Assessment
+  ) |>
+  compact_gt(
+    source_note = paste0(
+      "Effect is estimate (pointwise 95% CI). BH uses the complete primary ",
+      "activity-status 15-slot association family; slot 3 is retained as NA."
+    )
+  ) |>
+  gt::fmt_integer(columns = c(Slot, `Participant-days`))
+```
+
+## Previous-night sleep duration
+
+```{r}
+#| label: tbl-primary-sleep
+#| tbl-cap: "Primary near-eye associations per additional hour of previous-night sleep duration."
+
+primary |>
+  dplyr::filter(
+    .data$predictor_id == "previous_sleep_duration_centered_h"
+  ) |>
+  dplyr::mutate(
+    Effect = format_effect(
+      .data$display_estimate,
+      .data$display_lower_95,
+      .data$display_upper_95,
+      .data$effect_scale
+    ),
+    `Raw p` = format_p(.data$association_raw_p),
+    `BH q` = format_p(.data$association_bh_q),
+    Assessment = short_status(.data$diagnostic_status)
+  ) |>
+  dplyr::select(
+    Slot = .data$metric_slot,
+    Metric = .data$manuscript_name,
+    `Participant-days` = .data$participant_days,
+    Effect,
+    `Raw p`,
+    `BH q`,
+    Assessment
+  ) |>
+  compact_gt(
+    source_note = paste0(
+      "Effect is estimate (pointwise 95% CI). BH uses the complete primary ",
+      "sleep-duration 15-slot association family; slot 3 is retained as NA."
+    )
+  ) |>
+  gt::fmt_integer(columns = c(Slot, `Participant-days`))
+```
+
+:::
+
+# Multiplicity and frozen slots
+
+## Twelve complete families
+
+```{r}
+#| label: tbl-family-summary
+#| tbl-cap: "Completion and decision counts for all twelve 15-slot BH families."
+
+family_summary |>
+  dplyr::transmute(
+    Dataset = dplyr::recode(
+      .data$dataset_id,
+      primary = "Primary",
+      gap_timing_unaware = "Gap-timing-unaware"
+    ),
+    Predictor = .data$reader_name,
+    Test = dplyr::recode(
+      .data$test_type,
+      association = "Association",
+      site_heterogeneity = "Predictor by site"
+    ),
+    Family = .data$multiplicity_family_id,
+    `Named slots` = .data$named_slots,
+    `Estimable slots` = .data$estimable_slots,
+    `Raw p<0.05` = .data$raw_p_lt_05,
+    `BH q<0.05` = .data$bh_q_lt_05,
+    `BH and diagnostically eligible` = .data$diagnostically_eligible_bh
+  ) |>
+  compact_gt(
+    source_note = paste0(
+      "Each vector retains all 15 named slots. Slot 3 is the frozen L10 NA; ",
+      "slot 15 uses the frozen MDER raw test. Diagnostics govern claim eligibility ",
+      "but do not remove a numerically estimable prespecified raw test."
+    )
+  ) |>
+  gt::tab_row_group(group = "Primary", rows = Dataset == "Primary") |>
+  gt::tab_row_group(
+    group = "Gap-timing-unaware",
+    rows = Dataset == "Gap-timing-unaware"
+  ) |>
+  gt::cols_hide(columns = Dataset) |>
+  gt::fmt_integer(
+    columns = c(
+      `Named slots`, `Estimable slots`, `Raw p<0.05`, `BH q<0.05`,
+      `BH and diagnostically eligible`
+    )
+  )
+```
+
+## L10 and MDER dispositions
+
+L10 mean melEDI remains `NON_ESTIMABLE_COMPONENT_FAILURE` in all 12 joint
+slots; its raw and adjusted p-values are missing. Positive-only and MAP results
+remain descriptive historical diagnostics and are not substituted. MDER uses
+the approved arithmetic mean of viable positive finite one-minute
+melEDI/illuminance ratios. Its raw model results are frozen; only family-wide
+adjusted fields change when the 15-slot vectors are completed.
+
+```{r}
+#| label: tbl-frozen-slots
+#| tbl-cap: "Primary association-family status for frozen slots 3 and 15."
+
+families |>
+  dplyr::filter(
+    .data$dataset_id == "primary",
+    .data$test_type == "association",
+    .data$metric_slot %in% c(3L, 15L)
+  ) |>
+  dplyr::transmute(
+    Predictor = .data$reader_name,
+    Slot = .data$metric_slot,
+    Metric = .data$manuscript_name,
+    `Slot status` = .data$slot_status,
+    `Raw p` = format_p(.data$raw_p_value),
+    `BH q` = format_p(.data$bh_adjusted_p_value),
+    `Adjusted decision` = .data$adjusted_inferential_decision
+  ) |>
+  compact_gt(
+    source_note = paste0(
+      "No L10 or MDER model, estimate, interval, diagnostic, sensitivity, or raw ",
+      "p-value was refitted or changed in this production run."
+    )
+  ) |>
+  gt::fmt_integer(columns = Slot)
+```
+
+The selected-candidate MDER point estimates and pointwise 95% intervals are
+retained below for context; they remain the sealed METRIC-010 results.
+
+```{r}
+#| label: tbl-mder-frozen-effects
+#| tbl-cap: "Frozen primary near-eye MDER effect estimates."
+
+mder_effects |>
+  dplyr::filter(
+    .data$run_id == "primary__near_eye__all_available",
+    .data$sensitivity_role == "selected candidate"
+  ) |>
+  dplyr::transmute(
+    Predictor = .data$predictor,
+    Contrast = .data$contrast,
+    `Participant-days` = .data$participant_days,
+    Participants = .data$participants,
+    `MDER difference (95% CI)` = sprintf(
+      "%.3f (%.3f to %.3f)",
+      .data$estimate,
+      .data$lower_95,
+      .data$upper_95
+    )
+  ) |>
+  compact_gt(
+    source_note = paste0(
+      "Absolute MDER differences from the frozen Gaussian selected candidate. ",
+      "Student-t sensitivities remain stored separately."
+    )
+  ) |>
+  gt::fmt_integer(columns = c(`Participant-days`, Participants))
+```
+
+# Complementary placement evidence
+
+The placement comparisons below use the same approved model route within each
+metric. They are estimation-only: no additional p-value screen is created.
+
+```{r}
+#| label: tbl-placement-comparison
+#| tbl-cap: "Primary-dataset near-eye, chest, and paired/common point estimates."
+
+placement_table <- effects |>
+  dplyr::filter(
+    .data$dataset_id == "primary",
+    .data$run_id %in% names(scenario_labels)[1:4]
+  ) |>
+  dplyr::mutate(
+    scenario = scenario_labels[.data$run_id],
+    result = paste0(
+      format_effect(
+        .data$display_estimate,
+        .data$display_lower_95,
+        .data$display_upper_95,
+        .data$effect_scale
+      ),
+      "; n=",
+      .data$participant_days,
+      " days/",
+      .data$participants,
+      " participants"
+    )
+  ) |>
+  dplyr::select(
+    "predictor_order", "reader_name", "metric_slot", "manuscript_name",
+    "scenario", "result"
+  ) |>
+  tidyr::pivot_wider(names_from = "scenario", values_from = "result") |>
+  dplyr::arrange(.data$predictor_order, .data$metric_slot)
+
+placement_table |>
+  dplyr::select(-"predictor_order") |>
+  compact_gt(
+    source_note = paste0(
+      "Each cell is estimate (pointwise 95% CI); n gives participant-days and ",
+      "participants. Ratio and absolute-hour scales are metric-specific."
+    )
+  ) |>
+  gt::tab_row_group(
+    group = "Work/free day",
+    rows = reader_name == "Work/free day"
+  ) |>
+  gt::tab_row_group(
+    group = "Daily activity status",
+    rows = reader_name == "Daily activity status"
+  ) |>
+  gt::tab_row_group(
+    group = "Previous-night sleep duration",
+    rows = reader_name == "Previous-night sleep duration"
+  ) |>
+  gt::cols_hide(columns = c(reader_name, metric_slot)) |>
+  gt::cols_label(manuscript_name = "Metric") |>
+  gt::tab_options(table.font.size = gt::px(10))
+```
+
+# Gap-timing-unaware sensitivity
+
+The gap-timing-unaware analysis has its own BH vectors. The dataset-common
+columns isolate metric-construction differences from changes in which
+participant-days are available.
+
+```{r}
+#| label: tbl-gap-comparison
+#| tbl-cap: "Primary versus gap-timing-unaware near-eye estimates on all-available and dataset-common frames."
+
+gap_runs <- c(
+  "primary__near_eye__all_available",
+  "gap_timing_unaware__near_eye__all_available",
+  "primary__near_eye__dataset_common",
+  "gap_timing_unaware__near_eye__dataset_common"
+)
+gap_labels <- c(
+  primary__near_eye__all_available = "Primary all available",
+  gap_timing_unaware__near_eye__all_available = "Gap-unaware all available",
+  primary__near_eye__dataset_common = "Primary dataset-common",
+  gap_timing_unaware__near_eye__dataset_common = "Gap-unaware dataset-common"
+)
+gap_table <- effects |>
+  dplyr::filter(.data$run_id %in% gap_runs) |>
+  dplyr::mutate(
+    scenario = gap_labels[.data$run_id],
+    result = paste0(
+      format_effect(
+        .data$display_estimate,
+        .data$display_lower_95,
+        .data$display_upper_95,
+        .data$effect_scale
+      ),
+      "; n=",
+      .data$participant_days
+    )
+  ) |>
+  dplyr::select(
+    "predictor_order", "reader_name", "metric_slot", "manuscript_name",
+    "scenario", "result"
+  ) |>
+  tidyr::pivot_wider(names_from = "scenario", values_from = "result") |>
+  dplyr::arrange(.data$predictor_order, .data$metric_slot)
+
+gap_table |>
+  dplyr::select(-"predictor_order") |>
+  compact_gt(
+    source_note = paste0(
+      "Each cell is estimate (pointwise 95% CI); n gives participant-days. ",
+      "Gap-unaware p-values are adjusted only within their separate families."
+    )
+  ) |>
+  gt::tab_row_group(
+    group = "Work/free day",
+    rows = reader_name == "Work/free day"
+  ) |>
+  gt::tab_row_group(
+    group = "Daily activity status",
+    rows = reader_name == "Daily activity status"
+  ) |>
+  gt::tab_row_group(
+    group = "Previous-night sleep duration",
+    rows = reader_name == "Previous-night sleep duration"
+  ) |>
+  gt::cols_hide(columns = c(reader_name, metric_slot)) |>
+  gt::cols_label(manuscript_name = "Metric") |>
+  gt::tab_options(table.font.size = gt::px(10))
+```
+
+# Diagnostic verdicts
+
+## All 468 cells
+
+```{r}
+#| label: tbl-diagnostic-summary
+#| tbl-cap: "Cell-level diagnostic verdicts across all scenarios."
+
+diagnostic_summary |>
+  dplyr::select(-"metric_slot") |>
+  compact_gt(
+    source_note = paste0(
+      "Each metric has 36 cells: three predictors across twelve scenario roles. ",
+      "A not-acceptable cell remains numerically visible but cannot support an ",
+      "unqualified association claim."
+    )
+  ) |>
+  gt::cols_label(manuscript_name = "Metric") |>
+  gt::fmt_integer(columns = where(is.numeric))
+```
+
+The detailed assessment preserves model, distribution, temporal, continuous-
+period, and influence gates separately. The primary near-eye cells are shown
+below.
+
+```{r}
+#| label: tbl-primary-diagnostics
+#| tbl-cap: "Primary near-eye diagnostic assessments by metric and predictor."
+
+diagnostics |>
+  dplyr::filter(
+    .data$dataset_id == "primary",
+    .data$placement_id == "near_eye",
+    .data$sample_role == "all_available"
+  ) |>
+  dplyr::transmute(
+    Slot = .data$metric_slot,
+    Metric = .data$manuscript_name,
+    Predictor = .data$reader_name,
+    Model = dplyr::case_when(
+      startsWith(.data$model_gate, "ACCEPTABLE_WITH") ~ "Limit",
+      startsWith(.data$model_gate, "ACCEPTABLE") ~ "OK",
+      TRUE ~ "No"
+    ),
+    Distribution = dplyr::case_when(
+      startsWith(.data$distribution_gate, "ACCEPTABLE_WITH") ~ "Limit",
+      startsWith(.data$distribution_gate, "ACCEPTABLE") ~ "OK",
+      TRUE ~ "No"
+    ),
+    Temporal = dplyr::case_when(
+      startsWith(.data$temporal_gate, "ACCEPTABLE_WITH") ~ "Limit",
+      startsWith(.data$temporal_gate, "ACCEPTABLE") ~ "OK",
+      TRUE ~ "No"
+    ),
+    Period = dplyr::case_when(
+      startsWith(.data$period_gate, "ACCEPTABLE_WITH") ~ "Limit",
+      startsWith(.data$period_gate, "ACCEPTABLE") ~ "OK",
+      TRUE ~ "No"
+    ),
+    Influence = dplyr::case_when(
+      startsWith(.data$influence_gate, "ACCEPTABLE_WITH") ~ "Limit",
+      startsWith(.data$influence_gate, "ACCEPTABLE") ~ "OK",
+      TRUE ~ "No"
+    ),
+    Overall = dplyr::case_when(
+      .data$diagnostic_status == "ACCEPTABLE_WITH_LIMITATION" ~ "Limit",
+      .data$diagnostic_status == "ACCEPTABLE" ~ "OK",
+      TRUE ~ "No"
+    )
+  ) |>
+  compact_gt(
+    source_note = paste0(
+      "OK = acceptable; Limit = acceptable only with the stated limitation; ",
+      "No = not acceptable. Full diagnostic codes are in the paired production CSV. ",
+      "H06-D-011 timing qualifications remain binding even when a raw test is small."
+    )
+  ) |>
+  gt::fmt_integer(columns = Slot) |>
+  gt::cols_width(
+    Slot ~ gt::px(38),
+    Metric ~ gt::px(170),
+    Predictor ~ gt::px(110),
+    c(Model, Distribution, Temporal, Period, Influence, Overall) ~ gt::px(72)
+  ) |>
+  gt::tab_options(table.font.size = gt::px(9))
+```
+
+## Response-family checks
+
+```{r}
+#| label: tbl-response-diagnostics
+#| tbl-cap: "Response-family diagnostic ranges and authorized limitations."
+
+tweedie_summary <- tweedie |>
+  dplyr::summarise(
+    Cells = dplyr::n(),
+    `Power range` = sprintf(
+      "%.3f–%.3f",
+      min(.data$tweedie_power),
+      max(.data$tweedie_power)
+    ),
+    `Maximum zero fraction` = max(.data$exact_zero_fraction),
+    `AR triggers` = sum(.data$ar_trigger),
+    `Simulation status` = dplyr::first(.data$simulation_diagnostic_status),
+    .by = c("metric_slot", "manuscript_name")
+  ) |>
+  dplyr::transmute(
+    Slot = .data$metric_slot,
+    Metric = .data$manuscript_name,
+    Family = "Tweedie log",
+    Cells,
+    Detail = paste0(
+      "power ", .data$`Power range`, "; max zero fraction ",
+      sprintf("%.1f%%", 100 * .data$`Maximum zero fraction`),
+      "; ", .data$`AR triggers`, " AR triggers"
+    ),
+    Limitation = "No simulated-residual diagnostic: explicitly prohibited by H06-D-013"
+  )
+
+student_summary <- gaussian_student |>
+  dplyr::count(
+    .data$metric_slot,
+    .data$manuscript_name,
+    .data$sensitivity_classification,
+    name = "Cells"
+  ) |>
+  dplyr::transmute(
+    Slot = .data$metric_slot,
+    Metric = .data$manuscript_name,
+    Family = "Gaussian Student-t sensitivity",
+    Cells,
+    Detail = .data$sensitivity_classification,
+    Limitation = "Diagnostic only; no p-value substitution"
+  )
+
+dplyr::bind_rows(tweedie_summary, student_summary) |>
+  dplyr::arrange(.data$Slot, .data$Family, .data$Detail) |>
+  compact_gt(
+    source_note = paste0(
+      "Gaussian Student-t sensitivities were triggered by the prespecified ",
+      "residual-shape rules. Tweedie AR counterparts are assessed separately."
+    )
+  ) |>
+  gt::fmt_integer(columns = c(Slot, Cells))
+```
+
+## Temporal dependence and timing-route qualifications
+
+The accepted timing route retains all earlier limitations. In particular,
+first timing above 250 lx melEDI for Work versus Free day had a 1.23-HC3-SE
+Student-t shift; L10 midpoint activity had a 1.26-HC3-SE no-nugget AR shift;
+three pilot additive AR fits were unresolved; no pilot AR structure met the
+pooled-and-every-site lag rule; and timing site interactions remain
+sensitivity-dependent. Production significance cannot erase these facts.
+
+```{r}
+#| label: tbl-temporal-summary
+#| tbl-cap: "Temporal-stability dispositions in the complete production grid."
+
+mixed_temporal <- diagnostics |>
+  dplyr::filter(.data$route == "mixed_model") |>
+  dplyr::count(
+    Route = "Mixed-model outcomes",
+    Disposition = .data$temporal_gate,
+    name = "Cells"
+  )
+timing_temporal <- diagnostics |>
+  dplyr::filter(.data$route == "participant_cluster_HC3") |>
+  dplyr::count(
+    Route = "Participant-cluster HC3 timing outcomes",
+    Disposition = .data$temporal_gate,
+    name = "Cells"
+  )
+dplyr::bind_rows(mixed_temporal, timing_temporal) |>
+  compact_gt(
+    source_note = paste0(
+      "AR counterparts are diagnostic sensitivities and never replace the ",
+      "approved primary route or its raw p-value."
+    )
+  ) |>
+  gt::fmt_integer(columns = Cells)
+```
+
+## Continuous-period identification
+
+```{r}
+#| label: tbl-period-sensitivity
+#| tbl-cap: "Exactly identified longest-period sensitivity on primary-dataset frames."
+
+period_exact |>
+  dplyr::transmute(
+    Placement = dplyr::recode(
+      .data$placement_id,
+      near_eye = "Near eye",
+      chest = "Chest"
+    ),
+    `Sample role` = .data$sample_role,
+    Predictor = .data$reader_name,
+    `Exact days` = .data$exact_participant_days,
+    `Fraction of frame` = .data$exact_fraction_of_primary_frame,
+    `Shift (full-model SE)` = .data$effect_shift_in_primary_se,
+    Reversal = .data$direction_reversal,
+    Assessment = .data$sensitivity_classification
+  ) |>
+  compact_gt(
+    source_note = paste0(
+      "The primary metric is the declared observed lower bound. This sensitivity ",
+      "uses only exactly identified continuous periods and does not add a p-value slot."
+    )
+  ) |>
+  gt::fmt_integer(columns = `Exact days`) |>
+  gt::fmt_number(columns = c(`Fraction of frame`, `Shift (full-model SE)`), decimals = 3)
+```
+
+## Participant and site influence
+
+```{r}
+#| label: tbl-influence-summary
+#| tbl-cap: "Participant/site deletion influence across all 468 cells."
+
+influence |>
+  dplyr::count(.data$influence_classification, name = "Cells") |>
+  dplyr::mutate(
+    `Completed deletion refits` = vapply(
+      .data$influence_classification,
+      function(classification) sum(
+        influence$influence_completed_refits[
+          influence$influence_classification == classification
+        ]
+      ),
+      numeric(1)
+    ),
+    `Maximum shift (full-model SE)` = vapply(
+      .data$influence_classification,
+      function(classification) max(
+        influence$influence_maximum_shift_in_full_se[
+          influence$influence_classification == classification
+        ],
+        na.rm = TRUE
+      ),
+      numeric(1)
+    )
+  ) |>
+  dplyr::rename(Assessment = .data$influence_classification) |>
+  compact_gt(
+    source_note = paste0(
+      "All 66,664 prespecified participant/site deletions were attempted serially. ",
+      "No participant or site was deleted from the reported primary fit."
+    )
+  ) |>
+  gt::fmt_integer(columns = c(Cells, `Completed deletion refits`)) |>
+  gt::fmt_number(columns = `Maximum shift (full-model SE)`, decimals = 2)
+```
+
+## Registered random-site benchmark
+
+```{r}
+#| label: tbl-benchmark-summary
+#| tbl-cap: "Estimability of the exact registered random-site/random-slope benchmark."
+
+benchmarks |>
+  dplyr::count(
+    .data$response_family,
+    .data$benchmark_disposition,
+    name = "Cells"
+  ) |>
+  dplyr::transmute(
+    `Response family` = .data$response_family,
+    Disposition = .data$benchmark_disposition,
+    Cells
+  ) |>
+  compact_gt(
+    source_note = paste0(
+      "The nine-site registered form remains a benchmark only. Non-estimability ",
+      "does not authorize a silent hierarchy substitution."
+    )
+  ) |>
+  gt::fmt_integer(columns = Cells)
+```
+
+# Comparison with V0
+
+## Implementation-level comparison
+
+| Component | V0 implementation | Current H06 daily implementation | Claim consequence |
+|---|---|---|---|
+| Outcome | Repeated hourly geometric-mean melEDI | Fifteen distinct participant-day metrics | Different estimands; no hourly coefficient transfers |
+| Formula | `geo.MEDI ~ site*daytype + site*exercise + site*sleep_duration + (1|Id)` | Separate reduced/additive/site-interaction hierarchy for each metric and predictor | No V0 coefficient maps one-to-one to a daily-metric result |
+| Predictor encoding | Free/work, four-level exercise intensity, and sleep duration jointly | Work/Free day, day-level Active/Sedentary status, and within-person previous-night sleep duration separately | Predictor meaning and adjustment differ |
+| Day weighting | One row per retained hour | One row per admissible metric-specific participant-day | Days are not weighted by supported-hour count |
+| Dependence | Participant intercept only | Participant intercept or participant-cluster HC3, plus the prespecified actual-date temporal screen | Uncertainty and diagnostic acceptance differ |
+| Site | Fixed interactions with a stale displayed site p-value | Equal-site fixed-site association plus a separate heterogeneity test; registered benchmark visible | Site evidence is reconstructed rather than copied |
+| Multiplicity | Raw predictor-block p-values labelled as FDR | Twelve named 15-slot BH vectors | V0 significance labels are not retained |
+| Uncertainty | Final table omitted 95% intervals | Pointwise 95% intervals for every estimable effect | Magnitude and uncertainty are explicit |
+| Placement | Signed chest primary but near-eye-focused reporting | Near eye primary; chest and paired/common complementary | Placement roles are transparent |
+
+## Claim-level disposition
+
+V0 hourly ratios, site contrasts, and “unique variance” fractions remain
+historical descriptors. They cannot be restated as effects on daily mean,
+M10/L10, threshold durations, exposure timing, melEDI dose, MDER, or the
+longest continuous period. This Stage 2 analysis supports only metric-specific
+observational statements on its own exact frames and only where the declared
+diagnostic status permits them. Numerical similarity between hourly and daily
+results is neither expected nor an equivalence test.
+
+# Reproducibility and runtime
+
+```{r}
+#| label: tbl-runtime
+#| tbl-cap: "Measured serial production runtime."
+
+runtime |>
+  dplyr::mutate(
+    `Wall time` = dplyr::if_else(
+      .data$wall_seconds < 60,
+      sprintf("%.1f s", .data$wall_seconds),
+      sprintf("%.1f min", .data$wall_seconds / 60)
+    )
+  ) |>
+  dplyr::select(
+    Component = .data$component,
+    `Completed units` = .data$completed_units,
+    `Wall time`,
+    Execution = .data$execution
+  ) |>
+  compact_gt(
+    source_note = paste0(
+      "R 4.6.1 with the synchronized project library; one R process; no package ",
+      "installation, bootstrap, simulation, or parallel cluster."
+    )
+  ) |>
+  gt::fmt_integer(columns = `Completed units`)
+```
+
+```{r}
+#| label: tbl-software
+#| tbl-cap: "Authoritative production software identities."
+
+software_manifest |>
+  dplyr::select(Item = .data$item, Version = .data$version, Role = .data$role) |>
+  compact_gt(
+    source_note = paste0(
+      "The complete input, code, scientific-output, figure, and preservation ",
+      "manifests were verified during this render."
+    )
+  )
+```
+
+The input manifest contains `r nrow(input_manifest)` sealed identities; the
+scientific-output manifest contains `r nrow(output_manifest)` identities; the
+figure manifest pairs two publication-scale figures with two source-data CSVs;
+and the final preservation audit confirms `r nrow(preservation)` protected
+historical H06_daily and main-H06 files byte-for-byte.
+
+The current prepared metrics retain the PREP06-BASE-002 qualification:
+state-support reconstruction inherits the bounded PREP-003/FIND-044 provenance
+limitation. This qualification is not evidence that the current metric values
+are analytically wrong.
+
+# H06-D-G2 author decisions
+
+::: {.callout-important title="Stop gate — explicit Stage 2 approval required"}
+
+Please approve or amend all of the following before any Stage 3 work:
+
+1. Accept the completed 468-cell production grid, exact samples, model routes,
+   and pointwise 95% intervals as the Stage 2 implementation record.
+2. Accept the twelve complete named 15-slot BH families, with L10 retained as
+   the frozen NA slot and MDER raw/model outputs frozen.
+3. Accept the explicit cell-level diagnostic verdicts, including every
+   not-acceptable result and major limitation; no small p-value overrides a
+   failed diagnostic.
+4. Accept the chest, paired/common, and gap-timing-unaware results in their
+   declared complementary or sensitivity roles.
+5. Retain the completed hourly H06 analysis as the main H06 result and this
+   daily analysis as complementary preregistration-oriented evidence.
+6. Decide separately whether to authorize Stage 3: a compact standalone
+   reader-facing `notebooks/hypotheses/H06_daily.qmd`. Stage 4 remains blocked
+   until that Stage 3 report is itself approved.
+
+No model refit, deletion batch, multiplicity change, Stage 3/4 authoring,
+website integration, shared edit, main-H06 change, commit, or push follows
+automatically from this gate.
+
+:::

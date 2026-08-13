@@ -1,0 +1,925 @@
+---
+title: "H06 daily-metric analysis preparation and provenance"
+subtitle: "From participant-day light-exposure metrics and recorded contexts to complementary association estimates"
+date: "2026-08-13"
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    embed-resources: true
+    code-fold: true
+    code-summary: "Show the R code used for this display"
+    code-tools: false
+    page-layout: full
+execute:
+  echo: true
+  warning: false
+  message: false
+  error: false
+fig-cap-location: bottom
+tbl-cap-location: top
+resources:
+  - ../../../artifacts/10_figures/H06_daily/H06_daily_preparation_primary_sample_support.png
+  - ../../../artifacts/10_figures/H06_daily/H06_daily_preparation_primary_sample_support.pdf
+  - ../../../artifacts/10_figures/H06_daily/H06_daily_preparation_primary_sample_support.svg
+  - ../../../artifacts/11_source_data/H06_daily/H06_daily_preparation_primary_sample_figure.csv
+editor: source
+---
+
+```{r}
+#| label: setup-h06-daily-preparation
+#| include: false
+
+suppressPackageStartupMessages({
+  library(dplyr)
+  library(gt)
+  library(knitr)
+  library(readr)
+  library(tibble)
+  library(tidyr)
+})
+
+locate_project_root <- function(start = getwd()) {
+  candidate <- normalizePath(start, winslash = "/", mustWork = TRUE)
+  repeat {
+    if (
+      file.exists(file.path(candidate, "renv.lock")) &&
+        file.exists(file.path(candidate, "_quarto.yml"))
+    ) {
+      return(candidate)
+    }
+    parent <- dirname(candidate)
+    if (identical(parent, candidate)) {
+      stop("Could not locate the project root", call. = FALSE)
+    }
+    candidate <- parent
+  }
+}
+
+project_root <- locate_project_root()
+
+if (!identical(as.character(getRversion()), "4.6.1")) {
+  stop("H06_daily preparation requires R 4.6.1", call. = FALSE)
+}
+
+read_h06d <- function(filename) {
+  readr::read_csv(
+    file.path(
+      project_root,
+      "artifacts/11_source_data/H06_daily",
+      filename
+    ),
+    show_col_types = FALSE,
+    na = c("", "NA")
+  )
+}
+
+compact_gt <- function(
+  data,
+  groupname_col = NULL,
+  source_note = NULL,
+  font_size = 11.5
+) {
+  output <- if (inherits(data, "gt_tbl")) {
+    data
+  } else {
+    gt::gt(data, groupname_col = groupname_col)
+  }
+  output <- output |>
+    gt::opt_row_striping() |>
+    gt::sub_missing(missing_text = "—") |>
+    gt::tab_options(
+      table.width = gt::pct(100),
+      table.font.size = gt::px(font_size),
+      data_row.padding = gt::px(4),
+      column_labels.font.weight = "600",
+      source_notes.font.size = gt::px(10.5),
+      row_group.padding = gt::px(4)
+    )
+  if (!is.null(source_note)) {
+    output <- output |>
+      gt::tab_source_note(gt::md(source_note))
+  }
+  output
+}
+
+format_range <- function(minimum, maximum) {
+  ifelse(
+    minimum == maximum,
+    format(minimum, big.mark = ",", scientific = FALSE, trim = TRUE),
+    paste0(
+      format(minimum, big.mark = ",", scientific = FALSE, trim = TRUE),
+      "–",
+      format(maximum, big.mark = ",", scientific = FALSE, trim = TRUE)
+    )
+  )
+}
+
+input_provenance <- read_h06d(
+  "H06_daily_preparation_input_provenance.csv"
+)
+metric_registry <- read_h06d(
+  "H06_daily_preparation_metric_registry.csv"
+)
+predictor_registry <- read_h06d(
+  "H06_daily_preparation_predictor_registry.csv"
+)
+model_routes <- read_h06d(
+  "H06_daily_preparation_model_routes.csv"
+)
+exact_samples <- read_h06d(
+  "H06_daily_preparation_exact_samples.csv"
+)
+sample_roles <- read_h06d(
+  "H06_daily_preparation_sample_role_summary.csv"
+)
+primary_samples <- read_h06d(
+  "H06_daily_preparation_primary_sample_by_metric.csv"
+)
+predictor_support <- read_h06d(
+  "H06_daily_preparation_primary_predictor_support.csv"
+)
+site_support <- read_h06d(
+  "H06_daily_preparation_primary_site_support.csv"
+)
+multiplicity <- read_h06d(
+  "H06_daily_preparation_multiplicity_families.csv"
+)
+diagnostics <- read_h06d(
+  "H06_daily_preparation_diagnostic_summary.csv"
+)
+sensitivity_registry <- read_h06d(
+  "H06_daily_preparation_sensitivity_registry.csv"
+)
+temporal_support <- read_h06d(
+  "H06_daily_preparation_temporal_support.csv"
+)
+code_map <- read_h06d("H06_daily_preparation_code_map.csv")
+output_trace <- read_h06d("H06_daily_preparation_output_trace.csv")
+figure_alt <- read_h06d("H06_daily_preparation_figure_alt_text.csv")
+
+joint_registry <- readr::read_csv(
+  file.path(
+    project_root,
+    paste0(
+      "artifacts/06_model_data/H06_daily/",
+      "H06_daily_joint_context_exploratory_frame_registry.csv"
+    )
+  ),
+  show_col_types = FALSE
+)
+temporal_formula <- readr::read_csv(
+  file.path(
+    project_root,
+    paste0(
+      "artifacts/06_model_data/H06_daily/",
+      "H06_daily_temporal_h02_formula_registry.csv"
+    )
+  ),
+  show_col_types = FALSE
+)
+
+stopifnot(
+  all(input_provenance$verification_status == "PASS"),
+  all(input_provenance$expected_sha256 == input_provenance$observed_sha256),
+  nrow(metric_registry) == 15L,
+  identical(as.integer(metric_registry$metric_slot), 1:15),
+  nrow(predictor_registry) == 3L,
+  nrow(model_routes) == 15L,
+  nrow(exact_samples) == 522L,
+  nrow(sample_roles) == 12L,
+  nrow(primary_samples) == 15L,
+  nrow(site_support) == 405L,
+  nrow(multiplicity) == 12L,
+  nrow(diagnostics) == 25L,
+  nrow(temporal_support) == 6L,
+  nrow(joint_registry) == 14L,
+  nrow(temporal_formula) == 1L,
+  nrow(figure_alt) == 1L,
+  all(metric_registry$analysis_unit == "participant-day"),
+  all(multiplicity$named_slots == 15L),
+  all(multiplicity$named_na_slots == 1L)
+)
+```
+
+This page explains how the complementary H06 participant-day analysis was
+prepared, fitted, checked, and translated into the reported tables and
+figures. A participant-day is one eligible local calendar day from one
+participant. Each admissible light-exposure metric contributes at most one row
+for that participant-day, so days are not weighted by their number of
+supported hours.
+
+The [H06 daily-metric results report](../../../notebooks/hypotheses/H06_daily.html)
+contains the association estimates, confidence intervals, multiplicity
+decisions, site-specific patterns, complementary analyses, and the comparison
+with the selected hourly H06 analysis.
+
+::: {.callout-note title="Execution boundary"}
+This page verifies stored file identities and schemas and calculates only
+bounded descriptive summaries of the already fitted samples. Model estimates,
+predictions, residual correlation, p-values, false-discovery-rate adjustments,
+deletion analyses, and nonlinear clock-time functions are read from stored
+outputs. Rendering this page does not fit or refit a model, regenerate a
+prediction, rerun a sensitivity analysis, resample, or simulate.
+:::
+
+## Analysis path
+
+The primary path estimates each context separately for each daily metric. The
+site-interaction path asks whether that association differs among sites. Two
+exploratory paths then examine covariate stability and 30-minute clock-time
+profiles without changing the primary participant-day estimand.
+
+```{mermaid}
+flowchart TD
+  A["Verified participant-day light-exposure metrics"] --> D["Metric-specific participant-day frames"]
+  B["Work day or Free day and daily activity status"] --> D
+  C["Previous-night sleep duration"] --> D
+  D --> E["Fixed-site common-association model"]
+  D --> F["Predictor-by-site interaction model"]
+  D --> G["Exploratory jointly adjusted model"]
+  H["Supported 30-minute arithmetic-mean melEDI"] --> I["Exploratory clock-time GAMM with working AR(1)"]
+  E --> J["Contrasts, pointwise 95% CIs, FDR families, and model checks"]
+  F --> J
+  G --> K["Separate exploratory FDR families and stability checks"]
+  I --> L["Pointwise clock-time functions and whole-function tests"]
+  J --> M["Complementary H06 daily-metric results"]
+  K --> M
+  L --> M
+```
+
+```{r}
+#| label: tbl-h06d-prep-execution-boundary
+#| tbl-cap: "What this page reads and what it deliberately does not execute"
+
+tibble::tribble(
+  ~Activity, ~Status, ~Purpose,
+  "Verify stored identities and schemas", "Executed", "Detects stale or mismatched inputs",
+  "Summarize exact fitted rows", "Executed", "Makes metric-specific denominators visible",
+  "Summarize category and site support", "Executed", "Shows the support behind fitted contrasts",
+  "Fit or compare statistical models", "Not executed", "Stored fitted objects and results remain the source",
+  "Generate predictions or contrasts", "Not executed", "Stored reader source data remain the source",
+  "Calculate raw or adjusted p-values", "Not executed", "Stored complete-family results remain the source",
+  "Rerun AR, deletion, resampling, or simulation", "Not executed", "Stored diagnostic sidecars remain the source"
+) |>
+  compact_gt()
+```
+
+## Exact inputs and analytical unit
+
+### Verified provenance
+
+The analysis consumed the current prepared metric and context artifacts. It did
+not rebuild measurement preparation or alter a metric locally, except for the
+documented task-local conversion of five gap-comparison clock outcomes from
+minutes to hours. That conversion was limited to H06 daily-metric sensitivity
+frames and left the primary, chest, paired, MDER, L10, temporal, and other
+hypothesis artifacts unchanged.
+
+```{r}
+#| label: tbl-h06d-prep-input-provenance
+#| tbl-cap: "Verified scientific and reporting input identities"
+
+input_provenance |>
+  transmute(
+    Input = case_when(
+      grepl("results source", .data$input_role, ignore.case = TRUE) ~ "Daily-metric results source",
+      grepl("results HTML", .data$input_role, ignore.case = TRUE) ~ "Daily-metric results HTML",
+      grepl("source-data manifest", .data$input_role, ignore.case = TRUE) ~ "Reader source-data manifest",
+      grepl("output manifest", .data$input_role, ignore.case = TRUE) ~ gsub(" output manifest", " outputs", .data$input_role),
+      grepl("render QA", .data$input_role, ignore.case = TRUE) ~ "Reader render verification",
+      grepl("figure QA", .data$input_role, ignore.case = TRUE) ~ "Reader figure verification",
+      grepl("focused test", .data$input_role, ignore.case = TRUE) ~ "Reader structural verification",
+      grepl("transition", .data$input_role, ignore.case = TRUE) ~ "Scientific transition record",
+      grepl("revision record", .data$input_role, ignore.case = TRUE) ~ "Reader revision record",
+      TRUE ~ .data$input_role
+    ),
+    Path = paste0("`", .data$relative_path, "`"),
+    `SHA-256 prefix` = substr(.data$observed_sha256, 1L, 12L),
+    Status = .data$verification_status
+  ) |>
+  gt::gt() |>
+  gt::fmt_markdown(columns = "Path") |>
+  compact_gt(font_size = 10.5)
+```
+
+The **gap-timing-unaware dataset** retains the general 50%-per-hour and
+80%-per-day coverage rules. It differs because the timing of remaining gaps is
+not used for the additional metric-specific adjustment applied in the primary
+dataset. This comparison therefore tests the consequence of using remaining
+gap timing, not the consequence of abandoning the shared coverage rules.
+
+### Outcomes and participant-day rows
+
+The 15 outcomes span light level, duration, timing, exposure history, and
+spectral composition. Reader-facing units remain the metric's original units;
+the stored source values are never overwritten by a display transformation.
+“Period” denotes a continuous interval above a threshold.
+
+```{r}
+#| label: tbl-h06d-prep-metric-registry
+#| tbl-cap: "Daily light-exposure registry, response treatment, and fitted route"
+
+metric_registry |>
+  transmute(
+    Slot = .data$metric_slot,
+    Metric = .data$manuscript_name,
+    Abbreviation = .data$abbreviation,
+    Unit = .data$display_unit,
+    `Family and transformation` = paste(
+      .data$response_family,
+      .data$response_transform,
+      sep = "; "
+    ),
+    `Fitted route` = .data$reader_route
+  ) |>
+  gt::gt() |>
+  gt::tab_row_group(label = "Light level", rows = Slot %in% 1:3) |>
+  gt::tab_row_group(label = "Duration and continuous period", rows = Slot %in% 4:8) |>
+  gt::tab_row_group(label = "Clock timing", rows = Slot %in% 9:13) |>
+  gt::tab_row_group(label = "Exposure history and spectrum", rows = Slot %in% 14:15) |>
+  gt::row_group_order(groups = c(
+    "Light level",
+    "Duration and continuous period",
+    "Clock timing",
+    "Exposure history and spectrum"
+  )) |>
+  gt::cols_hide(columns = "Slot") |>
+  compact_gt(font_size = 10.5)
+```
+
+The main transformations were:
+
+- $\log_{10}(Y + 0.1)$ for zero-containing right-skewed level, continuous-
+  period, and dose outcomes selected for the shifted-log Gaussian route;
+- a Tweedie distribution with log link for non-negative duration outcomes with
+  a point mass at zero and a continuous positive part;
+- identity-scale Gaussian models for outcomes whose residual behavior was
+  judged adequate on that scale; and
+- clock hours for timing outcomes. L10 midpoint was unwrapped at 16:00 so that
+  values after 16:00 and before the following morning occupy one continuous
+  night-centred axis.
+
+Exact zero handling was metric-specific. Exact zeros remained in every
+one-part model whose response allowed zero. For the darkest 10 h mean, exact
+zeros remained in the occurrence component and were excluded only from the
+strictly positive magnitude component. Its joint two-part association was not
+estimable because the occurrence component separated, so its named
+multiplicity slot remains missing. Daily melanopic daylight efficacy ratio
+(MDER) is the arithmetic mean of viable positive finite one-minute
+melEDI/illuminance ratios. It requires at least 720 viable ratios on a complete
+1,440-minute local wall-clock grid and is not a ratio of daily integrals.
+
+### Recorded contexts
+
+```{r}
+#| label: tbl-h06d-prep-predictors
+#| tbl-cap: "Recorded contexts and practical contrasts"
+
+predictor_registry |>
+  transmute(
+    Context = .data$reader_name,
+    Reference = .data$reference,
+    `Reported contrast` = .data$interpretation
+  ) |>
+  compact_gt()
+```
+
+Work/Free and Sedentary/Active are participant-day labels, not
+contemporaneous half-hour states. Previous-night sleep duration is linked from
+the preceding eligible sleep period and centred at 8 h for fitting; a reported
+coefficient represents one additional hour. The exploratory clock-time model
+also separates each participant's mean previous sleep from the day's deviation
+around that participant mean, distinguishing between-person from within-person
+associations.
+
+## Fitted samples and support
+
+### Primary near-eye samples
+
+The primary near-eye sample changes across metrics and predictors because a
+row must have an admissible metric and the relevant recorded context. The exact
+registry contains one row for every fitted metric, predictor, placement, sample
+role, and dataset branch.
+
+```{r}
+#| label: fig-h06d-prep-primary-sample-support
+#| fig-cap: "Exact participant-days in each primary near-eye metric-by-predictor fitted sample. Each point is the stored model denominator, not a newly selected sample."
+#| fig-alt: !expr figure_alt$alt_text[[1L]]
+#| out-width: "100%"
+
+knitr::include_graphics(
+  "../../../artifacts/10_figures/H06_daily/H06_daily_preparation_primary_sample_support.png"
+)
+```
+
+```{r}
+#| label: tbl-h06d-prep-primary-samples
+#| tbl-cap: "Exact primary near-eye sample ranges across the three predictor-specific models"
+
+primary_samples |>
+  transmute(
+    Slot = .data$metric_slot,
+    Metric = .data$manuscript_name,
+    `Participant-days` = format_range(
+      .data$participant_days_min,
+      .data$participant_days_max
+    ),
+    Participants = format_range(
+      .data$participants_min,
+      .data$participants_max
+    ),
+    Sites = format_range(.data$sites_min, .data$sites_max),
+    `Exact source zeros` = format_range(
+      .data$exact_source_zeros_min,
+      .data$exact_source_zeros_max
+    )
+  ) |>
+  gt::gt() |>
+  gt::cols_hide(columns = "Slot") |>
+  compact_gt(font_size = 10.5)
+```
+
+Every primary metric-by-predictor sample contains all nine sites. The smallest
+samples occur where metric admissibility or context linkage is most demanding,
+not because the fitting function silently removes rows. Complete frames were
+constructed before fitting and their object identities were sealed.
+
+### Placement and dataset roles
+
+```{r}
+#| label: tbl-h06d-prep-sample-roles
+#| tbl-cap: "Exact fitted-sample ranges by placement, dataset, and common-sample role"
+
+sample_roles |>
+  transmute(
+    Scenario = .data$scenario_label,
+    `Metric × predictor cells` = .data$analyzed_metric_predictor_cells,
+    Metrics = .data$analyzed_metrics,
+    `Participant-days` = format_range(
+      .data$participant_days_min,
+      .data$participant_days_max
+    ),
+    Participants = format_range(
+      .data$participants_min,
+      .data$participants_max
+    ),
+    Sites = format_range(.data$sites_min, .data$sites_max),
+    Role = recode(
+      .data$analysis_role,
+      primary = "Primary",
+      contextual_complement = "Complementary placement",
+      paired_complement = "Paired/common placement",
+      dataset_sensitivity = "Dataset sensitivity",
+      dataset_sensitivity_context = "Complementary dataset sensitivity",
+      dataset_paired_complement = "Paired/common dataset sensitivity",
+      common_sample_primary = "Primary on common days",
+      common_sample_gap = "Gap comparison on common days"
+    )
+  ) |>
+  compact_gt(font_size = 10)
+```
+
+Near-eye all-available participant-days define the primary analysis. Chest
+all-available estimates provide complementary non-ocular placement evidence.
+Paired/common estimates compare placements on the same days. Dataset-common
+estimates compare the primary and gap-timing-unaware constructions on identical
+day keys. Only primary near-eye and gap-timing-unaware near-eye all-available
+tests enter multiplicity families; the other roles are estimation-only.
+
+### Predictor category and site support
+
+```{r}
+#| label: tbl-h06d-prep-category-support
+#| tbl-cap: "Primary near-eye predictor support across the 15 metric-specific frames"
+
+category_support <- predictor_support |>
+  filter(.data$support_type == "category") |>
+  summarise(
+    metric_frames = n_distinct(.data$metric_slot),
+    participant_days_min = min(.data$participant_days),
+    participant_days_max = max(.data$participant_days),
+    .by = c("predictor_order", "reader_name", "category")
+  ) |>
+  transmute(
+    Context = .data$reader_name,
+    Category = .data$category,
+    `Metric frames` = .data$metric_frames,
+    `Participant-days across metrics` = format_range(
+      .data$participant_days_min,
+      .data$participant_days_max
+    )
+  )
+
+sleep_support <- predictor_support |>
+  filter(.data$support_type == "continuous_range") |>
+  summarise(
+    metric_frames = n_distinct(.data$metric_slot),
+    participant_days_min = min(.data$participant_days),
+    participant_days_max = max(.data$participant_days),
+    minimum_h = min(.data$previous_sleep_minimum_h),
+    median_min_h = min(.data$previous_sleep_median_h),
+    median_max_h = max(.data$previous_sleep_median_h),
+    maximum_h = max(.data$previous_sleep_maximum_h)
+  ) |>
+  transmute(
+    Context = "Previous-night sleep duration",
+    Category = paste0(
+      "Observed ", sprintf("%.1f", .data$minimum_h), "–",
+      sprintf("%.1f", .data$maximum_h), " h; metric medians ",
+      sprintf("%.1f", .data$median_min_h), "–",
+      sprintf("%.1f", .data$median_max_h), " h"
+    ),
+    `Metric frames` = .data$metric_frames,
+    `Participant-days across metrics` = format_range(
+      .data$participant_days_min,
+      .data$participant_days_max
+    )
+  )
+
+bind_rows(category_support, sleep_support) |>
+  compact_gt()
+```
+
+```{r}
+#| label: tbl-h06d-prep-site-support
+#| tbl-cap: "Primary near-eye participant-day support by site across all 45 metric-by-predictor fitted samples"
+
+site_support |>
+  summarise(
+    fitted_cells = n(),
+    participant_days_min = min(.data$participant_days),
+    participant_days_max = max(.data$participant_days),
+    .by = c("display_order", "display_name", "color_hex")
+  ) |>
+  arrange(.data$display_order) |>
+  transmute(
+    Site = paste0(
+      "<span aria-hidden='true' style='color:",
+      .data$color_hex,
+      ";font-size:1.15em'>●</span> ",
+      .data$display_name
+    ),
+    `Fitted cells` = .data$fitted_cells,
+    `Participant-days across cells` = format_range(
+      .data$participant_days_min,
+      .data$participant_days_max
+    )
+  ) |>
+  gt::gt() |>
+  gt::fmt_markdown(columns = "Site") |>
+  compact_gt()
+```
+
+The site table reports observed support, not equal-site analytical weighting.
+Sum-to-zero site coding and equal-site marginalization give each included site
+equal weight in the reported common association even though their observed
+sample sizes differ.
+
+## Model construction and estimands
+
+### Predictor-specific model hierarchy
+
+For each metric and predictor, the reduced model contains site and the repeated-
+participant structure. The additive model adds the predictor and estimates the
+equal-site common association. The interaction model adds the complete
+predictor-by-site block and tests heterogeneity. Work day and Sedentary are the
+categorical references. All reported intervals are pointwise 95% confidence
+intervals.
+
+```{r}
+#| label: tbl-h06d-prep-model-hierarchy
+#| tbl-cap: "Selected model routes and exact formula hierarchy"
+
+model_routes |>
+  distinct(
+    .data$reader_route,
+    .data$reduced_formula,
+    .data$additive_formula,
+    .data$heterogeneity_formula,
+    .data$uncertainty
+  ) |>
+  transmute(
+    Route = .data$reader_route,
+    Reduced = paste0("`", .data$reduced_formula, "`"),
+    Additive = paste0("`", .data$additive_formula, "`"),
+    Heterogeneity = paste0("`", .data$heterogeneity_formula, "`"),
+    Uncertainty = .data$uncertainty
+  ) |>
+  gt::gt() |>
+  gt::fmt_markdown(columns = c("Reduced", "Additive", "Heterogeneity")) |>
+  compact_gt(font_size = 10)
+```
+
+The four timing outcomes repaired to participant-cluster HC3 inference are M10
+midpoint, L10 midpoint, first timing above 250 lx melEDI, and last timing above
+250 lx melEDI. Their fixed-site linear models use participant-cluster HC3
+covariance with finite-cluster adjustment and participant-clusters-minus-one
+degrees of freedom. Other estimable daily outcomes use their selected Gaussian
+or Tweedie mixed model with participant random intercept.
+
+The exact registered benchmark was retained without silent substitution:
+
+```r
+response_value ~ predictor + (predictor | site) +
+  (1 | site:participant_key)
+```
+
+It is a benchmark because nine sites provide limited support for a random site
+intercept, random predictor slope, and their correlation. The fixed-site route
+is the reported estimand. For categorical predictors it is the Free/Work or
+Active/Sedentary contrast averaged equally over sites. For previous sleep it is
+the association per additional hour, also averaged equally over sites. The
+interaction route reports the complete site-specific association, not an
+interaction adjustment that must be interpreted alone.
+
+### Multiplicity
+
+```{r}
+#| label: tbl-h06d-prep-multiplicity
+#| tbl-cap: "Complete primary and gap-timing-unaware false-discovery-rate families"
+
+multiplicity |>
+  mutate(
+    Dataset = recode(
+      .data$dataset_id,
+      primary = "Primary near eye",
+      gap_timing_unaware = "Gap-timing-unaware near eye"
+    ),
+    Test = recode(
+      .data$test_type,
+      association = "Common association",
+      site_heterogeneity = "Predictor-by-site heterogeneity"
+    )
+  ) |>
+  transmute(
+    Dataset,
+    Predictor = .data$reader_name,
+    Test,
+    `Named slots` = .data$named_slots,
+    Estimable = .data$estimable_slots,
+    `Named missing` = .data$named_na_slots,
+    `FDR-supported` = .data$fdr_supported_slots,
+    `Claim-eligible` = .data$claim_eligible_slots
+  ) |>
+  gt::gt(groupname_col = "Dataset") |>
+  compact_gt(font_size = 10.5)
+```
+
+There are 12 Benjamini–Hochberg families: two datasets × three predictors ×
+two test types. Every family retains all 15 named metric slots. Darkest 10 h
+mean melEDI remains the named missing slot because its joint test is
+non-estimable; the family size is not reduced to 14. The frozen MDER raw test
+occupies slot 15. Only adjusted fields that depend mathematically on the whole
+family were updated when the remaining slots became available.
+
+## Model checks, influence, and sensitivities
+
+### Three-class diagnostic architecture
+
+Hard failure was reserved for an unavailable or non-estimable base result,
+convergence or Hessian failure, singularity, rank or covariance failure,
+invalid timing support, observed-response support failure, or visually
+confirmed gross residual behavior. Residual distribution was judged visually
+from residual-versus-fitted and Q–Q displays for Gaussian or HC3 fits. Tweedie
+fits used Pearson residual-versus-fitted displays and zero-mass and prediction-
+support checks; normal Pearson residuals were not required.
+
+All 468 non-L10 metric-by-predictor-by-scenario cells had complete visual
+review and no gross visual or hard construct failure after the gap clock-unit
+repair. Each was retained as acceptable with limitations. Autocorrelation,
+participant or site deletion, exact-period, and response-family checks are
+mandatory row-linked sidecars. They qualify interpretation but do not by
+themselves fail an otherwise estimable result.
+
+```{r}
+#| label: tbl-h06d-prep-diagnostics
+#| tbl-cap: "Stored diagnostic classifications and mandatory limitation sidecars"
+
+diagnostics |>
+  transmute(
+    Domain = .data$domain,
+    Classification = .data$reader_classification,
+    Cells = .data$cells,
+    Role = if_else(
+      .data$hard_gate_input,
+      "Overall classification input",
+      "Nonblocking limitation sidecar"
+    )
+  ) |>
+  gt::gt(groupname_col = "Domain") |>
+  gt::fmt_integer(columns = "Cells") |>
+  compact_gt(font_size = 10)
+```
+
+The sidecars make limitations visible rather than erasing an estimable
+association. Examples include Student-t shifts, unresolved or singular AR
+counterparts, residual dependence that remained after an AR fit, direction
+changes under participant or site deletion, and exact-period sensitivity.
+They are reported with the corresponding result and constrain generalization,
+especially where site-interaction estimates are sensitivity-dependent.
+
+### Prespecified and complementary branches
+
+```{r}
+#| label: tbl-h06d-prep-sensitivities
+#| tbl-cap: "Stored sensitivity and complementary-analysis branches"
+
+sensitivity_registry |>
+  transmute(
+    Branch = .data$branch,
+    `Stored scope` = .data$stored_scope,
+    Question = .data$scientific_question,
+    Role = .data$inferential_role
+  ) |>
+  compact_gt(font_size = 10.5)
+```
+
+These branches answer distinct questions. The chest analysis is not an ocular
+exposure estimate. Paired/common placement analyses are not direct sensor-
+position effects. The gap-timing-unaware dataset is a preparation sensitivity,
+and its own complete 15-slot near-eye families prevent a sensitivity result
+from being folded into the primary family after inspection.
+
+## Exploratory jointly adjusted daily models
+
+The exploratory covariate-stability analysis places work/free day, activity,
+and previous-night sleep in one model. Fourteen estimable metrics share the
+same primary near-eye common frame of 715 participant-days from 137
+participants and nine sites; the non-estimable darkest 10 h joint outcome is
+retained as the named missing slot.
+
+For mixed-model outcomes, the interaction specification is:
+
+```r
+response_value ~
+  site * work_free_day +
+  site * activity_status +
+  site * previous_sleep_duration_centered_h +
+  (1 | participant_key)
+```
+
+The repaired timing outcomes use the corresponding fixed-site linear model
+without the participant random intercept and use participant-cluster HC3
+covariance. Thus, each context is adjusted for the other two, while each
+predictor may still vary by site. The six exploratory 15-slot families are
+kept separate from the predictor-specific primary families.
+
+```{r}
+#| label: tbl-h06d-prep-joint-context
+#| tbl-cap: "Common-frame support and route for the exploratory jointly adjusted daily analysis"
+
+joint_registry |>
+  transmute(
+    Slot = .data$metric_slot,
+    Metric = .data$manuscript_name,
+    Family = paste(.data$response_family, .data$response_transform, sep = "; "),
+    Route = recode(
+      .data$route,
+      mixed_model = "Mixed model",
+      participant_cluster_HC3 = "Participant-cluster HC3"
+    ),
+    `Participant-days` = .data$participant_days,
+    Participants = .data$participants,
+    Sites = .data$sites
+  ) |>
+  gt::gt() |>
+  gt::cols_hide(columns = "Slot") |>
+  gt::fmt_integer(columns = c("Participant-days", "Participants", "Sites")) |>
+  compact_gt(font_size = 10.5)
+```
+
+## Exploratory 30-minute clock-time GAMM
+
+The clock-time analysis has a different row and estimand. Its outcome $Y$ is
+the arithmetic mean melEDI in an admissible 30-minute bin. The model response
+is $Z = \log_{10}(Y + 0.1\ \mathrm{lx})$. Exact zeros remain in this one-part
+Gaussian model. The displayed inverse transform, $10^\eta - 0.1$, is a
+back-transform of the conditional mean log response. It is geometric-mean-like
+for $Y+0.1$ and is not raw-scale arithmetic $E[Y]$.
+
+```{r}
+#| label: tbl-h06d-prep-temporal-formula
+#| tbl-cap: "Exact exploratory 30-minute response, model, and estimand"
+
+temporal_formula |>
+  transmute(
+    Response = paste(.data$response_source, .data$response_transform, sep = "; "),
+    Family = paste(.data$family, .data$link, sep = "; "),
+    Formula = paste0("`", .data$formula, "`"),
+    Estimand = .data$estimand,
+    `Inverse-transform qualification` = .data$inverse_transform_qualification
+  ) |>
+  gt::gt() |>
+  gt::fmt_markdown(columns = "Formula") |>
+  compact_gt(font_size = 10)
+```
+
+The model was fitted with `mgcv::bam()`, fREML, `discrete = TRUE`, one R
+thread, and global 0/24 knots. The global clock smooth is cyclic cubic with
+$k=12$. Work/free day, activity, and site use sum-to-zero factor smooths with
+$k=12$ and the default thin-plate time marginal, not a cyclic marginal.
+Participant uses a factor smooth with $k=10$, and participant-day uses a random
+intercept smooth. Previous sleep is separated into between-participant and
+within-participant smooth functions.
+
+Rows are ordered by site, participant, local date, true source time, and clock
+bin. A working AR(1) sequence restarts at each participant-day and at every
+missing, non-one-to-one, or physically discontinuous true-time boundary. Each
+frame's rho was estimated anew from its own preliminary full-model response
+residuals and then fixed for the final fit.
+
+```{r}
+#| label: tbl-h06d-prep-temporal-support
+#| tbl-cap: "Exact fitted support and working AR(1) parameter for the exploratory clock-time models"
+
+temporal_support |>
+  transmute(
+    Dataset = .data$data_scenario_label,
+    Placement = .data$placement_label,
+    Sample = recode(
+      .data$sample_scenario,
+      all_available = "All available",
+      paired_common = "Paired/common"
+    ),
+    `30-minute bins` = .data$observations_30_minute,
+    `Participant-days` = .data$participant_days,
+    Participants = .data$participants,
+    Sites = .data$sites,
+    `Exact zero bins` = .data$exact_zero_bins,
+    `AR sequences` = .data$ar_sequences,
+    Rho = .data$rho
+  ) |>
+  gt::gt(groupname_col = "Dataset") |>
+  gt::fmt_integer(columns = c(
+    "30-minute bins", "Participant-days", "Participants", "Sites",
+    "Exact zero bins", "AR sequences"
+  )) |>
+  gt::fmt_number(columns = "Rho", decimals = 3) |>
+  compact_gt(font_size = 10.5)
+```
+
+Whole-function tests and 95% intervals for clock-specific associations are
+reported on the transformed scale. Every displayed interval is pointwise; no
+simultaneous confidence band was constructed. The temporal analysis is
+exploratory and does not replace a daily-metric slot or the selected hourly H06
+analysis.
+
+## Code, stored outputs, and reproducibility
+
+### Execution order
+
+```{r}
+#| label: tbl-h06d-prep-code-map
+#| tbl-cap: "H06 daily-metric modules in analytical order"
+
+code_map |>
+  transmute(
+    Order = .data$sequence,
+    Module = paste0("`", .data$module, "`"),
+    Responsibility = .data$responsibility,
+    `SHA-256 prefix` = substr(.data$sha256, 1L, 12L)
+  ) |>
+  gt::gt() |>
+  gt::fmt_markdown(columns = "Module") |>
+  compact_gt(font_size = 10)
+```
+
+Contracts and frame construction are separated from fitting, diagnostics,
+influence analysis, reader displays, and this provenance page. This separation
+allows a stored result to be traced to the exact frame and script without
+requiring the report renderer to execute scientific modeling code.
+
+### Stored output trace
+
+```{r}
+#| label: tbl-h06d-prep-output-trace
+#| tbl-cap: "Principal stored outputs used by the results report and this provenance companion"
+
+output_trace |>
+  transmute(
+    Output = .data$role,
+    Path = paste0("`", .data$relative_path, "`"),
+    Type = .data$object_type,
+    `SHA-256 prefix` = substr(.data$sha256, 1L, 12L),
+    Bytes = .data$bytes
+  ) |>
+  gt::gt() |>
+  gt::fmt_markdown(columns = "Path") |>
+  gt::fmt_integer(columns = "Bytes") |>
+  compact_gt(font_size = 10)
+```
+
+Every durable reader figure has paired source data and alt text. The daily-grid
+figures use original response units in labels. Reader-facing displays of
+zero-containing, strongly right-skewed melEDI use the predefined symmetric-log
+scale with base 10 and a 1 lx linear threshold, while the stored source values
+remain untransformed. P-values are stored numerically, displayed to three
+decimals with values below 0.001 shown as `<0.001`, and emphasized only under
+their explicitly labelled raw or adjusted decision rule.
+
+The synchronized environment uses R 4.6.1. Input and output manifests record
+relative paths, SHA-256 identities, byte sizes, producing scripts, and
+consequential package versions. The complete fitted-sample registry and the
+figure source data are available as CSV files beside the model, diagnostic,
+table, and figure artifacts.

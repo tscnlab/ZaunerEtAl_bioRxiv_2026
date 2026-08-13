@@ -1,0 +1,623 @@
+---
+title: "H06 daily metrics — bounded daily AR-repair pilot"
+subtitle: "True-date temporal checks for two unresolved non-MDER response families"
+date: 2026-08-11
+engine: knitr
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    code-fold: true
+    code-summary: "Show audit R code"
+    code-tools: true
+    embed-resources: true
+    page-layout: full
+execute:
+  echo: false
+  warning: false
+  message: false
+  error: false
+  freeze: false
+tbl-cap-location: top
+---
+
+```{r}
+#| label: setup
+#| include: false
+
+options(
+  stringsAsFactors = FALSE,
+  scipen = 999,
+  width = 120,
+  dplyr.summarise.inform = FALSE
+)
+
+find_project_root <- function(start = getwd()) {
+  candidate <- normalizePath(start, winslash = "/", mustWork = TRUE)
+  repeat {
+    if (file.exists(file.path(candidate, "renv.lock"))) {
+      return(candidate)
+    }
+    parent <- dirname(candidate)
+    if (identical(parent, candidate)) {
+      stop("Could not locate the project root", call. = FALSE)
+    }
+    candidate <- parent
+  }
+}
+
+project_root <- Sys.getenv(
+  "H06_DAILY_PROJECT_ROOT",
+  unset = Sys.getenv("QUARTO_PROJECT_DIR", unset = "")
+)
+if (!nzchar(project_root) ||
+    !file.exists(file.path(project_root, "renv.lock"))) {
+  project_root <- find_project_root()
+}
+project_root <- normalizePath(project_root, winslash = "/", mustWork = TRUE)
+project_library <- file.path(
+  project_root,
+  "renv/library/macos/R-4.6/aarch64-apple-darwin23"
+)
+.libPaths(c(project_library, .libPaths()))
+
+library(digest)
+library(dplyr)
+library(gt)
+library(readr)
+library(tibble)
+library(tidyr)
+
+stopifnot(
+  identical(as.character(getRversion()), "4.6.1"),
+  identical(as.character(packageVersion("lme4")), "2.0.1"),
+  identical(as.character(packageVersion("glmmTMB")), "1.1.14"),
+  identical(as.character(packageVersion("melidosData")), "1.0.6")
+)
+
+source(file.path(
+  project_root,
+  "scripts/hypotheses/H06_daily/h06_daily_daily_ar_repair.R"
+))
+
+artifact <- function(stage, file) {
+  file.path(project_root, "artifacts", stage, "H06_daily", file)
+}
+read_h06d <- function(stage, file) {
+  readr::read_csv(artifact(stage, file), show_col_types = FALSE, na = "")
+}
+sha256 <- function(path) {
+  digest::digest(path, algo = "sha256", file = TRUE)
+}
+verify_relative_manifest <- function(manifest, hash_column = "sha256") {
+  paths <- file.path(project_root, manifest$relative_path)
+  stopifnot(all(file.exists(paths)))
+  observed <- unname(vapply(paths, sha256, character(1)))
+  stopifnot(identical(observed, manifest[[hash_column]]))
+  invisible(TRUE)
+}
+compact_gt <- function(table) {
+  table |>
+    gt::tab_options(
+      table.font.size = gt::px(12),
+      data_row.padding = gt::px(3),
+      heading.padding = gt::px(4),
+      column_labels.padding = gt::px(4),
+      table.width = gt::pct(100)
+    )
+}
+ci_text <- function(lower, upper, digits = 3L) {
+  sprintf(
+    paste0("%.", digits, "f to %.", digits, "f"),
+    lower,
+    upper
+  )
+}
+
+input_manifest <- read_h06d(
+  "12_manifests",
+  "H06_daily_stage2_daily_ar_repair_pilot_input_manifest.csv"
+)
+code_manifest <- read_h06d(
+  "12_manifests",
+  "H06_daily_stage2_daily_ar_repair_pilot_code_manifest.csv"
+)
+output_manifest <- read_h06d(
+  "12_manifests",
+  "H06_daily_stage2_daily_ar_repair_pilot_output_manifest.csv"
+)
+software_manifest <- read_h06d(
+  "12_manifests",
+  "H06_daily_stage2_daily_ar_repair_pilot_software_manifest.csv"
+)
+
+stopifnot(
+  all(input_manifest$verified),
+  identical(input_manifest$expected_sha256, input_manifest$observed_sha256)
+)
+input_current_check <- input_manifest |>
+  dplyr::mutate(
+    current_observed_sha256 = unname(vapply(
+      file.path(project_root, .data$relative_path),
+      sha256,
+      character(1)
+    )),
+    current_match = .data$expected_sha256 == .data$current_observed_sha256
+  )
+stopifnot(setequal(
+  input_current_check$input_id[!input_current_check$current_match],
+  "base_manifest"
+))
+verify_relative_manifest(code_manifest)
+verify_relative_manifest(output_manifest)
+
+installed_versions <- vapply(
+  software_manifest$item[software_manifest$item != "R"],
+  function(package) as.character(packageVersion(package)),
+  character(1)
+)
+stopifnot(
+  identical(
+    unname(installed_versions),
+    software_manifest$version[software_manifest$item != "R"]
+  )
+)
+
+frame_registry <- read_h06d(
+  "06_model_data",
+  "H06_daily_stage2_daily_ar_repair_pilot_frame_registry.csv"
+)
+frame_equivalence <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_stage2_daily_ar_repair_pilot_frame_equivalence.csv"
+)
+support <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_stage2_daily_ar_repair_pilot_support.csv"
+)
+diagnostics <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_stage2_daily_ar_repair_pilot_model_diagnostics.csv"
+)
+verdict <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_stage2_daily_ar_repair_pilot_verdict.csv"
+)
+runtime <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_stage2_daily_ar_repair_pilot_runtime.csv"
+)
+l10_zero_audit <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_stage2_daily_ar_repair_pilot_l10_zero_mass_audit.csv"
+)
+l10_near_zero <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_stage2_daily_ar_repair_pilot_l10_near_zero_rows.csv"
+)
+effects <- read_h06d(
+  "09_tables",
+  "H06_daily_stage2_daily_ar_repair_pilot_effect_stability.csv"
+)
+
+ar_diagnostics <- diagnostics |>
+  dplyr::filter(.data$model_id == "glmmTMB_gap_aware_ar1")
+overall <- verdict |>
+  dplyr::filter(.data$domain == "Overall repair gate")
+failed_domains <- verdict |>
+  dplyr::filter(!.data$passed, .data$domain != "Overall repair gate")
+
+l10_frame <- readRDS(file.path(
+  project_root,
+  frame_registry$frame_relative_path[
+    frame_registry$repair_id == "l10_positive_magnitude"
+  ]
+))
+next_l10_positive_lx <- min(
+  l10_frame$response_source[l10_frame$response_source > 1e-12]
+)
+
+stopifnot(
+  nrow(frame_registry) == 2L,
+  all(frame_equivalence$equivalence_pass),
+  all(support$support_pass),
+  nrow(overall) == 2L,
+  all(overall$verdict == "NOT_ACCEPTABLE"),
+  l10_zero_audit$positive_values_at_or_below_1e_12 == 3L
+)
+
+repair_labels <- c(
+  pre_sleep_identity = "Pre-sleep duration × previous-night sleep",
+  l10_positive_magnitude = "Positive L10 magnitude × work/free day"
+)
+model_labels <- c(
+  frozen_lmer_independent = "Frozen independent model",
+  glmmTMB_independent = "Independent glmmTMB calibration",
+  glmmTMB_gap_aware_ar1 = "True-date, gap-aware AR(1)"
+)
+```
+
+::: {.callout-important}
+## Answer in brief
+
+Neither repair is acceptable for production. The pre-sleep AR(1) model has a
+non-positive-definite Hessian and false-convergence code even though its
+effect direction, residual distribution, physical bounds, and post-AR
+temporal screen pass. The positive-L10 model is singular, estimates its AR(1)
+correlation at the boundary, leaves stronger residual temporal dependence,
+and fails the Gaussian distributional rule.
+
+The L10 audit also found three strictly positive values of
+`4.163336e-17 lx`. The exact-zero split sends these values to the positive
+component and maps them to `-16.381` under `log10()`. They were retained
+unchanged, but their scientific classification must be decided by the shared
+metric owner before L10 can proceed.
+
+No association claim, predictor p-value, multiplicity decision, remaining
+model-grid fit, deletion batch, bootstrap, or simulation was produced. This
+document stops at **H06-D-G2P-AR**.
+:::
+
+# Scope and scientific boundary
+
+This bounded pilot addresses two response-family problems identified in the
+approved Stage 2 pilot:
+
+1. whether an actual-date, gap-aware daily AR(1) counterpart is numerically
+   defensible for duration below 10 lx melEDI before sleep; and
+2. whether the same covariance construction repairs the positive-magnitude
+   component of L10 mean melEDI.
+
+Both analyses retain one metric-specific participant-day per row. A missing
+calendar date starts a new sequence; observed days on either side of a gap are
+never made adjacent by compressing time. This is not the repeated-hourly H06
+analysis and not the separate exploratory 30-minute temporal GAMM.
+
+The current post-MDER shared sources were compared analytically with the
+frozen Stage 2 pilot frames before fitting. Participant-day keys, response and
+predictor values, column order, and factor levels were identical for both
+repairs. The MDER outcome was neither opened nor refitted.
+
+::: {.callout-caution}
+## Post-pilot shared-manifest qualification
+
+All 12 inputs matched their controlling hashes when the four pilot fits were
+run. At report render, 11 still matched. The broad shared
+`base_model_data_artifacts.csv` path had changed from the controlling
+`6cfbfb18...` identity to `b6fa2283...`; the directly used near-eye
+participant-day source remains byte-identical at `fb04a84f...`, and both
+task-owned fitted frames remain hash-identical to the verified pilot outputs.
+The mismatch is recorded in the shared change request. This report can audit
+the frozen fits, but no new fit or repinning is permitted until the preparation
+coordinator reconciles the broad manifest identities.
+:::
+
+# Exact model and sequence contract
+
+The independent calibration and the AR counterpart use Gaussian identity
+models fitted by `glmmTMB` with REML. Site is fixed, participant has a random
+intercept, and the AR term uses the within-sequence actual-day index. The
+default Gaussian residual dispersion was retained because this was the exact
+prespecified pilot contract.
+
+```{r}
+#| label: exact-repair-formulas
+#| echo: true
+
+pre_sleep_independent_formula <- h06d_ar_formula(
+  "previous_sleep_duration_centered_h",
+  ar = FALSE
+)
+pre_sleep_ar_formula <- h06d_ar_formula(
+  "previous_sleep_duration_centered_h",
+  ar = TRUE
+)
+l10_independent_formula <- h06d_ar_formula(
+  "work_free_day",
+  ar = FALSE
+)
+l10_ar_formula <- h06d_ar_formula(
+  "work_free_day",
+  ar = TRUE
+)
+
+pre_sleep_independent_formula
+pre_sleep_ar_formula
+l10_independent_formula
+l10_ar_formula
+```
+
+The AR term is exactly
+`ar1(day_index_factor + 0 | day_sequence_id)`. `day_index_factor` restarts at
+one after every missing date, while `day_sequence_id` identifies that
+contiguous participant sequence. The pilot did not estimate a pooled rho from
+another metric or reuse any MDER correlation.
+
+# Frozen/current equality and temporal support
+
+```{r}
+#| label: tbl-repair-support
+#| tbl-cap: "Frozen/current frame equality and actual-date AR support."
+
+support |>
+  dplyr::left_join(
+    frame_equivalence |>
+      dplyr::select(
+        "repair_id",
+        "equivalence_pass",
+        "old_normalized_sha256",
+        "current_normalized_sha256"
+      ),
+    by = "repair_id"
+  ) |>
+  dplyr::transmute(
+    Repair = unname(repair_labels[.data$repair_id]),
+    `Frozen/current equal` = ifelse(.data$equivalence_pass, "Yes", "No"),
+    Days = .data$observations,
+    Participants = .data$participants,
+    Sites = .data$sites,
+    `Contiguous sequences` = .data$sequences,
+    `True adjacent pairs` = .data$adjacent_pairs,
+    `Participants with adjacency` =
+      .data$participants_with_adjacent_pair,
+    `Maximum sequence (days)` = .data$maximum_sequence_days
+  ) |>
+  gt::gt() |>
+  compact_gt()
+```
+
+The pre-sleep frame contains 648 days from 139 participants at all nine sites,
+with 450 true adjacent-day pairs. The positive-L10 frame contains 680 days
+from 140 participants at all nine sites, with 484 pairs. Both exceed the
+prespecified minimum of 100 pairs and 20 participants with adjacency.
+
+# Engineering-only coefficient stability
+
+```{r}
+#| label: tbl-repair-effect-stability
+#| tbl-cap: "Engineering comparison of frozen independent and AR-repair coefficients; these are not association results."
+
+effects |>
+  dplyr::filter(.data$model_id != "glmmTMB_independent") |>
+  dplyr::mutate(
+    result = dplyr::if_else(
+      .data$repair_id == "pre_sleep_identity",
+      sprintf(
+        "%.3f h (95%% interval %s)",
+        .data$display_estimate,
+        ci_text(.data$display_lower_95, .data$display_upper_95)
+      ),
+      sprintf(
+        "%.3f ratio (95%% interval %s)",
+        .data$display_estimate,
+        ci_text(.data$display_lower_95, .data$display_upper_95)
+      )
+    )
+  ) |>
+  dplyr::transmute(
+    Repair = unname(repair_labels[.data$repair_id]),
+    Model = unname(model_labels[.data$model_id]),
+    `Engineering coefficient` = .data$result,
+    `Shift from frozen model (SE)` =
+      .data$effect_shift_in_frozen_lmer_se,
+    `Direction retained` =
+      ifelse(.data$direction_matches_frozen_lmer, "Yes", "No")
+  ) |>
+  gt::gt(groupname_col = "Repair") |>
+  gt::fmt_number(columns = `Shift from frozen model (SE)`, decimals = 3) |>
+  compact_gt()
+```
+
+The pre-sleep AR coefficient shifts by 0.130 frozen-model standard errors; the
+positive-L10 coefficient shifts by 0.897. Both retain the frozen direction and
+pass the prespecified less-than-one-standard-error engineering screen. That
+does not rescue a model that fails numerical or residual diagnostics. The
+intervals above are model-based pointwise engineering intervals only; no
+predictor test or claim was extracted.
+
+# Why neither AR repair passes
+
+```{r}
+#| label: tbl-ar-diagnostics
+#| tbl-cap: "Prespecified diagnostics for the two actual-date, gap-aware AR(1) fits."
+
+ar_diagnostics |>
+  dplyr::transmute(
+    Repair = unname(repair_labels[.data$repair_id]),
+    Converged = ifelse(.data$converged, "Yes", "No"),
+    `Positive-definite Hessian` =
+      ifelse(.data$positive_definite_hessian, "Yes", "No"),
+    Singular = ifelse(.data$singular, "Yes", "No"),
+    rho = .data$ar_rho,
+    `AR SD` = .data$ar_standard_deviation,
+    `Participant SD` = .data$participant_standard_deviation,
+    `Residual SD` = .data$residual_standard_deviation,
+    `Post-AR pooled lag-1` = .data$true_date_residual_lag1,
+    `Maximum |site lag-1|` =
+      .data$maximum_absolute_site_residual_lag1,
+    `Q-Q correlation` = .data$residual_qq_correlation,
+    `Residual spread correlation` =
+      .data$absolute_residual_fitted_spearman
+  ) |>
+  gt::gt() |>
+  gt::fmt_number(
+    columns = c(
+      rho,
+      `AR SD`,
+      `Participant SD`,
+      `Residual SD`,
+      `Post-AR pooled lag-1`,
+      `Maximum |site lag-1|`,
+      `Q-Q correlation`,
+      `Residual spread correlation`
+    ),
+    decimals = 3
+  ) |>
+  compact_gt()
+```
+
+```{r}
+#| label: tbl-failed-domains
+#| tbl-cap: "Failed acceptance domains; every listed failure blocks production use."
+
+failed_domains |>
+  dplyr::transmute(
+    Repair = unname(repair_labels[.data$repair_id]),
+    `Failed domain` = .data$domain,
+    Rule = .data$rule,
+    Observed = .data$observed
+  ) |>
+  gt::gt(groupname_col = "Repair") |>
+  compact_gt()
+```
+
+## Pre-sleep duration
+
+The pre-sleep AR fit returned false-convergence code 8, two warnings, and a
+non-positive-definite Hessian. Its estimated residual standard deviation
+collapsed to `8.8e-05 h`, while separate participant and AR standard
+deviations remained finite. The fitted rho was -0.085, and the post-AR pooled
+and maximum site residual lag screens passed. Residual distribution and
+physical-bound rules also passed. Nevertheless, the numerical failure is
+decisive: this fit cannot be used for inference.
+
+The collapse of the residual dispersion motivates, but does not itself
+authorize, one narrowly specified no-nugget diagnostic using the same frame,
+fixed effects, participant random intercept, and AR structure with
+`dispformula = ~0`. That would test whether redundant Gaussian nugget and AR
+variance components caused the failure. It would remain a diagnostic repair,
+not an association result, until it passed the full gate.
+
+## Positive L10 magnitude
+
+The positive-L10 AR fit returned singular-convergence code 7. Rho was 1.000
+to displayed precision, beyond the prespecified `|rho| < 0.95` rule. The
+post-AR pooled residual lag was -0.491 and the maximum absolute site lag was
+0.932, both worse than acceptable. Its Q-Q correlation was 0.808 and residual
+spread correlation was -0.225, so the Gaussian positive-magnitude family also
+failed independently of the AR boundary. Physical predictions remained
+within the prespecified bounds, but that isolated pass cannot rescue the fit.
+
+# L10 numerical zero-mass qualification
+
+```{r}
+#| label: tbl-l10-zero-audit
+#| tbl-cap: "Exact-zero and numerical-near-zero audit for the complete representative L10 work/free frame."
+
+l10_zero_audit |>
+  dplyr::transmute(
+    `Participant-days` = .data$participant_days,
+    `Exact zeros` = .data$exact_zeros,
+    `Exact-zero fraction` = .data$exact_zero_fraction,
+    `Strictly positive values <= 1e-12 lx` =
+      .data$positive_values_at_or_below_1e_12,
+    `All values <= 1e-12 lx` = .data$values_at_or_below_1e_12,
+    `Positive-component rows` = .data$positive_component_rows,
+    `Minimum positive L10 (lx)` =
+      .data$positive_component_minimum_lx,
+    `Minimum log10 L10` = .data$positive_component_minimum_log10
+  ) |>
+  gt::gt() |>
+  gt::fmt_percent(columns = `Exact-zero fraction`, decimals = 1) |>
+  gt::fmt_scientific(columns = `Minimum positive L10 (lx)`, decimals = 3) |>
+  gt::fmt_number(columns = `Minimum log10 L10`, decimals = 3) |>
+  compact_gt()
+```
+
+```{r}
+#| label: tbl-l10-near-zero-rows
+#| tbl-cap: "The three strictly positive numerical-near-zero L10 rows retained by the exact-zero pilot contract."
+
+l10_near_zero |>
+  dplyr::transmute(
+    Site = .data$site,
+    Participant = .data$Id,
+    Date = .data$local_date,
+    `L10 mean melEDI (lx)` = .data$l10_mean_medi_lx,
+    `log10 L10` = .data$log10_l10_mean_medi,
+    `Day type` = .data$work_free_day
+  ) |>
+  gt::gt() |>
+  gt::fmt_scientific(columns = `L10 mean melEDI (lx)`, decimals = 6) |>
+  gt::fmt_number(columns = `log10 L10`, decimals = 3) |>
+  compact_gt()
+```
+
+The complete work/free frame has 104 exact zeros among 784 participant-days.
+The three rows above are strictly positive in the prepared metric and are
+therefore retained by the exact `L10 > 0` component split. The next value above
+the numerical-near-zero cluster is `r format(next_l10_positive_lx, scientific = TRUE, digits = 4)` lx. No
+tolerance, rounding, deletion, replacement, or local reclassification was
+applied.
+
+This requires a shared metric decision. If the three values are floating-point
+representations of zero, the rule must be implemented and independently
+verified in shared preparation, followed by updated manifests and targeted
+H06_daily repinning. If strict positivity is scientifically intended, the
+values must remain and a separately approved robust positive-magnitude family
+pilot must be specified. H06_daily must not choose a threshold locally.
+
+# Runtime and withheld compute
+
+```{r}
+#| label: tbl-repair-runtime
+#| tbl-cap: "Measured pilot runtime and bounded planning projections."
+
+runtime |>
+  dplyr::transmute(
+    Component = .data$component,
+    Scope = .data$scope,
+    `Fit units` = .data$fit_units,
+    `Seconds (measured or projected)` =
+      .data$observed_or_projected_seconds,
+    Basis = .data$basis,
+    Disposition = .data$interpretation
+  ) |>
+  gt::gt() |>
+  gt::fmt_number(
+    columns = `Seconds (measured or projected)`,
+    decimals = 2
+  ) |>
+  gt::sub_missing(columns = everything(), missing_text = "Not run") |>
+  compact_gt()
+```
+
+The four fitted models completed in less than one second of measured fitting
+time. The remaining fit-only grid is therefore not blocked by raw runtime; it
+is blocked by unresolved scientific and numerical contracts. Any deletion
+diagnostic, bootstrap, or simulation batch remains outside this pilot and
+would first require its own 50/100-run production-code runtime pilot and
+approval.
+
+# Reproducibility and H06-D-G2P-AR stop gate
+
+All computations ran in R 4.6.1 using the synchronized project library. The
+12 fit-time inputs, five executed code files, 16 scientific outputs, and
+package versions are hash-pinned in H06_daily-owned manifests. Eleven of 12
+inputs still match at report render; the one current broad base-manifest drift
+is disclosed above and in the shared change request. The directly used data
+source, both fitted frames, all executed code, and every scientific pilot
+output still match exactly. The pilot fitted only one independent calibration
+and one AR counterpart for each of the two prespecified frames. It did not fit
+another response family, alter a shared metric, or update any multiplicity
+slot.
+
+This report stops at **H06-D-G2P-AR**. Before any further non-MDER daily model
+is fitted, the author should explicitly decide:
+
+1. whether to authorize one bounded no-nugget pre-sleep AR diagnostic with
+   `dispformula = ~0`, followed by the unchanged full acceptance gate;
+2. whether L10 should remain on hold pending the shared metric owner's
+   classification of the three numerical-near-zero positive values;
+3. if strict positivity is confirmed upstream, whether a new bounded robust
+   positive-magnitude family pilot may be specified before any production use;
+   and
+4. whether the remaining daily-metric production grid should stay frozen
+   until those two response-family issues are resolved.
+
+The recommended decision is to authorize only the single pre-sleep diagnostic,
+retain the L10 hold pending upstream classification, and keep the production
+grid frozen. No Stage 3 reader report, Stage 4 preparation companion, website
+integration, shared preparation edit, manuscript edit, commit, or upload is
+authorized at this gate.

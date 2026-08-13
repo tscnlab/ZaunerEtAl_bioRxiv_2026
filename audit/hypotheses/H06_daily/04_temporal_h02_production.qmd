@@ -1,0 +1,554 @@
+---
+title: "H06 daily metrics — exploratory temporal production"
+subtitle: "H02-aligned 30-minute arithmetic-mean melEDI GAMM with working AR(1)"
+date: 2026-08-11
+engine: knitr
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    code-fold: true
+    code-summary: "Show audit R code"
+    code-tools: true
+    embed-resources: true
+    page-layout: full
+execute:
+  echo: false
+  warning: false
+  message: false
+  error: false
+  freeze: false
+tbl-cap-location: top
+---
+
+```{r}
+#| label: setup
+#| include: false
+
+options(
+  stringsAsFactors = FALSE,
+  scipen = 999,
+  width = 120,
+  dplyr.summarise.inform = FALSE
+)
+
+find_project_root <- function(start = getwd()) {
+  candidate <- normalizePath(start, winslash = "/", mustWork = TRUE)
+  repeat {
+    if (file.exists(file.path(candidate, "renv.lock"))) {
+      return(candidate)
+    }
+    parent <- dirname(candidate)
+    if (identical(parent, candidate)) {
+      stop("Could not locate the project root", call. = FALSE)
+    }
+    candidate <- parent
+  }
+}
+
+project_root <- Sys.getenv(
+  "H06_DAILY_PROJECT_ROOT",
+  unset = Sys.getenv("QUARTO_PROJECT_DIR", unset = "")
+)
+if (!nzchar(project_root) ||
+    !file.exists(file.path(project_root, "renv.lock"))) {
+  project_root <- find_project_root()
+}
+project_root <- normalizePath(project_root, winslash = "/", mustWork = TRUE)
+project_library <- file.path(
+  project_root,
+  "renv/library/macos/R-4.6/aarch64-apple-darwin23"
+)
+.libPaths(c(project_library, .libPaths()))
+
+library(digest)
+library(dplyr)
+library(gt)
+library(readr)
+library(tibble)
+library(tidyr)
+
+stopifnot(
+  identical(as.character(getRversion()), "4.6.1"),
+  identical(as.character(packageVersion("mgcv")), "1.9.4"),
+  identical(as.character(packageVersion("melidosData")), "1.0.6")
+)
+
+read_h06d <- function(stage, file) {
+  readr::read_csv(
+    file.path(project_root, "artifacts", stage, "H06_daily", file),
+    show_col_types = FALSE,
+    na = ""
+  )
+}
+sha256 <- function(path) {
+  digest::digest(path, algo = "sha256", file = TRUE)
+}
+verify_manifest <- function(path) {
+  manifest <- readr::read_csv(path, show_col_types = FALSE, na = "")
+  observed <- vapply(
+    file.path(project_root, manifest$relative_path),
+    sha256,
+    character(1)
+  )
+  stopifnot(identical(unname(observed), manifest$sha256))
+  manifest
+}
+p_display <- function(value) {
+  ifelse(
+    is.na(value),
+    "—",
+    ifelse(value < 0.001, "<0.001", sprintf("%.3f", value))
+  )
+}
+compact_gt <- function(table) {
+  table |>
+    gt::tab_options(
+      table.font.size = gt::px(12),
+      data_row.padding = gt::px(3),
+      heading.padding = gt::px(4),
+      column_labels.padding = gt::px(4),
+      table.width = gt::pct(100)
+    )
+}
+
+manifest_names <- c(
+  "H06_daily_temporal_h02_production_gate_output_manifest.csv",
+  "H06_daily_temporal_h02_production_frame_output_manifest.csv",
+  "H06_daily_temporal_h02_production_model_output_manifest.csv",
+  "H06_daily_temporal_h02_production_diagnostic_output_manifest.csv",
+  "H06_daily_temporal_h02_production_inference_output_manifest.csv",
+  "H06_daily_temporal_h02_figure_output_manifest.csv"
+)
+verified_manifests <- lapply(
+  file.path(
+    project_root,
+    "artifacts/12_manifests/H06_daily",
+    manifest_names
+  ),
+  verify_manifest
+)
+
+run_registry <- read_h06d(
+  "06_model_data",
+  "H06_daily_temporal_h02_production_run_registry.csv"
+)
+specification <- read_h06d(
+  "06_model_data",
+  "H06_daily_temporal_h02_specification.csv"
+)
+formula_registry <- read_h06d(
+  "06_model_data",
+  "H06_daily_temporal_h02_formula_registry.csv"
+)
+support <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_temporal_h02_production_support_overall.csv"
+)
+runtime <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_temporal_h02_production_fit_runtime.csv"
+)
+diagnostic_verdict <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_temporal_h02_production_diagnostic_verdict.csv"
+)
+tests <- read_h06d(
+  "09_tables",
+  "H06_daily_temporal_h02_production_whole_function_tests.csv"
+)
+function_summary <- read_h06d(
+  "09_tables",
+  "H06_daily_temporal_h02_production_context_function_summary.csv"
+)
+not_extracted <- read_h06d(
+  "09_tables",
+  "H06_daily_temporal_h02_production_not_extracted_frames.csv"
+)
+functions <- read_h06d(
+  "11_source_data",
+  "H06_daily_temporal_h02_production_context_functions.csv"
+)
+profiles <- read_h06d(
+  "11_source_data",
+  "H06_daily_temporal_h02_production_inverse_profiles.csv"
+)
+figure_qa <- read_h06d(
+  "08_diagnostics",
+  "H06_daily_temporal_h02_figure_readability_qa.csv"
+)
+figure_alt <- read_h06d(
+  "11_source_data",
+  "H06_daily_temporal_h02_figure_alt_text.csv"
+)
+
+overall <- diagnostic_verdict |>
+  dplyr::filter(.data$domain == "Overall base-model diagnostic gate")
+primary_tests <- tests |>
+  dplyr::filter(.data$run_id == "primary__near_eye__all_available")
+gap_tests <- tests |>
+  dplyr::filter(
+    .data$run_id == "gap_timing_unaware__near_eye__all_available"
+  )
+
+stopifnot(
+  nrow(run_registry) == 6L,
+  nrow(support) == 6L,
+  nrow(formula_registry) == 1L,
+  nrow(overall) == 6L,
+  sum(overall$status == "ACCEPTABLE") == 5L,
+  sum(overall$status == "NOT_ACCEPTABLE") == 1L,
+  nrow(not_extracted) == 1L,
+  not_extracted$run_id == "primary__chest__paired_common",
+  nrow(functions) == 960L,
+  nrow(profiles) == 1920L,
+  identical(unique(functions$interval_type),
+    "pointwise 95% confidence interval"
+  ),
+  identical(unique(profiles$interval_type),
+    "pointwise 95% confidence interval"
+  ),
+  !any(grepl("simultaneous", functions$interval_type, ignore.case = TRUE)),
+  !any(grepl("simultaneous", profiles$interval_type, ignore.case = TRUE)),
+  nrow(primary_tests) == 4L,
+  nrow(gap_tests) == 4L,
+  all(primary_tests$bh_decision),
+  all(gap_tests$bh_decision),
+  sum(tests$raw_p_value_unclamped < 0, na.rm = TRUE) == 1L,
+  all(figure_qa$verdict == "PASS"),
+  nrow(figure_alt) == 3L
+)
+
+primary_summary <- function_summary |>
+  dplyr::filter(.data$run_id == "primary__near_eye__all_available") |>
+  dplyr::select(
+    "estimand_order", "estimand_id", "estimand_label",
+    "minimum_shifted_response_ratio", "maximum_shifted_response_ratio",
+    "time_of_maximum_absolute_association_h",
+    "ratio_at_maximum_absolute_association",
+    "pointwise_bins_excluding_null"
+  )
+strongest_rows <- functions |>
+  dplyr::filter(.data$run_id == "primary__near_eye__all_available") |>
+  dplyr::inner_join(
+    primary_summary |>
+      dplyr::select(
+        "estimand_id", "time_of_maximum_absolute_association_h"
+      ),
+    by = "estimand_id",
+    relationship = "many-to-one"
+  ) |>
+  dplyr::filter(
+    .data$time_hour == .data$time_of_maximum_absolute_association_h
+  )
+stopifnot(nrow(strongest_rows) == 4L)
+```
+
+::: {.callout-note appearance="simple" title="Answer in brief"}
+The exploratory H02-aligned GAMM found time-varying associations between the
+30-minute arithmetic-mean melEDI profile and each recorded day-level context.
+All four near-eye whole-function tests remained below 0.001 after
+Benjamini--Hochberg adjustment across the four prespecified tests. These are
+associations on the fitted transformed scale, not daily-metric results, raw
+arithmetic-mean effects, causal effects, or health outcomes.
+
+Five of six prespecified frames passed the production diagnostics. The paired
+chest frame failed the prespecified residual scale-pattern rule and was not
+used for association extraction. Every displayed band is a **pointwise 95%
+confidence interval**. No simultaneous interval was constructed or described.
+:::
+
+# Scope and estimand
+
+This is a separate exploratory amendment to the preregistration-aligned
+participant-day analysis. It uses one supported 30-minute bin per row and asks
+how the transformed local-time profile varies with Work/Free day, the daily
+Sedentary/Active label, and previous-night sleep duration. It is also separate
+from the approved hourly H06 analysis.
+
+Let $Y$ be a supported bin's 30-minute arithmetic mean melEDI in lx. The model
+response is
+
+$$
+Z = \log_{10}\!\left(Y + 0.1\ \mathrm{lx}\right).
+$$
+
+The fitted target is $E[Z \mid \text{local time, context, site, participant,
+participant-day}]$. The reader-facing inverse transform
+$\max(0, 10^{\eta} - 0.1)$ lx is geometric-mean-like for $Y+0.1$ and
+conditional-median-like under the Gaussian log model. It is **not** the
+raw-scale arithmetic expectation $E[Y]$.
+
+# Exact H02-aligned model
+
+```{r}
+#| label: exact-temporal-formula
+#| echo: true
+
+response ~
+  s(time_hour, bs = "cc", k = 12) +
+  s(time_hour, work_free_day, bs = "sz", k = 12) +
+  s(time_hour, activity_status, bs = "sz", k = 12) +
+  s(time_hour, by = sleep_between_h, k = 12) +
+  s(time_hour, by = sleep_within_h, k = 12) +
+  s(time_hour, site, bs = "sz", k = 12) +
+  s(time_hour, participant, bs = "fs", k = 10) +
+  s(participant_day, bs = "re")
+```
+
+Only the global clock smooth is cyclic. Every fitted `sz`, `fs`, and sleep
+smooth has `xt = NULL`; their time marginals use mgcv's default thin-plate
+basis. The Gaussian identity-link model used fREML, `discrete = TRUE`, one R
+thread, 0/24 global knots, and H02's audited true-time sequence boundaries.
+
+The working AR(1) coefficient was re-estimated for each H06_daily frame. The
+identical full formula was first fitted with $\rho=0$; response residuals from
+true-time-contiguous pairs gave the lag-1 estimate, clamped to
+$[-0.95,0.95]$, and the formula was refitted with that fixed value. No H02
+numerical $\rho$ was copied.
+
+Previous-night sleep was decomposed within each exact fitted frame into the
+participant mean across equally weighted days and the day's deviation from
+that mean. The participant means were centred on an equally
+participant-weighted grand mean. Thus the two sleep functions distinguish
+between-participant from within-participant associations.
+
+# Exact fitted samples
+
+```{r}
+#| label: tbl-temporal-samples
+#| tbl-cap: "Exact samples and frame-specific working AR(1) coefficients."
+
+sample_table <- support |>
+  dplyr::left_join(
+    runtime |>
+      dplyr::select("run_id", "rho"),
+    by = "run_id",
+    relationship = "one-to-one"
+  ) |>
+  dplyr::left_join(
+    overall |>
+      dplyr::select("run_id", "status"),
+    by = "run_id",
+    relationship = "one-to-one"
+  ) |>
+  dplyr::transmute(
+    Dataset = .data$data_scenario_label,
+    Placement = .data$placement_label,
+    Sample = dplyr::recode(
+      .data$sample_scenario,
+      all_available = "All available",
+      paired_common = "Paired/common"
+    ),
+    `30-min bins` = .data$observations_30_minute,
+    `Participant-days` = .data$participant_days,
+    Participants = .data$participants,
+    Sites = .data$sites,
+    `Exact zeros` = .data$exact_zero_bins,
+    `Fixed rho` = .data$rho,
+    Verdict = dplyr::recode(
+      .data$status,
+      ACCEPTABLE = "Acceptable",
+      NOT_ACCEPTABLE = "Not acceptable"
+    )
+  )
+
+sample_table |>
+  gt::gt() |>
+  gt::fmt_integer(
+    columns = c(
+      `30-min bins`, `Participant-days`, Participants, Sites, `Exact zeros`
+    )
+  ) |>
+  gt::fmt_number(columns = `Fixed rho`, decimals = 3) |>
+  compact_gt()
+```
+
+The six-frame batch required 12 BAM fits and `r sprintf("%.1f",
+unique(runtime$full_batch_wall_seconds) / 60)` minutes on one R thread. The
+primary near-eye frame reused its already verified selected pilot fit.
+
+# Near-eye association functions
+
+```{r}
+#| label: fig-temporal-primary-profiles
+#| fig-cap: "Equal-site-centred near-eye melEDI profiles by recorded context. Bands are pointwise 95% confidence intervals."
+#| fig-alt: "Four-panel line plot of equal-site-centred near-eye melEDI over local clock time on a zero-preserving symlog display. Free-day exposure is higher around midnight but markedly lower than work-day exposure from morning into evening. Active days are above Sedentary days mainly during daylight hours. One hour greater previous-night sleep within or between participants corresponds mainly to lower fitted morning profiles. Shaded ribbons are pointwise 95% confidence intervals."
+#| out-width: 100%
+
+knitr::include_graphics(file.path(
+  project_root,
+  "artifacts/10_figures/H06_daily/",
+  "H06_daily_temporal_h02_primary_profiles.png"
+))
+```
+
+The melEDI display axis uses
+`LightLogR::symlog_trans(base = 10, thr = 1, scale = 1)` only for
+reader-facing visualization. Source values and model responses remain
+untransformed beyond the explicitly fitted $\log_{10}(Y+0.1)$ response.
+
+```{r}
+#| label: fig-temporal-primary-functions
+#| fig-cap: "Near-eye context-association functions as ratios for the shifted response Y + 0.1 lx. Bands are pointwise 95% confidence intervals."
+#| fig-alt: "Four-panel ratio plot over local clock time. The fitted Free-day to Work-day shifted-response ratio falls from about 1.8 after midnight to 0.2 at 08:45. The Active-to-Sedentary ratio rises to about 1.6 in the afternoon. A one-hour within-participant sleep increase has ratios mostly between 0.76 and 1.05; the between-participant sleep ratio ranges from about 0.61 to 0.97. Ribbons are pointwise 95% confidence intervals and a dashed horizontal line marks one."
+#| out-width: 100%
+
+knitr::include_graphics(file.path(
+  project_root,
+  "artifacts/10_figures/H06_daily/",
+  "H06_daily_temporal_h02_primary_context_functions.png"
+))
+```
+
+```{r}
+#| label: tbl-temporal-strongest-functions
+#| tbl-cap: "Strongest fitted association on the shifted-response ratio scale."
+
+strongest_rows |>
+  dplyr::transmute(
+    Estimand = .data$estimand_label,
+    `Local time` = sprintf(
+      "%02d:%02d",
+      floor(.data$time_hour) %% 24,
+      round((.data$time_hour %% 1) * 60)
+    ),
+    `Ratio for Y + 0.1` = .data$shifted_response_ratio,
+    `Pointwise 95% CI` = sprintf(
+      "%.2f to %.2f",
+      .data$shifted_response_ratio_lower_95,
+      .data$shifted_response_ratio_upper_95
+    )
+  ) |>
+  gt::gt() |>
+  gt::fmt_number(columns = `Ratio for Y + 0.1`, decimals = 2) |>
+  compact_gt()
+```
+
+For the primary near-eye fit, the Free-day/Work-day shifted-response ratio was
+lowest at 08:45 (`r sprintf("%.2f", primary_summary$minimum_shifted_response_ratio[
+primary_summary$estimand_id == "free_minus_work"])`) and reached
+`r sprintf("%.2f", primary_summary$maximum_shifted_response_ratio[
+primary_summary$estimand_id == "free_minus_work"])` after midnight. The
+Active/Sedentary ratio reached `r sprintf("%.2f",
+primary_summary$maximum_shifted_response_ratio[
+primary_summary$estimand_id == "active_minus_sedentary"])` at 15:15. One
+hour greater sleep within participant was associated most strongly with a
+ratio of `r sprintf("%.2f", primary_summary$ratio_at_maximum_absolute_association[
+primary_summary$estimand_id == "sleep_within_plus_1h"])` at 00:15; the
+between-participant sleep ratio was lowest at 08:45 (`r sprintf("%.2f",
+primary_summary$minimum_shifted_response_ratio[
+primary_summary$estimand_id == "sleep_between_plus_1h"])`). These summaries
+describe fitted associations, not exposure effects caused by the contexts.
+
+# Whole-function tests and multiplicity
+
+```{r}
+#| label: tbl-temporal-whole-function-tests
+#| tbl-cap: "Exploratory whole-function tests and their prespecified four-test BH adjustment."
+
+test_table <- dplyr::bind_rows(primary_tests, gap_tests) |>
+  dplyr::mutate(
+    Dataset = dplyr::recode(
+      .data$data_scenario_id,
+      primary = "Primary dataset",
+      gap_timing_unaware = "Gap-timing-unaware dataset"
+    ),
+    Estimand = .data$estimand_label,
+    `Raw p` = p_display(.data$raw_p_value),
+    `BH-adjusted p` = p_display(.data$bh_adjusted_p_value),
+    `BH decision` = ifelse(.data$bh_decision, "Retained", "Not retained")
+  ) |>
+  dplyr::select(
+    Dataset, Estimand, `Raw p`, `BH-adjusted p`, `BH decision`
+  )
+
+test_table |>
+  gt::gt() |>
+  gt::tab_style(
+    style = gt::cell_text(weight = "bold"),
+    locations = gt::cells_body(
+      columns = `BH-adjusted p`,
+      rows = `BH decision` == "Retained"
+    )
+  ) |>
+  gt::tab_footnote(
+    footnote = paste(
+      "Bold denotes retention under the explicitly labelled four-test BH",
+      "rule. One mgcv approximate p-value was slightly negative from",
+      "floating-point evaluation; it is preserved in source data and",
+      "clamped to zero only for BH calculation and display."
+    ),
+    locations = gt::cells_column_labels(columns = `BH-adjusted p`)
+  ) |>
+  compact_gt()
+```
+
+The two BH families are separate: one for the four primary near-eye tests and
+one for the four gap-timing-unaware near-eye tests. Chest and paired/common
+frames are estimation-only complements. Neither family is combined with the
+15 daily-metric families.
+
+# Placement and dataset checks
+
+The all-available chest fit was acceptable, and the paired/common near-eye fit
+was acceptable. The paired/common chest fit was not acceptable because the
+absolute-residual/fitted Spearman correlation was 0.313, above the
+prespecified 0.300 limit. Its model object is retained for provenance, but no
+context function, confidence interval, or p-value was inspected or extracted.
+
+```{r}
+#| label: fig-temporal-gap-sensitivity
+#| fig-cap: "Primary and gap-timing-unaware near-eye association functions. Bands are pointwise 95% confidence intervals."
+#| fig-alt: "Four-panel overlay of primary and gap-timing-unaware near-eye shifted-response ratio curves. The two datasets' curves and pointwise 95% confidence bands nearly overlap for day type, activity, and both sleep functions; the largest absolute ratio-curve difference is about 0.03."
+#| out-width: 100%
+
+knitr::include_graphics(file.path(
+  project_root,
+  "artifacts/10_figures/H06_daily/",
+  "H06_daily_temporal_h02_near_eye_dataset_sensitivity.png"
+))
+```
+
+The maximum absolute difference between the primary and
+gap-timing-unaware near-eye ratio curves was below 0.031 for every function.
+This is dataset stability for the exploratory fitted functions, not numerical
+equivalence with the preregistration-aligned participant-day or approved
+hourly H06 estimands.
+
+# Diagnostic assessment
+
+Five fitted frames met the prespecified frame, formula, convergence, basis,
+residual, temporal-dependence, fixed-term identifiability, and cyclic-closure
+rules. All six models converged without fitting warnings. The primary
+near-eye residual Q--Q correlation was 0.965, its absolute-residual/fitted
+Spearman correlation was 0.293, final pooled lag-1 correlation was 0.090, and
+the largest absolute site lag-1 correlation was 0.159.
+
+The smoothing Hessian's smallest relative eigenvalue in the primary near-eye
+fit was $-1.95\times 10^{-15}$, within disclosed floating-point tolerance.
+The retained global `k = 12` smooth had acceptable capacity after the bounded
+`k = 16` work/free sensitivity already documented in the reconciliation
+report.
+
+Influence and site-deletion stability remain **withheld**, not passed. mgcv's
+BAM object did not provide the required hat diagonal, and a deletion-refit
+batch was outside the approved compute scope. Accordingly, the time-varying
+associations may be reported as exploratory, but no site-deletion robustness
+claim is made.
+
+# Reproducibility and production closure
+
+The six frame RDS files, six final BAM objects, diagnostics, pointwise source
+data, tables, three figures, alt text, readability QA, and stage-specific
+SHA-256 manifests are confined to H06_daily-owned paths. The figures were
+exported at 170 mm with PNG, PDF, and SVG versions; all have paired source-data
+CSVs and passed clipping, wrapping, panel-balance, and final-size legibility
+checks.
+
+This report implements the author's H06-D-G2P-H02 approval with the explicit
+pointwise-only amendment. It does not request website integration, authorize a
+simultaneous interval, authorize a deletion-refit batch, replace the standalone
+daily-metric report, or transfer any estimate to the approved hourly H06
+analysis.
