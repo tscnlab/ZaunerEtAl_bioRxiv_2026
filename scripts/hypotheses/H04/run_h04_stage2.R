@@ -113,6 +113,10 @@ h04_build_stage2_manifest <- function() {
     file.path(root, "scripts/hypotheses/H04/h04_temporal.R"),
     file.path(root, "scripts/hypotheses/H04/h04_temporal_bootstrap.R"),
     file.path(root, "scripts/hypotheses/H04/run_h04_stage2.R"),
+    file.path(
+      root,
+      "scripts/hypotheses/H04/run_h04_mundlak_sensitivity.R"
+    ),
     file.path(root, "scripts/hypotheses/H04/build_h04_stage2_figures.R"),
     file.path(root, "scripts/hypotheses/H04/build_h04_stage2_support.R"),
     file.path(root, "scripts/hypotheses/H04/build_h04_temporal_figures.R"),
@@ -302,7 +306,9 @@ scenario_frames <- list(
   paired_near = frames$paired$near_eye,
   paired_chest = frames$paired$chest,
   main_near = frames$main$near_eye,
-  main_chest = frames$main$chest
+  main_chest = frames$main$chest,
+  mundlak_near = h04_add_mundlak_proportions(frames$main$near_eye),
+  mundlak_chest = h04_add_mundlak_proportions(frames$main$chest)
 )
 run_registry <- tibble::tribble(
   ~run_id,
@@ -391,6 +397,30 @@ run_registry <- tibble::tribble(
   "main_chest",
   1.80
 )
+run_registry <- dplyr::bind_rows(
+  run_registry |>
+    dplyr::mutate(formula_id = "primary_full"),
+  tibble::tribble(
+    ~run_id,
+    ~scenario_id,
+    ~placement,
+    ~frame_id,
+    ~working_power,
+    ~formula_id,
+    "mundlak__near_eye",
+    "mundlak_within_between",
+    "Near-eye",
+    "mundlak_near",
+    spec$working_tweedie_power,
+    "secondary_mundlak_audit",
+    "mundlak__chest",
+    "mundlak_within_between",
+    "Chest",
+    "mundlak_chest",
+    spec$working_tweedie_power,
+    "secondary_mundlak_audit"
+  )
+)
 sensitivity_results <- vector("list", nrow(run_registry))
 for (index in seq_len(nrow(run_registry))) {
   run <- run_registry[index, , drop = FALSE]
@@ -400,7 +430,8 @@ for (index in seq_len(nrow(run_registry))) {
     run$run_id,
     run$scenario_id,
     run$placement,
-    working_power = run$working_power
+    working_power = run$working_power,
+    formula = formulas[[run$formula_id]]
   )
 }
 names(sensitivity_results) <- run_registry$run_id
@@ -464,6 +495,46 @@ sensitivity_comparison <- sensitivity_estimands |>
 
 paired_estimands <- sensitivity_estimands |>
   dplyr::filter(.data$scenario_id == "paired_common_sample")
+mundlak_between_estimands <- dplyr::bind_rows(
+  h04_mundlak_between_estimands(
+    sensitivity_results[["mundlak__near_eye"]]$bundle
+  ) |>
+    dplyr::mutate(
+      placement = "Near-eye",
+      scenario_id = "mundlak_within_between",
+      .before = 1
+    ),
+  h04_mundlak_between_estimands(
+    sensitivity_results[["mundlak__chest"]]$bundle
+  ) |>
+    dplyr::mutate(
+      placement = "Chest",
+      scenario_id = "mundlak_within_between",
+      .before = 1
+    )
+)
+mundlak_between_omnibus <- dplyr::bind_rows(
+  h04_mundlak_between_omnibus(
+    sensitivity_results[["mundlak__near_eye"]]$bundle
+  ) |>
+    dplyr::mutate(
+      placement = "Near-eye",
+      scenario_id = "mundlak_within_between",
+      .before = 1
+    ),
+  h04_mundlak_between_omnibus(
+    sensitivity_results[["mundlak__chest"]]$bundle
+  ) |>
+    dplyr::mutate(
+      placement = "Chest",
+      scenario_id = "mundlak_within_between",
+      .before = 1
+    )
+)
+mundlak_support <- dplyr::bind_rows(
+  h04_mundlak_support(scenario_frames$mundlak_near, "Near-eye"),
+  h04_mundlak_support(scenario_frames$mundlak_chest, "Chest")
+)
 
 message("Calculating weighted diagnostics on one row per participant-hour")
 cluster_diagnostics <- dplyr::bind_rows(
@@ -934,7 +1005,11 @@ h04_write_rds(
     retain_coselected_other = frames$retain_coselected_other,
     exclude_other_only = frames$exclude_other_only,
     unweighted_long = frames$unweighted_long,
-    gap_timing_unaware = frames$gap
+    gap_timing_unaware = frames$gap,
+    mundlak = list(
+      near_eye = scenario_frames$mundlak_near,
+      chest = scenario_frames$mundlak_chest
+    )
   ),
   file.path(roots$model_data, "H04_model_frames.rds"),
   "model_frames"
@@ -970,6 +1045,11 @@ h04_write_csv(
   diagnostic_assessments,
   file.path(roots$diagnostics, "H04_diagnostic_assessments.csv"),
   "diagnostic_assessments"
+)
+h04_write_csv(
+  mundlak_support,
+  file.path(roots$diagnostics, "H04_mundlak_activity_support.csv"),
+  "mundlak_support"
 )
 h04_write_csv(
   cluster_diagnostics,
@@ -1026,6 +1106,22 @@ h04_write_csv(
   sensitivity_comparison,
   file.path(roots$tables, "H04_sensitivity_comparison.csv"),
   "sensitivity_comparison"
+)
+h04_write_csv(
+  mundlak_between_estimands,
+  file.path(
+    roots$tables,
+    "H04_mundlak_between_participant_estimands.csv"
+  ),
+  "mundlak_between_estimands"
+)
+h04_write_csv(
+  mundlak_between_omnibus,
+  file.path(
+    roots$tables,
+    "H04_mundlak_between_participant_omnibus.csv"
+  ),
+  "mundlak_between_omnibus"
 )
 h04_write_csv(
   paired_estimands,

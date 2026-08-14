@@ -190,6 +190,149 @@ h04_sample_summary <- function(frame, run_id, scenario_id, placement) {
   )
 }
 
+h04_mundlak_activity_map <- function() {
+  reference <- h04_specification()$reference_label
+  nonreference <- setdiff(h04_activity_levels(), reference)
+  registry <- h04_activity_registry()
+  tibble::tibble(
+    between_variable = paste0("between_activity_", seq_along(nonreference)),
+    activity = nonreference
+  ) |>
+    dplyr::left_join(
+      registry |>
+        dplyr::select(
+          "activity_label",
+          "activity_code",
+          "display_order",
+          "model_order"
+        ),
+      by = c("activity" = "activity_label"),
+      relationship = "one-to-one"
+    ) |>
+    dplyr::arrange(.data$model_order)
+}
+
+h04_add_mundlak_proportions <- function(frame) {
+  required <- c("participant", "activity", "analysis_weight")
+  missing <- setdiff(required, names(frame))
+  if (length(missing) > 0L) {
+    h04_abort(
+      "The H04 Mundlak frame is missing required column(s): %s",
+      paste(missing, collapse = ", ")
+    )
+  }
+  if (
+    any(!is.finite(frame$analysis_weight)) ||
+      any(frame$analysis_weight <= 0)
+  ) {
+    h04_abort("The H04 Mundlak frame has invalid analysis weights")
+  }
+
+  mapping <- h04_mundlak_activity_map()
+  proportions <- tibble::tibble(
+    participant = levels(droplevels(factor(frame$participant)))
+  )
+  for (index in seq_len(nrow(mapping))) {
+    activity <- mapping$activity[index]
+    variable <- mapping$between_variable[index]
+    values <- frame |>
+      dplyr::group_by(.data$participant) |>
+      dplyr::summarise(
+        value = sum(
+          .data$analysis_weight *
+            (as.character(.data$activity) == .env$activity)
+        ) / sum(.data$analysis_weight),
+        .groups = "drop"
+      )
+    names(values)[names(values) == "value"] <- variable
+    proportions <- dplyr::left_join(
+      proportions,
+      values,
+      by = "participant",
+      relationship = "one-to-one"
+    )
+  }
+
+  between_variables <- mapping$between_variable
+  if (
+    any(!is.finite(as.matrix(proportions[between_variables]))) ||
+      any(as.matrix(proportions[between_variables]) < 0) ||
+      any(as.matrix(proportions[between_variables]) > 1) ||
+      any(rowSums(proportions[between_variables]) > 1 + 1e-10)
+  ) {
+    h04_abort("The H04 Mundlak participant proportions are invalid")
+  }
+
+  output <- dplyr::left_join(
+    frame,
+    proportions,
+    by = "participant",
+    relationship = "many-to-one"
+  )
+  if (
+    nrow(output) != nrow(frame) ||
+      any(!stats::complete.cases(output[between_variables]))
+  ) {
+    h04_abort("The H04 Mundlak participant-proportion join failed")
+  }
+  output
+}
+
+h04_mundlak_support <- function(frame, placement) {
+  mapping <- h04_mundlak_activity_map()
+  between_variables <- mapping$between_variable
+  missing <- setdiff(between_variables, names(frame))
+  if (length(missing) > 0L) {
+    h04_abort(
+      "The H04 Mundlak support frame is missing term(s): %s",
+      paste(missing, collapse = ", ")
+    )
+  }
+  frame |>
+    dplyr::distinct(
+      .data$participant,
+      dplyr::across(dplyr::all_of(between_variables))
+    ) |>
+    dplyr::mutate(
+      home_share = 1 - rowSums(
+        as.data.frame(dplyr::pick(dplyr::all_of(between_variables)))
+      )
+    ) |>
+    tidyr::pivot_longer(
+      cols = dplyr::all_of(between_variables),
+      names_to = "between_variable",
+      values_to = "activity_share"
+    ) |>
+    dplyr::left_join(
+      mapping,
+      by = "between_variable",
+      relationship = "many-to-one"
+    ) |>
+    dplyr::group_by(
+      .data$activity_code,
+      .data$activity,
+      .data$display_order,
+      .data$between_variable
+    ) |>
+    dplyr::summarise(
+      participants = dplyr::n(),
+      participants_with_category = sum(.data$activity_share > 0),
+      participants_with_home = sum(.data$home_share > 0),
+      participants_with_category_and_home = sum(
+        .data$activity_share > 0 & .data$home_share > 0
+      ),
+      mean_activity_share = mean(.data$activity_share),
+      median_activity_share = stats::median(.data$activity_share),
+      activity_share_q25 = unname(stats::quantile(.data$activity_share, 0.25)),
+      activity_share_q75 = unname(stats::quantile(.data$activity_share, 0.75)),
+      maximum_activity_share = max(.data$activity_share),
+      minimum_home_share = min(.data$home_share),
+      .groups = "drop"
+    ) |>
+    dplyr::mutate(placement = placement, .before = 1) |>
+    dplyr::arrange(.data$display_order)
+}
+
 h04_category_support_stage2 <- function(frame) {
   registry <- h04_activity_registry()
   frame |>

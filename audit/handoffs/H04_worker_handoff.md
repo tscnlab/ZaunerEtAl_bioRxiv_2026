@@ -1,10 +1,10 @@
 # H04 worker handoff
 
-Date: 2026-08-11
+Date: 2026-08-14
 
 Branch observed: `rewrite/NH`
 
-Current gate: **Stages 1–4 complete in H04-owned scope; shared Nature Health profile registration remains coordinator-owned**
+Current gate: **Stages 1–4 and the two owner-requested post-approval sensitivity assessments are complete in H04-owned scope**
 
 ## Scope and authorization
 
@@ -57,9 +57,16 @@ the owner requested a final H04-scoped commit after approving this companion.
    provenance companion was then authored, rendered, visually inspected, and
    verified in H04-owned scope.
 9. The owner explicitly approved the preparation companion on 2026-08-11 and
-   requested that the H04 task be wrapped up and committed. This closes the
-   four-stage H04 scientific workflow; only the documented coordinator-owned
-   website-profile registration remains as an integration follow-up.
+   requested that the H04 task be wrapped up and committed. This closed the
+   four-stage H04 scientific workflow.
+10. On 2026-08-14 the owner requested a Mundlak sensitivity analysis. It was
+    fitted against the accepted frozen H04 primary-frame archive and added to
+    the Stage 3 report without replacing the primary population-mean model.
+11. The owner then requested an H03-aligned marginal and conditional R²
+    decomposition through a participant random-intercept model. The weighted
+    mixed-model assessment, report sections, artifacts, and focused test were
+    completed on 2026-08-14. The Writer received the verified results, and the
+    Coordinator and Harmonizer were consulted before the final H04 commit.
 
 ## Stage 2 deliverables
 
@@ -182,6 +189,49 @@ no p-value is attached to a descriptive heterogeneity-model estimate.
 Primary diagnostics are **ACCEPTABLE WITH LIMITATION** for both placements;
 the report retains the zero-structure, variance, serial-dependence, sparse-cell,
 and influence qualifications.
+
+## Post-approval participant-level sensitivities
+
+The owner-requested Mundlak sensitivity separates within-participant activity
+associations from between-participant activity composition while preserving
+the accepted primary participant-hours and exact `1/k` weights. Every primary
+named-versus-home ratio lay inside the corresponding Mundlak sensitivity
+interval, and the largest point-estimate change was below 17%. The joint
+between-participant activity-composition test was $F(4,125)=3.81$, raw
+$p=0.006$ near eye and $F(4,149)=2.34$, raw $p=0.058$ at chest. A 10
+percentage-point greater outdoors share was associated with ratios of 1.42
+near eye and 1.30 at chest, with FDR-adjusted $p=0.039$ and $p=0.054$,
+respectively. These exploratory composition contrasts are not causal effects.
+
+The subsequent participant random-intercept assessment uses the supported
+five-named-category activity-by-site frame and exact `1/k` weights:
+
+```r
+geo_medi_1h ~ site * activity_named + (1 | participant)
+```
+
+The `glmmTMB` Tweedie/log model uses maximum likelihood and the fixed working
+power 1.539919. The H04 marginal R² calculation weights the fixed linear
+predictor variance by the exact fractional memberships. Marginal and
+conditional R² were 0.766 and 0.858 near eye, and 0.768 and 0.859 at chest.
+The participant-intercept increment was 0.092 at both placements. Activity
+accounted for 80.7% of near-eye and 86.1% of chest marginal R², study site for
+12.5% and 5.9%, and the interaction for 6.9% and 8.0%. All ten hierarchy-valid
+nested fits converged without warnings, had positive-definite Hessians, and
+were non-singular.
+
+This mixed model is an exploratory point decomposition. It has no random
+activity slopes or bootstrap intervals, and it does not replace the accepted
+population-mean quasi-Tweedie inference. Complete implementation and evidence
+are in:
+
+- `scripts/hypotheses/H04/run_h04_mundlak_sensitivity.R`;
+- `scripts/hypotheses/H04/run_h04_participant_random_intercept_assessment.R`;
+- `tests/hypotheses/H04/test_h04_participant_random_intercept_assessment.R`;
+- `artifacts/09_tables/H04/H04_mundlak_between_participant_omnibus.csv`;
+- `artifacts/09_tables/H04/H04_participant_random_intercept_summary.csv`;
+- `artifacts/09_tables/H04/H04_participant_random_intercept_marginal_r2_shapley.csv`;
+- `artifacts/08_diagnostics/H04/H04_participant_random_intercept_diagnostics.csv`.
 
 ## Exploratory temporal implementation
 
@@ -325,7 +375,7 @@ remain, and verifies that the common temporal ratio scale contains every
 displayed pointwise confidence bound.
 
 The final rendered HTML contains seven figures, seven non-empty long-form alt
-texts, and 15 `gt` tables.
+texts, and 17 `gt` tables.
 
 Original-size inspection covered all seven PNGs. The resulting readability
 registry records clipping, wrapping, panel balance, tight bounds, and an
@@ -347,7 +397,6 @@ browser route was used.
 ## Stage 4 deliverables
 
 - `audit/hypotheses/H04/H04_analysis_preparation.qmd`
-- `audit/hypotheses/H04/H04_analysis_preparation.html`
 - `_build/nathealth/audit/hypotheses/H04/H04_analysis_preparation.qmd`
 - `_build/nathealth/audit/hypotheses/H04/H04_analysis_preparation.html`
 - `audit/hypotheses/H04/H04_preparation_figure_readability_qa.md`
@@ -364,7 +413,7 @@ browser route was used.
 
 The standalone preparation companion follows the accepted H02/H03 structure
 without reader-facing workflow history. It contains an execution-boundary
-note, a Mermaid analysis map, 33 readable `gt` tables, and four alt-texted
+note, a Mermaid analysis map, 37 readable `gt` tables, and four alt-texted
 figures. It traces the frozen one-hour frames, exact outdoor collapse and
 Other-specificity rule, fractional `1/k` weights, sample flow, support and
 positivity, formulas and estimands, robust restrictions, equal-site
@@ -377,7 +426,7 @@ variance allocation.
 Four source-data figures were inspected at original size and in a 170-mm A4
 proof. Clipping, overlap, wrapping, typography, legend balance, sparse-cell
 symbols, and final-size legibility all passed. The preparation manifest records
-274 file identities. The result-report manifest now records 294 identities and
+252 file identities. The result-report manifest now records 299 identities and
 excludes the preparation manifest specifically to prevent a reciprocal hash
 cycle; the preparation manifest includes the result-report manifest.
 
@@ -400,22 +449,25 @@ evidence is in:
 
 ### Stage 4 verification
 
-The H04 preparation source rendered directly with R 4.6.1 and Quarto 1.9.37.
-The manifest builder installed a byte-identical source, HTML, and asset copy
-at the expected Nature Health website path. The H04 Stage 1 support, Stage 2,
-and standalone Stage 3 reader tests all pass after the additions.
+The registered Nature Health profile render is the canonical preparation
+output. The H04-local manifest builder inventories its existing HTML and page
+assets read-only. It refreshes only
+`_build/nathealth/audit/hypotheses/H04/H04_analysis_preparation.qmd` from the
+authoring QMD and proves byte identity; this file is a provenance source copy,
+not a second rendering route. No source-side HTML or parallel asset tree is
+created. The H04 Stage 1 support, Stage 2, standalone Stage 3 reader,
+participant-random-intercept, and preparation tests pass after the additions.
 
-The focused preparation test completes every H04-owned check and then stops,
-as designed, at the final common verifier with:
-
-```text
-Error: The preparation page is not immediately after its result in the render list.
-```
-
-This is solely the known coordinator-owned `_quarto-nathealth.yml` omission.
-The exact requested render-list and navigation edits are recorded in
-`audit/handoffs/H04_shared_change_request.md`. The H04 worker did not modify
-the shared profile.
+The sealed post-closure harmonization review is
+`audit/report_harmonization/h04_postclosure_random_intercept_harmonization_check.md`
+(SHA-256
+`901f39f506f2770c014a923a788d5370c5ee61a8bcfab368e6592efa47d1c780`).
+The two reader sources now use **participant-level variation**, explain the
+participant random intercept in plain language, identify `glmmTMB` as the R
+software used for the generalized linear mixed model, and provide one anchored
+dynamic source link from the result report to the companion details. This was
+a source-only synchronization. It did not render or alter the canonical
+website HTML, page assets, search index, sitemap, or shared profile.
 
 ## Proposed central-ledger entries
 
@@ -449,13 +501,14 @@ updates, not applied here:
 9. Record the METRIC-010 provenance-only repin: all 14 rebuilt H04 frame values
    were identical at tolerance zero, the H04-local current hashes were repinned,
    and no model, estimate, interval, diagnostic, sensitivity, or claim changed.
-10. Register `audit/hypotheses/H04/H04_analysis_preparation.qmd` immediately
-    after H04 results in the Nature Health render list and navigation, then run
-    the focused preparation verifier.
+10. Record that `audit/hypotheses/H04/H04_analysis_preparation.qmd` is
+    registered immediately after H04 results in the Nature Health render list
+    and navigation, with the profile output as the canonical render.
+11. Record the post-approval Mundlak sensitivity and participant
+    random-intercept decomposition as exploratory analyses that leave the
+    accepted primary population-mean inference unchanged.
 
 ## Stop condition
 
-H04-owned work is complete. The coordinating task should apply the documented
-shared-profile registration, perform the integrated H04-only profile render,
-and rerun `tests/hypotheses/H04/test_h04_preparation_report.R`. No further H04
-scientific computation or model fitting is required.
+H04-owned work is complete. No further H04 scientific computation, model
+fitting, or shared-profile change is required.

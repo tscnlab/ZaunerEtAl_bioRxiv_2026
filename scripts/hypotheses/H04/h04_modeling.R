@@ -220,6 +220,31 @@ h04_model_matrix_newdata <- function(bundle, newdata) {
   )
 }
 
+h04_complete_prediction_grid <- function(bundle, grid) {
+  needed <- setdiff(
+    all.vars(stats::delete.response(stats::terms(bundle$fit))),
+    names(grid)
+  )
+  for (variable in needed) {
+    if (!variable %in% names(bundle$data)) {
+      next
+    }
+    value <- bundle$data[[variable]]
+    if (is.numeric(value)) {
+      grid[[variable]] <- stats::weighted.mean(
+        value,
+        bundle$data$analysis_weight,
+        na.rm = TRUE
+      )
+    } else if (is.factor(value)) {
+      grid[[variable]] <- factor(levels(value)[1L], levels = levels(value))
+    } else {
+      grid[[variable]] <- value[which(!is.na(value))[1L]]
+    }
+  }
+  grid
+}
+
 h04_link_delta <- function(
   log_estimate,
   gradient,
@@ -302,6 +327,7 @@ h04_equal_site_estimands <- function(bundle, family_id = "H04-F2") {
     site = factor(sites, levels = sites),
     activity = factor(activities, levels = activities)
   )
+  grid <- h04_complete_prediction_grid(bundle, grid)
   design <- h04_model_matrix_newdata(bundle, grid)
   beta <- stats::coef(bundle$fit)
   covariance <- bundle$covariance
@@ -416,6 +442,125 @@ h04_equal_site_estimands <- function(bundle, family_id = "H04-F2") {
     n = 4L
   )
   output
+}
+
+h04_mundlak_between_estimands <- function(
+  bundle,
+  proportion_change = 0.10
+) {
+  if (
+    !is.finite(proportion_change) ||
+      proportion_change <= 0 ||
+      proportion_change > 1
+  ) {
+    h04_abort("The H04 Mundlak proportion change must lie in (0, 1]")
+  }
+  mapping <- h04_mundlak_activity_map()
+  coefficient_names <- names(stats::coef(bundle$fit))
+  if (!all(mapping$between_variable %in% coefficient_names)) {
+    h04_abort("The fitted H04 Mundlak model lacks participant-mean terms")
+  }
+  clusters <- nlevels(bundle$data$participant)
+  df <- clusters - 1L
+  critical <- stats::qt(
+    (1 + h04_specification()$confidence_level) / 2,
+    df = df
+  )
+  beta <- stats::coef(bundle$fit)
+  covariance <- bundle$covariance
+  output <- lapply(seq_len(nrow(mapping)), function(index) {
+    variable <- mapping$between_variable[index]
+    estimate <- unname(beta[variable])
+    variance <- unname(covariance[variable, variable])
+    se <- if (is.finite(variance) && variance >= 0) sqrt(variance) else NA_real_
+    inferential_role <- if (
+      mapping$activity[index] == "Other/unspecified activity"
+    ) {
+      "DISPLAY_ONLY"
+    } else {
+      "NAMED_COMPOSITION_VERSUS_HOME"
+    }
+    statistic <- if (is.finite(se) && se > 0) estimate / se else NA_real_
+    p_raw <- if (
+      inferential_role == "NAMED_COMPOSITION_VERSUS_HOME" &&
+        is.finite(statistic)
+    ) {
+      2 * stats::pt(abs(statistic), df = df, lower.tail = FALSE)
+    } else {
+      NA_real_
+    }
+    tibble::tibble(
+      activity_code = mapping$activity_code[index],
+      activity = mapping$activity[index],
+      display_order = mapping$display_order[index],
+      model_order = mapping$model_order[index],
+      between_variable = variable,
+      composition_change_percentage_points = 100 * proportion_change,
+      log_ratio_per_change = proportion_change * estimate,
+      log_se_per_change = proportion_change * se,
+      ratio_per_change = exp(proportion_change * estimate),
+      ratio_conf_low = exp(proportion_change * (estimate - critical * se)),
+      ratio_conf_high = exp(proportion_change * (estimate + critical * se)),
+      statistic = statistic,
+      denominator_df = df,
+      p_raw = p_raw,
+      inferential_role = inferential_role,
+      family_id = if (
+        inferential_role == "NAMED_COMPOSITION_VERSUS_HOME"
+      ) {
+        "mundlak_between_named"
+      } else {
+        NA_character_
+      },
+      family_n = if (
+        inferential_role == "NAMED_COMPOSITION_VERSUS_HOME"
+      ) {
+        4L
+      } else {
+        NA_integer_
+      }
+    )
+  }) |>
+    dplyr::bind_rows() |>
+    dplyr::arrange(.data$display_order)
+  output$p_adjusted <- NA_real_
+  eligible <- which(
+    output$inferential_role == "NAMED_COMPOSITION_VERSUS_HOME"
+  )
+  output$p_adjusted[eligible] <- stats::p.adjust(
+    output$p_raw[eligible],
+    method = "BH",
+    n = 4L
+  )
+  output
+}
+
+h04_mundlak_between_omnibus <- function(bundle) {
+  mapping <- h04_mundlak_activity_map() |>
+    dplyr::filter(.data$activity != "Other/unspecified activity")
+  coefficient_names <- names(stats::coef(bundle$fit))
+  if (!all(mapping$between_variable %in% coefficient_names)) {
+    h04_abort("The fitted H04 Mundlak model lacks named composition terms")
+  }
+  restriction <- matrix(
+    0,
+    nrow = nrow(mapping),
+    ncol = length(coefficient_names),
+    dimnames = list(mapping$activity, coefficient_names)
+  )
+  restriction[cbind(
+    seq_len(nrow(mapping)),
+    match(mapping$between_variable, coefficient_names)
+  )] <- 1
+  h04_wald_f(bundle, restriction) |>
+    dplyr::mutate(
+      test_role = "EXPLORATORY_BETWEEN_PARTICIPANT_COMPOSITION",
+      null_hypothesis = paste(
+        "the four named participant-level activity-composition terms",
+        "are jointly zero while Other remains unrestricted"
+      ),
+      .before = 1
+    )
 }
 
 h04_primary_omnibus <- function(bundle) {
@@ -694,10 +839,11 @@ h04_fit_additive_run <- function(
   run_id,
   scenario_id,
   placement,
-  working_power = h04_specification()$working_tweedie_power
+  working_power = h04_specification()$working_tweedie_power,
+  formula = h04_formula_set()$primary_full
 ) {
   bundle <- h04_fit_quasi(
-    h04_formula_set()$primary_full,
+    formula,
     frame,
     working_power
   )

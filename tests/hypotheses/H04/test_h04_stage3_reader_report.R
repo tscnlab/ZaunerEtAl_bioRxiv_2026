@@ -83,6 +83,13 @@ required_files <- c(
   artifact("09_tables", "H04", "H04_primary_and_heterogeneity_tests.csv"),
   artifact("09_tables", "H04", "H04_site_activity_estimands.csv"),
   artifact("09_tables", "H04", "H04_sensitivity_comparison.csv"),
+  artifact(
+    "09_tables", "H04", "H04_mundlak_between_participant_estimands.csv"
+  ),
+  artifact(
+    "09_tables", "H04", "H04_mundlak_between_participant_omnibus.csv"
+  ),
+  artifact("08_diagnostics", "H04", "H04_mundlak_activity_support.csv"),
   artifact("09_tables", "H04", "H04_paired_placement_estimands.csv"),
   artifact(
     "09_tables", "H04", "H04_reader_heterogeneity_category_estimands.csv"
@@ -94,6 +101,21 @@ required_files <- c(
   ),
   artifact(
     "09_tables", "H04", "H04_reader_temporal_variance_allocation.csv"
+  ),
+  artifact(
+    "09_tables", "H04", "H04_participant_random_intercept_summary.csv"
+  ),
+  artifact(
+    "09_tables", "H04",
+    "H04_participant_random_intercept_marginal_r2_shapley.csv"
+  ),
+  artifact(
+    "08_diagnostics", "H04",
+    "H04_participant_random_intercept_diagnostics.csv"
+  ),
+  artifact(
+    "08_diagnostics", "H04",
+    "H04_participant_random_intercept_shapley_models.csv"
   ),
   artifact("08_diagnostics", "H04", "H04_diagnostic_assessments.csv"),
   artifact("08_diagnostics", "H04", "H04_temporal_model_summary.csv"),
@@ -129,6 +151,16 @@ reader_category <- read_h04(
 )
 sensitivity <- read_h04(
   "09_tables", "H04", "H04_sensitivity_comparison.csv"
+)
+mundlak_between <- read_h04(
+  "09_tables", "H04", "H04_mundlak_between_participant_estimands.csv"
+)
+mundlak_between_omnibus <- read_h04(
+  "09_tables", "H04", "H04_mundlak_between_participant_omnibus.csv"
+) |>
+  arrange(match(.data$placement, c("Near-eye", "Chest")))
+mundlak_support <- read_h04(
+  "08_diagnostics", "H04", "H04_mundlak_activity_support.csv"
 )
 temporal <- read_h04(
   "08_diagnostics", "H04", "H04_temporal_model_summary.csv"
@@ -187,6 +219,16 @@ reader_labels <- c(
   "At home", "Office/home working", "Outdoors", "Vehicle/public transport",
   "Sleeping", "Other/unspecified"
 )
+mundlak_within <- sensitivity |>
+  filter(
+    .data$scenario_id == "mundlak_within_between",
+    .data$inferential_role == "NAMED_VERSUS_HOME"
+  )
+mundlak_between_named <- mundlak_between |>
+  filter(.data$inferential_role == "NAMED_COMPOSITION_VERSUS_HOME")
+mundlak_between_outdoors <- mundlak_between_named |>
+  filter(.data$activity_code == "outdoors") |>
+  arrange(match(.data$placement, c("Near-eye", "Chest")))
 
 stopifnot(
   identical(as.integer(main_samples$participants), c(126L, 150L)),
@@ -255,6 +297,28 @@ stopifnot(
         c("sleeping", "road_vehicle", "working_indoor", "outdoors")
     ] == "stable"
   ),
+  nrow(mundlak_within) == 8L,
+  all(mundlak_within$primary_ratio_inside_sensitivity_interval),
+  max(abs(mundlak_within$ratio_relative_change_percent)) < 17,
+  nrow(mundlak_between) == 10L,
+  nrow(mundlak_between_named) == 8L,
+  all(is.finite(mundlak_between_named$p_adjusted)),
+  all(abs(
+    mundlak_between_outdoors$ratio_per_change - c(1.4224, 1.2964)
+  ) < 0.0001),
+  all(abs(
+    mundlak_between_outdoors$p_adjusted - c(0.03946, 0.05437)
+  ) < 0.00001),
+  nrow(mundlak_between_omnibus) == 2L,
+  all(abs(
+    mundlak_between_omnibus$f_statistic - c(3.8069, 2.3420)
+  ) < 0.001),
+  all(abs(
+    mundlak_between_omnibus$p_raw - c(0.005904, 0.05756)
+  ) < 0.00001),
+  nrow(mundlak_support) == 10L,
+  all(mundlak_support$participants_with_home ==
+    mundlak_support$participants),
   identical(as.integer(paired_samples$participants), c(110L, 110L)),
   identical(as.integer(paired_samples$participant_days), c(625L, 625L)),
   identical(
@@ -389,15 +453,25 @@ required_qmd_phrases <- c(
   "H04_temporal_diagnostics.png",
   "H04_reader_temporal_near_eye_ratios.csv",
   "Point allocation of fitted temporal linear-predictor variance",
-  "these descriptive means",
+  "these descriptive",
   "qualitative palette distinct from the light-source",
-  "Dashed lines are the equal-site geometric means",
-  "BH-adjusted p-values",
+  "Dashed lines are the site-average geometric means",
+  "FDR-adjusted p-values",
+  "Mundlak-style sensitivity",
+  "between-participant ratios compare a 10 percentage-point",
+  "Exploratory participant random-intercept decomposition",
+  "Participant-level variation",
+  "H04_participant_random_intercept_summary.csv",
+  "H04_participant_random_intercept_marginal_r2_shapley.csv",
+  paste0(
+    "../../audit/hypotheses/H04/H04_analysis_preparation.qmd",
+    "#sec-h04-prep-participant-random-intercept"
+  ),
   "0.01-to-50 ratio scale",
   "gap-timing-unaware dataset",
   "Other/unspecified activity",
-  "pointwise 95% intervals",
-  "not simultaneous bands"
+  "model-based pointwise 95% CIs",
+  "rather than to the whole curve simultaneously"
 )
 stopifnot(all(vapply(
   required_qmd_phrases,
@@ -406,6 +480,25 @@ stopifnot(all(vapply(
   x = qmd_text,
   fixed = TRUE
 )))
+stopifnot(
+  !grepl("Participant heterogeneity", qmd_text, fixed = TRUE),
+  grepl(
+    paste0(
+      "random[[:space:]]+intercept lets participants have different ",
+      "overall exposure levels"
+    ),
+    qmd_text,
+    perl = TRUE
+  ),
+  sum(gregexpr(
+    paste0(
+      "../../audit/hypotheses/H04/H04_analysis_preparation.qmd",
+      "#sec-h04-prep-participant-random-intercept"
+    ),
+    qmd_text,
+    fixed = TRUE
+  )[[1L]] > 0L) == 1L
+)
 stopifnot(length(gregexpr("#\\| fig-alt:", qmd_text, fixed = FALSE)[[1L]]) == 7L)
 
 reporting_text <- paste(
@@ -445,9 +538,14 @@ required_html_phrases <- c(
   "16,526 unique participant-hours",
   "20,128 unique participant-hours",
   "9.354",
-  "Heterogeneity-model equal-site standardized",
+  "site-average estimates across the sites",
   "Site-specific context",
-  "Common-sample placement comparison",
+  "Same-participant, same-hour sensor-position comparison",
+  "Within- and between-participant activity patterns",
+  "Every primary ratio lay inside its Mundlak sensitivity interval",
+  "Exploratory participant random-intercept decomposition",
+  "Marginal R² was 0.766 near eye and 0.768 at chest",
+  "participant intercept therefore added about 0.092",
   "Exploratory time-of-day context",
   "acceptable with limitation",
   "No resampling enters the displayed estimates or intervals"
@@ -534,6 +632,41 @@ stopifnot(
   )
 )
 
+mundlak_table <- xml2::xml_find_first(
+  main,
+  ".//*[@id='tbl-h04-mundlak']"
+)
+mundlak_table_text <- xml2::xml_text(mundlak_table)
+stopifnot(
+  !inherits(mundlak_table, "xml_missing"),
+  length(xml2::xml_find_all(mundlak_table, ".//tbody/tr")) == 10L,
+  length(xml2::xml_find_all(
+    mundlak_table,
+    ".//thead/tr[last()]/th"
+  )) == 6L,
+  grepl("Near-eye", mundlak_table_text, fixed = TRUE),
+  grepl("Chest", mundlak_table_text, fixed = TRUE),
+  grepl("9.635", mundlak_table_text, fixed = TRUE),
+  grepl("1.422", mundlak_table_text, fixed = TRUE),
+  grepl("1.296", mundlak_table_text, fixed = TRUE),
+  grepl("FDR", mundlak_table_text, fixed = TRUE)
+)
+
+participant_r2_table <- xml2::xml_find_first(
+  main,
+  ".//*[@id='tbl-h04-participant-random-intercept']"
+)
+participant_r2_table_text <- xml2::xml_text(participant_r2_table)
+stopifnot(
+  !inherits(participant_r2_table, "xml_missing"),
+  grepl("Marginal R²", participant_r2_table_text, fixed = TRUE),
+  grepl("Conditional R²", participant_r2_table_text, fixed = TRUE),
+  grepl("0.766", participant_r2_table_text, fixed = TRUE),
+  grepl("0.858", participant_r2_table_text, fixed = TRUE),
+  grepl("0.768", participant_r2_table_text, fixed = TRUE),
+  grepl("0.859", participant_r2_table_text, fixed = TRUE)
+)
+
 site_table <- xml2::xml_find_first(
   main,
   ".//*[@id='tbl-h04-near-site-factorization']"
@@ -568,15 +701,15 @@ count_fixed <- function(pattern, text) {
 }
 stopifnot(
   count_fixed("raw p", site_table_site_text) == 0L,
-  count_fixed("BH p", site_table_site_text) == 44L,
-  count_fixed("BH p", site_table_overall_text) == 5L,
+  count_fixed("FDR p", site_table_site_text) == 44L,
+  count_fixed("FDR p", site_table_overall_text) == 5L,
   count_fixed("<0.001", site_table_overall_text) == 4L,
   length(xml2::xml_find_all(
     site_table_body,
     "./tr[position() > 2]//strong"
   )) == 34L,
   grepl(
-    "report only the BH-adjusted deviation p-value",
+    "report only the FDR-adjusted deviation p-value",
     site_table_text,
     fixed = TRUE
   )

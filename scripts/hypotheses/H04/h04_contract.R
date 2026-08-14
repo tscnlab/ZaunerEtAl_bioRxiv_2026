@@ -155,6 +155,11 @@ h04_specification <- function() {
 h04_formula_set <- function() {
   list(
     primary_full = stats::as.formula("geo_medi_1h ~ site + activity"),
+    secondary_mundlak_audit = stats::as.formula(paste0(
+      "geo_medi_1h ~ site + activity + ",
+      "between_activity_1 + between_activity_2 + between_activity_3 + ",
+      "between_activity_4 + between_activity_5"
+    )),
     primary_five_named_null = stats::as.formula(
       "geo_medi_1h ~ site + other_indicator"
     ),

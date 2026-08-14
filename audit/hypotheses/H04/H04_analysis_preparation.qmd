@@ -1,6 +1,6 @@
 ---
 title: "H04 analysis preparation and provenance"
-subtitle: "From verified one-hour records and multi-select activity reports to site-standardized exposure contrasts"
+subtitle: "From verified one-hour records and multi-select activity reports to site-average exposure contrasts"
 date: last-modified
 format:
   html:
@@ -182,6 +182,36 @@ heterogeneity_checks <- read_h04_csv(
     "H04_heterogeneity_architecture_gate.csv"
   )
 )
+participant_random_intercept <- read_h04_csv(
+  paste0(
+    "artifacts/09_tables/H04/",
+    "H04_participant_random_intercept_summary.csv"
+  )
+)
+participant_random_intercept_shapley <- read_h04_csv(
+  paste0(
+    "artifacts/09_tables/H04/",
+    "H04_participant_random_intercept_marginal_r2_shapley.csv"
+  )
+)
+participant_random_intercept_diagnostics <- read_h04_csv(
+  paste0(
+    "artifacts/08_diagnostics/H04/",
+    "H04_participant_random_intercept_diagnostics.csv"
+  )
+)
+participant_random_intercept_models <- read_h04_csv(
+  paste0(
+    "artifacts/08_diagnostics/H04/",
+    "H04_participant_random_intercept_shapley_models.csv"
+  )
+)
+participant_random_intercept_environment <- read_h04_csv(
+  paste0(
+    "artifacts/12_manifests/H04/",
+    "H04_participant_random_intercept_environment.csv"
+  )
+)
 model_diagnostics <- read_h04_csv(
   "artifacts/08_diagnostics/H04/H04_model_diagnostics.csv"
 )
@@ -202,6 +232,21 @@ influence_refits <- read_h04_csv(
 )
 sensitivity_tests <- read_h04_csv(
   "artifacts/09_tables/H04/H04_sensitivity_omnibus_tests.csv"
+)
+mundlak_between <- read_h04_csv(
+  paste0(
+    "artifacts/09_tables/H04/",
+    "H04_mundlak_between_participant_estimands.csv"
+  )
+)
+mundlak_between_omnibus <- read_h04_csv(
+  paste0(
+    "artifacts/09_tables/H04/",
+    "H04_mundlak_between_participant_omnibus.csv"
+  )
+)
+mundlak_support <- read_h04_csv(
+  "artifacts/08_diagnostics/H04/H04_mundlak_activity_support.csv"
 )
 temporal_comparison <- read_h04_csv(
   "artifacts/09_tables/H04/H04_temporal_model_comparison.csv"
@@ -231,34 +276,37 @@ model_frame_archive <- readRDS(file.path(
 ))
 stopifnot(
   nrow(model_frame_archive$main$near_eye) == 17266L,
-  nrow(model_frame_archive$main$chest) == 21071L
+  nrow(model_frame_archive$main$chest) == 21071L,
+  nrow(participant_random_intercept) == 2L,
+  nrow(participant_random_intercept_shapley) == 6L,
+  nrow(participant_random_intercept_diagnostics) == 2L,
+  nrow(participant_random_intercept_models) == 10L,
+  nrow(participant_random_intercept_environment) == 9L,
+  all(participant_random_intercept_diagnostics$converged),
+  all(participant_random_intercept_diagnostics$warning_count == 0L),
+  all(participant_random_intercept_models$converged),
+  all(participant_random_intercept_models$warning_count == 0L)
 )
 ```
 
-::: {.callout-note title="About this analysis record"}
-This page explains how verified one-hour melEDI records and multi-select
-self-reported activity flags were turned into the H04 results. The companion
-[H04 results report](../../../notebooks/hypotheses/H04.html) presents the
-scientific findings.
-
-Rendering this page recalculates only current file identities and lightweight
-descriptive summaries from frozen, checksummed H04 model frames and source
-tables. It does not fit or refit a model, calculate a model prediction,
-re-estimate residual dependence, rerun a deletion analysis, bootstrap,
-simulate data, or recalculate a variance allocation. Model estimates,
-confidence intervals, tests, diagnostics, sensitivities, and exploratory
-smooths are read from their recorded files.
-:::
-
 ## Purpose
 
+::: {.callout-note title="About this analysis record"}
+This page explains how verified one-hour melEDI records and multi-select
+self-reported activity reports were turned into the scientific results. The
+[H04 results report](../../../notebooks/hypotheses/H04.qmd) presents the
+findings and its [preregistration changes](../../../notebooks/hypotheses/H04.qmd#h04-preregistration-deviations).
+:::
+
 H04 asks whether hourly self-reported activity categories are associated with
-hourly geometric mean melanopic equivalent daylight illuminance (melEDI).
-Near-eye melEDI is primary; chest melEDI is complementary. The five
-interpretable categories are At home, Office/home working, Outdoors,
-Vehicle/public transport, and Sleeping. Other/unspecified activity remains in
-the additive mean model but is heterogeneous and supports no substantive
-claim.
+hourly geometric mean melanopic equivalent daylight illuminance (melEDI), a
+melanopsin-weighted measure of illuminance expressed in lux. The primary
+near-eye sensor position measures light near the eyes but is not a retinal
+measurement. The complementary chest sensor position is not a measure of
+ocular exposure. The five interpretable categories are At home, Office/home
+working, Outdoors, Vehicle/public transport, and Sleeping. Other/unspecified
+activity remains in the additive population-mean model as a display-only row,
+is heterogeneous, and supports no substantive claim.
 
 Activity categories are not mutually exclusive behavioural states. When an
 hour contains several retained labels, that hour contributes $1/k$ to each of
@@ -266,8 +314,20 @@ its $k$ labels. The central category estimand is therefore average melEDI
 associated with each reported collapsed activity category, with the hour's
 contribution shared across concurrent reports. It is not a causal effect.
 
+A participant-hour is one original hourly record for one participant; the
+concurrent selections share that one hour rather than creating independent
+duplicates. A participant-day groups that participant's records within one
+study day.
+
+A site-average estimate is an average across the observed study sites that
+gives each site equal weight. The activity-by-site interaction model allows
+the association between activity category and melEDI to differ by study site.
+
 This page identifies the data and code that produced the result, explains why
 each operation was needed, and shows the recorded evidence used to check it.
+Shared coverage and model-ready dataset definitions are documented in
+[Preparation 02](../../../notebooks/preparation/02_coverage_sample_flow.qmd)
+and [Preparation 06](../../../notebooks/preparation/06_model_ready_datasets.qmd).
 
 ## Analysis map
 
@@ -279,16 +339,18 @@ flowchart TD
   D --> E["One row per retained label<br/>with weight 1/k"]
   E --> F["Frozen long model frames<br/>participant-hours within days"]
   F --> G["Additive quasi-Tweedie GLMs<br/>site plus activity"]
-  F --> H["Five-category site heterogeneity<br/>supported observed cells"]
+  F --> H["Five-category activity-by-site interaction<br/>supported observed cells"]
   G --> I["Robust category omnibus,<br/>home ratios and 95% intervals"]
-  H --> J["Site-standardized named-category means,<br/>site deviations and within-site context"]
+  H --> J["Site-average named-category estimates,<br/>site deviations and within-site context"]
   G --> K["Weighted hour-level residual,<br/>zero-mass and influence checks"]
   F --> L["Exactly-one, Other, unweighted,<br/>gap, paired, power and chest checks"]
+  F --> P["Exploratory weighted Tweedie<br/>participant random-intercept models"]
   F --> M["Exploratory weighted<br/>time-of-day GAMs"]
   I --> N["H04 results report"]
   J --> N
   K --> N
   L --> N
+  P --> N
   M --> N
   O["Automated structural and identity checks"] -. verify .-> E
   O -. verify .-> F
@@ -298,42 +360,17 @@ flowchart TD
 The arrows describe data and fitted-output dependencies. They do not mean
 that this page repeats model estimation.
 
-## What is calculated when this page opens
-
-```{r}
-#| label: tbl-h04-prep-boundary
-#| tbl-cap: "Calculations performed when this page is rendered."
-
-tibble::tribble(
-  ~Category, ~Calculated_on_render, ~Explanation,
-  "File identity and schema", "Yes", "Checks recorded SHA-256 identities, required columns, frozen-frame dimensions, and source-table structure.",
-  "Descriptive support", "Yes", "Summarises stored sample flow, fractional weights, categories, sites, local hours, participant-days, and exact zeros.",
-  "Model construction and estimation", "No", "Reads formula records, fitted-model archives, estimates, intervals, and robust tests.",
-  "Diagnostics and sensitivities", "No", "Reads recorded diagnostics, deletion refits, fit summaries, and sensitivity outputs.",
-  "Preparation figures", "Display only", "Draws four descriptive figures from linked exact source-data CSV files."
-) |>
-  gt::gt() |>
-  gt::cols_width(
-    Category ~ gt::pct(24),
-    Calculated_on_render ~ gt::pct(18),
-    Explanation ~ gt::pct(58)
-  ) |>
-  h04_gt()
-```
-
-## 1. Verified inputs
+## Verified inputs and activity representation
 
 ### File identity
 
 Five files determine the scientific H04 frames and displays: the normalized
 activity diary, the primary near-eye and complementary chest one-hour
 outcomes, the gap-timing-unaware one-hour outcomes, and the submitted site
-registry. Their complete SHA-256 identities were recorded before fitting.
-The shared near-eye and chest objects were subsequently repinned when
-metric-setting provenance was extended. An R 4.6.1 rebuild established
-zero-tolerance equality of all values in all 14 downstream H04 analysis
-frames; the accepted model objects and results therefore remain controlling
-and no model was refit.
+registry. Their complete SHA-256 identities and current contract identities
+are recorded. The recorded R 4.6.1 comparison establishes zero-tolerance
+equality of all values in all 14 H04 analysis frames, so the accepted model
+objects and results remain controlling and no model refit is required.
 
 ```{r}
 #| label: tbl-h04-prep-input-identities
@@ -380,13 +417,13 @@ verified_inputs <- input_audit |>
     Verification = case_when(
       .data$current_sha256 == .data$sha256 ~ "PASS",
       .data$current_contract_verified &
-        .data$all_downstream_frame_values_identical ~ "VERIFIED REPIN",
+        .data$all_downstream_frame_values_identical ~ "VERIFIED CURRENT IDENTITY",
       TRUE ~ "FAIL"
     )
   )
 stopifnot(
   nrow(verified_inputs) == 5L,
-  all(verified_inputs$Verification %in% c("PASS", "VERIFIED REPIN"))
+  all(verified_inputs$Verification %in% c("PASS", "VERIFIED CURRENT IDENTITY"))
 )
 
 verified_inputs |>
@@ -408,7 +445,7 @@ verified_inputs |>
   gt::tab_source_note(
     paste(
       "Complete accepted identities are retained in H04_input_audit.csv;",
-      "the two verified current pins and the exact frame-value comparison",
+      "the current contract identities and exact frame-value comparison",
       "are retained in H04_metric010_input_reconciliation.csv and",
       "H04_metric010_frame_invariance.csv."
     )
@@ -460,9 +497,142 @@ tibble::tribble(
   h04_gt(10.8)
 ```
 
-### Frozen-frame integrity
+## Model frames, outcome, and support
 
-The primary long frames contain one row for each distinct retained
+### Sample flow
+
+Hours with no retained category are not interpreted as “no activity.” They
+remain outside the category model and are counted separately below.
+
+```{r}
+#| label: tbl-h04-prep-sample-flow
+#| tbl-cap: "Exact one-hour sample flow into the primary H04 model frames."
+
+sample_flow |>
+  filter(!is.na(.data$outcome_grid_hours)) |>
+  transmute(
+    Placement = .data$placement,
+    `Outcome grid hours` = .data$outcome_grid_hours,
+    `Outcome unavailable` = .data$outcome_unavailable_hours,
+    `No eligible diary key` =
+      .data$outcome_hours_without_eligible_diary_key,
+    `No retained activity category` =
+      .data$outcome_hours_with_no_retained_activity,
+    `Fitted unique hours` = .data$model_candidate_unique_hours,
+    Participants = .data$participants,
+    `Participant-days` = .data$participant_days,
+    Sites = .data$sites,
+    `Generated long rows` = .data$generated_long_rows,
+    `Effective weighted hours` = .data$effective_weighted_hours
+  ) |>
+  gt::gt(rowname_col = "Placement") |>
+  gt::fmt_integer(columns = where(is.numeric), sep_mark = ",") |>
+  h04_gt(10)
+```
+
+The primary near-eye frame contains 16,526 unique participant-hours, 17,266
+long rows, 126 participants, 724 participant-days, and nine sites. The chest
+frame contains 20,128 unique participant-hours, 21,071 long rows, 150
+participants, 875 participant-days, and eight sites. The effective weighted
+hours equal the unique hours exactly.
+
+### Outcome definition and exact zeros
+
+The response is the exact one-hour zero-aware geometric mean melEDI in lux,
+calculated from at least 30 valid minutes. No logarithmic offset is added to
+the primary response. Exact zero remains in every fitted mean model.
+
+```{r}
+#| label: tbl-h04-prep-zero-support
+#| tbl-cap: "Exact-zero and positive melEDI support in the primary frames."
+
+zero_summary |>
+  transmute(
+    Placement = .data$placement,
+    `Unique participant-hours` = .data$unique_participant_hours,
+    `Exact-zero hours` = .data$exact_zero_unique_hours,
+    `Exact-zero fraction` = .data$exact_zero_fraction,
+    `Positive median (lx)` = .data$positive_median_lx,
+    `Positive 95th percentile (lx)` =
+      .data$positive_95th_percentile_lx,
+    `Maximum (lx)` = .data$maximum_lx,
+    `Zeros retained` = if_else(
+      .data$zeros_retained_in_models,
+      "Yes",
+      "No"
+    )
+  ) |>
+  gt::gt(rowname_col = "Placement") |>
+  gt::fmt_integer(
+    columns = c(`Unique participant-hours`, `Exact-zero hours`),
+    sep_mark = ","
+  ) |>
+  gt::fmt_percent(columns = `Exact-zero fraction`, decimals = 1) |>
+  gt::fmt_number(
+    columns = c(
+      `Positive median (lx)`,
+      `Positive 95th percentile (lx)`,
+      `Maximum (lx)`
+    ),
+    decimals = 1,
+    sep_mark = ","
+  ) |>
+  h04_gt(11)
+```
+
+```{r}
+#| label: fig-h04-prep-positive-distribution
+#| fig-cap: "Distribution of positive one-hour geometric melEDI in the primary model frames. Each long row contributes its accepted 1/k weight, so every original participant-hour contributes one total unit to one response bin. Exact-zero hours are reported separately above and remained in the fitted models."
+#| fig-alt: "Two stacked histograms show the effective weighted hours across positive one-hour melEDI values for the primary near-eye and complementary chest sensor positions. Both distributions are strongly right-skewed, extend from below 0.001 lux to tens of thousands of lux, and contain most positive weighted hours between about 1 and 1,000 lux. Exact zeros are not drawn in this positive-only histogram."
+#| fig-width: 10
+#| fig-height: 5.8
+
+ggplot(
+  response_distribution |>
+    mutate(
+      placement = factor(
+        .data$placement,
+        levels = c("Near-eye", "Chest")
+      )
+    ),
+  aes(
+    x = .data$log10_midpoint,
+    y = .data$effective_weighted_hours,
+    fill = .data$placement
+  )
+) +
+  geom_col(width = 0.235, colour = "white", linewidth = 0.15) +
+  facet_wrap(vars(.data$placement), ncol = 1, scales = "free_y") +
+  scale_fill_manual(values = placement_colors, guide = "none") +
+  scale_x_continuous(
+    breaks = c(-4, -2, 0, 2, 4),
+    labels = c("0.0001", "0.01", "1", "100", "10,000"),
+    expand = expansion(mult = c(0.01, 0.02))
+  ) +
+  scale_y_continuous(
+    labels = label_number(big.mark = ","),
+    expand = expansion(mult = c(0, 0.06))
+  ) +
+  labs(
+    x = "Positive one-hour geometric melEDI (lx; log10-spaced bins)",
+    y = "Effective weighted participant-hours"
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(
+    panel.grid.minor = element_blank(),
+    panel.grid.major.x = element_blank(),
+    strip.text = element_text(face = "bold", size = 14),
+    axis.text = element_text(size = 12),
+    axis.title = element_text(size = 14, face = "bold")
+  )
+```
+
+The exact weighted bin values are available as [figure source
+data](../../../artifacts/11_source_data/H04/H04_preparation_positive_response_distribution.csv).
+
+### Recorded-frame integrity
+
+The recorded primary long frames contain one row for each distinct retained
 hour/activity membership. A repeated outcome is therefore intentional when an
 hour has several labels; it is not a repeated independent observation. The
 integrity checks group those rows back to their original hour and verify the
@@ -470,7 +640,7 @@ response, participant, participant-day, $k$, and total weight.
 
 ```{r}
 #| label: tbl-h04-prep-integrity
-#| tbl-cap: "Bounded integrity checks of the frozen primary H04 model frames."
+#| tbl-cap: "Bounded integrity checks of the recorded primary H04 model frames."
 
 integrity_display <- frame_integrity |>
   transmute(
@@ -520,45 +690,6 @@ The source diary contained co-selected Other in 67 retained near-eye hours
 and 119 retained chest hours. In each case the named categories were retained
 and no Other row was added. Other was the sole retained category in 391
 near-eye and 631 chest hours.
-
-## 2. Model frames and support
-
-### Sample flow
-
-Hours with no retained category are not interpreted as “no activity.” They
-remain outside the category model and are counted separately below.
-
-```{r}
-#| label: tbl-h04-prep-sample-flow
-#| tbl-cap: "Exact one-hour sample flow into the primary H04 model frames."
-
-sample_flow |>
-  filter(!is.na(.data$outcome_grid_hours)) |>
-  transmute(
-    Placement = .data$placement,
-    `Outcome grid hours` = .data$outcome_grid_hours,
-    `Outcome unavailable` = .data$outcome_unavailable_hours,
-    `No eligible diary key` =
-      .data$outcome_hours_without_eligible_diary_key,
-    `No retained activity category` =
-      .data$outcome_hours_with_no_retained_activity,
-    `Fitted unique hours` = .data$model_candidate_unique_hours,
-    Participants = .data$participants,
-    `Participant-days` = .data$participant_days,
-    Sites = .data$sites,
-    `Generated long rows` = .data$generated_long_rows,
-    `Effective weighted hours` = .data$effective_weighted_hours
-  ) |>
-  gt::gt(rowname_col = "Placement") |>
-  gt::fmt_integer(columns = where(is.numeric), sep_mark = ",") |>
-  h04_gt(10)
-```
-
-The primary near-eye frame contains 16,526 unique participant-hours, 17,266
-long rows, 126 participants, 724 participant-days, and nine sites. The chest
-frame contains 20,128 unique participant-hours, 21,071 long rows, 150
-participants, 875 participant-days, and eight sites. The effective weighted
-hours equal the unique hours exactly.
 
 ### Number of retained labels per hour
 
@@ -647,100 +778,6 @@ participant_day_summary |>
 
 The participant-day rows behind this summary are available as [source
 data](../../../artifacts/11_source_data/H04/H04_preparation_participant_day_support.csv).
-
-### Outcome definition and exact zeros
-
-The response is the exact one-hour zero-aware geometric mean melEDI in lux,
-calculated from at least 30 valid minutes. No logarithmic offset is added to
-the primary response. Exact zero remains in every fitted mean model.
-
-```{r}
-#| label: tbl-h04-prep-zero-support
-#| tbl-cap: "Exact-zero and positive melEDI support in the primary frames."
-
-zero_summary |>
-  transmute(
-    Placement = .data$placement,
-    `Unique participant-hours` = .data$unique_participant_hours,
-    `Exact-zero hours` = .data$exact_zero_unique_hours,
-    `Exact-zero fraction` = .data$exact_zero_fraction,
-    `Positive median (lx)` = .data$positive_median_lx,
-    `Positive 95th percentile (lx)` =
-      .data$positive_95th_percentile_lx,
-    `Maximum (lx)` = .data$maximum_lx,
-    `Zeros retained` = if_else(
-      .data$zeros_retained_in_models,
-      "Yes",
-      "No"
-    )
-  ) |>
-  gt::gt(rowname_col = "Placement") |>
-  gt::fmt_integer(
-    columns = c(`Unique participant-hours`, `Exact-zero hours`),
-    sep_mark = ","
-  ) |>
-  gt::fmt_percent(columns = `Exact-zero fraction`, decimals = 1) |>
-  gt::fmt_number(
-    columns = c(
-      `Positive median (lx)`,
-      `Positive 95th percentile (lx)`,
-      `Maximum (lx)`
-    ),
-    decimals = 1,
-    sep_mark = ","
-  ) |>
-  h04_gt(11)
-```
-
-```{r}
-#| label: fig-h04-prep-positive-distribution
-#| fig-cap: "Distribution of positive one-hour geometric melEDI in the primary model frames. Each long row contributes its accepted 1/k weight, so every original participant-hour contributes one total unit to one response bin. Exact-zero hours are reported separately above and remained in the fitted models."
-#| fig-alt: "Two stacked histograms show the effective weighted hours across positive one-hour melEDI values for near-eye and chest measurements. Both distributions are strongly right-skewed, extend from below 0.001 lux to tens of thousands of lux, and contain most positive weighted hours between about 1 and 1,000 lux. Exact zeros are not drawn in this positive-only histogram."
-#| fig-width: 10
-#| fig-height: 5.8
-
-ggplot(
-  response_distribution |>
-    mutate(
-      placement = factor(
-        .data$placement,
-        levels = c("Near-eye", "Chest")
-      )
-    ),
-  aes(
-    x = .data$log10_midpoint,
-    y = .data$effective_weighted_hours,
-    fill = .data$placement
-  )
-) +
-  geom_col(width = 0.235, colour = "white", linewidth = 0.15) +
-  facet_wrap(vars(.data$placement), ncol = 1, scales = "free_y") +
-  scale_fill_manual(values = placement_colors, guide = "none") +
-  scale_x_continuous(
-    breaks = c(-4, -2, 0, 2, 4),
-    labels = c("0.0001", "0.01", "1", "100", "10,000"),
-    expand = expansion(mult = c(0.01, 0.02))
-  ) +
-  scale_y_continuous(
-    labels = label_number(big.mark = ","),
-    expand = expansion(mult = c(0, 0.06))
-  ) +
-  labs(
-    x = "Positive one-hour geometric melEDI (lx; log10-spaced bins)",
-    y = "Effective weighted participant-hours"
-  ) +
-  theme_minimal(base_size = 14) +
-  theme(
-    panel.grid.minor = element_blank(),
-    panel.grid.major.x = element_blank(),
-    strip.text = element_text(face = "bold", size = 14),
-    axis.text = element_text(size = 12),
-    axis.title = element_text(size = 14, face = "bold")
-  )
-```
-
-The exact weighted bin values are available as [figure source
-data](../../../artifacts/11_source_data/H04/H04_preparation_positive_response_distribution.csv).
 
 ### Category support
 
@@ -857,7 +894,10 @@ A site/category result is reportable only when that cell contains at least 20
 unique participant-hours, five participants, and five participants who also
 reported At home at that site. The primary near-eye frame contains 51
 supported and three observed-but-sparse cells; chest contains 47 supported and
-one observed-but-sparse cell. No absent site/category cell is invented.
+one observed-but-sparse cell. No absent site/category cell is invented. All
+reader-facing site labels use the submitted country-coded names: Borås (SE),
+Delft (NL), Dortmund (DE), Tübingen (DE), Munich (DE), Madrid (ES),
+Izmir (TR), San José (CR), and Kumasi (GH).
 
 ```{r}
 #| label: tbl-h04-prep-site-cell-support
@@ -902,7 +942,7 @@ site_category_support |>
 ```{r}
 #| label: fig-h04-prep-site-category-support
 #| fig-cap: "Effective weighted-hour support for every observed placement-by-site-by-activity cell. Fill shows the sum of 1/k weights; an open circle marks an observed cell that failed the 20-unique-hour, five-participant, or five-shared-participant reporting rule."
-#| fig-alt: "Two stacked heatmaps show six activity categories by submitted-manuscript site. Darker cells contain more effective weighted hours. Open circles identify sparse near-eye Outdoors and Other cells at San José, near-eye Other at Kumasi, and chest Other at Kumasi."
+#| fig-alt: "Two stacked heatmaps show six activity categories by country-coded study site. Darker cells contain more effective weighted hours. Open circles identify sparse near-eye Outdoors and Other cells at San José (CR), near-eye Other at Kumasi (GH), and chest Other at Kumasi (GH)."
 #| fig-width: 11
 #| fig-height: 8.2
 
@@ -1050,7 +1090,7 @@ ggplot(
 The exact tile and marker values are available as [figure source
 data](../../../artifacts/11_source_data/H04/H04_preparation_clock_category_support.csv).
 
-## 3. Primary model construction and inference
+## Population-mean and activity-by-site models
 
 ### Additive population-mean model
 
@@ -1069,8 +1109,9 @@ treatment reference. Each long row receives its exact `analysis_weight = 1/k`.
 Repeated memberships and longitudinal observations are addressed for
 inference with participant-clustered HC1 sandwich covariance. Denominator
 degrees of freedom equal the number of participant clusters minus one, and
-reported confidence intervals are two-sided 95% intervals. The formula
-contains no random effect.
+reported intervals are two-sided 95% confidence intervals (95% CIs). This
+participant-cluster-robust construction allows observations from the same
+participant to be related. The formula contains no random effect.
 
 ```{r}
 #| label: tbl-h04-prep-primary-specification
@@ -1085,7 +1126,7 @@ tibble::tribble(
   "Activity reference", "At home", "At home",
   "Site", "Nine-level fixed factor; sum contrasts", "Eight-level fixed factor; sum contrasts",
   "Uncertainty", "Participant-clustered HC1; df = 125", "Participant-clustered HC1; df = 149",
-  "Reported named-category mean", "Equal-site average from the supported heterogeneity model", "Equal-site average from the supported heterogeneity model",
+  "Reported named-category mean", "Site-average estimate from the supported interaction model", "Site-average estimate from the supported interaction model",
   "Role", "Primary inference", "Complementary evidence"
 ) |>
   gt::gt() |>
@@ -1111,13 +1152,14 @@ they are not likelihood-ratio tests against the comparison formula.
 
 ```{r}
 #| label: tbl-h04-prep-formulas
-#| tbl-cap: "Recorded H04 formulas used for the primary, heterogeneity, and temporal analyses."
+#| tbl-cap: "Recorded H04 formulas used for the population-mean, activity-by-site interaction, and temporal analyses."
 
 formula_labels <- c(
   primary_full = "Primary additive mean model",
+  secondary_mundlak_audit = "Mundlak within/between sensitivity",
   primary_five_named_null = "Five-named-category comparison formula; Other unrestricted",
   secondary_six_category_null = "Six-category comparison formula",
-  heterogeneity_five_named_full = "Five-named-category site heterogeneity",
+  heterogeneity_five_named_full = "Five-named-category activity-by-site interaction",
   heterogeneity_five_named_additive = "Five-named-category additive comparison",
   temporal_no_activity = "Exploratory temporal comparator",
   temporal_activity_long = "Exploratory temporal activity model"
@@ -1175,9 +1217,10 @@ chest result is $F(4,149)=93.31$, raw $p<0.001$.
 
 For a category and each site observed in a placement, a design row is
 constructed on the fitted log-mean scale. Sites contribute equal weight, the
-design rows are averaged, and one exponential back-transformation is applied.
-This is a geometric equal-site expectation, not an arithmetic mean of
-response-scale site predictions.
+design rows are averaged, and one exponential back-transformation is applied,
+returning the site-average estimate to melEDI in lux. This is a geometric
+site-average expectation, not an arithmetic mean of response-scale site
+predictions.
 
 ```{r}
 #| label: tbl-h04-prep-estimand-contract
@@ -1186,12 +1229,14 @@ response-scale site predictions.
 tibble::tribble(
   ~Estimand, ~Source_model, ~Reference_distribution, ~Inferential_role,
   "Primary category omnibus", "Additive site + activity model", "All retained fractionally weighted near-eye memberships", "Four-restriction robust equality test for the five interpretable categories",
-  "Named-category mean melEDI", "Supported five-category site-heterogeneity model", "Sites equally weighted on the fitted log-mean scale", "Descriptive geometric expectation with 95% interval",
-  "Other/unspecified mean melEDI", "Additive model", "Sites equally weighted on the fitted log-mean scale", "Display only; no substantive claim",
-  "Named-category ratio", "Same model as the corresponding named-category mean", "At home with the same equal-site weights", "Four non-reference ratios; BH within placement",
-  "Named-category difference", "Same model as the corresponding named-category mean", "At home with the same equal-site weights", "Absolute magnitude summary with 95% interval",
-  "Site-heterogeneity omnibus", "Five-category site-by-activity architecture", "All estimable named-category site departures", "One raw robust additivity test per placement",
-  "Site deviation", "Five-category site-by-activity architecture", "Site-specific category mean divided by its equal-site category mean", "Supported cells only; BH within placement"
+  "Mundlak within-participant category contrast", "Additive site + activity model with participant-level category proportions", "Current activity category at the weighted mean participant composition", "Four named ratios to At home with participant-clustered 95% CIs and FDR",
+  "Mundlak between-participant composition", "Same Mundlak sensitivity model", "10 percentage-point higher usual category share replacing At home", "Four named composition ratios with participant-clustered 95% CIs and FDR",
+  "Named-category mean melEDI", "Supported five-category activity-by-site interaction model", "Site-average: observed sites weighted equally on the fitted log-mean scale", "Descriptive geometric expectation with 95% CI",
+  "Other/unspecified mean melEDI", "Additive model", "Site-average: observed sites weighted equally on the fitted log-mean scale", "Display only; no substantive claim",
+  "Named-category ratio", "Same model as the corresponding named-category mean", "At home with the same site-average weights", "Four non-reference ratios; FDR within sensor position",
+  "Named-category difference", "Same model as the corresponding named-category mean", "At home with the same site-average weights", "Absolute magnitude summary with 95% CI",
+  "Activity-by-site interaction omnibus", "Five-category activity-by-site interaction model", "All estimable named-category site departures", "One raw robust additivity test per sensor position",
+  "Site deviation", "Five-category activity-by-site interaction model", "Site-specific category mean divided by its site-average category mean", "Supported cells only; FDR within sensor position"
 ) |>
   gt::gt() |>
   gt::cols_width(
@@ -1204,13 +1249,14 @@ tibble::tribble(
 ```
 
 At home is the reader-facing and model reference. The four named-versus-home
-ratios form one complete BH family within each placement. Other is not a
-member of that family.
+ratios form one complete false-discovery-rate (FDR) family within each sensor
+position. Other is not a member of that family.
 
-### Site heterogeneity
+### Activity-by-site interaction
 
-Site heterogeneity is examined separately from the additive primary omnibus
-with the five interpretable categories:
+The activity-by-site interaction is examined separately from the additive
+primary omnibus with the five interpretable categories. It allows the
+association between activity category and melEDI to differ by study site:
 
 ```r
 geo_medi_1h ~ site * activity_named
@@ -1223,7 +1269,7 @@ rule.
 
 ```{r}
 #| label: tbl-h04-prep-heterogeneity-checks
-#| tbl-cap: "Recorded estimability checks for the five-category site-heterogeneity models."
+#| tbl-cap: "Recorded estimability checks for the five-category activity-by-site interaction models."
 
 heterogeneity_checks |>
   transmute(
@@ -1268,7 +1314,7 @@ heterogeneity_checks |>
 
 ```{r}
 #| label: tbl-h04-prep-heterogeneity-tests
-#| tbl-cap: "Recorded robust site-heterogeneity tests for the five named categories."
+#| tbl-cap: "Recorded robust activity-by-site interaction tests for the five named categories."
 
 primary_tests |>
   filter(nzchar(.data$selected_architecture)) |>
@@ -1287,10 +1333,187 @@ primary_tests |>
   h04_gt()
 ```
 
-The supported heterogeneity tests were $F(32,125)=8.03$ near eye and
-$F(28,149)=11.62$ at chest, both raw $p<0.001$. These results justify using
-the heterogeneity models for the descriptive named-category summaries. They
-do not support post-hoc site ranking.
+The supported activity-by-site interaction tests were $F(32,125)=8.03$ at the
+near-eye sensor position and $F(28,149)=11.62$ at the chest sensor position,
+both raw $p<0.001$. These results justify using the interaction models for the
+descriptive named-category summaries. They do not support post-hoc site
+ranking.
+
+### Exploratory participant random-intercept decomposition {#sec-h04-prep-participant-random-intercept}
+
+The population-mean quasi-Tweedie GLM and participant-clustered covariance
+remain the inferential analysis. A separate mixed model describes stable
+participant-level variation in the support-qualified five-category
+activity-by-site frame. The random intercept lets participants have different
+overall exposure levels while retaining the fixed activity-by-site structure:
+
+```r
+geo_medi_1h ~ site * activity_named + (1 | participant)
+```
+
+The generalized linear mixed model was fitted in R with `glmmTMB`, using a
+Tweedie distribution with a log link, maximum likelihood, and the
+fixed working power 1.539919. The exact `analysis_weight = 1/k` enters every
+fit. Other-only hours are absent because this branch inherits the supported
+five-named-category interaction frame. The near-eye fit therefore uses 16,875
+long rows representing 16,135 participant-hours from 126 participants. The
+chest fit uses 20,440 long rows representing 19,497 participant-hours from 150
+participants.
+
+The standard Nakagawa implementation calculates the fixed-predictor variance
+with an unweighted variance across fitted rows. That convention would give a
+multi-select hour more influence because it has more rows. The H04 calculation
+instead uses the fractional-frequency sample variance
+
+$$
+\sigma_f^2 =
+\frac{\sum_i w_i(\eta_i-\bar\eta_w)^2}{\sum_i w_i-1},
+\qquad
+\bar\eta_w = \frac{\sum_i w_i\eta_i}{\sum_i w_i},
+$$
+
+where $w_i=1/k$ and $\eta_i$ is the fixed-effects linear predictor. This
+reduces exactly to the H03 convention when every hour has one row. The
+participant-intercept variance $\sigma_u^2$ and the lognormal
+distribution-specific variance $\sigma_e^2$ follow the same
+`insight::get_variance()` convention. The reported values are
+
+$$
+R_m^2 = \frac{\sigma_f^2}{\sigma_f^2+\sigma_u^2+\sigma_e^2},
+\qquad
+R_c^2 = \frac{\sigma_f^2+\sigma_u^2}
+{\sigma_f^2+\sigma_u^2+\sigma_e^2}.
+$$
+
+```{r}
+#| label: tbl-h04-prep-participant-r2
+#| tbl-cap: "Stored fractionally weighted mixed-model R² and participant-intercept summaries."
+
+participant_random_intercept |>
+  transmute(
+    Placement = .data$placement,
+    `Long rows` = .data$long_rows,
+    `Unique participant-hours` = .data$unique_participant_hours,
+    `Effective weighted hours` = .data$effective_weighted_hours,
+    Participants = .data$participants,
+    `Marginal R²` = .data$marginal_r_squared,
+    `Conditional R²` = .data$conditional_r_squared,
+    `Participant increment` = .data$participant_r_squared_increment,
+    `Distribution-specific remainder` = .data$residual_variance_share,
+    `Adjusted participant ICC` = .data$adjusted_participant_icc,
+    `One-SD participant factor` = .data$participant_factor_per_sd,
+    `Unweighted-row marginal R²` =
+      .data$conventional_unweighted_row_marginal_r_squared
+  ) |>
+  gt::gt(rowname_col = "Placement") |>
+  gt::fmt_integer(
+    columns = c(`Long rows`, `Unique participant-hours`, Participants),
+    sep_mark = ","
+  ) |>
+  gt::fmt_number(
+    columns = `Effective weighted hours`,
+    decimals = 0,
+    sep_mark = ","
+  ) |>
+  gt::fmt_number(
+    columns = c(
+      `Marginal R²`,
+      `Conditional R²`,
+      `Participant increment`,
+      `Distribution-specific remainder`,
+      `Adjusted participant ICC`,
+      `Unweighted-row marginal R²`
+    ),
+    decimals = 3
+  ) |>
+  gt::fmt_number(columns = `One-SD participant factor`, decimals = 2) |>
+  gt::tab_source_note(
+    "The unweighted expanded-row value is an implementation cross-check, not the H04 estimand. All quantities are point estimates without bootstrap intervals."
+  ) |>
+  h04_gt(9.2)
+```
+
+The marginal fixed-effect R² has no unique term decomposition. A
+hierarchy-respecting Shapley value function refits these five weighted models:
+
+```r
+geo_medi_1h ~ 1 + (1 | participant)
+geo_medi_1h ~ site + (1 | participant)
+geo_medi_1h ~ activity_named + (1 | participant)
+geo_medi_1h ~ site + activity_named + (1 | participant)
+geo_medi_1h ~ site * activity_named + (1 | participant)
+```
+
+Site and activity are averaged over both admissible entry orders. Their
+interaction enters only after both main effects. The resulting allocation is
+invariant to the factor reference levels.
+
+```{r}
+#| label: tbl-h04-prep-participant-r2-shapley
+#| tbl-cap: "Hierarchy-respecting allocation of the fractionally weighted marginal R²."
+
+participant_random_intercept_shapley |>
+  transmute(
+    Placement = .data$placement,
+    Component = .data$component,
+    `R² component` = .data$marginal_r_squared_component,
+    `Share of marginal R², %` =
+      .data$share_of_full_marginal_r_squared_percent,
+    `Efficiency error` = .data$shapley_efficiency_error
+  ) |>
+  gt::gt(groupname_col = "Placement") |>
+  gt::fmt_number(columns = `R² component`, decimals = 3) |>
+  gt::fmt_number(columns = `Share of marginal R², %`, decimals = 1) |>
+  gt::fmt_scientific(columns = `Efficiency error`, decimals = 1) |>
+  h04_gt(10.2)
+```
+
+```{r}
+#| label: tbl-h04-prep-participant-r2-checks
+#| tbl-cap: "Numerical checks for the ten nested mixed-model fits."
+
+participant_random_intercept_models |>
+  transmute(
+    Placement = .data$placement,
+    Model = .data$model_id,
+    Formula = .data$formula,
+    `Marginal R²` = .data$marginal_r_squared,
+    `Conditional R²` = .data$conditional_r_squared,
+    Converged = if_else(.data$converged, "Yes", "No"),
+    Warnings = .data$warning_count,
+    `Positive-definite Hessian` = if_else(
+      .data$positive_definite_hessian,
+      "Yes",
+      "No"
+    ),
+    Singular = if_else(.data$singular, "Yes", "No")
+  ) |>
+  gt::gt(groupname_col = "Placement") |>
+  gt::fmt_number(columns = c(`Marginal R²`, `Conditional R²`), decimals = 3) |>
+  gt::fmt_integer(columns = Warnings) |>
+  gt::cols_width(
+    Model ~ gt::pct(9),
+    Formula ~ gt::pct(43),
+    everything() ~ gt::pct(8)
+  ) |>
+  h04_gt(9.0)
+```
+
+All ten nested fits converged without warnings, had positive-definite Hessians,
+and were non-singular. The participant-hour aggregated lag-one Pearson
+residual correlations were 0.317 near eye and 0.301 at chest. Observed zero
+fractions were 0.294 and 0.301, compared with model-implied fractions of 0.410
+and 0.429. This remains a descriptive point decomposition. It has no random
+activity slopes, participant-day intercept, residual correlation structure,
+or uncertainty intervals, and it does not replace the accepted population-mean
+inference.
+
+The exact [summary](../../../artifacts/09_tables/H04/H04_participant_random_intercept_summary.csv),
+[allocation](../../../artifacts/09_tables/H04/H04_participant_random_intercept_marginal_r2_shapley.csv),
+[diagnostics](../../../artifacts/08_diagnostics/H04/H04_participant_random_intercept_diagnostics.csv),
+and [nested-model checks](../../../artifacts/08_diagnostics/H04/H04_participant_random_intercept_shapley_models.csv)
+are stored with the fitted-model archive and a dedicated environment and
+checksum manifest.
 
 ### Multiplicity families
 
@@ -1301,7 +1524,11 @@ do not support post-hoc site ranking.
 multiplicity_registry |>
   transmute(
     Scope = .data$scope,
-    Adjustment = recode(.data$method, none = "None", BH = "BH"),
+    Adjustment = recode(
+      .data$method,
+      none = "None",
+      BH = "FDR"
+    ),
     `Declared members` = if_else(
       is.na(.data$family_n),
       "All support-eligible cells",
@@ -1319,18 +1546,18 @@ multiplicity_registry |>
   h04_gt(10.5)
 ```
 
-## 4. Diagnostics and influence
+## Model checks, influence, and sensitivities
 
 ### Convergence, rank, covariance, and residual structure
 
 Weighted long-row residual contributions are combined back to one value per
 original hour before the residual-shape, calibration, zero-mass, and serial
 dependence summaries are formed. Concurrent memberships are therefore not
-treated as separate diagnostic observations.
+treated as separate model-check observations.
 
 ```{r}
 #| label: tbl-h04-prep-primary-diagnostics
-#| tbl-cap: "Recorded diagnostics for the additive primary and complementary GLMs."
+#| tbl-cap: "Recorded model checks for the additive primary and complementary GLMs."
 
 main_diagnostics <- model_diagnostics |>
   filter(.data$scenario_id == "primary_dataset") |>
@@ -1443,11 +1670,11 @@ residual_acf |>
   h04_gt()
 ```
 
-### Diagnostic interpretation
+### Model-check interpretation
 
 ```{r}
 #| label: tbl-h04-prep-diagnostic-interpretation
-#| tbl-cap: "Diagnostic domains, evidence units, and interpretive limits."
+#| tbl-cap: "Model-check domains, evidence units, and interpretive limits."
 
 tibble::tribble(
   ~Domain, ~Evidence_unit, ~Recorded_result, ~Interpretive_limit,
@@ -1473,7 +1700,7 @@ tibble::tribble(
 Every site was removed once within each placement. The five participants with
 the largest cluster-score contribution were also removed once within each
 placement. The model family, formula, weight definition, contrast direction,
-and equal-site standardization rule were preserved.
+and site-average estimation rule were preserved.
 
 ```{r}
 #| label: tbl-h04-prep-influence
@@ -1517,7 +1744,7 @@ influence_summary |>
 None of the 27 deletion refits changed the five-category omnibus decision.
 Category-ratio changes and intervals remain in the recorded influence table.
 
-## 5. Predefined sensitivities
+### Sensitivity analyses
 
 The predefined branches change one aspect of the frame, weight, working
 variance, or placement while preserving the category estimand whenever that
@@ -1525,8 +1752,22 @@ is possible. Exactly-one-category hours remove concurrent memberships.
 Retaining co-selected Other deliberately reverses the primary specificity
 rule. Excluding Other-only hours removes that heterogeneous category.
 Unweighted long rows change the estimand by allowing multi-select hours to
-contribute more than one total unit. The placement-matched branch fits each
-sensor separately on identical participant-hours.
+contribute more than one total unit. The placement-matched branch uses the
+same participants and participant-hours at the near-eye and chest sensor
+positions, then fits each position separately; it is not an equivalence or
+direct sensor-effect test. The remaining branches use the gap-timing-unaware
+dataset, change the working power to 1.30 or 1.80, or use the complementary
+chest position.
+
+The additional Mundlak-style branch retains the accepted long rows and $1/k$
+weights. For every participant it calculates the weighted share of retained
+hours assigned to each of the five non-reference categories, then adds those
+five participant-level proportions to the additive site-plus-activity mean
+model. The current activity coefficients quantify category contrasts adjusted
+for usual participant composition. A between-participant coefficient is
+reported as the ratio for a 10 percentage-point higher usual category share,
+which corresponds to a lower At home share while the other shares are held
+fixed. Other remains unrestricted and display-only.
 
 The **gap-timing-unaware dataset** still requires at least 50% valid minutes
 per hour and at least 80% valid hours per day, but the timing of the remaining
@@ -1547,7 +1788,8 @@ scenario_labels <- c(
   gap_timing_unaware = "Gap-timing-unaware dataset",
   paired_common_sample = "Placement-matched common sample",
   working_power_1_30 = "Quasi-Tweedie working power 1.30",
-  working_power_1_80 = "Quasi-Tweedie working power 1.80"
+  working_power_1_80 = "Quasi-Tweedie working power 1.80",
+  mundlak_within_between = "Within/between participant"
 )
 
 frame_index |>
@@ -1616,13 +1858,82 @@ comparison](../../../artifacts/09_tables/H04/H04_sensitivity_comparison.csv)
 contains the ratios, 95% intervals, relative changes, direction checks, and
 whether the primary ratio lies inside each sensitivity interval.
 
-## 6. Exploratory time-of-day context
+```{r}
+#| label: tbl-h04-prep-mundlak-support
+#| tbl-cap: "Participant support for the H04 within/between sensitivity."
+
+mundlak_support |>
+  filter(.data$activity_code != "other") |>
+  transmute(
+    Placement = .data$placement,
+    Activity = recode(
+      .data$activity_code,
+      working_indoor = "Office/home working",
+      outdoors = "Outdoors",
+      road_vehicle = "Vehicle/public transport",
+      sleeping = "Sleeping"
+    ),
+    Participants = .data$participants,
+    `With category` = .data$participants_with_category,
+    `With category and At home` =
+      .data$participants_with_category_and_home,
+    `Mean category share, %` = 100 * .data$mean_activity_share,
+    `Median category share, %` = 100 * .data$median_activity_share,
+    `Maximum category share, %` = 100 * .data$maximum_activity_share
+  ) |>
+  mutate(
+    Activity = factor(
+      .data$Activity,
+      levels = c(
+        "Office/home working",
+        "Outdoors",
+        "Vehicle/public transport",
+        "Sleeping"
+      )
+    )
+  ) |>
+  arrange(
+    factor(.data$Placement, levels = c("Near-eye", "Chest")),
+    .data$Activity
+  ) |>
+  gt::gt(groupname_col = "Placement") |>
+  gt::fmt_integer(
+    columns = c(Participants, `With category`, `With category and At home`)
+  ) |>
+  gt::fmt_number(
+    columns = ends_with("share, %"),
+    decimals = 1
+  ) |>
+  h04_gt(9.5)
+```
+
+Every participant contributed At home hours. Direct within-participant support
+for the category-versus-home contrast ranged from 111 participants for
+near-eye vehicle or public-transport activity to all 150 chest participants
+for Sleeping. Both Mundlak fits converged, were full rank (19/19 near eye and
+18/18 at chest), and had finite positive-definite participant-clustered
+covariance. The covariance condition numbers were 7,048 and 4,301, below the
+registered $10^{10}$ gate.
+
+The four-restriction within-participant category tests were $F(4,125)=67.17$,
+raw $p<0.001$, near eye and $F(4,149)=77.86$, raw $p<0.001$, at chest. All four
+named ratios retained their direction, changed by at most 16.8%, and contained
+the primary ratio within the sensitivity interval. The four named
+between-participant composition terms were jointly associated near eye,
+$F(4,125)=3.81$, raw $p=0.006$, but not clearly at chest, $F(4,149)=2.34$, raw
+$p=0.058$. The exact [within-participant comparison](../../../artifacts/09_tables/H04/H04_sensitivity_comparison.csv),
+[between-participant estimates](../../../artifacts/09_tables/H04/H04_mundlak_between_participant_estimands.csv),
+and [between-participant omnibus tests](../../../artifacts/09_tables/H04/H04_mundlak_between_participant_omnibus.csv)
+retain all ratios, 95% CIs, p-values, and FDR values.
+
+## Exploratory nonlinear time-of-day context
 
 ### Weighted activity GAMs
 
-The exploratory time-of-day analysis is separate from the primary GLM
-inference. It uses the same long rows and exact $1/k$ weights, with this exact
-formula:
+The exploratory nonlinear generalized additive model (GAM) analysis is
+separate from the primary population-mean inference. It allows the association
+with clock time to bend across the day, using the same long rows and exact
+$1/k$ weights with this exact formula:
 
 ```r
 geo_medi_1h ~
@@ -1667,7 +1978,7 @@ the final model used that value as its working AR(1) parameter.
 
 ```{r}
 #| label: tbl-h04-prep-temporal-models
-#| tbl-cap: "Recorded final exploratory time-of-day model settings and diagnostics."
+#| tbl-cap: "Recorded final exploratory time-of-day model settings and model checks."
 
 temporal_activity <- temporal_comparison |>
   filter(.data$formula_id == "temporal_activity_long") |>
@@ -1806,10 +2117,11 @@ activity/site endpoints remain explicit limitations.
 ### Population curves and uncertainty
 
 Displayed time/activity curves set participant and participant-day
-contributions to zero, evaluate every site observed in that placement, average
-those design rows equally on the fitted log-mean scale, and back-transform
-once. Their ribbons are model-based pointwise 95% intervals from the fitted
-coefficient covariance.
+contributions to zero, evaluate every site observed at that sensor position,
+average those design rows equally on the fitted log-mean scale, and
+back-transform once to melEDI in lux. Their ribbons are model-based pointwise
+95% CIs from the fitted coefficient covariance. A pointwise interval applies
+to one displayed clock time rather than to the entire curve simultaneously.
 
 ```{r}
 #| label: tbl-h04-prep-temporal-uncertainty
@@ -1877,10 +2189,17 @@ temporal_performance |>
   gt::gt(groupname_col = "Placement") |>
   gt::fmt_number(columns = Value, decimals = 3) |>
   gt::tab_source_note(
-    "The R² is on the raw melEDI scale with equal site and participant balance and 1/k within-hour weights. Allocated shares partition fitted natural-log predictor variance and are point summaries without uncertainty intervals."
+    "The R² is on the raw melEDI scale with site-average and participant balance and 1/k within-hour weights. Allocated shares partition fitted natural-log predictor variance and are point summaries without uncertainty intervals."
   ) |>
   h04_gt()
 ```
+
+The hierarchy-respecting Shapley allocation distributes shared fitted-model
+information across the temporal components rather than counting overlapping
+contributions more than once. It reports point estimates without uncertainty
+intervals. The remaining positive lag-one residual correlations mean that
+neighbouring hourly residuals are still related after the working AR(1)
+correction.
 
 The [near-eye](../../../artifacts/10_figures/H04/H04_temporal_near_eye.png)
 and [chest](../../../artifacts/10_figures/H04/H04_temporal_chest.png) results
@@ -1888,9 +2207,42 @@ figures show the fitted activity curves, activity-to-global ratios, and
 effective weighted support. Their exact curve and support values are stored
 under `artifacts/11_source_data/H04/`.
 
-## 7. Code and output provenance
+## Technical provenance and reproduction
 
-### Executable code in analytical order
+### Render-time computation boundary
+
+Rendering this page recalculates only current file identities and lightweight
+descriptive summaries from recorded, checksummed H04 model frames and source
+tables. It does not fit or refit a model, calculate a model prediction,
+re-estimate residual dependence, rerun a deletion analysis, bootstrap,
+simulate data, or recalculate a variance allocation. Model estimates, 95%
+CIs, tests, model checks, sensitivities, and exploratory smooths are read from
+their recorded files.
+
+```{r}
+#| label: tbl-h04-prep-boundary
+#| tbl-cap: "Calculations performed when this page is rendered."
+
+tibble::tribble(
+  ~Category, ~Calculated_on_render, ~Explanation,
+  "File identity and schema", "Yes", "Checks recorded SHA-256 identities, required columns, recorded-frame dimensions, and source-table structure.",
+  "Descriptive support", "Yes", "Summarises stored sample flow, fractional weights, categories, sites, local hours, participant-days, and exact zeros.",
+  "Model construction and estimation", "No", "Reads formula records, fitted-model archives, estimates, intervals, and robust tests.",
+  "Model checks and sensitivities", "No", "Reads recorded model checks, deletion refits, fit summaries, and sensitivity outputs.",
+  "Preparation figures", "Display only", "Draws four descriptive figures from linked exact source-data CSV files."
+) |>
+  gt::gt() |>
+  gt::cols_width(
+    Category ~ gt::pct(24),
+    Calculated_on_render ~ gt::pct(18),
+    Explanation ~ gt::pct(58)
+  ) |>
+  h04_gt()
+```
+
+### Code and output maps
+
+#### Executable code in analytical order
 
 ```{r}
 #| label: tbl-h04-prep-script-map
@@ -1901,14 +2253,16 @@ tibble::tribble(
   1L, "h04_contract.R", "Defines frozen inputs, formulas, working power, covariance, references, support thresholds, and temporal settings.", "In-memory contract used by the H04 runners", "No",
   2L, "h04_stage1_support.R", "Collapses and deduplicates activity flags, applies the Other rule, creates 1/k weights, and checks support and rank.", "Outcome-blind activity transformation functions", "No",
   3L, "h04_data.R", "Joins outcomes to diary hours, constructs primary and sensitivity frames, preserves unique hour IDs, and defines temporal runs.", "H04_model_frames.rds and model-frame index", "No",
-  4L, "h04_modeling.R", "Fits quasi-Tweedie GLMs, forms participant-clustered HC1 inference, standardizes sites, checks heterogeneity, and creates diagnostics.", "Models, estimates, tests, diagnostics, and influence summaries", "No",
-  5L, "run_h04_stage2.R", "Runs the additive, heterogeneity, sensitivity, and deterministic deletion analyses from frozen frames.", "Model archives, result tables, diagnostics, and run manifest", "No",
-  6L, "h04_temporal.R", "Defines weighted exploratory BAM fitting, activity-specific AR runs, covariance-based pointwise curves, diagnostics, R², and variance allocation.", "Temporal functions used by the dedicated runner", "No",
-  7L, "run_h04_temporal.R", "Produces the recorded exploratory time-of-day fits and their diagnostic artifacts.", "Temporal model archive, curves, comparisons, and diagnostics", "No",
-  8L, "build_h04_stage3_reader_assets.R", "Builds heterogeneity-based descriptive tables and diagnostic source data from stored fits.", "Reader tables and paired source CSVs", "No",
-  9L, "build_h04_stage3_reader_figures.R", "Builds publication-scale category, site, paired-placement, and temporal figures.", "PNG, PDF, SVG, and paired source data", "No",
-  10L, "h04_reporting.R", "Defines tables, labels, scales, site displays, and result-figure themes.", "Reader-facing display functions", "No",
-  11L, "build_h04_preparation_artifacts.R", "Builds the seven bounded descriptive source tables shown on this page from frozen model frames.", "Preparation source-data CSVs", "Before render"
+  4L, "h04_modeling.R", "Fits quasi-Tweedie GLMs, forms participant-clustered HC1 inference, standardizes sites, checks the activity-by-site interaction, and creates model checks.", "Models, estimates, tests, model checks, and influence summaries", "No",
+  5L, "run_h04_stage2.R", "Runs the additive, activity-by-site interaction, sensitivity, and deterministic deletion analyses from recorded frames.", "Model archives, result tables, model checks, and run manifest", "No",
+  6L, "run_h04_mundlak_sensitivity.R", "Fits the within/between sensitivity from the accepted frozen primary frames and appends its bounded H04 artifacts.", "Mundlak model objects, support, ratios, tests, and model checks", "No",
+  7L, "run_h04_participant_random_intercept_assessment.R", "Fits the five hierarchy-valid weighted Tweedie random-intercept models at both sensor positions and calculates the 1/k-weighted Nakagawa decomposition.", "Mixed-model archive, R² summary, allocation, diagnostics, environment, and manifest", "No",
+  8L, "h04_temporal.R", "Defines weighted exploratory BAM fitting, activity-specific AR runs, covariance-based pointwise curves, model checks, R², and variance allocation.", "Temporal functions used by the dedicated runner", "No",
+  9L, "run_h04_temporal.R", "Produces the recorded exploratory time-of-day fits and their model-check artifacts.", "Temporal model archive, curves, comparisons, and model checks", "No",
+  10L, "build_h04_stage3_reader_assets.R", "Builds interaction-model descriptive tables and model-check source data from stored fits.", "Reader tables and paired source CSVs", "No",
+  11L, "build_h04_stage3_reader_figures.R", "Builds publication-scale category, site, paired-placement, and temporal figures.", "PNG, PDF, SVG, and paired source data", "No",
+  12L, "h04_reporting.R", "Defines tables, labels, scales, site displays, and result-figure themes.", "Reader-facing display functions", "No",
+  13L, "build_h04_preparation_artifacts.R", "Builds the seven bounded descriptive source tables shown on this page from frozen model frames.", "Preparation source-data CSVs", "Before render"
 ) |>
   gt::gt() |>
   gt::fmt_integer(columns = Order) |>
@@ -1926,7 +2280,7 @@ Only the last row creates lightweight descriptive inputs for this page. All
 inferential and exploratory model outputs were produced before rendering and
 are read by identity.
 
-### Stored output chain
+#### Stored output chain
 
 ```{r}
 #| label: tbl-h04-prep-output-map
@@ -1934,14 +2288,14 @@ are read by identity.
 
 tibble::tribble(
   ~Output_group, ~Location, ~Contents, ~Reader_use,
-  "Frozen model frames", "artifacts/06_model_data/H04/H04_model_frames.rds", "Primary, paired, exactly-one, Other-rule, unweighted, gap-timing-unaware, and working-power frames", "Exact samples, weights, and descriptive support",
-  "Model objects", "artifacts/07_models/H04/", "Additive, five-category heterogeneity, sensitivity, and exploratory temporal fits", "Reproducible fitted state; not rendered directly",
-  "Diagnostics", "artifacts/08_diagnostics/H04/", "Convergence, rank, covariance, residual, zero-mass, influence, temporal basis, support, and uncertainty checks", "Model adequacy and limitations",
-  "Result tables", "artifacts/09_tables/H04/", "Omnibus tests, means, ratios, site context, sensitivities, R², and temporal summaries", "Exact reported numerical outputs",
+  "Recorded model frames", "artifacts/06_model_data/H04/H04_model_frames.rds", "Primary, paired, exactly-one, Other-rule, unweighted, gap-timing-unaware, and working-power frames", "Exact samples, weights, and descriptive support",
+  "Model objects", "artifacts/07_models/H04/", "Additive, five-category activity-by-site interaction, sensitivity, participant random-intercept, and exploratory temporal fits", "Reproducible fitted state; not rendered directly",
+  "Model checks", "artifacts/08_diagnostics/H04/", "Convergence, rank, covariance, residual, zero-mass, influence, mixed-model, temporal basis, support, and uncertainty checks", "Model adequacy and limitations",
+  "Result tables", "artifacts/09_tables/H04/", "Omnibus tests, means, ratios, site context, sensitivities, mixed-model R², and temporal summaries", "Exact reported numerical outputs",
   "Figures", "artifacts/10_figures/H04/", "Tightly bounded PNG, PDF, and SVG result figures", "Reader-facing visual evidence",
   "Figure and table source data", "artifacts/11_source_data/H04/", "Exact rows used by result and preparation displays", "Independent display reconstruction",
   "Manifests", "artifacts/12_manifests/H04/", "R versions, hashes, byte sizes, producing scripts, derivation links, and figure QA", "Identity and reproducibility checks",
-  "Results report", "notebooks/hypotheses/H04.qmd", "Scientific narrative, tables, figures, diagnostics, sensitivities, and limitations", "Primary reader-facing synthesis",
+  "Results report", "notebooks/hypotheses/H04.qmd", "Scientific narrative, tables, figures, model checks, sensitivities, and limitations", "Primary reader-facing synthesis",
   "Preparation companion", "audit/hypotheses/H04/H04_analysis_preparation.qmd", "Data-to-result construction, checks, and provenance", "This page"
 ) |>
   gt::gt() |>
@@ -1959,14 +2313,12 @@ byte-identical website source copy, the rendered HTML, H04 scripts and tests,
 stored scientific outputs, paired source data, and environment identities. It
 deliberately excludes itself from its checksum inventory.
 
-## 8. Reproduction and environment
-
 ### Environment identity
 
 The scientific analysis and this companion use R 4.6.1 and the synchronized
-project library. The stored environment table records the primary GLM and
-reporting packages; the same library supplies `mgcv` and `gratia` for the
-exploratory temporal analysis.
+project library. The stored environment tables record the primary GLM,
+mixed-model, and reporting packages; the same library supplies `mgcv` and
+`gratia` for the exploratory temporal analysis.
 
 ```{r}
 #| label: tbl-h04-prep-environment
@@ -1983,6 +2335,14 @@ environment_display <- software_environment |>
     "R package: gt"
   )) |>
   bind_rows(
+    participant_random_intercept_environment |>
+      filter(.data$component %in% c(
+        "glmmTMB", "lme4", "performance", "insight"
+      )) |>
+      transmute(
+        component = paste0("R package: ", .data$component),
+        version = .data$version
+      ),
     tibble(
       component = c(
         "R package: mgcv",
@@ -2018,7 +2378,7 @@ For a bounded verification that does not recompute a model:
 3. compare formulas and transformation rules with `h04_contract.R`,
    `h04_stage1_support.R`, `h04_data.R`, and `h04_modeling.R`;
 4. trace each reported number to `artifacts/09_tables/H04/` and each
-   diagnostic statement to `artifacts/08_diagnostics/H04/`;
+   model-check statement to `artifacts/08_diagnostics/H04/`;
 5. rebuild displays only from their paired CSVs in
    `artifacts/11_source_data/H04/`; and
 6. verify the final identities in
@@ -2030,6 +2390,6 @@ The lightweight preparation inputs are regenerated with:
 Rscript --vanilla scripts/hypotheses/H04/build_h04_preparation_artifacts.R
 ```
 
-The [H04 results report](../../../notebooks/hypotheses/H04.html) is the
+The [H04 results report](../../../notebooks/hypotheses/H04.qmd) is the
 appropriate page for scientific interpretation. This companion records how
 that report was constructed and how its evidence can be checked.

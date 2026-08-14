@@ -1,10 +1,10 @@
 #!/usr/bin/env Rscript
 
-# Record source, rendered identities, display assets, scientific inputs, and
-# verification code for the H04 preparation companion. Until the coordinator
-# registers the source in the shared profile, this script copies the direct
-# single-document render and its assets into the expected website path. It
-# performs no scientific calculation.
+# Record source, canonical website-render identities, display assets,
+# scientific inputs, and verification code for the registered H04 preparation
+# companion. The script refreshes only the website QMD provenance copy. It
+# does not modify the canonical website HTML or its assets and performs no
+# scientific calculation.
 
 root <- normalizePath(
   Sys.getenv("NATHEALTH_PROJECT_ROOT", unset = getwd()),
@@ -22,6 +22,10 @@ suppressPackageStartupMessages({
   library(tibble)
 })
 source(file.path(root, "scripts/pipeline/paths_io.R"))
+source(file.path(
+  root,
+  "scripts/pipeline/hypothesis_preparation_provenance_contract.R"
+))
 
 if (!identical(as.character(getRversion()), "4.6.1")) {
   stop(
@@ -42,14 +46,7 @@ source_path <- file.path(
   root,
   "audit/hypotheses/H04/H04_analysis_preparation.qmd"
 )
-direct_html_path <- file.path(
-  root,
-  "audit/hypotheses/H04/H04_analysis_preparation.html"
-)
-direct_assets_path <- file.path(
-  root,
-  "audit/hypotheses/H04/H04_analysis_preparation_files"
-)
+profile_path <- file.path(root, "_quarto-nathealth.yml")
 website_root <- file.path(
   root,
   "_build/nathealth/audit/hypotheses/H04"
@@ -95,26 +92,32 @@ list_artifacts <- function(path, pattern = NULL) {
   )
 }
 
-if (!file.exists(source_path) || !file.exists(direct_html_path)) {
-  stop("The H04 preparation source or direct render is missing", call. = FALSE)
+required_inputs <- c(source_path, profile_path, website_html_path)
+if (any(!file.exists(required_inputs))) {
+  stop(
+    paste0(
+      "Missing registered H04 preparation input(s): ",
+      paste(required_inputs[!file.exists(required_inputs)], collapse = ", ")
+    ),
+    call. = FALSE
+  )
 }
-copy_file_strict(source_path, website_source_path)
-copy_file_strict(direct_html_path, website_html_path)
 
-direct_assets <- list_artifacts(direct_assets_path)
-if (length(direct_assets) == 0L) {
-  stop("The direct H04 preparation render has no page assets", call. = FALSE)
-}
-direct_asset_relative <- substring(
-  normalizePath(direct_assets, winslash = "/", mustWork = TRUE),
-  nchar(normalizePath(
-    direct_assets_path,
-    winslash = "/",
-    mustWork = TRUE
-  )) + 2L
+assert_adjacent_profile_entries(
+  profile_lines = readLines(profile_path, warn = FALSE, encoding = "UTF-8"),
+  result_path = "notebooks/hypotheses/H04.qmd",
+  prep_path = "audit/hypotheses/H04/H04_analysis_preparation.qmd"
 )
-website_assets <- file.path(website_assets_path, direct_asset_relative)
-invisible(Map(copy_file_strict, direct_assets, website_assets))
+
+website_assets <- list_artifacts(website_assets_path)
+if (length(website_assets) == 0L) {
+  stop(
+    "The registered H04 preparation website render has no page assets",
+    call. = FALSE
+  )
+}
+
+copy_file_strict(source_path, website_source_path)
 
 if (!identical(
   read_raw_file(source_path),
@@ -145,6 +148,14 @@ h04_files <- unlist(lapply(
   h04_roots[dir.exists(h04_roots)],
   list_artifacts
 ))
+h04_files <- h04_files[!grepl(
+  paste0(
+    "/audit/hypotheses/H04/H04_analysis_preparation",
+    "(?:\\.html$|_files/)"
+  ),
+  normalizePath(h04_files, winslash = "/", mustWork = FALSE),
+  perl = TRUE
+)]
 
 decision_relatives <- c(
   "audit/decisions/h03_h11_gated_workflow.md",
@@ -164,10 +175,8 @@ decision_relatives <- c(
 )
 
 files <- unique(c(
-  file.path(root, "_quarto-nathealth.yml"),
+  profile_path,
   source_path,
-  direct_html_path,
-  direct_assets,
   website_source_path,
   website_html_path,
   website_assets,
@@ -209,12 +218,6 @@ relative <- substring(normalized_files, nchar(root) + 2L)
 role <- dplyr::case_when(
   relative == "audit/hypotheses/H04/H04_analysis_preparation.qmd" ~
     "preparation_source",
-  relative == "audit/hypotheses/H04/H04_analysis_preparation.html" ~
-    "preparation_direct_render",
-  startsWith(
-    relative,
-    "audit/hypotheses/H04/H04_analysis_preparation_files/"
-  ) ~ "preparation_direct_page_asset",
   relative == paste0(
     "_build/nathealth/audit/hypotheses/H04/",
     "H04_analysis_preparation.html"

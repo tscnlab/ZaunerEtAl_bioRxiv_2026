@@ -37,11 +37,46 @@ qmd_lines <- readLines(paths$qmd, warn = FALSE, encoding = "UTF-8")
 qmd <- paste(qmd_lines, collapse = "\n")
 stopifnot(
   grepl("flowchart TD", qmd, fixed = TRUE),
-  grepl("../../../notebooks/hypotheses/H04.html", qmd, fixed = TRUE),
+  grepl("../../../notebooks/hypotheses/H04.qmd", qmd, fixed = TRUE),
+  grepl(
+    "../../../notebooks/hypotheses/H04.qmd#h04-preregistration-deviations",
+    qmd,
+    fixed = TRUE
+  ),
   grepl("gap-timing-unaware dataset", qmd, fixed = TRUE),
   grepl("one-hour zero-aware geometric mean melEDI", qmd, fixed = TRUE),
   grepl("geo_medi_1h ~ site + activity", qmd, fixed = TRUE),
   grepl("geo_medi_1h ~ site * activity_named", qmd, fixed = TRUE),
+  grepl(
+    "geo_medi_1h ~ site * activity_named + (1 | participant)",
+    qmd,
+    fixed = TRUE
+  ),
+  grepl(
+    "H04_participant_random_intercept_summary.csv",
+    qmd,
+    fixed = TRUE
+  ),
+  grepl(
+    "{#sec-h04-prep-participant-random-intercept}",
+    qmd,
+    fixed = TRUE
+  ),
+  grepl("participant-level variation", qmd, fixed = TRUE),
+  grepl(
+    paste0(
+      "random intercept lets participants have different[[:space:]]+",
+      "overall exposure levels"
+    ),
+    qmd,
+    perl = TRUE
+  ),
+  grepl(
+    "generalized linear mixed model was fitted in R with `glmmTMB`",
+    qmd,
+    fixed = TRUE
+  ),
+  !grepl("stable participant-level heterogeneity", qmd, fixed = TRUE),
   grepl("s(time_hour, bs = \"cc\", k = 12)", qmd, fixed = TRUE),
   grepl(
     "s(time_hour, activity, bs = \"sz\", k = 12)",
@@ -57,7 +92,7 @@ stopifnot(
   grepl("s(participant_day, bs = \"re\")", qmd, fixed = TRUE),
   grepl("participant-clustered HC1", qmd, fixed = TRUE),
   grepl("back-transform", qmd, ignore.case = TRUE),
-  grepl("VERIFIED REPIN", qmd, fixed = TRUE),
+  grepl("VERIFIED CURRENT IDENTITY", qmd, fixed = TRUE),
   grepl("::: {.callout-note", qmd, fixed = TRUE),
   !grepl("::: {.callout-important", qmd, fixed = TRUE),
   !grepl("::: {.callout-warning", qmd, fixed = TRUE),
@@ -185,8 +220,28 @@ stopifnot(
   grepl("724", main_text, fixed = TRUE),
   grepl("875", main_text, fixed = TRUE),
   grepl("gap-timing-unaware dataset", main_text, fixed = TRUE),
+  grepl(
+    "Exploratory participant random-intercept decomposition",
+    main_text,
+    fixed = TRUE
+  ),
+  grepl("Marginal R²", main_text, fixed = TRUE),
+  grepl("Conditional R²", main_text, fixed = TRUE),
   !grepl("H04-F[0-9]", main_text, perl = TRUE),
   !grepl("Execution halted", main_text, fixed = TRUE)
+)
+
+participant_r2_table <- xml2::xml_find_first(
+  main,
+  ".//*[@id='tbl-h04-prep-participant-r2']"
+)
+participant_r2_table_text <- xml2::xml_text(participant_r2_table)
+stopifnot(
+  !inherits(participant_r2_table, "xml_missing"),
+  grepl("0.766", participant_r2_table_text, fixed = TRUE),
+  grepl("0.858", participant_r2_table_text, fixed = TRUE),
+  grepl("0.768", participant_r2_table_text, fixed = TRUE),
+  grepl("0.859", participant_r2_table_text, fixed = TRUE)
 )
 
 expected_figures <- c(
@@ -261,6 +316,24 @@ stopifnot(
   nrow(preparation_manifest) >= 250L,
   !anyDuplicated(preparation_manifest$path),
   all(file.exists(manifest_absolute_paths)),
+  all(c(
+    "preparation_source",
+    "preparation_website_source",
+    "preparation_website_render",
+    "preparation_website_page_asset"
+  ) %in% preparation_manifest$role),
+  !any(preparation_manifest$role %in% c(
+    "preparation_direct_render",
+    "preparation_direct_page_asset"
+  )),
+  !any(
+    preparation_manifest$path ==
+      "audit/hypotheses/H04/H04_analysis_preparation.html"
+  ),
+  !any(startsWith(
+    preparation_manifest$path,
+    "audit/hypotheses/H04/H04_analysis_preparation_files/"
+  )),
   "artifacts/12_manifests/H04/H04_stage3_artifacts.csv" %in%
     preparation_manifest$path,
   !"artifacts/12_manifests/H04/H04_preparation_report_manifest.csv" %in%
@@ -275,29 +348,102 @@ stopifnot(
   )
 )
 
-# The common verifier is last so all H04-owned checks complete before a
-# coordinator-owned website-profile omission can block the integrated test.
-verification <- verify_hypothesis_preparation_companion(
-  root = root,
-  hypothesis_id = "H04",
-  min_figures = 4L,
-  min_gt_tables = 24L,
-  extra_forbidden_calls = c(
-    "h04_fit_quasi",
-    "h04_fit_additive_run",
-    "h04_fit_interaction_architecture",
-    "h04_fit_temporal_model",
-    "h04_fit_reader_temporal_model",
-    "h04_temporal_model",
-    "h04_leave_one_site_out"
+# H04 uses dynamic QMD source links under the accepted harmonization contract.
+# The registered HTML pages still resolve those links to reciprocal HTML hrefs.
+source_copy_identical <- identical(
+  read_file_bytes(paths$qmd),
+  read_file_bytes(paths$rendered_qmd)
+)
+profile_lines <- readLines(
+  paths$quarto_profile,
+  warn = FALSE,
+  encoding = "UTF-8"
+)
+assert_adjacent_profile_entries(
+  profile_lines,
+  "notebooks/hypotheses/H04.qmd",
+  "audit/hypotheses/H04/H04_analysis_preparation.qmd"
+)
+
+forbidden_calls <- c(
+  "mgcv::gam", "mgcv::bam", "gam", "bam",
+  "lme4::lmer", "lmer", "lme4::glmer", "glmer",
+  "glmmTMB::glmmTMB", "glmmTMB", "brms::brm", "brm",
+  "stats::predict", "predict", "stats::simulate", "simulate",
+  "boot::boot", "boot", "emmeans::emmeans", "emmeans",
+  "h04_fit_quasi", "h04_fit_additive_run",
+  "h04_fit_interaction_architecture", "h04_fit_temporal_model",
+  "h04_fit_reader_temporal_model", "h04_temporal_model",
+  "h04_leave_one_site_out"
+)
+stopifnot(length(intersect(
+  executable_r_call_names(qmd_lines),
+  forbidden_calls
+)) == 0L)
+
+note_callouts <- xml2::xml_find_all(
+  main,
+  ".//*[contains(concat(' ', normalize-space(@class), ' '), ' callout-note ')]"
+)
+warning_callouts <- xml2::xml_find_all(
+  main,
+  paste0(
+    ".//*[contains(@class, 'callout-important') or ",
+    "contains(@class, 'callout-warning') or ",
+    "contains(@class, 'callout-caution') or ",
+    "contains(@class, 'callout-danger')]"
   )
+)
+result_href <- "../../../notebooks/hypotheses/H04.html"
+result_links <- xml2::xml_find_all(
+  main,
+  paste0(".//a[contains(@href, '", result_href, "')]")
+)
+result_document <- xml2::read_html(paths$result_html)
+result_main <- xml2::xml_find_first(
+  result_document,
+  "//main[@id='quarto-document-content']"
+)
+prep_href <- "../../audit/hypotheses/H04/H04_analysis_preparation.html"
+prep_links <- xml2::xml_find_all(
+  result_main,
+  paste0(".//a[contains(@href, '", prep_href, "')]")
+)
+gt_tables <- xml2::xml_find_all(
+  main,
+  ".//table[contains(concat(' ', normalize-space(@class), ' '), ' gt_table ')]"
+)
+required_manifest_paths <- c(
+  "audit/hypotheses/H04/H04_analysis_preparation.qmd",
+  paste0(
+    "_build/nathealth/audit/hypotheses/H04/",
+    "H04_analysis_preparation.qmd"
+  ),
+  paste0(
+    "_build/nathealth/audit/hypotheses/H04/",
+    "H04_analysis_preparation.html"
+  ),
+  "_quarto-nathealth.yml"
+)
+
+verification <- list(
+  figures = length(xml2::xml_find_all(main, ".//figure")),
+  gt_tables = length(gt_tables),
+  manifest_identities = nrow(preparation_manifest),
+  source_copy_identical = source_copy_identical
 )
 
 stopifnot(
   verification$figures >= 4L,
   verification$gt_tables >= 24L,
   verification$manifest_identities >= 60L,
-  isTRUE(verification$source_copy_identical)
+  isTRUE(verification$source_copy_identical),
+  length(note_callouts) >= 1L,
+  length(warning_callouts) == 0L,
+  length(result_links) >= 1L,
+  !inherits(result_main, "xml_missing"),
+  length(prep_links) >= 1L,
+  all(required_manifest_paths %in% preparation_manifest$path)
 )
 
 message(
@@ -307,5 +453,5 @@ message(
   verification$gt_tables,
   " gt tables, ",
   verification$manifest_identities,
-  " manifest identities, and byte-identical source copy"
+  " manifest identities, and byte-identical website QMD provenance copy"
 )

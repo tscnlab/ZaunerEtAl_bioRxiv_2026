@@ -74,6 +74,21 @@ sensitivity_tests <- read_h04(
   "H04",
   "H04_sensitivity_omnibus_tests.csv"
 )
+mundlak_between <- read_h04(
+  "09_tables",
+  "H04",
+  "H04_mundlak_between_participant_estimands.csv"
+)
+mundlak_between_omnibus <- read_h04(
+  "09_tables",
+  "H04",
+  "H04_mundlak_between_participant_omnibus.csv"
+)
+mundlak_support <- read_h04(
+  "08_diagnostics",
+  "H04",
+  "H04_mundlak_activity_support.csv"
+)
 influence <- read_h04(
   "09_tables",
   "H04",
@@ -216,6 +231,27 @@ for (id in c("near_eye", "chest")) {
       as.character(object$data$participant),
       as.character(frames$main[[id]]$participant)
     )
+  )
+}
+for (id in c("near_eye", "chest")) {
+  object <- additive$sensitivities[[paste0("mundlak__", id)]]
+  between_variables <- h04_mundlak_activity_map()$between_variable
+  expected <- h04_add_mundlak_proportions(frames$main[[id]])
+  stopifnot(
+    inherits(object$fit, "glm"),
+    identical(
+      h04_formula_text(stats::formula(object$fit)),
+      h04_formula_text(h04_formula_set()$secondary_mundlak_audit)
+    ),
+    object$fit$rank == ncol(stats::model.matrix(object$fit)),
+    all(is.finite(stats::coef(object$fit))),
+    all(between_variables %in% names(object$data)),
+    isTRUE(all.equal(
+      object$data[between_variables],
+      expected[between_variables],
+      tolerance = 1e-12
+    )),
+    max(abs(object$data$analysis_weight - object$fit$prior.weights)) < 1e-12
   )
 }
 rm(additive)
@@ -361,12 +397,59 @@ named_sensitivity <- sensitivity |>
       )
   )
 stopifnot(
-  n_distinct(named_sensitivity$scenario_id) == 8L,
+  n_distinct(named_sensitivity$scenario_id) == 9L,
   n_distinct(named_sensitivity$placement) == 2L,
   all(named_sensitivity$stability == "stable"),
   all(named_sensitivity$direction_concordant),
   all(sensitivity_tests$status == "ESTIMABLE"),
   all(sensitivity_tests$p_raw < 0.001)
+)
+mundlak_within <- named_sensitivity |>
+  filter(.data$scenario_id == "mundlak_within_between")
+mundlak_diagnostics <- diagnostics |>
+  filter(.data$scenario_id == "mundlak_within_between")
+stopifnot(
+  nrow(mundlak_within) == 8L,
+  all(mundlak_within$primary_ratio_inside_sensitivity_interval),
+  max(abs(mundlak_within$ratio_relative_change_percent)) < 17,
+  nrow(mundlak_between) == 10L,
+  sum(mundlak_between$inferential_role ==
+    "NAMED_COMPOSITION_VERSUS_HOME") == 8L,
+  all(is.finite(mundlak_between$ratio_per_change)),
+  all(is.finite(mundlak_between$p_adjusted[
+    mundlak_between$inferential_role ==
+      "NAMED_COMPOSITION_VERSUS_HOME"
+  ])),
+  all(is.na(mundlak_between$p_adjusted[
+    mundlak_between$inferential_role == "DISPLAY_ONLY"
+  ])),
+  mundlak_between$p_adjusted[
+    mundlak_between$placement == "Near-eye" &
+      mundlak_between$activity_code == "outdoors"
+  ] < 0.05,
+  mundlak_between$p_adjusted[
+    mundlak_between$placement == "Chest" &
+      mundlak_between$activity_code == "outdoors"
+  ] >= 0.05,
+  nrow(mundlak_between_omnibus) == 2L,
+  all(mundlak_between_omnibus$status == "ESTIMABLE"),
+  mundlak_between_omnibus$p_raw[
+    mundlak_between_omnibus$placement == "Near-eye"
+  ] < 0.05,
+  mundlak_between_omnibus$p_raw[
+    mundlak_between_omnibus$placement == "Chest"
+  ] >= 0.05,
+  all(mundlak_diagnostics$converged),
+  all(mundlak_diagnostics$full_rank),
+  all(mundlak_diagnostics$covariance_positive_definite),
+  all(mundlak_diagnostics$covariance_condition_number < 1e4),
+  all(mundlak_diagnostics$maximum_cluster_score_share <= 0.50),
+  all(mundlak_diagnostics$maximum_cluster_leverage_share <= 0.20),
+  nrow(mundlak_support) == 10L,
+  all(mundlak_support$participants_with_home ==
+    mundlak_support$participants),
+  all(mundlak_support$participants_with_category_and_home ==
+    mundlak_support$participants_with_category)
 )
 paired_samples <- samples |>
   filter(.data$scenario_id == "paired_common_sample")
