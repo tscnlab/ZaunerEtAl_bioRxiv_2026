@@ -59,6 +59,34 @@ required_files <- c(
   artifact("09_tables", "H03", "H03_primary_omnibus_tests.csv"),
   artifact("09_tables", "H03", "H03_site_context_estimands.csv"),
   artifact("09_tables", "H03", "H03_glm_r_squared_and_effect_partition.csv"),
+  artifact(
+    "09_tables", "H03",
+    "H03_near_eye_participant_random_intercept_summary.csv"
+  ),
+  artifact(
+    "09_tables", "H03",
+    "H03_near_eye_participant_random_intercept_marginal_r2_shapley.csv"
+  ),
+  artifact(
+    "08_diagnostics", "H03",
+    "H03_near_eye_participant_random_intercept_shapley_models.csv"
+  ),
+  artifact(
+    "08_diagnostics", "H03",
+    "H03_near_eye_participant_random_intercept_diagnostics.csv"
+  ),
+  artifact(
+    "07_models", "H03",
+    "H03_near_eye_participant_random_intercept_assessment.rds"
+  ),
+  artifact(
+    "12_manifests", "H03",
+    "H03_near_eye_participant_random_intercept_environment.csv"
+  ),
+  artifact(
+    "12_manifests", "H03",
+    "H03_near_eye_participant_random_intercept_manifest.csv"
+  ),
   artifact("09_tables", "H03", "H03_sensitivity_comparison.csv"),
   artifact("09_tables", "H03", "H03_reader_temporal_model_summary.csv"),
   artifact("09_tables", "H03", "H03_reader_temporal_weighted_r_squared.csv"),
@@ -120,6 +148,34 @@ latitude_diagnostics <- readr::read_csv(
   artifact("08_diagnostics", "H03", "H03_reader_latitude_model_diagnostics.csv"),
   show_col_types = FALSE
 )
+participant_random_intercept <- readr::read_csv(
+  artifact(
+    "09_tables", "H03",
+    "H03_near_eye_participant_random_intercept_summary.csv"
+  ),
+  show_col_types = FALSE
+)
+participant_random_intercept_diagnostics <- readr::read_csv(
+  artifact(
+    "08_diagnostics", "H03",
+    "H03_near_eye_participant_random_intercept_diagnostics.csv"
+  ),
+  show_col_types = FALSE
+)
+participant_random_intercept_shapley <- readr::read_csv(
+  artifact(
+    "09_tables", "H03",
+    "H03_near_eye_participant_random_intercept_marginal_r2_shapley.csv"
+  ),
+  show_col_types = FALSE
+)
+participant_random_intercept_shapley_models <- readr::read_csv(
+  artifact(
+    "08_diagnostics", "H03",
+    "H03_near_eye_participant_random_intercept_shapley_models.csv"
+  ),
+  show_col_types = FALSE
+)
 figure_qa <- dplyr::bind_rows(
   readr::read_csv(
     artifact("12_manifests", "H03", "H03_stage3_figure_readability_qa.csv"),
@@ -169,6 +225,71 @@ stopifnot(
   all(latitude_diagnostics$converged),
   all(latitude_diagnostics$warning_count == 0L),
   all(latitude_diagnostics$design_rank == 14L),
+  nrow(participant_random_intercept) == 1L,
+  participant_random_intercept$formula[[1L]] ==
+    "geo_medi_1h ~ site * light_source + (1 | participant)",
+  participant_random_intercept$observations[[1L]] == 17935L,
+  participant_random_intercept$participants[[1L]] == 140L,
+  abs(
+    participant_random_intercept$marginal_r_squared[[1L]] - 0.7958506
+  ) < 1e-6,
+  abs(
+    participant_random_intercept$conditional_r_squared[[1L]] - 0.8762255
+  ) < 1e-6,
+  abs(
+    participant_random_intercept$participant_r_squared_increment[[1L]] -
+      0.08037487
+  ) < 1e-6,
+  participant_random_intercept_diagnostics$converged[[1L]],
+  participant_random_intercept_diagnostics$warning_count[[1L]] == 0L,
+  participant_random_intercept_diagnostics$positive_definite_hessian[[1L]],
+  !participant_random_intercept_diagnostics$singular[[1L]],
+  nrow(participant_random_intercept_shapley) == 3L,
+  identical(
+    participant_random_intercept_shapley$component_id,
+    c("site", "light_source", "site_by_light_source")
+  ),
+  abs(
+    sum(participant_random_intercept_shapley$marginal_r_squared_component) -
+      participant_random_intercept$marginal_r_squared[[1L]]
+  ) < 1e-12,
+  abs(
+    sum(
+      participant_random_intercept_shapley[[
+        "share_of_full_marginal_r_squared_percent"
+      ]]
+    ) - 100
+  ) < 1e-10,
+  all(
+    abs(
+      participant_random_intercept_shapley$shapley_efficiency_error
+    ) < 1e-12
+  ),
+  abs(
+    participant_random_intercept_shapley$marginal_r_squared_component[
+      participant_random_intercept_shapley$component_id == "site"
+    ] - 0.05630003
+  ) < 1e-6,
+  abs(
+    participant_random_intercept_shapley$marginal_r_squared_component[
+      participant_random_intercept_shapley$component_id == "light_source"
+    ] - 0.71044566
+  ) < 1e-6,
+  abs(
+    participant_random_intercept_shapley$marginal_r_squared_component[
+      participant_random_intercept_shapley$component_id ==
+        "site_by_light_source"
+    ] - 0.02910495
+  ) < 1e-6,
+  nrow(participant_random_intercept_shapley_models) == 5L,
+  all(participant_random_intercept_shapley_models$converged),
+  all(participant_random_intercept_shapley_models$warning_count == 0L),
+  all(
+    participant_random_intercept_shapley_models[[
+      "positive_definite_hessian"
+    ]]
+  ),
+  !any(participant_random_intercept_shapley_models$singular),
   abs(
     latitude_slopes$ratio_per_10deg[
       latitude_slopes$placement == "Near-eye" &
@@ -228,6 +349,7 @@ qmd_text <- paste(readLines(qmd_path, warn = FALSE), collapse = "\n")
 required_qmd_formula_fragments <- c(
   "geo_medi_1h ~ site + light_source",
   "geo_medi_1h ~ site * light_source",
+  "geo_medi_1h ~ site * light_source + (1 | participant)",
   "geo_medi_1h ~ 0 + site_source_cell",
   paste0(
     "geo_medi_1h ~ 0 + light_source + ",
@@ -271,14 +393,20 @@ required_reader_phrases <- c(
   "p <0.001",
   "17,935 near-eye participant-hours",
   "19,512 chest participant-hours",
-  "site-standardized",
+  "site-average",
   "85.1 lx",
   "gap-timing-unaware dataset",
   "146 of 149 estimable non-reference category ratios",
-  "Exploratory time-of-day context",
+  "Exploratory nonlinear time-of-day context",
   "ratios to the global daily smooth",
-  "Site-standardized participant-balanced R²",
-  "Exploratory linear latitude replacement",
+  "Site-average participant-balanced R²",
+  "Exploratory participant random-intercept assessment",
+  "Marginal R² was 0.796",
+  "Conditional R² was 0.876",
+  "the study-site component was 0.056",
+  "the light-source component was 0.710",
+  "site-by-light-source interaction component was 0.029",
+  "Exploratory linear latitude context",
   "ratio 1.197 per +10°",
   "The result is observational"
 )
@@ -309,7 +437,7 @@ stopifnot(
   length(xml2::xml_find_all(
     doc,
     "//table[contains(@class, 'gt_table')]"
-  )) == 13L
+  )) == 14L
 )
 
 local_links <- xml2::xml_attr(
@@ -322,7 +450,7 @@ local_sources <- normalizePath(
   mustWork = FALSE
 )
 stopifnot(
-  length(local_links) == 18L,
+  length(local_links) == 22L,
   all(grepl("\\.csv$", local_links)),
   all(file.exists(local_sources))
 )
@@ -354,7 +482,43 @@ expected_manifest_paths <- c(
   "scripts/hypotheses/H03/build_h03_stage3_assets.R",
   "scripts/hypotheses/H03/build_h03_stage3_revision.R",
   "scripts/hypotheses/H03/build_h03_stage3_manifest.R",
+  paste0(
+    "scripts/hypotheses/H03/",
+    "run_h03_participant_random_intercept_assessment.R"
+  ),
   "tests/hypotheses/H03/test_h03_stage3_reader_report.R",
+  paste0(
+    "tests/hypotheses/H03/",
+    "test_h03_participant_random_intercept_assessment.R"
+  ),
+  paste0(
+    "artifacts/07_models/H03/",
+    "H03_near_eye_participant_random_intercept_assessment.rds"
+  ),
+  paste0(
+    "artifacts/08_diagnostics/H03/",
+    "H03_near_eye_participant_random_intercept_diagnostics.csv"
+  ),
+  paste0(
+    "artifacts/09_tables/H03/",
+    "H03_near_eye_participant_random_intercept_summary.csv"
+  ),
+  paste0(
+    "artifacts/09_tables/H03/",
+    "H03_near_eye_participant_random_intercept_marginal_r2_shapley.csv"
+  ),
+  paste0(
+    "artifacts/08_diagnostics/H03/",
+    "H03_near_eye_participant_random_intercept_shapley_models.csv"
+  ),
+  paste0(
+    "artifacts/12_manifests/H03/",
+    "H03_near_eye_participant_random_intercept_environment.csv"
+  ),
+  paste0(
+    "artifacts/12_manifests/H03/",
+    "H03_near_eye_participant_random_intercept_manifest.csv"
+  ),
   "artifacts/12_manifests/H03/H03_stage3_reader_asset_manifest.csv",
   "artifacts/12_manifests/H03/H03_stage3_figure_readability_qa.csv",
   "artifacts/12_manifests/H03/H03_stage3_revision_asset_manifest.csv",
