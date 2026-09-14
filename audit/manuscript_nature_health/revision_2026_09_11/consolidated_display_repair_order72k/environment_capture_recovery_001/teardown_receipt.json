@@ -1,0 +1,16 @@
+{
+  "lease": "ORDER72K-VISUAL-LEASE-002",
+  "status": "released with STOPPED_VISUAL return",
+  "server_pid": 38247,
+  "server_port": 58005,
+  "server_closed_at": "2026-09-11T19:52:17Z",
+  "termination": "SIGINT after exact task-command verification",
+  "listener_check": {"command": "lsof -nP -iTCP:58005 -sTCP:LISTEN", "exit_code": 1, "output": ""},
+  "process_check": {"command": "ps -p 38247 -o pid=,ppid=,command=", "exit_code": 1, "output": ""},
+  "capture_profile_check": {"command": "pgrep -fl /private/tmp/order72k_3ok569jd/playwright_chromiumdev_profile-", "exit_code": 1, "output": ""},
+  "capture_browser_closed_normally": true,
+  "CUA_tabs_created_this_recovery": 0,
+  "native_Word_documents_opened_this_recovery": 0,
+  "automatic_unlock_attempted_this_recovery": false,
+  "unrelated_processes_touched": false
+}

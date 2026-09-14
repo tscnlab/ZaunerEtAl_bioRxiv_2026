@@ -60,9 +60,9 @@ h01_metric_registry <- function() {
     16L, "dose_time_sensitive_corrected_medi", "participant_day",
     "gaussian", "log10_offset_0.1", "ratio", FALSE, 0, NA_real_, NA_real_,
     "Offset, influence, and upper-tail checks",
-    17L, "mder_ratio_of_integrals", "participant_day", "gaussian",
+    17L, "mder_mean_of_viable_ratios", "participant_day", "gaussian",
     "identity", "difference", FALSE, 0, NA_real_, NA_real_,
-    "Lower-tail and influence checks"
+    "Distribution, viable-minute support, upper-tail, and influence checks"
   )
 }
 
@@ -120,7 +120,7 @@ h01_input_contract <- function(root) {
         "artifacts/12_manifests/H01_model_data_artifacts.csv"
       ),
       manifest_sha256 =
-        "ea9d47f624a8777f8416447612bfcc2309cf2bac40fdf4fd5021c8767806dfbf"
+        "25978c5d6903e6e835c1aff6a9bc2e7552b85295e8d840d3dd65bbf9b1eb6b72"
     ),
     manuscript_prepared_data = list(
       path = file.path(
@@ -138,12 +138,12 @@ h01_input_contract <- function(root) {
         )
       ),
       manifest_sha256 =
-        "cb47b3678146604aadca875a96f79909e2d73355162683ff0603f038f3b31a25"
+        "e0d98178ede61b74353e3a654e7f1b53d7e1c915833a2cda74eea45ed02f383b"
     ),
     implementation_contract_sha256 =
-      "e07db16818e565aff40fa6b9f79f34a31eb943d6c393343ca96471b795bacbed",
+      "62e5af96d08062945ad41b9031c0cfeb749fb7917db83deea2666bff98aa86de",
     shared_implementation_sha256 =
-      "c7d66825c359066ec6dce1a623408d532c4686fd0b77bfe1da5e392fcc7f5516",
+      "f0224802bd9b11900c0b446e759c8ce8495788f0fde6afd9101f76ccfabb8303",
     model_implementation_id = "new_h01_h11"
   )
 }

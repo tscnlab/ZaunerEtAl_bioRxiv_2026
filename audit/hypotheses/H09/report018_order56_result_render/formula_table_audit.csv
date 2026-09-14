@@ -1,0 +1,7 @@
+"order","observed_instrument","expected_instrument","observed_role","expected_role","observed_formula","expected_formula","status"
+1,"MCTQ MSFsc","MCTQ MSFsc","Site only","Site only","timing_hour ~ site + (1 | site:Id)","timing_hour ~ site + (1 | site:Id)","PASS"
+2,"MCTQ MSFsc","MCTQ MSFsc","Average chronotype association","Average chronotype association","timing_hour ~ site + mctq_hour_centered + (1 | site:Id)","timing_hour ~ site + mctq_hour_centered + (1 | site:Id)","PASS"
+3,"MCTQ MSFsc","MCTQ MSFsc","Chronotype-by-site interaction","Chronotype-by-site interaction","timing_hour ~ site * mctq_hour_centered + (1 | site:Id)","timing_hour ~ site * mctq_hour_centered + (1 | site:Id)","PASS"
+4,"MEQ","MEQ","Site only","Site only","timing_hour ~ site + (1 | site:Id)","timing_hour ~ site + (1 | site:Id)","PASS"
+5,"MEQ","MEQ","Average chronotype association","Average chronotype association","timing_hour ~ site + meq_10_centered + (1 | site:Id)","timing_hour ~ site + meq_10_centered + (1 | site:Id)","PASS"
+6,"MEQ","MEQ","Chronotype-by-site interaction","Chronotype-by-site interaction","timing_hour ~ site * meq_10_centered + (1 | site:Id)","timing_hour ~ site * meq_10_centered + (1 | site:Id)","PASS"

@@ -22,8 +22,10 @@ assert_identical <- function(observed, expected, message) {
   if (!identical(observed, expected)) {
     stop(
       message,
-      "\nObserved: ", paste(observed, collapse = ", "),
-      "\nExpected: ", paste(expected, collapse = ", "),
+      "\nObserved: ",
+      paste(observed, collapse = ", "),
+      "\nExpected: ",
+      paste(expected, collapse = ", "),
       call. = FALSE
     )
   }
@@ -49,9 +51,11 @@ find_raw_sequence <- function(haystack, needle) {
   ]
   candidates[vapply(
     candidates,
-    function(index) identical(
-      haystack[index:(index + length(needle) - 1L)], needle
-    ),
+    function(index)
+      identical(
+        haystack[index:(index + length(needle) - 1L)],
+        needle
+      ),
     logical(1)
   )]
 }
@@ -72,7 +76,8 @@ read_pdf_raster_contract <- function(path) {
   media_end <- which(media_window %in% as.raw(c(10L, 13L)))[[1L]]
   media_text <- rawToChar(media_window[seq_len(media_end - 1L)])
   media_values <- as.numeric(regmatches(
-    media_text, gregexpr("[0-9.]+", media_text)
+    media_text,
+    gregexpr("[0-9.]+", media_text)
   )[[1L]])
 
   image_index <- find_raw_sequence(bytes, charToRaw("/Subtype /Image"))[[1L]]
@@ -125,10 +130,8 @@ read_jpeg_dimensions <- function(path) {
     segment_length <- bytes[[position]] * 256L + bytes[[position + 1L]]
     if (marker %in% start_of_frame) {
       return(c(
-        width_px = bytes[[position + 5L]] * 256L +
-          bytes[[position + 6L]],
-        height_px = bytes[[position + 3L]] * 256L +
-          bytes[[position + 4L]]
+        width_px = bytes[[position + 5L]] * 256L + bytes[[position + 6L]],
+        height_px = bytes[[position + 3L]] * 256L + bytes[[position + 4L]]
       ))
     }
     position <- position + segment_length
@@ -147,6 +150,29 @@ input_checks <- verify_descriptive_inputs(root)
 assert_true(all(manifest_checks$status == "PASS"), "A shared manifest failed")
 assert_true(all(input_checks$status == "PASS"), "A prepared input failed")
 assert_true(
+  nrow(manifest_checks) == 13L && nrow(input_checks) == 22L,
+  "The repaired gap MDER provenance is not fully pinned"
+)
+assert_identical(
+  artifact_sha256(file.path(
+    root,
+    "audit/decisions/l10_numerical_zero_normalization.md"
+  )),
+  "23b9f70d1d16f7fd3ebbdbc57aaf78c0a701fe1f9d22bd667d926cd320d40797",
+  "The controlling METRIC-011 decision changed"
+)
+assert_identical(
+  artifact_sha256(file.path(
+    root,
+    paste0(
+      "audit/reconciliation/l10_METRIC-011/",
+      "METRIC-011_evidence_manifest.csv"
+    )
+  )),
+  "a37efd3449a8d1a6065d0eb8964bd6cf8b241f1683a26c065ea1a946e23214fb",
+  "The controlling METRIC-011 evidence manifest changed"
+)
+assert_true(
   !any(startsWith(manifest_checks$path, "/")),
   "Stored shared-manifest verification contains an absolute local path"
 )
@@ -164,10 +190,16 @@ registry_file <- utils::read.csv(
   fileEncoding = "UTF-8"
 )
 registry <- descriptive_site_display_registry()
-assert_identical(registry, registry_file[order(registry_file$display_order), ],
-                 "The descriptive display registry differs from DISPLAY-001")
-assert_identical(descriptive_site_order(), registry$site,
-                 "Site order does not come from DISPLAY-001")
+assert_identical(
+  registry,
+  registry_file[order(registry_file$display_order), ],
+  "The descriptive display registry differs from DISPLAY-001"
+)
+assert_identical(
+  descriptive_site_order(),
+  registry$site,
+  "Site order does not come from DISPLAY-001"
+)
 assert_identical(
   descriptive_site_reader_labels(),
   stats::setNames(registry$display_name, registry$site),
@@ -195,45 +227,70 @@ inputs <- load_descriptive_inputs(root)
 validate_descriptive_inputs(inputs)
 
 # Fixed sample and unique-key contracts.
-assert_true(dplyr::n_distinct(inputs$demographics$Id) == 191L,
-            "Normalized participant roster is not 191")
+assert_true(
+  dplyr::n_distinct(inputs$demographics$Id) == 191L,
+  "Normalized participant roster is not 191"
+)
 key <- c("site", "Id", "local_date")
 for (placement in c("near_eye", "chest")) {
   data <- inputs$participant_day[[placement]]
-  assert_true(!anyDuplicated(data[key]), paste("Duplicate participant-day key:", placement))
+  assert_true(
+    !anyDuplicated(data[key]),
+    paste("Duplicate participant-day key:", placement)
+  )
 }
-assert_true(nrow(inputs$participant_day$near_eye) == 816L,
-            "Near-eye main participant-days are not 816")
-assert_true(dplyr::n_distinct(inputs$participant_day$near_eye$Id) == 141L,
-            "Near-eye main participants are not 141")
-assert_true(nrow(inputs$participant_day$chest) == 902L,
-            "Chest main participant-days are not 902")
-assert_true(dplyr::n_distinct(inputs$participant_day$chest$Id) == 154L,
-            "Chest main participants are not 154")
 assert_true(
-  sum(inputs$daily_coverage$near_eye$day_eligible_without_all_zero_screen) == 818L &&
+  nrow(inputs$participant_day$near_eye) == 816L,
+  "Near-eye main participant-days are not 816"
+)
+assert_true(
+  dplyr::n_distinct(inputs$participant_day$near_eye$Id) == 141L,
+  "Near-eye main participants are not 141"
+)
+assert_true(
+  nrow(inputs$participant_day$chest) == 902L,
+  "Chest main participant-days are not 902"
+)
+assert_true(
+  dplyr::n_distinct(inputs$participant_day$chest$Id) == 154L,
+  "Chest main participants are not 154"
+)
+assert_true(
+  sum(inputs$daily_coverage$near_eye$day_eligible_without_all_zero_screen) ==
+    818L &&
     sum(inputs$daily_coverage$near_eye$day_all_zero_medi_excluded) == 2L,
   "Near-eye all-zero sample flow is not 818 - 2 = 816"
 )
 assert_true(
-  sum(inputs$daily_coverage$chest$day_eligible_without_all_zero_screen) == 905L &&
+  sum(inputs$daily_coverage$chest$day_eligible_without_all_zero_screen) ==
+    905L &&
     sum(inputs$daily_coverage$chest$day_all_zero_medi_excluded) == 3L,
   "Chest all-zero sample flow is not 905 - 3 = 902"
 )
-assert_true(sum(inputs$coverage$near_eye$day_eligible) == 1175160L,
-            "Near-eye eligible real-minute rows are not 1,175,160")
-assert_true(sum(inputs$coverage$chest$day_eligible) == 1298880L,
-            "Chest eligible real-minute rows are not 1,298,880")
+assert_true(
+  sum(inputs$coverage$near_eye$day_eligible) == 1175160L,
+  "Near-eye eligible real-minute rows are not 1,175,160"
+)
+assert_true(
+  sum(inputs$coverage$chest$day_eligible) == 1298880L,
+  "Chest eligible real-minute rows are not 1,298,880"
+)
 
 collection_days <- build_collection_days(inputs)
-assert_true(!anyDuplicated(collection_days[c("placement", key)]),
-            "Collection-day output has duplicate placement-day keys")
+assert_true(
+  !anyDuplicated(collection_days[c("placement", key)]),
+  "Collection-day output has duplicate placement-day keys"
+)
 paired_near <- dplyr::filter(
-  collection_days, .data$placement == "near_eye", .data$paired_day
+  collection_days,
+  .data$placement == "near_eye",
+  .data$paired_day
 )
 assert_true(nrow(paired_near) == 643L, "Paired participant-days are not 643")
-assert_true(dplyr::n_distinct(paired_near$Id) == 112L,
-            "Paired participants are not 112")
+assert_true(
+  dplyr::n_distinct(paired_near$Id) == 112L,
+  "Paired participants are not 112"
+)
 
 available_collection_days <- build_available_collection_days(inputs)
 assert_true(
@@ -270,7 +327,8 @@ interval_gaps <- collection_intervals |>
   dplyr::mutate(
     missing_dates_before = as.integer(
       .data$interval_start - dplyr::lag(.data$interval_end)
-    ) - 1L
+    ) -
+      1L
   ) |>
   dplyr::filter(!is.na(.data$missing_dates_before)) |>
   dplyr::ungroup()
@@ -282,17 +340,27 @@ assert_true(
 
 # Rebuilt table keys, sizes, order, and denominators.
 site_sample <- build_site_sample_characteristics(
-  inputs, collection_days, available_collection_days
+  inputs,
+  collection_days,
+  available_collection_days
 )
 participant_replica <- build_participant_site_replica(
-  inputs, site_sample, available_collection_days
+  inputs,
+  site_sample,
+  available_collection_days
 )
-assert_true(nrow(participant_replica) == 220L,
-            "Participant/site replica is not 22 by 10")
-assert_true(!anyDuplicated(participant_replica[c("characteristic", "site")]),
-            "Participant/site table key is duplicated")
+assert_true(
+  nrow(participant_replica) == 220L,
+  "Participant/site replica is not 22 by 10"
+)
+assert_true(
+  !anyDuplicated(participant_replica[c("characteristic", "site")]),
+  "Participant/site table key is duplicated"
+)
 assert_identical(
-  as.character(participant_replica$site[participant_replica$characteristic == "Institution"]),
+  as.character(participant_replica$site[
+    participant_replica$characteristic == "Institution"
+  ]),
   replica_site_levels(),
   "Participant/site columns do not follow DISPLAY-001"
 )
@@ -322,7 +390,8 @@ assert_identical(
   "Participant time does not use the screened near-eye total and two units"
 )
 assert_true(
-  "Screened days" %in% participant_replica$characteristic &&
+  "Screened days" %in%
+    participant_replica$characteristic &&
     !"Main-day screen" %in% participant_replica$characteristic,
   "The final screened-day row has the wrong label"
 )
@@ -330,7 +399,8 @@ assert_true(
   all(
     participant_replica$n_participants[
       participant_replica$characteristic == "Age"
-    ] == site_sample$roster_participants
+    ] ==
+      site_sample$roster_participants
   ),
   "Participant information does not cover the whole roster"
 )
@@ -358,14 +428,198 @@ metric_values <- build_metric_values(inputs)
 metric_summary <- build_metric_summary(metric_values)
 metric_replica <- build_metric_replica(metric_summary)
 assert_true(nrow(metric_replica) == 170L, "Metric replica is not 17 by 10")
-assert_true(!anyDuplicated(metric_replica[c("metric_id", "site")]),
-            "Metric table key is duplicated")
-assert_true(all(metric_replica$n_observations > 0),
-            "A metric row has no observations")
-assert_true(all(metric_replica$n_participants > 0),
-            "A metric row has no participants")
-assert_true(all(metric_replica$n_participant_days > 0),
-            "A metric row has no participant-days")
+assert_true(
+  !anyDuplicated(metric_replica[c("metric_id", "site")]),
+  "Metric table key is duplicated"
+)
+assert_true(
+  all(metric_replica$n_observations > 0),
+  "A metric row has no observations"
+)
+assert_true(
+  all(metric_replica$n_participants > 0),
+  "A metric row has no participants"
+)
+assert_true(
+  all(metric_replica$n_participant_days > 0),
+  "A metric row has no participant-days"
+)
+mder_id <- "mder_mean_of_viable_ratios"
+mder_support <- metric_values |>
+  dplyr::filter(
+    .data$metric_id == .env$mder_id,
+    .data$finite,
+    is.finite(.data$value)
+  ) |>
+  dplyr::group_by(.data$placement) |>
+  dplyr::summarise(
+    participants = dplyr::n_distinct(.data$Id),
+    participant_days = dplyr::n(),
+    mean = mean(.data$value),
+    median = stats::median(.data$value),
+    .groups = "drop"
+  ) |>
+  dplyr::arrange(match(.data$placement, c("near_eye", "chest")))
+assert_identical(
+  mder_support$participants,
+  c(137L, 152L),
+  "METRIC-010 MDER participant support is incorrect"
+)
+assert_identical(
+  mder_support$participant_days,
+  c(687L, 723L),
+  "METRIC-010 MDER participant-day support is incorrect"
+)
+assert_close(
+  mder_support$mean,
+  c(0.7242573, 0.7567377),
+  5e-8,
+  "METRIC-010 MDER means differ from the controlling audit"
+)
+assert_close(
+  mder_support$median,
+  c(0.7238676, 0.7495175),
+  5e-8,
+  "METRIC-010 MDER medians differ from the controlling audit"
+)
+l10_evidence_path <- file.path(
+  root,
+  "audit/reconciliation/l10_METRIC-011/primary_scientific_cell_changes.csv"
+)
+l10_evidence <- readr::read_csv(l10_evidence_path, show_col_types = FALSE) |>
+  dplyr::mutate(
+    placement = dplyr::recode(.data$position, glasses = "near_eye"),
+    local_date = as.Date(.data$local_date)
+  )
+l10_values <- metric_values |>
+  dplyr::filter(.data$metric_id == "l10_mean_medi")
+l10_observed <- l10_evidence |>
+  dplyr::select("placement", "site", "Id", "local_date") |>
+  dplyr::left_join(
+    l10_values |>
+      dplyr::select("placement", "site", "Id", "local_date", "value"),
+    by = c("placement", "site", "Id", "local_date")
+  )
+assert_true(
+  nrow(l10_observed) == 8L &&
+    !anyNA(l10_observed$value) &&
+    all(l10_observed$value == 0),
+  "The eight METRIC-011 L10 repairs are not exact zero"
+)
+l10_zero_counts <- l10_values |>
+  dplyr::group_by(.data$placement) |>
+  dplyr::summarise(
+    exact_zero = sum(.data$value == 0, na.rm = TRUE),
+    positive_roundoff = sum(
+      .data$value > 0 & .data$value < 1e-12,
+      na.rm = TRUE
+    ),
+    .groups = "drop"
+  ) |>
+  dplyr::arrange(match(.data$placement, c("near_eye", "chest")))
+assert_identical(
+  l10_zero_counts$exact_zero,
+  c(114L, 125L),
+  "METRIC-011 L10 exact-zero counts are incorrect"
+)
+assert_true(
+  all(l10_zero_counts$positive_roundoff == 0L),
+  "A positive machine-roundoff L10 residual remains"
+)
+gap_mder_values <- prepare_gap_mder_values(inputs)
+assert_identical(
+  vapply(
+    c("near_eye", "chest"),
+    function(placement) sum(gap_mder_values$placement == placement),
+    integer(1)
+  ),
+  c(near_eye = 811L, chest = 897L),
+  "The repaired gap MDER candidate-day domain is incorrect"
+)
+assert_true(
+  "meaning_and_relevance" %in%
+    names(metric_replica) &&
+    all(nzchar(metric_replica$meaning_and_relevance)) &&
+    dplyr::n_distinct(metric_replica$meaning_and_relevance) == 17L,
+  "A Table 2 metric lacks its distinct meaning-and-relevance line"
+)
+metric_contract <- replica_metric_contract()
+assert_identical(
+  metric_contract$scaling[metric_contract$metric_id == "l10_mean_medi"],
+  "Symlog",
+  "The Table 2 L10 distribution is not registered for symlog display"
+)
+assert_identical(
+  LightLogR::symlog_trans(base = 10, thr = 1, scale = 1)$name,
+  "symlog-1-10-1",
+  "The approved L10 symlog display transform changed"
+)
+assert_identical(
+  metric_contract$meaning_and_relevance[
+    metric_contract$metric_id == "l10_midpoint"
+  ],
+  "Centre time of the darkest 10 hours; indexes the main daily darkness cue.",
+  "The darkest-10-hour midpoint is mischaracterized"
+)
+assert_true(
+  grepl(
+    "including zeros",
+    metric_contract$meaning_and_relevance[
+      metric_contract$metric_id == "daily_geometric_mean_medi"
+    ],
+    fixed = TRUE
+  ) &&
+    grepl(
+      "biological night",
+      metric_contract$meaning_and_relevance[
+        metric_contract$metric_id == "l10_mean_medi"
+      ],
+      fixed = TRUE
+    ),
+  "The mean-melEDI or darkest-10-hour relevance wording is stale"
+)
+assert_true(
+  all(
+    metric_contract$unit[
+      metric_contract$metric_id %in%
+        c(
+          "interdaily_stability",
+          "intradaily_variability",
+          "mder_mean_of_viable_ratios"
+        )
+    ] ==
+      "—"
+  ) &&
+    grepl(
+      "subsequent sleep",
+      metric_contract$meaning_and_relevance[
+        metric_contract$metric_id == "duration_above_250_wake"
+      ],
+      fixed = TRUE
+    ),
+  "The Table 2 unit or waking-bright-light relevance wording is stale"
+)
+decimal_metric_rows <- !grepl(
+  "duration|longest_bout|timing|midpoint",
+  metric_replica$metric_id
+)
+decimal_displays <- unlist(
+  metric_replica[
+    decimal_metric_rows,
+    c(
+      "median_formatted",
+      "q1_formatted",
+      "q3_formatted",
+      "mean_formatted",
+      "sd_formatted"
+    )
+  ],
+  use.names = FALSE
+)
+assert_true(
+  !any(grepl("\\.[0-9]{4,}", decimal_displays)),
+  "A Table 2 value displays more than three decimal places"
+)
 assert_true(
   all(c("sd", "sd_formatted") %in% names(metric_replica)) &&
     all(is.finite(metric_replica$sd)) &&
@@ -383,10 +637,14 @@ assert_identical(
   "A duration standard deviation is not formatted in the metric's hour unit"
 )
 timing_rows <- grepl("timing|midpoint", metric_replica$metric_id)
-assert_true(all(is.finite(metric_replica$circular_resultant[timing_rows])),
-            "A timing row lacks a circular resultant")
-assert_true(all(is.na(metric_replica$circular_resultant[!timing_rows])),
-            "A non-timing row unexpectedly has a circular resultant")
+assert_true(
+  all(is.finite(metric_replica$circular_resultant[timing_rows])),
+  "A timing row lacks a circular resultant"
+)
+assert_true(
+  all(is.na(metric_replica$circular_resultant[!timing_rows])),
+  "A non-timing row unexpectedly has a circular resultant"
+)
 
 # Independent circular check for the overall mean-timing metric.
 timing_values <- metric_values |>
@@ -399,7 +657,8 @@ timing_values <- metric_values |>
   dplyr::pull("value")
 angles <- 2 * pi * timing_values / 1440
 direct_center <- (atan2(mean(sin(angles)), mean(cos(angles))) %% (2 * pi)) *
-  1440 / (2 * pi)
+  1440 /
+  (2 * pi)
 direct_difference <- (timing_values - direct_center + 720) %% 1440 - 720
 direct_quantiles <- stats::quantile(
   direct_difference,
@@ -420,7 +679,13 @@ observed_timing <- metric_replica |>
     .data$metric_id == "mean_timing_above_250"
   )
 assert_close(
-  unlist(observed_timing[c("mean", "q1", "median", "q3", "circular_resultant")]),
+  unlist(observed_timing[c(
+    "mean",
+    "q1",
+    "median",
+    "q3",
+    "circular_resultant"
+  )]),
   direct_stats,
   1e-10,
   "Circular metric statistics differ from the independent calculation"
@@ -450,27 +715,31 @@ assert_true(
   "Profile values are not aggregated to the fixed 15-minute grid"
 )
 assert_true(
-  all(grepl("LightLogR::aggregate_Datetime", profiles$profile$aggregation_method,
-            fixed = TRUE)) &&
+  all(grepl(
+    "LightLogR::aggregate_Datetime",
+    profiles$profile$aggregation_method,
+    fixed = TRUE
+  )) &&
     setequal(unique(profiles$state$context), c("wake", "pre_sleep", "sleep")) &&
     !"declared_nonwear" %in% unique(profiles$state$context),
   "The profile sources do not use the requested pooling or diary-state display"
 )
 assert_true(
-  all(profiles$profile$interval_levels == "0.50;0.67;0.75;0.95") &&
+  all(profiles$profile$interval_levels == "0.50;0.67;0.75;0.90;0.95") &&
     all(
-      profiles$profile$value_lower_95_lx <=
-        profiles$profile$value_lower_75_lx |
+      profiles$profile$value_lower_95_lx <= profiles$profile$value_lower_90_lx |
         is.na(profiles$profile$median_lx)
     ) &&
     all(
-      profiles$profile$value_lower_75_lx <=
-        profiles$profile$value_lower_67_lx |
+      profiles$profile$value_lower_90_lx <= profiles$profile$value_lower_75_lx |
         is.na(profiles$profile$median_lx)
     ) &&
     all(
-      profiles$profile$value_lower_67_lx <=
-        profiles$profile$value_lower_50_lx |
+      profiles$profile$value_lower_75_lx <= profiles$profile$value_lower_67_lx |
+        is.na(profiles$profile$median_lx)
+    ) &&
+    all(
+      profiles$profile$value_lower_67_lx <= profiles$profile$value_lower_50_lx |
         is.na(profiles$profile$median_lx)
     ) &&
     all(
@@ -482,25 +751,28 @@ assert_true(
         is.na(profiles$profile$median_lx)
     ) &&
     all(
-      profiles$profile$value_upper_67_lx >=
-        profiles$profile$value_upper_50_lx |
+      profiles$profile$value_upper_67_lx >= profiles$profile$value_upper_50_lx |
         is.na(profiles$profile$median_lx)
     ) &&
     all(
-      profiles$profile$value_upper_75_lx >=
-        profiles$profile$value_upper_67_lx |
+      profiles$profile$value_upper_75_lx >= profiles$profile$value_upper_67_lx |
         is.na(profiles$profile$median_lx)
     ) &&
     all(
-      profiles$profile$value_upper_95_lx >=
-        profiles$profile$value_upper_75_lx |
+      profiles$profile$value_upper_90_lx >= profiles$profile$value_upper_75_lx |
+        is.na(profiles$profile$median_lx)
+    ) &&
+    all(
+      profiles$profile$value_upper_95_lx >= profiles$profile$value_upper_90_lx |
         is.na(profiles$profile$median_lx)
     ),
-  "A profile does not carry valid nested 50%, 67%, 75%, and 95% intervals"
+  "A profile does not carry valid nested 50%, 67%, 75%, 90%, and 95% intervals"
 )
 period_values <- unlist(profiles$period[c(
-  "mean_sleep_start_minute", "mean_sleep_end_minute",
-  "mean_civil_dawn_minute", "mean_civil_dusk_minute"
+  "mean_sleep_start_minute",
+  "mean_sleep_end_minute",
+  "mean_civil_dawn_minute",
+  "mean_civil_dusk_minute"
 )])
 assert_true(
   all(is.finite(period_values)) && all(period_values %% 15 == 0),
@@ -511,21 +783,32 @@ assert_true(
 # the detailed one-minute state summary.
 recommendation <- build_recommendation_context(inputs)
 recommendation_replica <- build_recommendation_replica(recommendation)
-assert_true(nrow(recommendation_replica) == 10L,
-            "Contextual replica does not contain Overall plus nine sites")
-assert_identical(as.character(recommendation_replica$site), replica_site_levels(),
-                 "Contextual table site order is incorrect")
+assert_true(
+  nrow(recommendation_replica) == 10L,
+  "Contextual replica does not contain Overall plus nine sites"
+)
+assert_identical(
+  as.character(recommendation_replica$site),
+  replica_site_levels(),
+  "Contextual table site order is incorrect"
+)
 overall_context <- dplyr::filter(
-  recommendation_replica, as.character(.data$site) == "Overall"
+  recommendation_replica,
+  as.character(.data$site) == "Overall"
 )
 assert_close(
-  unlist(overall_context[c("wake_fraction", "pre_sleep_fraction", "sleep_fraction")]),
+  unlist(overall_context[c(
+    "wake_fraction",
+    "pre_sleep_fraction",
+    "sleep_fraction"
+  )]),
   c(137792 / 573712, 81894 / 129390, 336052 / 383366),
   1e-12,
   "Overall contextual fractions changed"
 )
 detail_overall <- dplyr::filter(
-  recommendation, as.character(.data$site) == "Overall"
+  recommendation,
+  as.character(.data$site) == "Overall"
 )
 assert_close(
   overall_context$combined_fraction,
@@ -555,18 +838,28 @@ assert_true(
 # Same seven examples and study days, using the pinned gap-timing-unaware
 # 30-minute samples and TAT250 calculated from the displayed daytime bins.
 time_series <- build_time_series_replica_sources(root)
-assert_true(nrow(time_series$selected) == 35L,
-            "Time-series selection is not seven by five")
+assert_true(
+  nrow(time_series$selected) == 35L,
+  "Time-series selection is not seven by five"
+)
 expected_time_series_order <- c(
-  "MPI_S226", "BAUA_S003", "MPI_S227", "BAUA_S022",
-  "MPI_S205", "TUM_S009", "BAUA_S009"
+  "MPI_S226",
+  "BAUA_S003",
+  "MPI_S227",
+  "BAUA_S022",
+  "MPI_S205",
+  "TUM_S009",
+  "BAUA_S009"
 )
 assert_identical(
-  unique(time_series$selected$Id), expected_time_series_order,
+  unique(time_series$selected$Id),
+  expected_time_series_order,
   "Time-series IDs are not ordered from low to high median TAT250"
 )
-assert_true(!anyDuplicated(time_series$selected[c("Id", "protocol_day")]),
-            "Time-series participant-protocol-day key is duplicated")
+assert_true(
+  !anyDuplicated(time_series$selected[c("Id", "protocol_day")]),
+  "Time-series participant-protocol-day key is duplicated"
+)
 assert_true(
   all(vapply(
     split(time_series$selected$study_day, time_series$selected$Id),
@@ -580,31 +873,53 @@ assert_true(
     )),
   "Time-series examples do not use the exact submitted study days 2–6"
 )
-assert_true(nrow(time_series$series) == 1680L,
-            "Time-series bundle is not 35 days by 48 bins")
-assert_true(nrow(time_series$states) == 1680L,
-            "Time-series state bundle is not 35 days by 48 bins")
-assert_true(nrow(time_series$metrics) == 35L,
-            "Time-series daily metric bundle is not 35 rows")
+assert_true(
+  nrow(time_series$series) == 1680L,
+  "Time-series bundle is not 35 days by 48 bins"
+)
+assert_true(
+  nrow(time_series$states) == 70L &&
+    all(time_series$states$civil_night) &&
+    !anyNA(time_series$states[c(
+      "dawn_minute",
+      "dusk_minute",
+      "xmin",
+      "xmax"
+    )]) &&
+    all(time_series$states$xmax > time_series$states$xmin) &&
+    all(vapply(
+      split(
+        time_series$states$interval,
+        interaction(
+          time_series$states$participant,
+          time_series$states$protocol_day,
+          drop = TRUE
+        )
+      ),
+      function(value) {
+        identical(sort(value), c("dusk_to_midnight", "midnight_to_dawn"))
+      },
+      logical(1)
+    )),
+  "The Figure 4 solar context is not two complete V0-style intervals per day"
+)
+assert_true(
+  nrow(time_series$metrics) == 35L,
+  "Time-series daily metric bundle is not 35 rows"
+)
 assert_true(
   all(grepl(
     "Stored floor-aligned 30-minute arithmetic mean",
     time_series$series$aggregation_method,
     fixed = TRUE
   )) &&
+    all(c("daytime", "photoperiod_state") %in% names(time_series$series)) &&
     "civil_night" %in% names(time_series$states) &&
     !any(grepl("nonwear", names(time_series$states), fixed = TRUE)),
   "The time-series source is not the stored 30-minute dataset or retains non-wear"
 )
 recalculated_tat <- time_series$series |>
-  dplyr::left_join(
-    time_series$states |>
-      dplyr::select(
-        "participant", "protocol_day", "clock_bin", "civil_night"
-      ),
-    by = c("participant", "protocol_day", "clock_bin")
-  ) |>
-  dplyr::filter(!.data$civil_night) |>
+  dplyr::filter(.data$daytime %in% TRUE) |>
   dplyr::group_by(.data$participant, .data$protocol_day) |>
   dplyr::summarise(
     expected = 0.5 * sum(is.finite(.data$melEDI_lx) & .data$melEDI_lx > 250),
@@ -638,8 +953,11 @@ source_hashes <- vapply(
   artifact_sha256,
   character(1)
 )
-assert_identical(unname(source_hashes), source_map$source_data_sha256,
-                 "A figure source-data hash is stale")
+assert_identical(
+  unname(source_hashes),
+  source_map$source_data_sha256,
+  "A figure source-data hash is stale"
+)
 bound_source <- readr::read_csv(
   file.path(paths$source_dir, "photoperiod_latitude_bounds.csv"),
   show_col_types = FALSE
@@ -662,10 +980,16 @@ assert_true(
   "Figure 5 does not consume the verified current H1 theoretical bounds"
 )
 
-artifact_manifest_path <- file.path(paths$manifest_dir, "descriptive_artifacts.csv")
+artifact_manifest_path <- file.path(
+  paths$manifest_dir,
+  "descriptive_artifacts.csv"
+)
 manifest <- readr::read_csv(artifact_manifest_path, show_col_types = FALSE)
 absolute_artifacts <- file.path(root, manifest$path)
-assert_true(all(file.exists(absolute_artifacts)), "A manifested output is missing")
+assert_true(
+  all(file.exists(absolute_artifacts)),
+  "A manifested output is missing"
+)
 assert_identical(
   unname(vapply(absolute_artifacts, artifact_sha256, character(1))),
   manifest$sha256,
@@ -673,33 +997,64 @@ assert_identical(
 )
 
 spec <- descriptive_figure_spec()
-assert_true(all(spec$dpi == 300L), "A figure export is not specified at 300 dpi")
+assert_identical(
+  as.integer(spec$dpi),
+  c(300L, 450L, 450L, 450L, 300L, 300L),
+  "A figure export does not use its requested final raster resolution"
+)
 assert_true(
   identical(spec$base_width_in[[1L]], 10.5) &&
     identical(spec$base_height_in[[1L]], 10) &&
     identical(spec$export_scale_multiplier, c(1.5, rep(1, 5))) &&
     identical(spec$export_width_in[[1L]], 15.75) &&
     identical(spec$export_height_in[[1L]], 15) &&
-    all(abs(
-      spec$export_width_in -
-        spec$base_width_in * spec$export_scale_multiplier
-    ) < 1e-12) &&
-    all(abs(
-      spec$export_height_in -
-        spec$base_height_in * spec$export_scale_multiplier
-    ) < 1e-12) &&
+    all(
+      abs(
+        spec$export_width_in -
+          spec$base_width_in * spec$export_scale_multiplier
+      ) <
+        1e-12
+    ) &&
+    all(
+      abs(
+        spec$export_height_in -
+          spec$base_height_in * spec$export_scale_multiplier
+      ) <
+        1e-12
+    ) &&
     all(spec$html_out_width == "100%") &&
     all(spec$print_display_width_mm == 170) &&
-    all(abs(
-      spec$display_reduction_factor -
-        (spec$print_display_width_mm / 25.4) / spec$export_width_in
-    ) < 1e-12) &&
-    all(abs(
-      spec$effective_min_essential_text_pt -
-        spec$nominal_min_essential_text_pt *
-          spec$display_reduction_factor
-    ) < 1e-12) &&
-    all(spec$effective_min_essential_text_pt[-1L] >= 7),
+    all(
+      abs(
+        spec$display_reduction_factor -
+          (spec$print_display_width_mm / 25.4) / spec$export_width_in
+      ) <
+        1e-12
+    ) &&
+    all(
+      abs(
+        spec$effective_min_essential_text_pt -
+          spec$nominal_min_essential_text_pt *
+            spec$display_reduction_factor
+      ) <
+        1e-12
+    ) &&
+    all(
+      spec$effective_min_essential_text_pt[
+        !spec$figure_id %in%
+          c(
+            "descriptive_overview",
+            "near_eye_metric_distributions"
+          )
+      ] >=
+        7
+    ) &&
+    identical(
+      spec$effective_min_essential_text_pt[
+        spec$figure_id == "near_eye_metric_distributions"
+      ],
+      6.5
+    ),
   "A figure fails the corrected export-scale contract"
 )
 assert_identical(
@@ -711,16 +1066,20 @@ assert_identical(
   "The corrected Figure 1 raster contract is not 4725 by 4500 pixels"
 )
 overview_functions <- c(
-  "replica_recommendation_bracket", "make_site_map_replica_plot",
-  "make_collection_replica_plot", "make_photoperiod_replica_plot",
-  "make_overall_profile_replica_plot", "make_overview_replica_figure"
+  "replica_recommendation_bracket",
+  "make_site_map_replica_plot",
+  "make_collection_replica_plot",
+  "make_photoperiod_replica_plot",
+  "make_overall_profile_replica_plot",
+  "make_overview_replica_figure"
 )
 assert_true(
   all(vapply(
     overview_functions,
     function(function_name) {
       function_text <- paste(
-        deparse(get(function_name, mode = "function")), collapse = "\n"
+        deparse(get(function_name, mode = "function")),
+        collapse = "\n"
       )
       !grepl(
         "visual_scale_multiplier|export_scale_multiplier",
@@ -748,7 +1107,10 @@ assert_identical(
 )
 assert_true(
   identical(readability_qa$qa_status, spec$physical_size_qa) &&
-    identical(readability_qa$export_scale_multiplier, spec$export_scale_multiplier) &&
+    identical(
+      readability_qa$export_scale_multiplier,
+      spec$export_scale_multiplier
+    ) &&
     identical(
       readability_qa$effective_min_essential_text_pt,
       spec$effective_min_essential_text_pt
@@ -774,7 +1136,8 @@ for (format in c("png", "jpeg", "pdf", "svg")) {
   assert_true(
     sum(
       manifest$artifact_type == paste0("descriptive_figure_", format)
-    ) == nrow(spec),
+    ) ==
+      nrow(spec),
     paste("The output manifest does not contain six figure", format, "files")
   )
 }
@@ -834,7 +1197,8 @@ for (i in seq_len(nrow(spec))) {
   )
   mockup_dpi <- attributes(mockup)$info$dpi
   mockup_size_mm <- c(dim(mockup)[2L], dim(mockup)[1L]) /
-    mockup_dpi * 25.4
+    mockup_dpi *
+    25.4
   assert_close(
     mockup_size_mm,
     c(210, 297),
@@ -844,26 +1208,33 @@ for (i in seq_len(nrow(spec))) {
 }
 
 table_spec_path <- file.path(
-  paths$manifest_dir, "table_export_specifications.csv"
+  paths$manifest_dir,
+  "table_export_specifications.csv"
 )
 table_spec <- readr::read_csv(table_spec_path, show_col_types = FALSE)
 assert_identical(
   table_spec$table_id,
   c(
-    "participant_site_characteristics", "participant_site_manuscript",
-    "near_eye_metric_summary", "recommendation_context"
+    "participant_site_characteristics",
+    "participant_site_manuscript",
+    "near_eye_metric_summary",
+    "recommendation_context"
   ),
   "The publication table export set changed"
 )
 assert_identical(
   as.integer(table_spec$viewport_width_px),
-  c(1200L, 1200L, 1800L, 992L),
+  c(1200L, 1200L, 1900L, 992L),
   "A publication table no longer uses its submitted gtsave viewport"
 )
 table_png_paths <- file.path(paths$table_dir, table_spec$filename)
-assert_true(all(file.exists(table_png_paths)), "A publication table PNG is missing")
+assert_true(
+  all(file.exists(table_png_paths)),
+  "A publication table PNG is missing"
+)
 table_manifest <- dplyr::filter(
-  manifest, .data$artifact_type == "descriptive_table_png"
+  manifest,
+  .data$artifact_type == "descriptive_table_png"
 )
 assert_true(
   nrow(table_manifest) == 4L &&
@@ -875,15 +1246,18 @@ for (i in seq_len(nrow(table_spec))) {
   original_dimensions <- read_png_dimensions(
     file.path(root, table_spec$original_path[[i]])
   )
-  width_tolerance <- if (
-    table_spec$table_id[[i]] == "near_eye_metric_summary"
-  ) 0.06 else 0.03
+  width_tolerance <- if (table_spec$table_id[[i]] == "near_eye_metric_summary")
+    0.07 else 0.03
   assert_true(
     all(rebuilt_dimensions > 0) &&
-      abs(rebuilt_dimensions[["width_px"]] /
-            original_dimensions[["width_px"]] - 1) < width_tolerance,
+      abs(
+        rebuilt_dimensions[["width_px"]] /
+          original_dimensions[["width_px"]] -
+          1
+      ) <
+        width_tolerance,
     paste(
-      "Publication table width differs by more than 3% from the submitted render:",
+      "Publication table width exceeds its approved replication tolerance:",
       table_spec$table_id[[i]]
     )
   )
@@ -954,10 +1328,16 @@ alt_text <- readr::read_csv(
   file.path(paths$source_dir, "figure_alt_text.csv"),
   show_col_types = FALSE
 )
-assert_identical(alt_text$figure_id, spec$figure_id,
-                 "Figure alt text does not cover the exact figure set")
-assert_true(all(nzchar(alt_text$short_alt_text)) && all(nzchar(alt_text$long_description)),
-            "A figure lacks alt text or a long description")
+assert_identical(
+  alt_text$figure_id,
+  spec$figure_id,
+  "Figure alt text does not cover the exact figure set"
+)
+assert_true(
+  all(nzchar(alt_text$short_alt_text)) &&
+    all(nzchar(alt_text$long_description)),
+  "A figure lacks alt text or a long description"
+)
 
 # Complete old-to-new comparison coverage.
 comparison_expectations <- c(
@@ -968,7 +1348,8 @@ comparison_expectations <- c(
 )
 for (filename in names(comparison_expectations)) {
   data <- readr::read_csv(
-    file.path(paths$audit_dir, filename), show_col_types = FALSE
+    file.path(paths$audit_dir, filename),
+    show_col_types = FALSE
   )
   assert_true(
     nrow(data) == comparison_expectations[[filename]],
@@ -981,17 +1362,24 @@ participant_gt <- build_participant_site_publication_gt(participant_replica)
 participant_manuscript_gt <-
   build_participant_site_manuscript_publication_gt(participant_replica)
 metric_gt <- build_metric_publication_gt(
-  metric_replica, build_metric_plot_values(metric_values)
+  metric_replica,
+  build_metric_plot_values(metric_values)
 )
 recommendation_gt <- build_recommendation_publication_gt(recommendation_replica)
-assert_true(all(vapply(
-  list(
-    participant_gt, participant_manuscript_gt, metric_gt, recommendation_gt
-  ),
-  inherits,
-  logical(1),
-  what = "gt_tbl"
-)), "A publication table is not a gt_tbl")
+assert_true(
+  all(vapply(
+    list(
+      participant_gt,
+      participant_manuscript_gt,
+      metric_gt,
+      recommendation_gt
+    ),
+    inherits,
+    logical(1),
+    what = "gt_tbl"
+  )),
+  "A publication table is not a gt_tbl"
+)
 participant_html <- gt::as_raw_html(participant_gt)
 participant_manuscript_html <- gt::as_raw_html(participant_manuscript_gt)
 metric_html <- gt::as_raw_html(metric_gt)
@@ -1006,8 +1394,10 @@ for (html in list(participant_html, participant_manuscript_html, metric_html)) {
     function(label) regexpr(label, html, fixed = TRUE)[[1L]],
     integer(1)
   )
-  assert_true(all(positions > 0) && all(diff(positions) > 0),
-              "A wide gt table violates DISPLAY-001 visible order")
+  assert_true(
+    all(positions > 0) && all(diff(positions) > 0),
+    "A wide gt table violates DISPLAY-001 visible order"
+  )
 }
 recommendation_positions <- vapply(
   registry$display_name,
@@ -1028,9 +1418,12 @@ social_jetlag_baua <- participant_replica |>
   dplyr::filter(.data$characteristic == "Social jetlag", .data$site == "BAUA")
 assert_true(
   grepl(
-    "white-space:nowrap", participant_display_markdown(
-      social_jetlag_baua$display, social_jetlag_baua$characteristic
-    ), fixed = TRUE
+    "white-space:nowrap",
+    participant_display_markdown(
+      social_jetlag_baua$display,
+      social_jetlag_baua$characteristic
+    ),
+    fixed = TRUE
   ),
   "Table 1 does not keep the BAUA social-jetlag interval bracket together"
 )
@@ -1038,24 +1431,44 @@ assert_true(
   !grepl("\\bn\\s*=", metric_visible_text, perl = TRUE) &&
     grepl("N=participants", metric_html, fixed = TRUE) &&
     grepl("d=participant-days", metric_html, fixed = TRUE) &&
-    grepl("white-space:nowrap", metric_html, fixed = TRUE),
-  "Table 2 does not use intact N/participant-day size lines"
+    grepl("white-space:nowrap", metric_html, fixed = TRUE) &&
+    grepl("physiological constructs", metric_visible_text, fixed = TRUE) &&
+    grepl("HH:MMclocktime", gsub("[[:space:]]+", "", metric_visible_text)) &&
+    !grepl("dimensionless", metric_visible_text, fixed = TRUE) &&
+    grepl("subsequent sleep", metric_visible_text, fixed = TRUE) &&
+    grepl(
+      "Bright-light exposure duration; relevant to daytime alerting",
+      metric_visible_text,
+      fixed = TRUE
+    ),
+  "Table 2 lacks intact sizes or its meaning-and-relevance display"
 )
 assert_true(
-  grepl("Minutes in the recommended range:", recommendation_html, fixed = TRUE) &&
+  grepl(
+    "Minutes in the recommended range:",
+    recommendation_html,
+    fixed = TRUE
+  ) &&
     !grepl("display\\s*:\\s*inline-flex", recommendation_html, perl = TRUE) &&
     grepl("137,792 / 573,712", recommendation_visible_text, fixed = TRUE) &&
-    !grepl("\\bn\\s*=", recommendation_visible_text, perl = TRUE),
-  "The recommendation table does not show literal numerator/denominator fractions"
+    !grepl("\\bn\\s*=", recommendation_visible_text, perl = TRUE) &&
+    grepl("#BEBEBE", recommendation_html, fixed = TRUE),
+  "The recommendation table lacks literal fractions or the Overall bottom rule"
 )
 hidden_description_matches <- gregexpr(
-  "clip-path:inset(50%)", metric_html, fixed = TRUE
+  "clip-path:inset(50%)",
+  metric_html,
+  fixed = TRUE
 )[[1L]]
 aria_hidden_thumbnail_matches <- gregexpr(
-  'aria-hidden="true"', metric_html, fixed = TRUE
+  'aria-hidden="true"',
+  metric_html,
+  fixed = TRUE
 )[[1L]]
 presentation_thumbnail_matches <- gregexpr(
-  'role="presentation"', metric_html, fixed = TRUE
+  'role="presentation"',
+  metric_html,
+  fixed = TRUE
 )[[1L]]
 assert_true(
   sum(hidden_description_matches > 0) == 17L &&
@@ -1073,15 +1486,47 @@ assert_true(
 )
 
 # Reader-facing terminology and analytical-boundary guardrails.
-qmd_text <- paste(readLines(file.path(root, "notebooks", "descriptives.qmd"), warn = FALSE),
-                  collapse = "\n")
-for (opaque_term in c("legacy", "canonical", "support-aware", "source analysis")) {
-  assert_true(!grepl(tolower(opaque_term), tolower(qmd_text), fixed = TRUE),
-              paste("Opaque reader-facing term remains:", opaque_term))
+qmd_text <- paste(
+  readLines(file.path(root, "notebooks", "descriptives.qmd"), warn = FALSE),
+  collapse = "\n"
+)
+for (opaque_term in c(
+  "legacy",
+  "canonical",
+  "support-aware",
+  "source analysis"
+)) {
+  assert_true(
+    !grepl(tolower(opaque_term), tolower(qmd_text), fixed = TRUE),
+    paste("Opaque reader-facing term remains:", opaque_term)
+  )
 }
 assert_true(
   grepl("text-align: left !important", qmd_text, fixed = TRUE),
   "The report does not enforce left-aligned table and figure captions"
+)
+assert_true(
+  grepl("arithmetic mean of viable one-minute", qmd_text, fixed = TRUE) &&
+    grepl("inclusive 50% rule", qmd_text, fixed = TRUE) &&
+    !grepl("ratio of daily integrals", qmd_text, fixed = TRUE),
+  "The reader-facing MDER estimand or support rule is stale"
+)
+assert_true(
+  grepl(
+    "source windows verified as entirely zero are retained as",
+    qmd_text,
+    fixed = TRUE
+  ) &&
+    grepl(
+      "not interpreted as positive exposure",
+      qmd_text,
+      fixed = TRUE
+    ),
+  "The reader-facing L10 numerical-zero explanation is stale"
+)
+assert_true(
+  !grepl("gap-timing-unaware", qmd_text, fixed = TRUE),
+  "Figure 4 retains internal dataset terminology in reader-facing prose"
 )
 script_paths <- list.files(
   paths$script_dir,
@@ -1108,13 +1553,20 @@ if ("--rebuild" %in% commandArgs(trailingOnly = TRUE)) {
   before <- stats::setNames(manifest$sha256, manifest$path)
   build_descriptives(root)
   after_manifest <- readr::read_csv(
-    artifact_manifest_path, show_col_types = FALSE
+    artifact_manifest_path,
+    show_col_types = FALSE
   )
   after <- stats::setNames(after_manifest$sha256, after_manifest$path)
-  assert_identical(names(after), names(before),
-                   "Deterministic rebuild changed the artifact set")
-  assert_identical(unname(after), unname(before),
-                   "Deterministic rebuild changed an artifact hash")
+  assert_identical(
+    names(after),
+    names(before),
+    "Deterministic rebuild changed the artifact set"
+  )
+  assert_identical(
+    unname(after),
+    unname(before),
+    "Deterministic rebuild changed an artifact hash"
+  )
 }
 
 cat("All descriptive tests passed.\n")

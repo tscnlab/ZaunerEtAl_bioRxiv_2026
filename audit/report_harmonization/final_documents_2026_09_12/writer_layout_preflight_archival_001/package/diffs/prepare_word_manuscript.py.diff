@@ -1,0 +1,268 @@
+--- audit/manuscript_nature_health/revision_2026_09_11/consolidated_display_repair_order72k/helpers/prepare_word_manuscript.py
++++ PROSPECTIVE_ONLY/prepare_word_manuscript.py
+@@ -1,6 +1,6 @@
+ #!/usr/bin/env python3
+ 
+-"""Replace lossy gt-to-DOCX tables with faithful PNGs and tune page layout."""
++"""PROSPECTIVE ONLY: layout repair, not authorized for execution or promotion."""
+ 
+ from __future__ import annotations
+ 
+@@ -32,6 +32,7 @@
+     parser.add_argument("png_manifest", type=Path)
+     parser.add_argument("figure_manifest", type=Path)
+     parser.add_argument("output_docx", type=Path)
++    parser.add_argument("--part-count-contract", required=True, type=Path)
+     return parser.parse_args()
+ 
+ 
+@@ -511,16 +512,20 @@
+     max_height_inches: float,
+     alt_text: str,
+     page_break_before: bool = False,
++    fixed_width_inches: float | None = None,
+ ):
+     pixel_width, pixel_height = image_dimensions(image_path)
+     ratio = pixel_width / pixel_height
+-    width = min(max_width_inches, max_height_inches * ratio)
++    width = fixed_width_inches if fixed_width_inches is not None else min(max_width_inches, max_height_inches * ratio)
+     height = width / ratio
++    if fixed_width_inches is not None and (width > max_width_inches or height > max_height_inches):
++        raise RuntimeError(f"{alt_text}: fixed-width image exceeds its height budget; revise the declared part map, do not shrink a continuation")
+ 
+     paragraph = document.add_paragraph()
+     paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+     paragraph.paragraph_format.space_before = Pt(0)
+     paragraph.paragraph_format.space_after = Pt(0)
++    paragraph.paragraph_format.line_spacing = 1.0
+     paragraph.paragraph_format.keep_together = True
+     paragraph.paragraph_format.page_break_before = page_break_before
+     run = paragraph.add_run()
+@@ -598,6 +603,7 @@
+     paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+     paragraph.paragraph_format.space_before = Pt(0)
+     paragraph.paragraph_format.space_after = Pt(0)
++    paragraph.paragraph_format.line_spacing = 1.0
+     paragraph.paragraph_format.keep_together = True
+     paragraph.paragraph_format.keep_with_next = keep_with_next
+     run = paragraph.add_run()
+@@ -665,6 +671,7 @@
+     paragraph.paragraph_format.page_break_before = page_break_before
+     paragraph.paragraph_format.space_before = Pt(6)
+     paragraph.paragraph_format.space_after = Pt(4)
++    paragraph.paragraph_format.line_spacing = 1.0
+     run = paragraph.add_run(text)
+     run.bold = True
+     run.font.size = Pt(10)
+@@ -679,6 +686,71 @@
+     if section_properties is None:
+         raise RuntimeError("DOCX body has no final section properties")
+     return deepcopy(section_properties)
++
++
++def format_display_caption(paragraph: Paragraph, above: bool = False):
++    """Paragraph geometry only; retain every text run and its font/links."""
++    paragraph.alignment = WD_ALIGN_PARAGRAPH.LEFT
++    pf = paragraph.paragraph_format
++    pf.line_spacing = 1.0
++    pf.keep_together = True
++    pf.keep_with_next = above
++    pf.space_before = Pt(0 if above else 4)
++    pf.space_after = Pt(4)
++
++
++def keep_supplementary_tables_with_labels(document: Document, inserted):
++    for number in range(1, 11):
++        matches = find_paragraphs(document, f"Supplementary Table S{number}.")
++        if len(matches) != 2:
++            raise RuntimeError(f"S{number}: expected one heading and one caption")
++        heading, caption = matches
++        heading.paragraph_format.line_spacing = 1.0
++        heading.paragraph_format.keep_together = True
++        heading.paragraph_format.keep_with_next = True
++        heading.paragraph_format.space_after = Pt(4)
++        format_display_caption(caption)
++        # Do not chain every table part together. Only its last part stays
++        # with the caption; explicit continuation page starts remain intact.
++        Paragraph(inserted[f"supp_table_s{number}"][-1], document).paragraph_format.keep_with_next = True
++
++
++def remove_empty_portrait_transitions(document: Document):
++    """Remove only the two proven empty sections, retaining all bookmarks."""
++    body = document.element.body
++    removed = []
++    expected = {"Supplementary Table S2.", "Supplementary Table S3."}
++    for node in list(body):
++        if local_name(node) != "p" or node.xpath(".//w:t | .//w:drawing"):
++            continue
++        current = node.find("w:pPr/w:sectPr", node.nsmap)
++        if current is None:
++            continue
++        previous = node.getprevious()
++        while previous is not None and local_name(previous) in {"bookmarkStart", "bookmarkEnd"}:
++            previous = previous.getprevious()
++        following = node.getnext()
++        while following is not None and local_name(following) in {"bookmarkStart", "bookmarkEnd"}:
++            following = following.getnext()
++        if previous is None or following is None or local_name(following) != "p":
++            continue
++        preceding = previous.find("w:pPr/w:sectPr", previous.nsmap)
++        label = clean_text(Paragraph(following, document).text)
++        prefix = next((prefix for prefix in expected if label.startswith(prefix)), None)
++        if preceding is None or prefix is None:
++            continue
++        prior_size, current_size = preceding.find(qn("w:pgSz")), current.find(qn("w:pgSz"))
++        current_type = current.find(qn("w:type"))
++        if (prior_size is None or current_size is None or current_type is None
++                or prior_size.get(qn("w:orient")) != "landscape"
++                or current_size.get(qn("w:orient")) == "landscape"
++                or current_type.get(qn("w:val")) != "nextPage"):
++            raise RuntimeError("The reviewed empty-section mechanism no longer matches")
++        body.remove(node)
++        removed.append(prefix)
++    if set(removed) != expected or len(removed) != 2:
++        raise RuntimeError(f"Unexpected empty-section removal set: {removed}")
++    return removed
+ 
+ 
+ def section_break_paragraph(base_sect_pr, landscape: bool, a3: bool = False):
+@@ -732,6 +804,10 @@
+     paragraph = OxmlElement("w:p")
+     paragraph_properties = OxmlElement("w:pPr")
+     paragraph_properties.append(OxmlElement("w:suppressLineNumbers"))
++    spacing = OxmlElement("w:spacing")
++    for key, value in {"before": "0", "after": "0", "line": "20", "lineRule": "exact"}.items():
++        spacing.set(qn(f"w:{key}"), value)
++    paragraph_properties.append(spacing)
+     paragraph_properties.append(sect_pr)
+     paragraph.append(paragraph_properties)
+     return paragraph
+@@ -793,8 +869,7 @@
+     if len(caption_candidates) != 1:
+         raise RuntimeError(f"Main Table {table_number} caption was not unique")
+     caption = caption_candidates[0]
+-    caption.alignment = WD_ALIGN_PARAGRAPH.LEFT
+-    caption.paragraph_format.keep_with_next = True
++    format_display_caption(caption, above=True)
+ 
+     insertion_index = body.index(wrapper._tbl)
+     caption._p.getparent().remove(caption._p)
+@@ -855,15 +930,14 @@
+     image.paragraph_format.keep_together = True
+     image.paragraph_format.space_before = Pt(0)
+     image.paragraph_format.space_after = Pt(0)
++    image.paragraph_format.line_spacing = 1.0
+     resize_drawing_paragraph(
+         image,
+         max_width_inches=6.25,
+         max_height_inches=4.40 if figure_number == 1 else 5.35,
+         alt_text=f"Main Figure {figure_number}",
+     )
+-    caption.alignment = WD_ALIGN_PARAGRAPH.LEFT
+-    caption.paragraph_format.keep_together = True
+-    caption.paragraph_format.space_before = Pt(4)
++    format_display_caption(caption)
+ 
+     insertion_index = body.index(wrapper._tbl)
+     image._p.getparent().remove(image._p)
+@@ -889,9 +963,10 @@
+             document,
+             image,
+             max_width_inches=15.55 if label == "Supplementary Table S2" else (10.55 if landscape else 6.25),
+-            max_height_inches=8.90 if label == "Supplementary Table S2" else (6.20 if landscape else 8.75),
++            max_height_inches=9.20 if label == "Supplementary Table S2" else (6.20 if landscape else 8.75),
+             alt_text=f"{label}, part {index + 1} of {len(images)}",
+             page_break_before=index > 0,
++            fixed_width_inches=15.55 if label == "Supplementary Table S2" else (10.55 if label == "Supplementary Table S7" else None),
+         )
+         body.insert(insertion_index + index, element)
+         image_elements.append(element)
+@@ -1035,7 +1110,7 @@
+         12,
+     }
+     heading.paragraph_format.keep_with_next = True
+-    caption.paragraph_format.keep_together = True
++    format_display_caption(caption)
+     if figure_number in {7, 15}:
+         if not isinstance(image_path, list) or len(image_path) != 2:
+             raise RuntimeError("S7 and S15 each require two independent SVG sources")
+@@ -1057,6 +1132,15 @@
+             body.insert(insertion_index, tag_node)
+             body.insert(insertion_index + 1, image_node)
+             inserted.append(image_node)
++        if figure_number == 7:
++            # Keep the full shared caption with A, before the page-starting B.
++            # B is tall and has its own panels; do not shrink its source image
++            # merely to fit the shared caption underneath it.
++            body.remove(caption._p)
++            body.insert(body.index(inserted[0]) + 1, caption._p)
++            Paragraph(inserted[0], document).paragraph_format.keep_with_next = True
++        else:
++            Paragraph(inserted[-1], document).paragraph_format.keep_with_next = True
+         return tuple(inserted)
+     if figure_number == 8:
+         first_part = add_cropped_picture_paragraph(
+@@ -1167,6 +1251,11 @@
+             paragraph.paragraph_format.space_before = Pt(4)
+             paragraph.paragraph_format.space_after = Pt(0)
+     images = manifest_map(args.png_manifest)
++    declared_parts = json.loads(args.part_count_contract.read_text())
++    if not all(isinstance(value, int) and not isinstance(value, bool) and value > 0 for value in declared_parts.values()):
++        raise RuntimeError("Part-count contract is incomplete, including unresolved Brown-dependent entries")
++    if {key: len(parts) for key, parts in images.items()} != declared_parts:
++        raise RuntimeError("Capture map differs from the separately approved part-count contract")
+     figures = figure_manifest_map(args.figure_manifest)
+     required_keys = {
+         "main_table_1",
+@@ -1243,6 +1332,8 @@
+             number,
+             [figures[f"supp_figure_s{number}a"], figures[f"supp_figure_s{number}b"]] if number in {7, 15} else figures[f"supp_figure_s{number}"],
+         )
++
++    keep_supplementary_tables_with_labels(document, inserted)
+ 
+     recommendation_heading = find_exact_heading(
+         document,
+@@ -1334,6 +1425,7 @@
+     for first, last in landscape_ranges:
+         wrap_landscape(document, first, last, base_sect_pr, a3=first is s2_start)
+ 
++    removed_empty_sections = remove_empty_portrait_transitions(document)
+     set_final_portrait_section(document, base_sect_pr)
+     suppress_linked_footer_line_numbers(document)
+     display_bookmarks = add_missing_display_bookmarks(document)
+@@ -1361,8 +1453,8 @@
+     if top_level_tables(final):
+         raise RuntimeError("One or more one-cell float wrapper tables remain in output")
+     expected_images = 23 + sum(len(parts) for parts in images.values())
+-    if expected_images != 49 + len(images["supp_table_s2"]):
+-        raise RuntimeError("Expanded drawing map disagrees with frozen capture inventory")
++    if expected_images != 23 + sum(declared_parts.values()):
++        raise RuntimeError("Expanded drawing map disagrees with the approved prospective part counts")
+     if len(final.inline_shapes) != expected_images:
+         raise RuntimeError(
+             f"Expected {expected_images} images in final DOCX, found {len(final.inline_shapes)}",
+@@ -1372,6 +1464,9 @@
+         for pair in ((WD_ORIENT.PORTRAIT, WD_ORIENT.LANDSCAPE),) * 15
+         for orientation in pair
+     ] + [WD_ORIENT.PORTRAIT]
++    # Zero-based old section positions 8 and 10 were the proven empty
++    # portrait sections around S2, not odd/even page breaks.
++    expected_orientations = [value for index, value in enumerate(expected_orientations) if index not in {8, 10}]
+     actual_orientations = [section.orientation for section in final.sections]
+     if actual_orientations != expected_orientations:
+         raise RuntimeError(
+@@ -1386,6 +1481,7 @@
+                 "display_bookmarks": display_bookmarks,
+                 "new_page_sections": page_start_sections,
+                 "sections": len(final.sections),
++                "removed_empty_sections": removed_empty_sections,
+                 "top_level_tables": len(top_level_tables(final)),
+                 "inline_shapes": len(final.inline_shapes),
+             },
+@@ -1395,4 +1491,4 @@
+ 
+ 
+ if __name__ == "__main__":
+-    main()
++    raise SystemExit("PROSPECTIVE ONLY. Execution requires a separately sealed implementation order.")

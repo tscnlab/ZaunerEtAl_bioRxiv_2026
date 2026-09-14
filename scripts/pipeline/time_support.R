@@ -43,7 +43,11 @@ validate_nonnegative_measurement <- function(value, name) {
   invisible(value)
 }
 
-restore_nonnegative_geometric_mean <- function(log_mean, zero_offset) {
+geometric_mean_backtransform_details <- function(
+  log_mean,
+  zero_offset,
+  source_all_zero = FALSE
+) {
   if (
     length(log_mean) != 1L ||
       !is.numeric(log_mean) ||
@@ -52,6 +56,13 @@ restore_nonnegative_geometric_mean <- function(log_mean, zero_offset) {
     stop("`log_mean` must be one finite number", call. = FALSE)
   }
   validate_positive_scalar(zero_offset, "zero_offset")
+  if (
+    length(source_all_zero) != 1L ||
+      is.na(source_all_zero) ||
+      !is.logical(source_all_zero)
+  ) {
+    stop("`source_all_zero` must be one non-missing logical", call. = FALSE)
+  }
   shifted_mean <- 10^log_mean
   restored_mean <- shifted_mean - zero_offset
   tolerance <- 100 * .Machine$double.eps *
@@ -62,7 +73,46 @@ restore_nonnegative_geometric_mean <- function(log_mean, zero_offset) {
       call. = FALSE
     )
   }
-  if (restored_mean < 0) 0 else restored_mean
+  within_numerical_zero_tolerance <- abs(restored_mean) <= tolerance
+  negative_domain_roundoff <- restored_mean < 0 &
+    within_numerical_zero_tolerance
+  source_verified_zero_roundoff <- source_all_zero &
+    within_numerical_zero_tolerance
+  normalized_mean <- if (
+    negative_domain_roundoff || source_verified_zero_roundoff
+  ) {
+    0
+  } else {
+    restored_mean
+  }
+  list(
+    value = normalized_mean,
+    raw_value = restored_mean,
+    shifted_mean = shifted_mean,
+    tolerance = tolerance,
+    source_all_zero = source_all_zero,
+    within_numerical_zero_tolerance = within_numerical_zero_tolerance,
+    numerical_zero_reclassified = restored_mean != normalized_mean,
+    numerical_zero_reason = if (restored_mean == normalized_mean) {
+      NA_character_
+    } else if (source_verified_zero_roundoff) {
+      "source_verified_all_zero_roundoff"
+    } else {
+      "nonnegative_domain_roundoff"
+    }
+  )
+}
+
+restore_nonnegative_geometric_mean <- function(
+  log_mean,
+  zero_offset,
+  source_all_zero = FALSE
+) {
+  geometric_mean_backtransform_details(
+    log_mean = log_mean,
+    zero_offset = zero_offset,
+    source_all_zero = source_all_zero
+  )$value
 }
 
 validate_datetime_axis <- function(datetime) {
@@ -666,6 +716,21 @@ empty_window_summary <- function(
   tibble::tibble(
     window_mean = NA_real_,
     window_log_mean = NA_real_,
+    window_raw_backtransformed_mean = NA_real_,
+    window_shifted_mean = NA_real_,
+    numerical_zero_tolerance = NA_real_,
+    numerical_zero_reclassified = FALSE,
+    numerical_zero_reason = NA_character_,
+    selected_window_wall_minutes = NA_integer_,
+    selected_window_valid_wall_minutes = NA_integer_,
+    selected_window_missing_wall_minutes = NA_integer_,
+    selected_window_zero_wall_minutes = NA_integer_,
+    selected_window_positive_wall_minutes = NA_integer_,
+    selected_window_source_real_minutes = NA_integer_,
+    selected_window_valid_source_real_minutes = NA_integer_,
+    selected_window_start_clock_minute = NA_integer_,
+    selected_window_end_clock_minute = NA_integer_,
+    selected_window_wraps_midnight = NA,
     midpoint_clock_minute = NA_real_,
     onset_clock_minute = NA_real_,
     offset_clock_minute = NA_real_,
@@ -994,13 +1059,52 @@ rolling_window_summary <- function(
     offset_day_shift <- NA_integer_
   }
 
-  window_mean <- restore_nonnegative_geometric_mean(
-    selected$log_mean[[1L]],
-    zero_offset
+  selected_indices <- if (wraps) {
+    ((selected$start[[1L]] + seq.int(0L, window_minutes - 1L)) %%
+      1440L) + 1L
+  } else {
+    selected$start[[1L]] + seq_len(window_minutes)
+  }
+  selected_values <- clock_grid$value[selected_indices]
+  selected_valid <- is.finite(selected_values)
+  selected_all_zero <- any(selected_valid) &&
+    all(selected_values[selected_valid] == 0)
+  backtransform <- geometric_mean_backtransform_details(
+    log_mean = selected$log_mean[[1L]],
+    zero_offset = zero_offset,
+    source_all_zero = selected_all_zero
   )
   tibble::tibble(
-    window_mean = window_mean,
+    window_mean = backtransform$value,
     window_log_mean = selected$log_mean,
+    window_raw_backtransformed_mean = backtransform$raw_value,
+    window_shifted_mean = backtransform$shifted_mean,
+    numerical_zero_tolerance = backtransform$tolerance,
+    numerical_zero_reclassified = backtransform$numerical_zero_reclassified,
+    numerical_zero_reason = backtransform$numerical_zero_reason,
+    selected_window_wall_minutes = as.integer(length(selected_indices)),
+    selected_window_valid_wall_minutes = as.integer(sum(selected_valid)),
+    selected_window_missing_wall_minutes = as.integer(sum(!selected_valid)),
+    selected_window_zero_wall_minutes = as.integer(sum(
+      selected_valid & selected_values == 0
+    )),
+    selected_window_positive_wall_minutes = as.integer(sum(
+      selected_valid & selected_values > 0
+    )),
+    selected_window_source_real_minutes = as.integer(sum(
+      clock_grid$occurrences[selected_indices]
+    )),
+    selected_window_valid_source_real_minutes = as.integer(sum(
+      clock_grid$valid_occurrences[selected_indices]
+    )),
+    selected_window_start_clock_minute = as.integer(
+      selected$start[[1L]]
+    ),
+    selected_window_end_clock_minute = as.integer(
+      (selected$start[[1L]] + window_minutes) %% 1440L
+    ),
+    selected_window_wraps_midnight =
+      selected$start[[1L]] + window_minutes > 1440L,
     midpoint_clock_minute = midpoint,
     onset_clock_minute = onset,
     offset_clock_minute = offset,
@@ -1027,131 +1131,80 @@ rolling_window_summary <- function(
   )
 }
 
-mder_ratio_of_integrals <- function(
+mder_mean_of_viable_ratios <- function(
   medi,
   light,
-  minimum_support,
-  interval_seconds = 60,
-  observed_fraction = NULL,
-  medi_reference_weight = NULL,
-  light_reference_weight = NULL
+  minimum_viable_fraction = 0.50
 ) {
-  # MDER is never support-corrected. The ratio is reported only when ordinary
-  # paired support and both fixed signal-profile supports meet the cutoff.
+  # Each one-minute ratio contributes equally. A ratio is viable only when
+  # both source channels and the resulting ratio are finite and strictly
+  # positive. The support rule is metric-specific and never deletes the day.
   validate_nonnegative_measurement(medi, "medi")
   validate_nonnegative_measurement(light, "light")
-  n <- validate_equal_lengths(medi, light, .names = c("medi", "light"))
-  minimum_support <- validate_fraction(minimum_support, "minimum_support")
-  if (length(minimum_support) != 1L || is.na(minimum_support)) {
+  expected_minutes <- validate_equal_lengths(
+    medi,
+    light,
+    .names = c("medi", "light")
+  )
+  if (expected_minutes < 1L) {
+    stop("MDER requires at least one expected minute", call. = FALSE)
+  }
+  minimum_viable_fraction <- validate_fraction(
+    minimum_viable_fraction,
+    "minimum_viable_fraction"
+  )
+  if (
+    length(minimum_viable_fraction) != 1L ||
+      is.na(minimum_viable_fraction)
+  ) {
     stop(
-      "`minimum_support` must be one non-missing value in [0, 1]",
+      "`minimum_viable_fraction` must be one non-missing value in [0, 1]",
       call. = FALSE
     )
   }
-  interval_seconds <- expand_interval(
-    interval_seconds,
-    n,
-    "interval_seconds"
-  )
-  paired <- is.finite(medi) & is.finite(light)
-  if (is.null(observed_fraction)) {
-    observed_fraction <- as.numeric(paired)
-  }
-  observed_fraction <- validate_fraction(
-    observed_fraction,
-    "observed_fraction"
-  )
-  validate_equal_lengths(
-    medi,
-    observed_fraction,
-    .names = c("medi", "observed_fraction")
-  )
-  paired_fraction <- ifelse(paired, observed_fraction, 0)
-  support_known <- !anyNA(paired_fraction)
 
-  medi_integral <- if (support_known && any(paired_fraction > 0)) {
-    sum(
-      medi[paired] *
-        interval_seconds[paired] *
-        paired_fraction[paired]
-    ) /
-      3600
-  } else {
-    NA_real_
-  }
-  light_integral <- if (support_known && any(paired_fraction > 0)) {
-    sum(
-      light[paired] *
-        interval_seconds[paired] *
-        paired_fraction[paired]
-    ) /
-      3600
-  } else {
-    NA_real_
-  }
-  medi_profile_coverage <- if (is.null(medi_reference_weight)) {
-    NA_real_
-  } else {
-    profile_weighted_coverage(
-      observed_fraction = paired_fraction,
-      reference_weight = medi_reference_weight
-    )
-  }
-  light_profile_coverage <- if (is.null(light_reference_weight)) {
-    NA_real_
-  } else {
-    profile_weighted_coverage(
-      observed_fraction = paired_fraction,
-      reference_weight = light_reference_weight
-    )
-  }
-  paired_seconds <- sum(interval_seconds * paired_fraction)
-  ordinary_paired_coverage <- paired_seconds / sum(interval_seconds)
-  has_paired_observation <- support_known && any(paired_fraction > 0)
-  positive_light_integral <- is.finite(light_integral) && light_integral > 0
-  passes_ordinary_paired_support <- is.finite(ordinary_paired_coverage) &&
-    ordinary_paired_coverage >= minimum_support
-  passes_medi_profile_support <- is.finite(medi_profile_coverage) &&
-    medi_profile_coverage >= minimum_support
-  passes_light_profile_support <- is.finite(light_profile_coverage) &&
-    light_profile_coverage >= minimum_support
-  failure_reason <- if (!support_known) {
-    "unknown_paired_support"
-  } else if (!has_paired_observation) {
-    "no_paired_observation"
-  } else if (!positive_light_integral) {
-    "nonpositive_paired_light_integral"
-  } else if (!passes_ordinary_paired_support) {
-    "below_ordinary_paired_support"
-  } else if (!passes_medi_profile_support) {
-    "below_medi_profile_support"
-  } else if (!passes_light_profile_support) {
-    "below_light_profile_support"
+  finite_pair <- is.finite(medi) & is.finite(light)
+  zero_medi <- finite_pair & medi == 0
+  zero_light <- finite_pair & light == 0
+  positive_pair <- finite_pair & medi > 0 & light > 0
+  momentary_ratio <- rep(NA_real_, expected_minutes)
+  momentary_ratio[positive_pair] <- suppressWarnings(
+    medi[positive_pair] / light[positive_pair]
+  )
+  viable <- positive_pair & is.finite(momentary_ratio)
+  viable_ratio_minutes <- sum(viable)
+  viable_ratio_fraction <- viable_ratio_minutes / expected_minutes
+  passes_viable_ratio_support <-
+    viable_ratio_fraction >= minimum_viable_fraction
+
+  failure_reason <- if (viable_ratio_minutes == 0L) {
+    "no_viable_momentary_ratio"
+  } else if (!passes_viable_ratio_support) {
+    "below_viable_ratio_fraction"
   } else {
     NA_character_
   }
   mder <- if (is.na(failure_reason)) {
-    medi_integral / light_integral
+    mean(momentary_ratio[viable])
   } else {
     NA_real_
   }
 
   tibble::tibble(
     MDER = mder,
-    medi_integral_lx_h = medi_integral,
-    light_integral_lx_h = light_integral,
-    paired_epochs = sum(paired_fraction > 0),
-    paired_seconds = paired_seconds,
-    ordinary_paired_coverage = ordinary_paired_coverage,
-    medi_profile_coverage = medi_profile_coverage,
-    light_profile_coverage = light_profile_coverage,
-    minimum_support = minimum_support,
-    passes_ordinary_paired_support = passes_ordinary_paired_support,
-    passes_medi_profile_support = passes_medi_profile_support,
-    passes_light_profile_support = passes_light_profile_support,
-    low_ordinary_paired_coverage = !passes_ordinary_paired_support,
-    low_medi_profile_coverage = !passes_medi_profile_support,
-    low_light_profile_coverage = !passes_light_profile_support,
+    viable_ratio_minutes = viable_ratio_minutes,
+    expected_minutes = expected_minutes,
+    viable_ratio_fraction = viable_ratio_fraction,
+    excluded_nonfinite_source_minutes = sum(!finite_pair),
+    excluded_zero_either_minutes = sum(finite_pair & (zero_medi | zero_light)),
+    excluded_zero_medi_minutes = sum(zero_medi),
+    excluded_zero_light_minutes = sum(zero_light),
+    excluded_both_zero_minutes = sum(zero_medi & zero_light),
+    excluded_nonfinite_ratio_minutes = sum(
+      positive_pair & !is.finite(momentary_ratio)
+    ),
+    minimum_viable_fraction = minimum_viable_fraction,
+    passes_viable_ratio_support = passes_viable_ratio_support,
     support_threshold_enforced = TRUE,
     ratio_scaled_or_weighted = FALSE,
     estimable = is.finite(mder),

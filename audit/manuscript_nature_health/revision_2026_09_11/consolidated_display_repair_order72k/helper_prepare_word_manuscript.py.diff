@@ -1,0 +1,261 @@
+--- /Users/zauner/Documents/Arbeit/12-TUM/MeLiDos/WP2.2.5_Data_Analysis/ZaunerEtAl_bioRxiv_2026/scripts/manuscript_nature_health/prepare_word_manuscript.py
++++ /Users/zauner/Documents/Arbeit/12-TUM/MeLiDos/WP2.2.5_Data_Analysis/ZaunerEtAl_bioRxiv_2026/audit/manuscript_nature_health/revision_2026_09_11/consolidated_display_repair_order72k/helpers/prepare_word_manuscript.py
+@@ -16,8 +16,11 @@
+ from docx import Document
+ from docx.enum.section import WD_ORIENT
+ from docx.enum.text import WD_ALIGN_PARAGRAPH
+-from docx.oxml import OxmlElement
+-from docx.oxml.ns import qn
++from docx.oxml import OxmlElement, parse_xml
++from docx.oxml.ns import qn, nsdecls
++from docx.opc.packuri import PackURI
++from docx.opc.part import Part
++from docx.opc.constants import RELATIONSHIP_TYPE as RT
+ from docx.shared import Inches, Pt
+ from docx.table import Table
+ from docx.text.paragraph import Paragraph
+@@ -509,8 +512,7 @@
+     alt_text: str,
+     page_break_before: bool = False,
+ ):
+-    with Image.open(image_path) as image:
+-        pixel_width, pixel_height = image.size
++    pixel_width, pixel_height = image_dimensions(image_path)
+     ratio = pixel_width / pixel_height
+     width = min(max_width_inches, max_height_inches * ratio)
+     height = width / ratio
+@@ -522,7 +524,7 @@
+     paragraph.paragraph_format.keep_together = True
+     paragraph.paragraph_format.page_break_before = page_break_before
+     run = paragraph.add_run()
+-    run.add_picture(str(image_path), width=Inches(width), height=Inches(height))
++    add_image_run(document, run, image_path, width, height)
+     for doc_pr in paragraph._p.xpath(".//wp:docPr"):
+         doc_pr.set("descr", alt_text)
+         doc_pr.set("title", alt_text)
+@@ -530,6 +532,48 @@
+     body = document.element.body
+     body.remove(paragraph._p)
+     return paragraph._p
++
++
++def image_dimensions(image_path: Path):
++    if image_path.suffix.lower() != ".svg":
++        with Image.open(image_path) as image:
++            return image.size
++    root = etree.fromstring(image_path.read_bytes())
++    viewbox = root.get("viewBox")
++    if viewbox:
++        values = [float(x) for x in re.split(r"[\s,]+", viewbox.strip())]
++        return values[2], values[3]
++    return tuple(float(re.match(r"[0-9.]+", root.get(key)).group()) for key in ("width", "height"))
++
++
++def add_image_run(document, run, image_path, width, height):
++    if image_path.suffix.lower() != ".svg":
++        run.add_picture(str(image_path), width=Inches(width), height=Inches(height))
++        return
++    # Layout geometry only. Preserve source SVG bytes and create a native image part.
++    blob = image_path.read_bytes()
++    digest = hashlib.sha256(blob).hexdigest()
++    part_name = PackURI(f"/word/media/order72k_{digest}.svg")
++    existing = [rel.target_part for rel in document.part.rels.values()
++                if not rel.is_external and rel.reltype == RT.IMAGE and rel.target_part.partname == part_name]
++    part = existing[0] if existing else Part(part_name, "image/svg+xml", blob, document.part.package)
++    if part.blob != blob:
++        raise RuntimeError("SVG media-name collision")
++    rid = document.part.relate_to(part, RT.IMAGE)
++    cx, cy = int(Inches(width)), int(Inches(height))
++    shape_id = max(document.part.next_id, getattr(document, "_order72k_next_shape_id", 1))
++    document._order72k_next_shape_id = shape_id + 1
++    drawing = parse_xml(f'''<w:drawing {nsdecls("w", "wp", "a", "pic", "r")}>
++      <wp:inline distT="0" distB="0" distL="0" distR="0">
++      <wp:extent cx="{cx}" cy="{cy}"/><wp:docPr id="{shape_id}" name="Figure {shape_id}"/>
++      <wp:cNvGraphicFramePr><a:graphicFrameLocks noChangeAspect="1"/></wp:cNvGraphicFramePr>
++      <a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">
++      <pic:pic><pic:nvPicPr><pic:cNvPr id="0" name="Accepted SVG"/><pic:cNvPicPr/></pic:nvPicPr>
++      <pic:blipFill><a:blip r:embed="{rid}"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill>
++      <pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="{cx}" cy="{cy}"/></a:xfrm>
++      <a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic>
++      </a:graphicData></a:graphic></wp:inline></w:drawing>''')
++    run._r.append(drawing)
+ 
+ 
+ def add_cropped_picture_paragraph(
+@@ -542,8 +586,7 @@
+     crop_bottom: float = 0.0,
+     keep_with_next: bool = False,
+ ):
+-    with Image.open(image_path) as image:
+-        pixel_width, pixel_height = image.size
++    pixel_width, pixel_height = image_dimensions(image_path)
+     visible_fraction = 1.0 - crop_top - crop_bottom
+     if not 0.0 < visible_fraction <= 1.0:
+         raise ValueError("The cropped image must retain a positive height")
+@@ -558,7 +601,7 @@
+     paragraph.paragraph_format.keep_together = True
+     paragraph.paragraph_format.keep_with_next = keep_with_next
+     run = paragraph.add_run()
+-    run.add_picture(str(image_path), width=Inches(width), height=Inches(height))
++    add_image_run(document, run, image_path, width, height)
+ 
+     blip_fills = paragraph._p.xpath(".//pic:blipFill")
+     if len(blip_fills) != 1:
+@@ -638,7 +681,7 @@
+     return deepcopy(section_properties)
+ 
+ 
+-def section_break_paragraph(base_sect_pr, landscape: bool):
++def section_break_paragraph(base_sect_pr, landscape: bool, a3: bool = False):
+     sect_pr = deepcopy(base_sect_pr)
+     section_type = sect_pr.find(qn("w:type"))
+     if section_type is None:
+@@ -674,6 +717,9 @@
+         page_size.set(qn("w:w"), str(max(page_width, page_height)))
+         page_size.set(qn("w:h"), str(min(page_width, page_height)))
+         page_size.set(qn("w:orient"), "landscape")
++        if a3:
++            page_size.set(qn("w:w"), str(round(16.535 * 1440)))
++            page_size.set(qn("w:h"), str(round(11.693 * 1440)))
+         margins.set(qn("w:left"), str(round(0.45 * 1440)))
+         margins.set(qn("w:right"), str(round(0.45 * 1440)))
+         margins.set(qn("w:top"), str(round(0.55 * 1440)))
+@@ -691,10 +737,10 @@
+     return paragraph
+ 
+ 
+-def wrap_landscape(document: Document, first_element, last_element, base_sect_pr):
++def wrap_landscape(document: Document, first_element, last_element, base_sect_pr, a3=False):
+     body = document.element.body
+     before = section_break_paragraph(base_sect_pr, landscape=False)
+-    after = section_break_paragraph(base_sect_pr, landscape=True)
++    after = section_break_paragraph(base_sect_pr, landscape=True, a3=a3)
+     body.insert(body.index(first_element), before)
+     body.insert(body.index(last_element) + 1, after)
+ 
+@@ -842,8 +888,8 @@
+         element = add_picture_paragraph(
+             document,
+             image,
+-            max_width_inches=10.55 if landscape else 6.25,
+-            max_height_inches=6.20 if landscape else 8.75,
++            max_width_inches=15.55 if label == "Supplementary Table S2" else (10.55 if landscape else 6.25),
++            max_height_inches=8.90 if label == "Supplementary Table S2" else (6.20 if landscape else 8.75),
+             alt_text=f"{label}, part {index + 1} of {len(images)}",
+             page_break_before=index > 0,
+         )
+@@ -964,7 +1010,7 @@
+ def insert_supplementary_figure(
+     document: Document,
+     figure_number: int,
+-    image_path: Path,
++    image_path: Path | list[Path],
+ ):
+     exact_number = re.compile(
+         rf"^Supplementary Figure S{figure_number}(?:\.| and Table\b)",
+@@ -990,6 +1036,28 @@
+     }
+     heading.paragraph_format.keep_with_next = True
+     caption.paragraph_format.keep_together = True
++    if figure_number in {7, 15}:
++        if not isinstance(image_path, list) or len(image_path) != 2:
++            raise RuntimeError("S7 and S15 each require two independent SVG sources")
++        body = document.element.body
++        # Pandoc may retain the external HTML tags as paragraphs. Replace those
++        # exact tags only; retain heading and the single shared caption.
++        between = list(body)[body.index(heading._p)+1:body.index(caption._p)]
++        tags = [node for node in between if local_name(node) == "p" and clean_text(Paragraph(node, document).text) in {"A", "B"}]
++        if tags and [clean_text(Paragraph(node, document).text) for node in tags] != ["A", "B"]:
++            raise RuntimeError("Unexpected source component-tag sequence")
++        for node in tags:
++            body.remove(node)
++        inserted = []
++        for index, (tag, source) in enumerate(zip(("A", "B"), image_path, strict=True)):
++            tag_node = add_label_paragraph(document, tag, page_break_before=index > 0)
++            image_node = add_picture_paragraph(document, source, 6.25, 8.10,
++                f"Supplementary Figure S{figure_number}{tag}")
++            insertion_index = body.index(caption._p)
++            body.insert(insertion_index, tag_node)
++            body.insert(insertion_index + 1, image_node)
++            inserted.append(image_node)
++        return tuple(inserted)
+     if figure_number == 8:
+         first_part = add_cropped_picture_paragraph(
+             document,
+@@ -1055,6 +1123,9 @@
+ 
+ def main() -> None:
+     args = parse_args()
++    candidate_root = Path(__file__).resolve().parents[1]
++    if not args.output_docx.resolve().is_relative_to(candidate_root) or args.output_docx.exists():
++        raise RuntimeError("Output must be a new file inside the candidate root")
+     document = Document(args.input_docx)
+     author_block = relocate_author_block(document)
+     try:
+@@ -1113,7 +1184,7 @@
+         missing = sorted(required_keys - set(images))
+         extra = sorted(set(images) - required_keys)
+         raise RuntimeError(f"PNG manifest mismatch; missing={missing}, extra={extra}")
+-    required_figures = {f"supp_figure_s{index}" for index in range(1, 18)}
++    required_figures = {f"supp_figure_s{index}" for index in range(1, 18) if index not in {7, 15}} | {"supp_figure_s7a", "supp_figure_s7b", "supp_figure_s15a", "supp_figure_s15b"}
+     if required_figures != set(figures):
+         missing = sorted(required_figures - set(figures))
+         extra = sorted(set(figures) - required_figures)
+@@ -1170,7 +1241,7 @@
+         insert_supplementary_figure(
+             document,
+             number,
+-            figures[f"supp_figure_s{number}"],
++            [figures[f"supp_figure_s{number}a"], figures[f"supp_figure_s{number}b"]] if number in {7, 15} else figures[f"supp_figure_s{number}"],
+         )
+ 
+     recommendation_heading = find_exact_heading(
+@@ -1182,7 +1253,8 @@
+ 
+     # Landscape groups keep each existing heading, image sequence, and caption
+     # together while avoiding empty portrait sections between adjacent tables.
+-    for first_number, last_number in [(1, 3), (4, 4), (5, 6), (7, 8), (9, 10)]:
++    s2_start = None
++    for first_number, last_number in [(1, 1), (2, 2), (3, 3), (4, 4), (5, 6), (7, 8), (9, 10)]:
+         first_matches = find_paragraphs(
+             document,
+             f"Supplementary Table S{first_number}.",
+@@ -1207,6 +1279,8 @@
+                 "Daily architecture",
+             )._p
+         landscape_ranges.append((first_element, last_matches[-1]._p))
++        if first_number == 2:
++            s2_start = first_element
+ 
+     # Combined figure-and-table sections S11–S15 retain their portrait figures.
+     # Add explicit Word-only labels before the following landscape table pages.
+@@ -1258,7 +1332,7 @@
+     )
+ 
+     for first, last in landscape_ranges:
+-        wrap_landscape(document, first, last, base_sect_pr)
++        wrap_landscape(document, first, last, base_sect_pr, a3=first is s2_start)
+ 
+     set_final_portrait_section(document, base_sect_pr)
+     suppress_linked_footer_line_numbers(document)
+@@ -1286,13 +1360,16 @@
+         raise RuntimeError("One or more lossy native gt tables remain in output")
+     if top_level_tables(final):
+         raise RuntimeError("One or more one-cell float wrapper tables remain in output")
+-    if len(final.inline_shapes) != 53:
+-        raise RuntimeError(
+-            f"Expected 53 images in final DOCX, found {len(final.inline_shapes)}",
++    expected_images = 23 + sum(len(parts) for parts in images.values())
++    if expected_images != 49 + len(images["supp_table_s2"]):
++        raise RuntimeError("Expanded drawing map disagrees with frozen capture inventory")
++    if len(final.inline_shapes) != expected_images:
++        raise RuntimeError(
++            f"Expected {expected_images} images in final DOCX, found {len(final.inline_shapes)}",
+         )
+     expected_orientations = [
+         orientation
+-        for pair in ((WD_ORIENT.PORTRAIT, WD_ORIENT.LANDSCAPE),) * 13
++        for pair in ((WD_ORIENT.PORTRAIT, WD_ORIENT.LANDSCAPE),) * 15
+         for orientation in pair
+     ] + [WD_ORIENT.PORTRAIT]
+     actual_orientations = [section.orientation for section in final.sections]

@@ -1,0 +1,105 @@
+### scripts/hypotheses/H06/build_h06_stage3_reader_displays.R
+--- /private/tmp/h06_report018_order46_12a64399139a0/pre_build_h06_stage3_reader_displays.R	2026-08-21 00:43:43
++++ /Users/zauner/Documents/Arbeit/12-TUM/MeLiDos/WP2.2.5_Data_Analysis/ZaunerEtAl_bioRxiv_2026/scripts/hypotheses/H06/build_h06_stage3_reader_displays.R	2026-08-21 00:46:02
+@@ -388,12 +388,12 @@
+     values = c("Near-eye" = 17, "Chest" = 16)
+   ) +
+   ggplot2::labs(
+-    title = "Primary and contextual expected-hour melEDI ratios",
++    title = "Primary and contextual mean hourly melEDI ratios",
+     subtitle = paste(
+       "Dashed line: null ratio 1; points and bars: estimates and",
+       "participant-cluster HC3 95% confidence intervals"
+     ),
+-    x = "Ratio of expected supported-hour melEDI (log scale)",
++    x = "Ratio of estimated mean hourly melEDI (log scale)",
+     y = NULL,
+     colour = "Placement",
+     shape = "Placement",
+@@ -542,7 +542,7 @@
+         "hours with support in all nine sites"
+       ),
+       x = NULL,
+-      y = "Expected melEDI (lx)"
++      y = "Estimated melEDI (lx)"
+     ) +
+     h06_reader_theme() +
+     ggplot2::theme(
+@@ -603,7 +603,7 @@
+         "no simultaneous or whole-curve test"
+       ),
+       x = NULL,
+-      y = "Expected melEDI ratio"
++      y = "Estimated melEDI ratio"
+     ) +
+     h06_reader_theme()
+ 
+@@ -643,10 +643,12 @@
+   ) +
+     patchwork::plot_annotation(
+       caption = h06_wrap_text(paste0(
+-        "The accepted exploratory two-part model multiplies binomial-logit occurrence by Gamma-log positive magnitude. ",
+-        standardization_text, "\n",
+-        "Participant and participant-day random-effect smooths are omitted from displayed curves. Smoothing parameters are fixed and occurrence-magnitude cross-component covariance is set to zero.\n",
+-        "The ratio panel is a complete response-scale paired contrast. Filled points mark integer hours whose pointwise interval excludes 1; hollow points mark intervals that include 1. This encoding is exploratory and is not a multiplicity-controlled or simultaneous whole-curve test. The melEDI transformation in panel A is display-only."
++        "Exploratory nonlinear two-part generalized additive model (GAM) display.\n",
++        standardization_text,
++        "\n",
++        "Displayed curves omit participant and participant-day random effects. Bands and ratio intervals are approximate pointwise 95% intervals with fixed smoothing parameters; uncertainty does not include covariance between the occurrence and positive-magnitude components.\n",
++        "Filled and hollow points distinguish intervals that exclude and include 1. These intervals apply to individual displayed hours, not a simultaneous or multiplicity-controlled whole-curve test.\n",
++        "The panel-A transformation is display-only."
+       )),
+       theme = h06_reader_theme() +
+         ggplot2::theme(
+@@ -685,7 +687,7 @@
+   linetypes = c("Work day" = "solid", "Free day" = "22"),
+   contrast_id = "free_vs_work",
+   figure_id = "H06_reader_temporal_day_type",
+-  title = "Expected near-eye melEDI by day type and local time",
++  title = "Estimated near-eye melEDI by day type and local time",
+   ratio_title = "Free day relative to work day across local time",
+   legend_title = "Day type",
+   standardization_text = paste(
+@@ -702,7 +704,7 @@
+   linetypes = c("Sedentary" = "solid", "Active" = "22"),
+   contrast_id = "active_vs_sedentary",
+   figure_id = "H06_reader_temporal_activity",
+-  title = "Expected near-eye melEDI by activity status and local time",
++  title = "Estimated near-eye melEDI by activity status and local time",
+   ratio_title = "Active relative to sedentary across local time",
+   legend_title = "Activity status",
+   standardization_text = paste(
+
+### scripts/hypotheses/H06/build_h06_stage3_site_specific_screening.R
+--- /private/tmp/h06_report018_order46_12a64399139a0/pre_build_h06_stage3_site_specific_screening.R	2026-08-21 00:43:43
++++ /Users/zauner/Documents/Arbeit/12-TUM/MeLiDos/WP2.2.5_Data_Analysis/ZaunerEtAl_bioRxiv_2026/scripts/hypotheses/H06/build_h06_stage3_site_specific_screening.R	2026-08-21 00:46:03
+@@ -734,20 +734,20 @@
+     guide = "none"
+   ) +
+   ggplot2::labs(
+-    title = "Site-specific expected-hour near-eye melEDI ratios",
++    title = "Site-specific mean hourly near-eye melEDI ratios",
+     subtitle = paste(
+-      "Dashed line: equal-site average from this model; filled points:",
+-      "retained after separate nine-site BH adjustments; open points:",
++      "Dashed: site-average estimate from this model; filled: retained",
++      "after nine-site FDR adjustments; open:",
+       "not retained"
+     ),
+     x = "Site-specific ratio (log scale)",
+     y = NULL,
+     caption = paste0(
+-      "Bars are participant-cluster HC3 pointwise 95% confidence intervals from the frozen\n",
+-      "full site-interaction model. The grey line at 1 is the site-specific association null.\n",
+-      "The dashed line is the equal-site geometric mean of the nine ratios in this same model.\n",
+-      "Filled points pass a separate nine-site BH adjustment within that predictor; this does\n",
+-      "not test deviation from the equal-site average or between-site heterogeneity."
++      "Bars are participant-cluster HC3 pointwise 95% confidence intervals from the current\n",
++      "predictor-by-site interaction model. The grey line at 1 is the site-specific association null.\n",
++      "The dashed line is the site-average geometric mean of the nine ratios in this same model.\n",
++      "Filled points pass a separate nine-site FDR adjustment within that predictor; this does\n",
++      "not test deviation from the site-average estimate or the overall predictor-by-site interaction."
+     )
+   ) +
+   cowplot::theme_cowplot(font_size = 10.5) +
+

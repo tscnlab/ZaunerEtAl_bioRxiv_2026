@@ -1,0 +1,1182 @@
+---
+title: "H10 Stage 2: implementation, diagnostics, and V0 comparison"
+subtitle: "Age, measured biological sex, and personal light exposure — author result gate"
+date: "2026-08-11"
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    embed-resources: true
+    code-fold: true
+    code-summary: "Show artifact-reading code"
+    code-overflow: wrap
+    df-print: paged
+execute:
+  echo: false
+  warning: false
+  message: false
+  error: false
+  freeze: false
+editor: source
+---
+
+```{r}
+#| label: setup
+#| include: false
+
+locate_project_root <- function(start = getwd()) {
+  candidate <- normalizePath(start, winslash = "/", mustWork = TRUE)
+  repeat {
+    if (
+      file.exists(file.path(candidate, "renv.lock")) &&
+        file.exists(file.path(candidate, "_quarto.yml"))
+    ) {
+      return(candidate)
+    }
+    parent <- dirname(candidate)
+    if (identical(parent, candidate)) {
+      stop("Could not locate the project root", call. = FALSE)
+    }
+    candidate <- parent
+  }
+}
+
+configured_root <- Sys.getenv("NATHEALTH_PROJECT_ROOT", unset = "")
+if (
+  nzchar(configured_root) &&
+    file.exists(file.path(configured_root, "renv.lock"))
+) {
+  root <- normalizePath(configured_root, winslash = "/", mustWork = TRUE)
+} else {
+  root <- locate_project_root()
+}
+project_library <- file.path(
+  root,
+  "renv/library/macos/R-4.6/aarch64-apple-darwin23"
+)
+if (!dir.exists(project_library)) {
+  stop("The authoritative R 4.6 project library is unavailable", call. = FALSE)
+}
+.libPaths(c(project_library, .libPaths()))
+
+suppressPackageStartupMessages({
+  library(dplyr)
+  library(gt)
+  library(readr)
+  library(stringr)
+  library(tibble)
+  library(tidyr)
+})
+
+source(file.path(root, "scripts/pipeline/p_value_display.R"))
+
+if (!identical(as.character(getRversion()), "4.6.1")) {
+  stop("H10 Stage 2 report must run under R 4.6.1", call. = FALSE)
+}
+
+h10_artifact <- function(...) file.path(root, "artifacts", ...)
+read_h10 <- function(...) {
+  readr::read_csv(
+    h10_artifact(...),
+    show_col_types = FALSE,
+    progress = FALSE,
+    na = ""
+  )
+}
+
+approvals <- read_h10("06_model_data", "H10", "H10_author_approvals.csv")
+input_audit <- read_h10("06_model_data", "H10", "H10_input_audit.csv")
+provenance <- read_h10(
+  "06_model_data", "H10", "H10_provenance_qualification.csv"
+)
+metric_registry <- read_h10(
+  "06_model_data", "H10", "H10_metric_registry.csv"
+)
+comparison_registry <- read_h10(
+  "06_model_data", "H10", "H10_comparison_registry.csv"
+)
+frame_index <- read_h10(
+  "06_model_data", "H10", "H10_model_frame_index.csv"
+)
+demographic_cells <- read_h10(
+  "06_model_data", "H10", "H10_demographic_coding_and_site_cells.csv"
+)
+paired_audit <- read_h10(
+  "06_model_data", "H10", "H10_paired_placement_sample_audit.csv"
+)
+gap_common_audit <- read_h10(
+  "06_model_data", "H10", "H10_primary_gap_common_sample_audit.csv"
+)
+prereg_exclusions <- read_h10(
+  "06_model_data", "H10", "H10_preregistered_exclusion_participants.csv"
+)
+model_manifest <- read_h10(
+  "07_models", "H10", "H10_model_manifest.csv"
+)
+model_tests <- read_h10("09_tables", "H10", "H10_model_tests.csv")
+family_audit <- read_h10(
+  "09_tables", "H10", "H10_multiplicity_family_audit.csv"
+)
+primary_results <- read_h10(
+  "09_tables", "H10", "H10_primary_main_results.csv"
+)
+interactions <- read_h10(
+  "09_tables", "H10", "H10_primary_interaction_results.csv"
+)
+site_effects <- read_h10(
+  "09_tables", "H10", "H10_site_specific_effects.csv"
+)
+diagnostics <- read_h10(
+  "08_diagnostics", "H10", "H10_primary_diagnostic_assessment.csv"
+)
+participant_influence <- read_h10(
+  "08_diagnostics", "H10", "H10_participant_deletion_influence.csv"
+)
+loso <- read_h10(
+  "08_diagnostics", "H10", "H10_leave_one_site_out_summary.csv"
+)
+paired_results <- read_h10(
+  "08_diagnostics", "H10", "sensitivity",
+  "H10_paired_placement_main_effects.csv"
+)
+gap_common_results <- read_h10(
+  "08_diagnostics", "H10", "sensitivity",
+  "H10_primary_gap_common_sample_effects.csv"
+)
+prereg_results <- read_h10(
+  "08_diagnostics", "H10", "sensitivity",
+  "H10_preregistered_exclusion_effects.csv"
+)
+metric_sensitivities <- read_h10(
+  "08_diagnostics", "H10", "sensitivity",
+  "H10_metric_specific_sensitivities.csv"
+)
+mder_amendment <- read_h10(
+  "09_tables", "H10", "H10_METRIC010_amendment_results.csv"
+)
+mder_distribution <- read_h10(
+  "08_diagnostics", "H10", "sensitivity",
+  "H10_mder_current_distribution.csv"
+)
+mder_influence <- read_h10(
+  "08_diagnostics", "H10", "sensitivity",
+  "H10_mder_current_influence_assessment.csv"
+)
+mder_identity_audit <- read_h10(
+  "12_manifests", "H10",
+  "H10_METRIC010_gap_repair_non_mder_identity_audit.csv"
+)
+mder_primary_identity_audit <- read_h10(
+  "12_manifests", "H10",
+  "H10_METRIC010_gap_repair_primary_identity_audit.csv"
+)
+mder_multiplicity_audit <- read_h10(
+  "12_manifests", "H10",
+  "H10_METRIC010_gap_repair_multiplicity_change_audit.csv"
+)
+gap_repair <- read_h10(
+  "06_model_data", "H10", "H10_METRIC010_gap_repair_record.csv"
+)
+l10_changes <- read_h10(
+  "06_model_data", "H10", "H10_METRIC011_l10_cell_changes.csv"
+)
+l10_identity_audit <- read_h10(
+  "12_manifests", "H10", "H10_METRIC011_frozen_identity_audit.csv"
+)
+l10_multiplicity_audit <- read_h10(
+  "12_manifests", "H10", "H10_METRIC011_multiplicity_audit.csv"
+)
+l10_update_summary <- read_h10(
+  "12_manifests", "H10", "H10_METRIC011_update_summary.csv"
+)
+mder_sensitivity_results <- bind_rows(
+  paired_results |>
+    filter(.data$metric_id == "mder_mean_of_viable_ratios") |>
+    mutate(comparison_label = "Placement-matched"),
+  gap_common_results |>
+    filter(.data$metric_id == "mder_mean_of_viable_ratios") |>
+    mutate(comparison_label = "Primary/gap exact common sample"),
+  prereg_results |>
+    filter(.data$metric_id == "mder_mean_of_viable_ratios") |>
+    mutate(comparison_label = "Preregistration exclusions")
+)
+waking_mder <- read_h10(
+  "08_diagnostics", "H10", "sensitivity",
+  "H10_waking_mder_unavailable.csv"
+)
+stability <- read_h10(
+  "08_diagnostics", "H10", "sensitivity",
+  "H10_sensitivity_stability_summary.csv"
+)
+v0_overall <- read_h10(
+  "09_tables", "H10", "H10_v0_overall_results_recreated.csv"
+)
+v0_comparison <- read_h10(
+  "09_tables", "H10", "H10_v0_to_current_comparison.csv"
+)
+v0_sex_site <- read_h10(
+  "09_tables", "H10", "H10_v0_sex_site_comparison_unavailable.csv"
+)
+execution_environment <- read_h10(
+  "12_manifests", "H10", "H10_execution_environment.csv"
+)
+figure_manifest <- read_h10(
+  "12_manifests", "H10", "H10_figure_manifest.csv"
+)
+
+stopifnot(
+  nrow(mder_amendment) == 8L,
+  nrow(mder_influence) == 4L,
+  nrow(mder_sensitivity_results) == 20L,
+  all(!mder_amendment$adjusted_significant),
+  all(mder_identity_audit$identity_status == "PASS"),
+  all(mder_primary_identity_audit$identity_status == "PASS"),
+  all(mder_multiplicity_audit$changed_adjusted_p_rows_above_1e_12 == 0L),
+  all(mder_multiplicity_audit$changed_adjusted_decision_rows == 0L),
+  nrow(gap_repair) == 1L,
+  gap_repair$repair_status == "REPAIRED_IN_SHARED_PREPARATION",
+  nrow(l10_changes) == 8L,
+  all(l10_changes$new_value_lx == 0),
+  all(l10_identity_audit$passed),
+  l10_update_summary$non_l10_raw_p_values_changed == 0L,
+  l10_update_summary$mder_models_changed == 0L,
+  l10_update_summary$significance_decisions_changed == 0L,
+  l10_update_summary$boundary_assessment == "PASS"
+)
+
+placement_label <- function(x) {
+  ifelse(x == "glasses", "Near eye (primary)", "Chest (complementary)")
+}
+
+predictor_label <- function(x) {
+  ifelse(
+    x == "age",
+    "Age, per 10 years",
+    "Measured biological sex, Female minus Male"
+  )
+}
+
+p_markdown <- function(display, significant = FALSE) {
+  ifelse(significant, paste0("**", display, "**"), display)
+}
+
+sample_display <- function(data) {
+  ifelse(
+    data$analysis_unit == "participant",
+    sprintf(
+      "%d participants; %d observations; %d contributing participant-days",
+      data$participants,
+      data$observations,
+      round(data$contributing_participant_days)
+    ),
+    sprintf(
+      "%d participants; %d participant-days/observations",
+      data$participants,
+      data$participant_days
+    )
+  )
+}
+
+support_display <- function(hours) {
+  ifelse(
+    is.finite(hours),
+    format(round(hours, 1), big.mark = ",", trim = TRUE),
+    "not supplied for this metric window"
+  )
+}
+
+h10_gt <- function(data, title, subtitle = NULL, note = NULL, size = 10) {
+  output <- data |>
+    gt() |>
+    opt_align_table_header(align = "left") |>
+    opt_row_striping() |>
+    tab_options(
+      table.width = pct(100),
+      table.font.size = px(size),
+      data_row.padding = px(3),
+      heading.align = "left",
+      source_notes.font.size = px(max(8, size - 2))
+    )
+  output <- if (is.null(subtitle)) {
+    output |> tab_header(title = md(title))
+  } else {
+    output |> tab_header(title = md(title), subtitle = md(subtitle))
+  }
+  if (!is.null(note)) output <- output |> tab_source_note(md(note))
+  output
+}
+
+main_result_table <- function(data, placement, predictor) {
+  data |>
+    filter(
+      .data$placement == .env$placement,
+      .data$predictor == .env$predictor
+    ) |>
+    arrange(.data$metric_order) |>
+    transmute(
+      Metric = .data$manuscript_name,
+      `Effect (95% CI)` = .data$effect_95_ci_display,
+      `Raw p` = .data$p_raw_display,
+      `BH-adjusted p` = p_markdown(
+        .data$p_adjusted_display,
+        .data$adjusted_significant
+      ),
+      Sample = sample_display(dplyr::pick(dplyr::everything())),
+      `Valid support (h)` = support_display(.data$metric_support_valid_hours),
+      Assessment = .data$final_assessment
+    ) |>
+    h10_gt(
+      title = paste0(
+        placement_label(placement),
+        ": ",
+        predictor_label(predictor)
+      ),
+      note = paste0(
+        "Effects are model-based estimates with 95% confidence intervals. ",
+        "Bold adjusted p-values satisfy the explicitly labelled BH rule ",
+        "within the corresponding 17-member family."
+      ),
+      size = 9
+    ) |>
+    fmt_markdown(columns = c(`Effect (95% CI)`, `BH-adjusted p`))
+}
+```
+
+::: {.callout-note}
+## H10-G2 status
+
+The author approved H10-G2 and the later reader and provenance stages. This report incorporates both the sealed FIND-049/CHG-101 gap-MDER repair and METRIC-011, which normalized eight primary darkest-10-hour mean values from numerical noise to exact zero. METRIC-011 reopened only the affected L10 branches and their complete BH families; all other model objects and raw *p*-values remained frozen.
+:::
+
+# Question and answer from the audited implementation
+
+The preregistered hypothesis is:
+
+> “Personal light exposure metrics depend on age and gender.”
+
+The preregistration’s wording is retained as a quotation. The audited inference uses the construct actually measured in the approved demographic input: **biological sex**, coded Male and Female. It does not substitute, derive, or infer gender.
+
+::: {.callout-important}
+## Result in brief
+
+For the primary near-eye placement, older age was associated with a higher brightest-10-hour mean, more time above 1,000 lx melEDI, and a higher melEDI dose after the four separate 17-metric BH corrections. Their per-decade ratios were 1.31 (95% CI 1.09–1.58), 1.27 (1.11–1.45), and 1.31 (1.09–1.56), respectively. No near-eye Female–Male contrast or site-interaction family member met its adjusted rule.
+
+Complementary chest models showed positive age associations for mean melEDI, brightest-10-hour mean, time above 1,000 lx melEDI, waking time above 250 lx melEDI, longest continuous period above 250 lx melEDI, and melEDI dose. Female participants had lower mean melEDI and darkest-10-hour mean than Male participants. Chest age associations varied by site for the midpoint of the brightest 10 hours and last light timing above 250 lx melEDI. These are adjusted associations, not causal effects, and the placement models were never pooled.
+:::
+
+The **gap-timing-unaware dataset** is the dataset applying the 50%-per-hour and 80%-per-day coverage rules but not using the remaining gaps’ time of day in metric-specific support decisions. It is contrasted once here with the primary dataset as time-sensitive; below, the latter is called simply the primary dataset.
+
+# Author decisions and frozen inputs
+
+All 13 Stage 1 decisions, including the amended Gaussian/identity contract for pre-sleep TBT10, were recorded as approved before fitting.
+
+```{r}
+#| label: approvals-table
+
+approvals |>
+  transmute(
+    Decision = .data$decision_id,
+    Disposition = .data$disposition,
+    Approved = if_else(.data$approved, "Yes", "No")
+  ) |>
+  h10_gt(
+    "Approved H10 Stage 1 decisions",
+    note = "H10-G3 includes the pre-fit amendment from Tweedie/log to Gaussian/identity for pre-sleep TBT10."
+  )
+```
+
+The runner independently repeated `verify_base_model_data_artifacts()` in R 4.6.1 before fitting. It reproduced the current base manifest, input-bundle hash, and 816 near-eye plus 902 chest participant-days. The independently audited METRIC-010 MDER manifest, the METRIC-011 decision and evidence manifest, the corrected gap-preparation release, and every other separately pinned input hash also matched.
+
+```{r}
+#| label: provenance-table
+
+provenance |>
+  transmute(
+    Decision = .data$decision_id,
+    Findings = .data$finding_ids,
+    Status = .data$base_verification_status,
+    `Near-eye participant-days` = .data$near_eye_participant_days,
+    `Chest participant-days` = .data$chest_participant_days,
+    Qualification = .data$qualification
+  ) |>
+  h10_gt(
+    "Current prepared-input gate",
+    note = paste0(
+      "PREP-003/FIND-044 is a provenance qualification, not evidence that ",
+      "the prepared data are incorrect."
+    ),
+    size = 9
+  )
+```
+
+The complete SHA-256 audit is stored in `artifacts/06_model_data/H10/H10_input_audit.csv`. The decisive hashes were:
+
+```{r}
+#| label: pins-table
+
+input_audit |>
+  filter(
+    .data$input_role %in% c(
+      "metric_manifest",
+      "site_context_manifest",
+      "base_manifest",
+      "metric011_decision",
+      "metric011_evidence_manifest",
+      "mder_decision",
+      "mder_audit_manifest",
+      "state_support_manifest",
+      "primary_h01_prepared_provenance",
+      "gap_h01_prepared_provenance"
+    )
+  ) |>
+  transmute(
+    Input = .data$input_role,
+    `Observed SHA-256` = .data$observed_sha256,
+    Verified = if_else(.data$hash_verified, "PASS", "FAIL")
+  ) |>
+  h10_gt("Pinned H10 input identities", size = 8)
+```
+
+H10 consumed the approved H01/H11 prepared rows only as data and support provenance. It did not inherit any fitted object, coefficient, p-value, significance decision, or model result from H01, H03, H04, or H06.
+
+# Implemented estimands and models
+
+## Primary estimand
+
+The primary estimand is the **site-adjusted common association** across the observed sites. Site interactions are separate heterogeneity tests. Site was sum-coded; age was divided by 10 so the coefficient and 95% CI are directly per decade. Replacing `age_decade` with age in years and rescaling the coefficient would leave fitted values and inferential p-values unchanged; the decade scale was chosen for readable, practically interpretable effects.
+
+Measured biological sex was treatment-coded with Male as the reference, so the reported coefficient is Female minus Male. Age and biological sex were fitted in separate registered model sets. No placement was pooled, no equivalence margin was introduced, and no temperature or unsupported predictor was added.
+
+## Exact model formulas
+
+For each participant-day metric, the five registered formulas were:
+
+```{r}
+#| label: formula-table
+
+tibble::tribble(
+  ~Model, ~Formula, ~Role,
+  "M0", "response ~ site + (1 | site:Id)", "Reduced site-adjusted model",
+  "M_age", "response ~ site + age_decade + (1 | site:Id)", "Common age association",
+  "M_age_site", "response ~ site * age_decade + (1 | site:Id)", "Age heterogeneity by site",
+  "M_sex", "response ~ site + biological_sex + (1 | site:Id)", "Common Female–Male contrast",
+  "M_sex_site", "response ~ site * biological_sex + (1 | site:Id)", "Biological-sex heterogeneity by site"
+) |>
+  h10_gt(
+    "Participant-day model formulas",
+    note = "For participant-level IS and IV, the same fixed-effect formulas were fitted without a random intercept."
+  )
+```
+
+Gaussian mixed models used ML for nested comparisons and REML for final coefficients and CIs. Participant-level Gaussian models used partial F tests and t-based CIs. Tweedie/log mixed models used maximum-likelihood likelihood-ratio tests and normal-approximation CIs. No bootstrap, simulation, or other resampling was needed, so the resampling pilot gate was not triggered.
+
+The response package followed the approved shared contract. In particular, pre-sleep TBT10 used **Gaussian/identity**, not Tweedie/log:
+
+```{r}
+#| label: response-contract-table
+
+metric_registry |>
+  transmute(
+    Order = .data$metric_order,
+    Metric = .data$manuscript_name,
+    Unit = .data$analysis_unit,
+    Family = .data$response_family,
+    Transform = .data$response_transform,
+    `Effect scale` = .data$effect_scale
+  ) |>
+  h10_gt(
+    "Implemented H10 response package",
+    note = "Pre-sleep TBT10 is the eighth row: Gaussian family with identity response."
+  )
+```
+
+Under METRIC-010, daily MDER is the arithmetic mean of viable one-minute
+melEDI/illuminance ratios on a complete 1,440-minute local wall-clock grid. A
+minute is viable only when both channels are finite and strictly positive, and
+the daily value is retained with at least 720 viable minutes. Fall-back
+duplicate local minutes are averaged channel-wise before forming the ratio;
+spring-forward absent minutes remain missing. The analysis uses neither
+time-profile weighting nor a ratio of daily integrals.
+
+## Multiplicity
+
+Age main effects, biological-sex main effects, age-by-site interactions, and biological-sex-by-site interactions formed **four separate** BH families of 17 metrics for each placement and dataset. No combined 34-test family was used.
+
+```{r}
+#| label: multiplicity-table
+
+family_audit |>
+  filter(.data$data_scenario == "primary") |>
+  transmute(
+    Placement = placement_label(.data$placement),
+    Comparison = .data$comparison_id,
+    `Registered/observed p-values` = paste0(
+      .data$registered_rows,
+      "/",
+      .data$observed_raw_p
+    ),
+    Method = .data$adjustment_method,
+    `Adjusted findings` = .data$adjusted_significant_n,
+    Verification = if_else(
+      .data$complete_17_member_family &
+        .data$independent_recalculation_matches,
+      "PASS",
+      "FAIL"
+    )
+  ) |>
+  h10_gt(
+    "Primary multiplicity-family audit",
+    note = "Each stored BH vector independently matched stats::p.adjust(..., method = 'BH', n = 17)."
+  )
+```
+
+The FIND-049/CHG-101 reopening replaced only the repaired gap MDER and revised
+common-sample slots before recalculating the complete authorized BH families.
+Sixteen non-MDER identity guards and 19 frozen primary-MDER identity guards
+passed. No non-MDER adjusted-*p* difference exceeded 1e-12, and no adjusted
+significance decision changed.
+
+```{r}
+#| label: metric010-identity-table
+
+mder_multiplicity_audit |>
+  transmute(
+    Component = str_replace_all(.data$artifact_component, "_", " "),
+    `Non-MDER rows` = .data$non_mder_rows,
+    `Exact floating-point changes` = .data$exact_changed_adjusted_p_rows,
+    `Changes above 1e-12` = .data$changed_adjusted_p_rows_above_1e_12,
+    `Adjusted decisions changed` = .data$changed_adjusted_decision_rows,
+    `Maximum absolute change` = if_else(
+      is.finite(.data$maximum_absolute_change),
+      sprintf("%.3f", .data$maximum_absolute_change),
+      "—"
+    )
+  ) |>
+  h10_gt(
+    "FIND-049/CHG-101 multiplicity and identity disposition",
+    note = paste0(
+      "All 16 non-MDER and 19 frozen primary-MDER identity guards passed. ",
+      "Exact adjusted-p differences were at most machine-level rounding."
+    ),
+    size = 8
+  )
+```
+
+METRIC-011 changed only eight primary L10 means, each from
+`4.163336342344337e-17` lx to exact zero; all eight records were present in
+both the all-available and placement-matched samples. The Gaussian model still
+used `log10(value + 0.1)`. The bounded update refitted two primary
+all-available L10 bundles, four placement-matched main models, four
+primary-side common-sample main models, 36 L10 leave-one-site-out rows, and
+four participant-deletion checks. It performed no resampling.
+
+```{r}
+#| label: metric011-boundary-table
+
+l10_update_summary |>
+  transmute(
+    `Changed source cells` = .data$changed_primary_l10_cells,
+    `L10 raw p-values changed` = .data$l10_raw_p_values_changed,
+    `Non-L10 raw p-values changed` = .data$non_l10_raw_p_values_changed,
+    `Non-L10 BH fields changed` = .data$non_l10_bh_derived_fields_changed,
+    `Significance decisions changed` = .data$significance_decisions_changed,
+    `Largest raw-p change` = sprintf(
+      "%.2e",
+      .data$maximum_absolute_raw_p_change
+    ),
+    `Largest adjusted-p change` = sprintf(
+      "%.2e",
+      .data$maximum_absolute_adjusted_p_change
+    ),
+    Assessment = .data$boundary_assessment
+  ) |>
+  h10_gt(
+    "METRIC-011 bounded-update audit",
+    note = paste0(
+      "All 15 frozen identity guards passed. Non-L10 BH values changed only ",
+      "as the necessary consequence of recalculating complete affected ",
+      "17-member families; no inferential decision changed."
+    ),
+    size = 8
+  )
+```
+
+# Primary near-eye results
+
+## Age
+
+```{r}
+#| label: near-eye-age-table
+
+main_result_table(primary_results, "glasses", "age")
+```
+
+```{r}
+#| label: near-eye-age-figure
+#| fig-alt: "Forest plot of site-adjusted age associations for 17 personal light-exposure metrics, with separate primary near-eye and complementary chest standardized model-scale estimates and 95% confidence intervals."
+#| fig-cap: "Site-adjusted age associations. Standardization is for display; practical estimates and exact samples are in the paired source CSV."
+
+knitr::include_graphics(file.path(
+  root,
+  "artifacts/10_figures/H10/H10_primary_age_associations.png"
+))
+```
+
+## Measured biological sex
+
+```{r}
+#| label: near-eye-sex-table
+
+main_result_table(primary_results, "glasses", "biological_sex")
+```
+
+No near-eye Female–Male comparison met the BH-adjusted main-effect rule. The largest fitted contrasts remain reported with their 95% CIs rather than being described as equivalent or absent.
+
+```{r}
+#| label: biological-sex-figure
+#| fig-alt: "Forest plot of site-adjusted Female-minus-Male contrasts for 17 personal light-exposure metrics, with separate primary near-eye and complementary chest standardized model-scale estimates and 95% confidence intervals."
+#| fig-cap: "Site-adjusted measured biological-sex contrasts. Gender was not inferred or substituted."
+
+knitr::include_graphics(file.path(
+  root,
+  paste0(
+    "artifacts/10_figures/H10/",
+    "H10_primary_biological_sex_associations.png"
+  )
+))
+```
+
+# Complementary chest results
+
+## Age
+
+```{r}
+#| label: chest-age-table
+
+main_result_table(primary_results, "chest", "age")
+```
+
+## Measured biological sex
+
+```{r}
+#| label: chest-sex-table
+
+main_result_table(primary_results, "chest", "biological_sex")
+```
+
+The chest Female-to-Male ratios were 0.74 (95% CI 0.60–0.92; BH-adjusted p = 0.048) for mean melEDI and 0.76 (0.65–0.90; adjusted p = 0.016) for darkest-10-hour mean. These complementary findings do not supersede the primary near-eye placement.
+
+# Site heterogeneity
+
+Two chest age-by-site comparisons met their separately labelled 17-member BH rule: midpoint of the brightest 10 hours (raw p = 0.004; adjusted p = 0.045) and last light timing above 250 lx melEDI (raw p = 0.005; adjusted p = 0.045). No near-eye interaction or biological-sex-by-site interaction met its adjusted rule.
+
+```{r}
+#| label: interaction-table
+
+interactions |>
+  transmute(
+    Placement = placement_label(.data$placement),
+    Metric = .data$manuscript_name,
+    Comparison = .data$comparison_id,
+    `Raw p` = .data$p_raw_display,
+    `BH-adjusted p` = p_markdown(
+      .data$p_adjusted_display,
+      .data$adjusted_significant
+    ),
+    Interpretation = .data$heterogeneity_interpretation
+  ) |>
+  h10_gt(
+    "All primary site-heterogeneity comparisons",
+    note = "Bold values meet the explicitly labelled interaction-family rule."
+  ) |>
+  fmt_markdown(columns = `BH-adjusted p`)
+```
+
+All site-specific estimates for the two supported interactions are shown below; sites were not selected by the sign or size of their coefficient.
+
+```{r}
+#| label: site-specific-table
+
+supported_interaction_metrics <- interactions |>
+  filter(
+    .data$placement == "chest",
+    .data$comparison_id == "AGE-SITE",
+    .data$adjusted_significant
+  ) |>
+  pull(.data$metric_id)
+
+site_effects |>
+  filter(
+    .data$data_scenario == "primary",
+    .data$placement == "chest",
+    .data$predictor == "age",
+    .data$metric_id %in% supported_interaction_metrics,
+    .data$weighting == "site_specific"
+  ) |>
+  arrange(.data$metric_order, .data$site_display_order) |>
+  transmute(
+    Metric = .data$manuscript_name,
+    Site = .data$site_display_name,
+    `Difference per decade (95% CI)` = sprintf(
+      "%+.1f min (%+.1f to %+.1f)",
+      .data$estimate_practical,
+      .data$conf_low_practical,
+      .data$conf_high_practical
+    )
+  ) |>
+  h10_gt(
+    "Non-selective site-specific age estimates",
+    note = paste0(
+      "Timing differences are in clock minutes per decade. These estimates ",
+      "describe heterogeneity and are not separate site-level significance tests."
+    )
+  )
+```
+
+# Diagnostics and explicit acceptability
+
+All 68 primary additive models (17 metrics × two predictors × two placements) converged, had positive-definite Hessians where applicable, had full-rank fixed-effect designs, were non-singular, and produced no fit warning. No model was classified **not acceptable for inference**. Twenty-five were acceptable without a declared limitation; 43 were acceptable with specified limitations.
+
+```{r}
+#| label: diagnostic-figure
+#| fig-alt: "Heatmap of explicit acceptable or acceptable-with-limitations assessments for age and Female-minus-Male models across 17 metrics and both placements."
+#| fig-cap: "Model-level diagnostic assessments combining numerical, residual, distributional, temporal, and influence evidence."
+
+knitr::include_graphics(file.path(
+  root,
+  "artifacts/10_figures/H10/H10_diagnostic_assessment.png"
+))
+```
+
+The assessments were interpreted as follows:
+
+- **Numerical and convergence:** 68/68 passed convergence, Hessian, rank, singularity, and warning gates.
+- **Residual and distributional:** darkest-10-hour mean, near-eye darkest-10-hour midpoint, and MDER triggered one or both descriptive Q–Q/spread thresholds. For TBT1, four observed zeros at each placement materially exceeded the fitted Tweedie zero mass; the analytical standardized differences were 467–546. Those models remain acceptable only with this distributional limitation.
+- **Temporal:** all 60 participant-day models passed the consecutive-day residual screen; the largest absolute pooled correlation was 0.239, below the declared 0.30 review threshold. The eight participant-level models were correctly marked not applicable.
+- **Participant influence:** deleting the participant with the largest residual screen changed no estimate by one full-model standard error; the largest change was 0.439 standard errors. All 68 participant-deletion checks passed.
+- **Site influence:** 35/68 models were marked acceptable with limitations because at least one leave-one-site-out refit changed adjusted support, reversed a small coefficient, or moved the coefficient by at least one full-model standard error. The largest shift was 1.72 standard errors. All leave-one-site-out fits remained estimable and converged.
+
+```{r}
+#| label: diagnostic-detail-table
+
+diagnostics |>
+  filter(.data$final_assessment != "acceptable") |>
+  transmute(
+    Placement = placement_label(.data$placement),
+    Association = predictor_label(.data$predictor),
+    Metric = .data$manuscript_name,
+    `Residual/distribution flag` = coalesce(
+      str_replace_all(.data$diagnostic_issues, "_", " "),
+      "none"
+    ),
+    `Serial check` = str_replace_all(.data$serial_status, "_", " "),
+    `Participant deletion` = str_replace_all(
+      .data$deletion_status,
+      "_",
+      " "
+    ),
+    `Site influence` = .data$site_influence_assessment,
+    Assessment = .data$final_assessment
+  ) |>
+  h10_gt(
+    "Models acceptable with specified limitations",
+    note = "Full numerical values and interpreted sentences are in H10_primary_diagnostic_assessment.csv.",
+    size = 8
+  )
+```
+
+# Sensitivities
+
+## Placement-matched participant-day evidence
+
+For each of the 15 participant-day metrics, near-eye and chest models were fitted separately on identical participant-day keys. Every key hash matched. Participant-level IS and IV remained unavailable because no current artifact recomputes them on identical paired participant-day sets; H10 did not approximate them.
+
+```{r}
+#| label: paired-figure
+#| fig-alt: "Two-panel scatterplot comparing separately fitted near-eye and chest standardized age and Female-minus-Male effects on identical participant-days for 15 estimable metrics, with component 95% confidence intervals and identity lines."
+#| fig-cap: "Placement-matched estimates. The identity line is descriptive and is not an equivalence margin."
+
+knitr::include_graphics(file.path(
+  root,
+  "artifacts/10_figures/H10/H10_paired_placement_effects.png"
+))
+```
+
+On paired participant-days, the primary near-eye TAT1000 age association retained BH-adjusted support; near-eye M10mean and dose retained their positive directions but not adjusted support. All eight complementary chest primary main findings retained their directions and adjusted support. The paired analysis also supported chest pre-sleep TBT10 for age and chest M10mean for measured biological sex; these are sensitivity-only findings and do not replace the all-available primary contract.
+
+## Primary versus gap-timing-unaware values on common samples
+
+All 34 placement-by-metric key sets matched exactly between datasets before refitting. Each primary adjusted finding retained its direction and adjusted support under the all-available gap-timing-unaware analysis. On exact common samples, all retained direction; chest mean melEDI for measured biological sex lost adjusted support in the primary common subset but regained it in the corresponding gap-timing-unaware subset.
+
+```{r}
+#| label: gap-figure
+#| fig-alt: "Two-panel scatterplot comparing standardized primary and gap-timing-unaware age and Female-minus-Male effects on identical within-metric samples for near-eye and chest placements."
+#| fig-cap: "Primary and gap-timing-unaware estimates on identical within-metric samples."
+
+knitr::include_graphics(file.path(
+  root,
+  "artifacts/10_figures/H10/H10_gap_common_sample_effects.png"
+))
+```
+
+## Preregistration exclusions
+
+The documented sensitivity removed nine participants: one older than 65 years, two recorded as not employed, and seven recorded as marginally employed; the 68-year-old participant was also one of the two not-employed participants. Students and trainees were not removed solely for that status. Every primary adjusted main finding retained its direction and adjusted support.
+
+```{r}
+#| label: prereg-exclusion-table
+
+prereg_exclusions |>
+  transmute(
+    Site = .data$site,
+    Participant = .data$Id,
+    Age = .data$age,
+    `Employment status` = .data$employment_status
+  ) |>
+  h10_gt(
+    "Participants removed in the preregistration-exclusion sensitivity",
+    note = "Nine unique participants; construct labels are reproduced from the normalized demographic input."
+  )
+```
+
+## Metric-specific checks
+
+- Restricting the longest continuous period above 250 lx melEDI to exactly identified periods retained positive age coefficients at both placements (near eye: 500 participant-days, 132 participants, raw p = 0.003; chest: 564 participant-days, 150 participants, raw p <0.001). These declared metric sensitivities did not create a new multiplicity decision.
+- Moving the darkest-10-hour midpoint unwrap threshold from 16:00 to noon did not reveal an age or biological-sex association (all raw p ≥0.597).
+- Current MDER showed right-skewed upper tails, most strongly at chest (primary maximum 3.574; 99th percentile 1.078). All four primary MDER models passed convergence, temporal, fitted-bound, and participant-deletion checks. They were acceptable with specified residual Q–Q limitations; two also carried a leave-one-site-out limitation. No current MDER age or Female–Male association met its 17-metric BH rule.
+- A waking-only MDER sensitivity was unavailable: no approved current artifact derives it, and upstream recomputation was not authorized.
+
+```{r}
+#| label: metric-sensitivity-table
+
+metric_sensitivities |>
+  transmute(
+    Sensitivity = str_replace_all(.data$sensitivity_id, "_", " "),
+    Placement = placement_label(.data$placement),
+    Association = predictor_label(.data$predictor),
+    Metric = .data$manuscript_name,
+    `Model-scale effect (95% CI)` = sprintf(
+      "%+.3f (%+.3f to %+.3f)",
+      .data$estimate_model,
+      .data$conf_low_model,
+      .data$conf_high_model
+    ),
+    `Raw p` = .data$p_raw_display,
+    Sample = paste0(
+      .data$participants,
+      " participants; ",
+      .data$observations,
+      " observations"
+    )
+  ) |>
+  h10_gt(
+    "Declared metric-specific sensitivities",
+    note = "Raw p-values are shown descriptively; no new multiplicity decision was introduced.",
+    size = 9
+  )
+```
+
+The primary MDER sample contained 702 participant-days from 137 participants
+near eye and 732 participant-days from 152 participants at chest. The repaired
+same-estimand gap-timing-unaware comparator contained 687 participant-days from
+137 participants near eye and 723 participant-days from 152 participants at
+chest. Its near-eye age coefficient was +0.011 MDER units per decade (95% CI
+-0.005 to +0.027; raw *p* = 0.155; BH-adjusted *p* = 0.264). All finite
+comparator MDER values were strictly positive. `THUAS_S002`, 2025-03-09 at
+chest had zero viable momentary-ratio minutes and is now reason-coded missing
+rather than stored as zero under FIND-049/CHG-101.
+
+```{r}
+#| label: metric010-results-table
+
+mder_amendment |>
+  arrange(.data$data_scenario, .data$placement, .data$predictor) |>
+  transmute(
+    Dataset = if_else(
+      .data$data_scenario == "primary",
+      "Primary",
+      "Gap-timing-unaware"
+    ),
+    Placement = placement_label(.data$placement),
+    Association = predictor_label(.data$predictor),
+    `Difference (95% CI)` = sprintf(
+      "%+.3f (%+.3f to %+.3f)",
+      .data$estimate_practical,
+      .data$conf_low_practical,
+      .data$conf_high_practical
+    ),
+    `Raw p` = nh_format_p_value(.data$p_raw),
+    `BH-adjusted p` = nh_format_p_value(.data$p_adjusted),
+    Sample = sprintf(
+      "%d participants; %d participant-days/observations",
+      .data$participants,
+      .data$observations
+    )
+  ) |>
+  h10_gt(
+    "Current MDER associations",
+    note = paste0(
+      "Differences are in MDER units per decade or Female minus Male. ",
+      "No adjusted value met its separately labelled 17-metric BH rule."
+    ),
+    size = 8.5
+  )
+```
+
+```{r}
+#| label: metric010-distribution-table
+
+mder_distribution |>
+  filter(.data$scope == "overall") |>
+  arrange(.data$data_scenario, .data$placement) |>
+  transmute(
+    Dataset = if_else(
+      .data$data_scenario == "primary",
+      "Primary",
+      "Gap-timing-unaware"
+    ),
+    Placement = placement_label(.data$placement),
+    Observations = .data$observations,
+    Participants = .data$participants,
+    `Mean; median` = sprintf("%.3f; %.3f", .data$mean, .data$median),
+    `Minimum; 99th percentile; maximum` = sprintf(
+      "%.3f; %.3f; %.3f",
+      .data$minimum,
+      .data$q99,
+      .data$maximum
+    ),
+    `Nonpositive values` = .data$nonpositive_n,
+    Assessment = .data$distribution_assessment
+  ) |>
+  h10_gt(
+    "Current MDER distribution and provenance assessment",
+    note = paste0(
+      "Distribution summaries are interpreted jointly with the stored ",
+      "participant-deletion and leave-one-site-out results; they are not ",
+      "post-hoc exclusion rules."
+    ),
+    size = 8
+  )
+```
+
+```{r}
+#| label: metric010-comparison-table
+
+mder_sensitivity_results |>
+  arrange(
+    .data$comparison_label,
+    .data$data_scenario,
+    .data$placement,
+    .data$predictor
+  ) |>
+  transmute(
+    Comparison = .data$comparison_label,
+    Dataset = if_else(
+      .data$data_scenario == "primary",
+      "Primary",
+      "Gap-timing-unaware"
+    ),
+    Placement = placement_label(.data$placement),
+    Association = predictor_label(.data$predictor),
+    `Difference (95% CI)` = sprintf(
+      "%+.3f (%+.3f to %+.3f)",
+      .data$estimate_practical,
+      .data$conf_low_practical,
+      .data$conf_high_practical
+    ),
+    `Raw p` = nh_format_p_value(.data$p_raw),
+    `BH-adjusted p` = nh_format_p_value(.data$p_adjusted),
+    Sample = sprintf(
+      "%d participants; %d participant-days/observations",
+      .data$participants,
+      .data$observations
+    )
+  ) |>
+  h10_gt(
+    "Current MDER sample and preparation comparisons",
+    note = paste0(
+      "Every MDER-dependent accepted comparison is shown with its 95% CI, ",
+      "exact fitted sample, and complete-family adjusted p-value. None met ",
+      "its labelled BH rule."
+    ),
+    size = 7.5
+  )
+```
+
+## Stability summary
+
+All 11 primary adjusted main findings were directionally stable across every available approved sample and dataset sensitivity. Eight also retained adjusted support in every available comparison. The three with support changes were near-eye M10mean, near-eye dose, and chest mean melEDI for measured biological sex; their signs did not change.
+
+```{r}
+#| label: stability-table
+
+stability |>
+  filter(.data$baseline_supported) |>
+  transmute(
+    Placement = placement_label(.data$placement),
+    Association = predictor_label(.data$predictor),
+    Metric = .data$manuscript_name,
+    `Primary supported` = if_else(.data$baseline_supported, "Yes", "No"),
+    `Gap all-available` = if_else(.data$gap_supported, "Yes", "No"),
+    `Paired/common` = case_when(
+      is.na(.data$paired_supported) ~ "Unavailable",
+      .data$paired_supported ~ "Yes",
+      TRUE ~ "No"
+    ),
+    `Preregistration exclusions` = if_else(
+      .data$prereg_supported,
+      "Yes",
+      "No"
+    ),
+    Classification = .data$stability_class
+  ) |>
+  h10_gt(
+    "Stability of primary adjusted main findings",
+    note = "Support refers to the scenario's labelled 17-member BH family; direction was checked on the model scale."
+  )
+```
+
+# Frozen V0 reconstruction and comparison
+
+V0 used older 811-day near-eye and 897-day chest inputs. It fitted age, measured-sex, and age-by-site structures, but applied `p.adjust()` separately to each scalar p-value with `n = 34`; that is not the same as vector BH adjustment within the four approved families. It fitted sex-by-site models but never compared or reported that block. V0 also omitted model-specific diagnostics.
+
+For MDER, the frozen V0 display remains historical reconciliation evidence
+only. Its older construction is not treated as an alternative estimator or
+sensitivity for the controlling mean-of-viable-minute-ratios estimand.
+
+The frozen V0 table was transcribed directly from `docs/RQ3.html` and `docs/RQ3_chest.html` without reformatting its p-value strings:
+
+```{r}
+#| label: v0-table
+
+v0_overall |>
+  transmute(
+    Placement = placement_label(.data$placement),
+    Type = .data$metric_type,
+    Metric = .data$v0_name,
+    `Sex p` = .data$displayed_sex_adjusted_p,
+    `Age p` = .data$displayed_age_adjusted_p,
+    `Age × site p` = .data$displayed_age_site_adjusted_p
+  ) |>
+  h10_gt(
+    "Frozen V0 overall-results table",
+    note = "Displayed strings and V0 metric labels are preserved as historical evidence."
+  )
+```
+
+Seven adjusted conclusions changed relative to the frozen display: current analyses added near-eye age findings for M10mean and dose; added chest age for mean melEDI; added chest Female–Male findings for mean melEDI and L10mean; added chest age-by-site heterogeneity for LLIT250; and no longer supported the V0 chest dose age-by-site interaction.
+
+```{r}
+#| label: v0-change-table
+
+v0_comparison |>
+  filter(.data$conclusion_changed) |>
+  transmute(
+    Placement = placement_label(.data$placement),
+    Metric = .data$v0_name,
+    Comparison = .data$comparison_id,
+    `V0 displayed adjusted p` = .data$v0_displayed_adjusted_p,
+    `V0 supported` = if_else(.data$v0_adjusted_supported, "Yes", "No"),
+    `Current BH-adjusted p` = p_markdown(
+      .data$current_p_adjusted_display,
+      .data$current_adjusted_supported
+    ),
+    `Current supported` = if_else(
+      .data$current_adjusted_supported,
+      "Yes",
+      "No"
+    )
+  ) |>
+  h10_gt(
+    "Adjusted conclusion changes from V0",
+    note = paste0(
+      "Differences reflect current inputs, response contracts, repeated-measure ",
+      "structure, estimands, and complete vector BH families; they are not ",
+      "attributed to one change in isolation."
+    )
+  ) |>
+  fmt_markdown(columns = `Current BH-adjusted p`)
+```
+
+V0’s Figure 8 used an unadjusted pooled linear smoother for TAT1000, labelled its duration axis “Local time of day (hr)”, and assembled the site-age boxplots from participant rows repeated across metric frames. The recreation deliberately preserves those defects. The corrected version changes only the erroneous y-axis label; the audited association figures above replace the pooled smoother for inference.
+
+::: {.panel-tabset}
+## Near-eye V0 recreation
+
+```{r}
+#| label: v0-near-recreated
+#| fig-alt: "Frozen V0 near-eye recreation with a pooled time-above-1,000-lx-versus-age smoother and repeated age-by-site boxplots; the erroneous local-time y-axis label is preserved."
+
+knitr::include_graphics(file.path(
+  root,
+  "artifacts/10_figures/H10/H10_v0_glasses_recreated.png"
+))
+```
+
+## Near-eye label correction
+
+```{r}
+#| label: v0-near-corrected
+#| fig-alt: "Corrected frozen V0 near-eye display with the duration y-axis labelled as time above 1,000 lx melEDI in hours; all V0 data and smoothing remain unchanged."
+
+knitr::include_graphics(file.path(
+  root,
+  "artifacts/10_figures/H10/H10_v0_glasses_corrected.png"
+))
+```
+
+## Chest V0 recreation
+
+```{r}
+#| label: v0-chest-recreated
+#| fig-alt: "Frozen V0 chest recreation with a pooled time-above-1,000-lx-versus-age smoother and repeated age-by-site boxplots; the erroneous local-time y-axis label is preserved."
+
+knitr::include_graphics(file.path(
+  root,
+  "artifacts/10_figures/H10/H10_v0_chest_recreated.png"
+))
+```
+
+## Chest label correction
+
+```{r}
+#| label: v0-chest-corrected
+#| fig-alt: "Corrected frozen V0 chest display with the duration y-axis labelled as time above 1,000 lx melEDI in hours; all V0 data and smoothing remain unchanged."
+
+knitr::include_graphics(file.path(
+  root,
+  "artifacts/10_figures/H10/H10_v0_chest_corrected.png"
+))
+```
+:::
+
+# Reproducibility and artifact map
+
+The implementation is fully hypothesis-scoped:
+
+1. `scripts/hypotheses/H10/h10_contract.R` defines the approved metrics, response packages, formulas, comparisons, pins, and decisions.
+2. `scripts/hypotheses/H10/h10_modeling.R` prepares frames, fits models, extracts CIs, and calculates bounded analytical diagnostics.
+3. `scripts/hypotheses/H10/run_h10_stage2.R` records the original complete implementation and is used only in manifest mode for the current seal.
+4. `scripts/hypotheses/H10/run_h10_metric010_update.R` records the bounded repaired-gap MDER reseal.
+5. `scripts/hypotheses/H10/run_h10_metric011_update.R` verifies all 36 current pins, refits only the authorized primary L10 branches, recalculates their complete BH families, and identity-guards every frozen model and raw *p*-value.
+6. `scripts/hypotheses/H10/build_h10_metric011_figures.R` rebuilds only displays and paired source CSVs that can contain the L10 slot or affected BH fields, without fitting or prediction.
+7. `tests/hypotheses/H10/test_h10_stage2.R` validates formulas, families, samples, response contracts, diagnostics, figure/source pairs, selective-update identities, and checksums.
+
+All durable figures have paired source-data CSVs and PDF exports. The model objects, exact model-frame hashes, model formulas, warnings, errors, log likelihoods, CIs, raw and adjusted p-values, diagnostic thresholds, and execution environment are stored under the H10 artifact directories. Rendering this report reads those artifacts; it does not refit, predict, simulate, bootstrap, or recompute results.
+
+```{r}
+#| label: environment-table
+
+execution_environment |>
+  h10_gt(
+    "Execution environment",
+    note = "The project library was used directly because a concurrent task held renv's startup sandbox lock; no package was installed or updated."
+  )
+```
+
+::: {.callout-note}
+## Closed author record
+
+H10-G2, the standalone reader report, and the preparation/provenance companion were approved. FIND-049/CHG-101 was bounded to corrected gap MDER and revised common-sample outputs. METRIC-011 was bounded to the eight normalized primary L10 cells and the branches that consumed them. No resampling was required; all frozen identity guards passed, no non-L10 raw *p*-value changed, and every retained scientific conclusion remained unchanged.
+:::

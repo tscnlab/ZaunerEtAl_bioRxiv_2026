@@ -1,0 +1,15 @@
+check,expected,observed,status
+native gt tables,11,13,FAIL
+native gt tables with unique tbl endpoint,11,11,PASS
+native gt tables without tbl endpoint,0,2,FAIL
+figure endpoints,6,6,PASS
+document ID occurrences,unique,1804 occurrences and 1796 unique,FAIL
+duplicated document ID names,0,5,FAIL
+extra duplicate ID occurrences,0,8,FAIL
+headers tokens resolving once document-wide,883,149,FAIL
+headers tokens unresolved,0,692,FAIL
+headers tokens ambiguous,0,42,FAIL
+external semantic summary,retained,not created because hook stopped,FAIL
+external reversible ledger,retained,not created because hook stopped,FAIL
+semantic audit directory contents,nonempty after success,empty,FAIL
+

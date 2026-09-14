@@ -1,6 +1,8 @@
 # Preparation 03 clarity and display record
 
-Date: 2026-08-01
+Original rewrite date: 2026-08-01
+
+METRIC-010 amendment date: 2026-08-11
 
 Source: `notebooks/preparation/03_reference_profiles.qmd`
 
@@ -24,8 +26,9 @@ Rendered HTML:
   5-participant minima; unsupported-period retention; and the prohibition on
   interpolation remain unchanged.
 - Only the additive missing-dose correction may alter a metric value. M10,
-  L10, threshold-timing, and MDER maps remain support-only. No L5 map was
-  introduced.
+  L10, and threshold-timing maps remain support-only. The paired-channel map
+  is retained as historical provenance and is not used by current MDER. No L5
+  map was introduced.
 - No profile, support flag, probability, relevance weight, artifact, or
   downstream metric was recalculated or changed.
 
@@ -82,3 +85,25 @@ Rendered HTML:
   alone.
 - Long hashes are supplied with invisible wrap opportunities, and explanatory
   prose is not placed in a narrow residual table column.
+
+## METRIC-010 amendment — 2026-08-11
+
+- Reclassified the paired melEDI/illuminance map as a historical display and
+  removed the implication that current MDER requires it.
+- Linked the controlling METRIC-010 decision and stated that current MDER is
+  the arithmetic mean of viable positive finite one-minute ratios, with no
+  profile weight, scale, or gate.
+- No profile artifact, reference-profile value, metric, or downstream result
+  was recalculated or changed.
+- Focused source and rendered-HTML test: **PASS**.
+- METRIC-010 scoped baseline: 29 paths; SHA-256
+  `a83ec4412aa89efac712b5ad8e9a31de14f609bde56d83a847de5a3bde4edfeb`;
+  post-render result: 29 unchanged, 0 mismatches.
+- Amended source SHA-256:
+  `d63499f95a39e3fbc335aef3a5f98439f14c24a27406e15a49c99ef79fb4119d`;
+  focused test SHA-256:
+  `28f8f68e87d391faa6c45269dfc267165fa0cd3299e95603c11f220fba120841`;
+  rendered HTML SHA-256:
+  `aab4d78311fc1037975b70c65515d133182367c7da373ed5aae2c1440711d7e0`.
+- The empirical profile figure was unchanged; its SHA-256 remains
+  `b011c1ac17cc1cb05bfda58170371fa8c49813b277e0455f65373a60447a9923`.

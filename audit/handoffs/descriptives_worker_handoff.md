@@ -2,6 +2,18 @@
 
 Date: 2026-08-03
 
+## METRIC-011 bounded addendum (2026-08-12)
+
+The shared L10 numerical-zero normalization has been consumed in the
+descriptives through a bounded L10-only refresh. Exactly eight participant-day
+L10 mean values are now exact zero; every non-L10 source row and every figure
+export is hash-identical. Table 2 retains identical visible three-decimal
+values and an identical PNG while its L10 thumbnail source contains the three
+corrected near-eye zeros under the registered threshold-1 symlog transform.
+The current HTML, exact hashes, preservation evidence, tests, and environment
+note are recorded in
+`audit/handoffs/descriptives_l10_METRIC-011_handoff.md`.
+
 ## Outcome
 
 The submitted descriptive tables and figures have been rebuilt with the

@@ -40,7 +40,7 @@ h04_reader_activity_registry <- function() {
     outdoors = "Outdoors",
     road_vehicle = "Vehicle/public transport",
     sleeping = "Sleeping",
-    other = "Other/unspecified"
+    other = "Other"
   )
   h04_activity_registry() |>
     dplyr::mutate(
@@ -110,7 +110,7 @@ h04_primary_figure <- function(
       placement = factor(.data$placement, levels = c("Near-eye", "Chest")),
       display_role = ifelse(
         .data$activity == "Other/unspecified activity",
-        "Other/unspecified",
+        "Other",
         "Named category"
       )
     )
@@ -144,7 +144,7 @@ h04_primary_figure <- function(
       values = c("Near-eye" = "#0072B2", "Chest" = "#D55E00")
     ) +
     ggplot2::scale_shape_manual(
-      values = c("Named category" = 16, "Other/unspecified" = 1)
+      values = c("Named category" = 16, "Other" = 1)
     ) +
     ggplot2::labs(
       title = mean_title,
@@ -348,7 +348,7 @@ h04_site_activity_figure <- function(data) {
       colour = "Site",
       fill = "Site",
       caption = paste0(
-        "Estimates and dashed averages come from the five-category site-heterogeneity model; Other/unspecified activity is excluded.\n",
+        "Estimates and dashed site-average values come from the five-category activity-by-site interaction model; Other is excluded.\n",
         "The dashed line is the geometric mean of site-cell expectations with every site weighted equally on the fitted log scale.\n",
         "Filled points pass the complete placement-specific BH adjustment; open points are other supported estimates; crosses are support non-estimable."
       )

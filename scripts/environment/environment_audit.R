@@ -554,11 +554,8 @@ build_environment_summary <- function(audit, max_scan_seconds = 15) {
         see_row$locked,
         sep = ""
       ),
-      "detected=FALSE, installed=TRUE; lock pending",
-      if (
-        !see_row$static_detected &&
-          see_row$installed
-      ) {
+      "installed=TRUE, locked=TRUE; static detection may vary",
+      if (see_row$installed) {
         if (see_row$locked) "PASS" else "PENDING_LOCK_SNAPSHOT"
       } else {
         "FAIL"
@@ -575,11 +572,8 @@ build_environment_summary <- function(audit, max_scan_seconds = 15) {
         dharma_row$locked,
         sep = ""
       ),
-      "detected=FALSE, installed=TRUE; lock pending",
-      if (
-        !dharma_row$static_detected &&
-          dharma_row$installed
-      ) {
+      "installed=TRUE, locked=TRUE; static detection may vary",
+      if (dharma_row$installed) {
         if (dharma_row$locked) "PASS" else "PENDING_LOCK_SNAPSHOT"
       } else {
         "FAIL"
@@ -674,6 +668,9 @@ write_environment_report <- function(
       reconciliation$explicit_lock_expected
   ]
   hard_failures <- summary$check[summary$status == "FAIL"]
+  pending_checks <- summary$check[
+    summary$status == "PENDING_LOCK_SNAPSHOT"
+  ]
 
   lines <- c(
     "# Deterministic environment reconciliation",
@@ -689,7 +686,13 @@ write_environment_report <- function(
       nrow(audit$scan$dependencies),
       length(unique(audit$scan$dependencies$Package))
     ),
-    if (length(hard_failures) == 0L) {
+    if (length(hard_failures) == 0L && length(pending_checks) == 0L) {
+      paste(
+        "No mandatory library or scanner failure was found.",
+        "The lockfile is synchronized with R 4.6.1 and the expected",
+        "project dependencies."
+      )
+    } else if (length(hard_failures) == 0L) {
       paste(
         "No mandatory library or scanner failure was found.",
         "The environment is not lock-synchronized yet because the planned",
@@ -709,9 +712,10 @@ write_environment_report <- function(
     "## Explicit dependency policy",
     "",
     paste(
-      "- `see` and `DHARMa` are installed optional runtime dependencies.",
-      "Static discovery does not find them, so the final gated snapshot must",
-      "include them explicitly."
+      "- `see` and `DHARMa` are required diagnostic dependencies.",
+      "`see` is an optional backend that static discovery may not find;",
+      "`DHARMa` is now also called directly by hypothesis code. Both remain",
+      "explicit lockfile requirements."
     ),
     paste(
       "- `shiny` is found only in the 11 parameterized hypothesis notebooks.",
@@ -720,13 +724,20 @@ write_environment_report <- function(
       "not described as an interactive runtime."
     ),
     "",
-    "## Pending lock alignment",
+    "## Lock alignment",
     "",
-    sprintf(
-      "- Lockfile R version: `%s`; runtime R version: `%s`.",
-      audit$lock$r_version,
-      as.character(getRversion())
-    ),
+    if (identical(audit$lock$r_version, as.character(getRversion()))) {
+      sprintf(
+        "- Lockfile and runtime both use R `%s`.",
+        audit$lock$r_version
+      )
+    } else {
+      sprintf(
+        "- Lockfile R version: `%s`; runtime R version: `%s`.",
+        audit$lock$r_version,
+        as.character(getRversion())
+      )
+    },
     sprintf(
       "- Installed/locked version mismatches: %s.",
       if (length(mismatch_packages) > 0L) {
@@ -736,7 +747,7 @@ write_environment_report <- function(
       }
     ),
     sprintf(
-      "- Explicit packages awaiting the gated snapshot: %s.",
+      "- Explicit diagnostic and Quarto-scanner packages missing from the lockfile: %s.",
       if (length(missing_lock_packages) > 0L) {
         paste(missing_lock_packages, collapse = ", ")
       } else {
@@ -744,7 +755,7 @@ write_environment_report <- function(
       }
     ),
     "",
-    "## Why unbounded status was retired",
+    "## Safe status checks",
     "",
     paste(
       "Before `.renvignore` was introduced, project discovery could traverse",
@@ -759,7 +770,7 @@ write_environment_report <- function(
       "does not claim a single confirmed root cause."
     ),
     paste(
-      "The final mandatory status call must use",
+      "Status checks are run only through",
       "`scripts/environment/run_renv_status_safe.R`; that wrapper launches a",
       "separate R process, enforces a wall-clock timeout, terminates the child",
       "on timeout, and retains stdout, stderr, exit status, and timing metadata."

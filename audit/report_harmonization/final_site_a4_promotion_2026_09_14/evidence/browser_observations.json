@@ -1,0 +1,44 @@
+{
+  "short_production_QA_complete": true,
+  "genuinely_new_defect": false,
+  "viewport_reset": true,
+  "own_tabs_closed": true,
+  "widths_checked": [1440, 708],
+  "entry_routes": ["index.html", "supplementary_information.html"],
+  "desktop_search_inherited_qualification": true,
+  "unqualified_error_free_claim": false,
+  "scope": "Brief live smoke check after the exact Order016 transaction. The independently accepted full candidate review carries forward; this is not a repeat full visual review or new Office QA.",
+  "origin": "http://127.0.0.1:59586",
+  "production_root": "_build/nathealth",
+  "main_tab": "5",
+  "initial_tabs": [],
+  "final_tabs": [],
+  "explicit_viewports": [[1440, 1000], [708, 1000]],
+  "new_destination_tab_actual_viewport": [1331, 1324],
+  "reset_observed_viewport": [1331, 1324],
+  "capture_id_note": "D1440-S15-link is an observation identifier only. Its emitted metadata and screenshot show the actual new-tab viewport 1331 by 1324, not 1440 by 1000. Subsequent destination identifiers use D1331.",
+  "checks": [
+    {"item": "Revised S4", "result": "Visible on both entry routes at desktop width; manuscript checked at 708. Complete table, footnote and caption observed. The inner table wrapper scrolls locally at narrow width, reaching scrollLeft 106 of 106; the page remains within its viewport."},
+    {"item": "Revised S7", "result": "Manuscript desktop top and footnotes observed. Standalone SI checked at 708, including horizontal access to exact fitted-sample column and lower table/footnotes. Local container scrollLeft 254 of 254; no page-wide overflow."},
+    {"item": "Single Table 2", "result": "Exactly one #tbl-brown-adherence target in the live manuscript. Desktop left and right extents inspected using local horizontal scrolling, scrollLeft 281 of 281. No additional sensitivity rows inserted."},
+    {"item": "Preserved S2", "result": "Standalone desktop table and the accepted secondary definition/relevance text observed. All 17 density images loaded. No S2 copy or artwork changed."},
+    {"item": "Complete S8", "result": "Single loaded embedded SVG on both entry routes. Manuscript narrow top and bottom/caption inspected, including panels A through D. Standalone desktop observed. Accepted internal artwork whitespace retained."},
+    {"item": "Corrected S15 through S18", "result": "Correct labels and captions observed in live Results and both entry routes. All four ordinary live Results links activated successfully, opening the matching SVG destination in new tabs. Each destination image loaded with nonzero natural dimensions."},
+    {"item": "Editable links", "result": "Standalone download utility visible with Table S4 and Table S7 Word links to the exact live paths. All 22 separate HTTP HEAD/GET checks already passed exact payload identity; no additional browser download copy or Office opening was needed."},
+    {"item": "Page containment", "result": "Observed route viewport client/document widths matched: 1425 at explicit 1440 and 693 at explicit 708. Dense tables retain local horizontal scrolling. Search was not reopened or reclassified."}
+  ],
+  "ordinary_link_trials": [
+    {"label": "Supplementary Figure S15", "action": "Locator pointer click", "new_tab": "6", "url": "http://127.0.0.1:59586/index.html#fig-s15", "image_dimensions": [1512, 936], "loaded_svg": true},
+    {"label": "Supplementary Figure S16", "action": "Focused-link Enter because the wrapped anchor bounding-box midpoint is not necessarily on a text fragment", "new_tab": "7", "url": "http://127.0.0.1:59586/index.html#fig-s16", "image_dimensions": [1512, 1224], "loaded_svg": true},
+    {"label": "S17", "action": "Locator pointer click", "new_tab": "8", "url": "http://127.0.0.1:59586/index.html#fig-s17", "image_dimensions": [902, 1248], "loaded_svg": true},
+    {"label": "S18", "action": "Locator pointer click", "new_tab": "9", "url": "http://127.0.0.1:59586/index.html#fig-s18", "image_dimensions": [1008, 1056], "loaded_svg": true}
+  ],
+  "qualifications": [
+    "B1 is the inherited desktop search overflow accepted by central review. No new search repair or unqualified search PASS is claimed.",
+    "B2 was resolved by central actual-link verification. This production smoke also observed four successful matching destination tabs. Earlier negative candidate observations remain unchanged in their historical evidence.",
+    "Generated Quarto target=_blank behavior is retained, not browser injection. New-tab viewport sizes were observed rather than assumed.",
+    "Fixed navigation can cover the top of a hash target. The review used ordinary vertical scrolling where the complete heading or table was needed.",
+    "S2 secondary text and S8 internal whitespace remain accepted and frozen; dense figures may need enlargement on small displays.",
+    "Inherited Word S18 clipping qualification remains. No new Office render or acceptance claim was made."
+  ]
+}

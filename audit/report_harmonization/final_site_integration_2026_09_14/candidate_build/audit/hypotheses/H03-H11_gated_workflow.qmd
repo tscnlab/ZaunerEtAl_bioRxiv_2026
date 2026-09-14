@@ -1,0 +1,223 @@
+---
+title: "How H03–H11 will be reviewed and rebuilt"
+subtitle: "A gated workflow from audit to reader-facing results"
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    code-tools: false
+    page-layout: full
+---
+
+## Scope
+
+This workflow applies to H03 through H11. It does not retroactively change
+the work already underway for H01, H02, or the descriptive tables and
+figures.
+
+Each hypothesis is completed in three stages. A fourth stage is inserted
+when a computation-heavy bootstrap or simulation is needed. Work stops at
+the end of every stage until the author has reviewed and approved its HTML
+report.
+
+## Terms used in the audit reports
+
+**V0 analysis** means the analysis that produced the submitted manuscript.
+It includes the methods, code, prepared data, numerical results, figures,
+tables, and claims used for that submission.
+
+**Main analysis** means the analysis developed and approved through this
+audit for the Nature Health submission.
+
+**V0-prepared data** means the data as prepared for V0, with only objectively
+demonstrable data errors corrected. Applying the new model implementation to
+these data is an audit-only data-preparation sensitivity. It is not a second
+version of the reader-facing analysis.
+
+The final reader-facing document does not use the term V0 and does not
+describe discarded candidate models or variants considered while developing
+the analysis.
+
+## File layout and gate ownership
+
+For a hypothesis such as H03, the staged files are:
+
+- `audit/hypotheses/H03/01_audit_and_plan.qmd`;
+- `audit/hypotheses/H03/02_implementation_and_v0_comparison.qmd`;
+- `audit/hypotheses/H03/03_production_bootstrap.qmd`, only when required; and
+- `notebooks/hypotheses/H03.qmd`, the final reader-facing report.
+
+Every source document is rendered to Quarto HTML for review. Exact model
+outputs, fitted-model samples, figure data, and table data remain stored as
+separate RDS or CSV artifacts and are linked from the relevant report.
+
+The coordinating task owns shared preparation code, central ledgers, Quarto
+configuration, manuscript files, and the central gate-status table. A
+hypothesis task may prepare a gate report and a shared-change request, but it
+must stop rather than changing shared inputs or marking its own gate approved.
+
+## Stage 1: Audit and proposed analysis
+
+The first document audits the V0 analysis against:
+
+1. the exact preregistered hypothesis and analysis specification;
+2. all preregistration deviations stated before or in the submitted
+   manuscript;
+3. the implementation and results that actually produced V0; and
+4. the analysis plan already developed during the Nature Health audit.
+
+The report must explain, in plain language:
+
+- what question and quantity the analysis is intended to address;
+- what V0 actually estimated and how it handled repeated observations;
+- where V0 agrees with or differs from the preregistration and stated
+  deviations;
+- any coding, data, model, multiplicity, diagnostic, figure, table, or claim
+  problem found;
+- the proposed main analysis and why each retained or changed choice serves
+  the analysis goal;
+- the exact primary and complementary roles of near-eye and chest-level
+  measurements;
+- which registered sensitivities will later be needed; and
+- every decision that needs author approval before implementation.
+
+The report contains visible evaluated R cells that print the exact Wilkinson
+formula objects used by V0 and proposed for the main analysis, including every
+full, reduced, null, or otherwise fitted comparison model. Distribution,
+link, contrasts, estimation method, correlation structure, and multiplicity
+families are stated beside those formulas because they are not encoded by
+Wilkinson notation.
+
+Stage 1 does not select a method by looking for a preferred new result. It may
+reproduce V0 and run checks needed to establish whether its implementation is
+valid, but the proposed estimand and model are fixed before the new
+inferential results are examined.
+
+### Gate after Stage 1
+
+Implementation starts only after the author approves the proposed estimand,
+sample, outcome construction, model formulas, response distribution,
+comparisons, multiplicity families, diagnostics, and placement roles. Any
+unresolved major choice keeps the hypothesis at Stage 1.
+
+## Stage 2: Implementation and comparison with V0
+
+The approved analysis is implemented and run in a clean R session. If a
+computation-heavy bootstrap is required, this stage uses only the approved
+50- or 100-replicate pilot and labels its intervals as preliminary and not for
+inference.
+
+The second document must:
+
+- show the exact formulas supplied to every fitted model;
+- report the exact participants, participant-days, hours, observations,
+  sites, and relevant category cells that entered each model;
+- report estimates in practical units with 95% confidence intervals and raw
+  and adjusted p-values where applicable;
+- show convergence, singularity, residual, distributional, temporal, and
+  influence checks relevant to the model;
+- display those diagnostics with a plain-language interpretation and state
+  whether each fitted model is acceptable, acceptable with a stated
+  limitation, or not acceptable for inference;
+- compare the main-analysis implementation, results, and defensible claims
+  directly with V0;
+- apply the identical new implementation to the V0-prepared data and report
+  that audit-only data sensitivity separately;
+- recreate the V0 figures and tables faithfully, then make only sensible,
+  explicitly documented adjustments for correctness and readability;
+- produce the corresponding near-eye and chest-level outputs; and
+- export the exact data behind every durable figure and table.
+
+Faithful recreation does not require preserving an error. When a V0 display
+cannot be retained, the report shows what changed and why. Site names, order,
+and colours follow `config/site_display_registry.csv`; metric names follow
+`config/metric_display_registry.csv`.
+
+Expensive secondary work, including the full sensitivity battery, may remain
+out of Stage 2. The report must nevertheless list every deferred analysis and
+state whether it could alter the interpretation.
+
+### Gate after Stage 2
+
+The author reviews the method, preliminary or final estimates, V0 comparison,
+recreated displays, and proposed reader-facing presentation. A material
+change reopens Stage 1. Otherwise the author approves either the production
+bootstrap stage or, when no production bootstrap is needed, the final
+reader-facing stage.
+
+## Optional Stage 3: Production bootstrap or simulation
+
+This stage is required whenever final inference depends on a
+computation-heavy bootstrap or simulation. It follows the separate
+pilot-first policy in `audit/decisions/bootstrap_execution_policy.md`.
+
+After explicit approval of the pilot display and estimated runtime, the full
+run uses the same inputs, targets, formulas, resampling unit, failure rules,
+and output schema as the approved pilot. Its Quarto report records:
+
+- requested, successful, failed, and warning-producing replicates;
+- seeds, checkpoint behavior, elapsed time, and compute resources;
+- final intervals and other bootstrap-derived quantities;
+- any difference between the pilot preview and the production presentation;
+- updated main-versus-V0 and V0-prepared-data comparisons; and
+- all diagnostics required before the result can be treated as final,
+  together with their interpretation and an explicit acceptable,
+  acceptable-with-limitations, or not-acceptable assessment.
+
+Pilot estimates are never substituted for production estimates. A code,
+model, target, or display change after the pilot requires a new pilot and a
+new runtime approval.
+
+### Gate after the production run
+
+The final reader-facing report is blocked until the production outputs pass
+their checks and the author approves them. Material instability or a changed
+scientific conclusion reopens the relevant earlier stage.
+
+## Final stage: Reader-facing hypothesis report
+
+The final `notebooks/hypotheses/Hxx.qmd` stands on its own. It contains no
+mention of V0, submitted-versus-new comparisons, discarded candidates,
+working variants, or the construction history of the analysis.
+
+In concise, accessible language, it presents:
+
+1. the question, including the exact preregistered hypothesis as a quotation;
+2. what was analysed and why the chosen method addresses the question;
+3. every deviation from the preregistration, listed explicitly;
+4. the result in prose, figures, and digestible tables;
+5. the exact model sample and uncertainty needed to interpret the result;
+6. a restrained interpretation and the important limitations; and
+7. how the conclusion changes under the registered scientific
+   sensitivities.
+
+The report also shows the model diagnostics needed to judge the analysis. It
+explains what the diagnostic displays or summaries indicate and states
+plainly whether the near-eye and chest-level models are acceptable,
+acceptable with specified limitations, or not acceptable. Diagnostic output
+without interpretation is not sufficient.
+
+Near-eye measurements remain primary. Every hypothesis also has a clearly
+labelled chest-level section that recreates the primary figures and tables
+with chest-level data, rather than merely referring to an audit table or
+listing chest coefficients in prose.
+
+Reader-facing tables use `gt`. They are divided into conceptually coherent,
+legible pieces rather than continued across several pages or filled with
+audit-only columns. Complete numerical results remain available as linked CSV
+files. Figures and tables use familiar manuscript terminology, `melEDI` in
+reader-facing text, the registered site display rules, and 95% confidence
+intervals wherever they are estimable.
+
+Necessary technical terms are explained on first use. Code may be folded,
+but each analytical section states what was done, why it was done, what the
+display shows, and what the result means.
+
+## Reopening rules
+
+An approved stage reopens when an upstream input changes or when a finding
+changes an estimand, inclusion rule, metric, model, multiplicity family,
+substantive result, preregistration interpretation, or claim. A low-risk
+formatting repair may proceed without reopening only when tests establish that
+the data, fitted models, estimates, uncertainty, and interpretation are
+unchanged.

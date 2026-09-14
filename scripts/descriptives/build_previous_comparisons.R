@@ -184,6 +184,14 @@ previous_table2_metric_map <- function() {
 }
 
 table2_difference_reason <- function(metric_id) {
+  if (metric_id == "mder_mean_of_viable_ratios") {
+    return(paste(
+      "The MDER estimand is corrected to the arithmetic mean of viable",
+      "one-minute melEDI/illuminance ratios. Both channels must be finite and",
+      "strictly positive, and a day is retained with at least 720 viable",
+      "ratios on the complete 1,440-minute local wall-clock grid."
+    ))
+  }
   if (grepl("timing|midpoint", metric_id)) {
     return(paste(
       "The earlier display treated clock time linearly. The updated display",

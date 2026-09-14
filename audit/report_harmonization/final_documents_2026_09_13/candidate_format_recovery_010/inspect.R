@@ -1,0 +1,53 @@
+stopifnot(as.character(getRversion()) == "4.6.1")
+suppressPackageStartupMessages(library(xml2))
+suppressPackageStartupMessages(library(jsonlite))
+out <- "/private/tmp/writer009-review.tQ1OFF"
+root <- normalizePath(getwd(), mustWork = TRUE)
+p <- file.path(root, "audit/manuscript_nature_health/final_review_production_2026_09_14")
+sha <- function(path) {
+  con <- file(path, "rb")
+  on.exit(close(con))
+  as.character(openssl::sha256(con))
+}
+html <- file.path(p, "project/manuscript/R0_NatHealth/render_html_round2/ZaunerEtAl2026_NatHealth_phase3_brown.html")
+main <- file.path(p, "deliverables/Nature_Health_manuscript_round2.docx")
+stopifnot(sha(html) == "0488130aba3ef7b043c743ee879d6e88f9c2ece8ae3c0c2eba89d90e116ea510")
+stopifnot(sha(main) == "3f33431ed4e85b042f8a98e232b25b9617d8dae16bc8eff8df9595c05a80d611")
+image <- file.path(p, "production_images/supp_table_s3_part_01.png")
+stopifnot(sha(image) == "8139eb4ea512629f6457ad4f5dc6c586304b65c14f3324f22b6707a118b1cb4b")
+selected <- file.path(root, "audit/manuscript_nature_health/table_layout_visual_corrections_2026_09_14/attempt_02")
+sources <- c(Table2 = file.path(selected, "source/table2_primary_adherence.html"), S2 = file.path(selected, "source/supp_table_s2_complete.html"), S3 = file.path(root, "manuscript/R0_NatHealth/display_assets/table_s3_recommendation_windows.html"))
+report <- read_html(html)
+tables <- xml_find_all(report, "//table")
+text <- function(nodes) {
+  strings <- vapply(nodes, function(node) {
+    if (length(xml_find_all(node, ".//br")) == 0L) return(xml_text(node))
+    # A rendered HTML line break separates words, unlike xml_text's raw join.
+    markup <- gsub("<br\\b[^>]*>", " ", as.character(node), perl = TRUE)
+    xml_text(read_html(markup))
+  }, "")
+  gsub("[[:space:]]+", " ", trimws(strings))
+}
+findings <- lapply(names(sources), function(key) {
+  source <- read_html(sources[[key]])
+  table <- xml_find_first(source, "//table")
+  source_cells <- text(xml_find_all(table, ".//th|.//td"))
+  body_cells <- text(xml_find_all(table, ".//tbody//th|.//tbody//td"))
+  match <- vapply(tables, function(candidate) identical(body_cells, text(xml_find_all(candidate, ".//tbody//th|.//tbody//td"))), logical(1))
+  stopifnot(sum(match) == 1L)
+  current <- tables[[which(match)]]
+  src_cols <- xml_find_all(table, "./colgroup/col")
+  now_cols <- xml_find_all(current, "./colgroup/col")
+  all_cells_equal <- identical(source_cells, text(xml_find_all(current, ".//th|.//td")))
+  stopifnot(all_cells_equal)
+  data.frame(key = key, source = sources[[key]], source_sha256 = sha(sources[[key]]), cells = length(source_cells), exact_all_cells = all_cells_equal, source_columns = length(src_cols), html_columns = length(now_cols), source_widths = paste(xml_attr(src_cols, "style"), collapse = " | "), html_widths = paste(xml_attr(now_cols, "style"), collapse = " | "), source_table_style = xml_attr(table, "style"), html_table_style = xml_attr(current, "style"))
+})
+findings <- do.call(rbind, findings)
+write.csv(findings, file.path(out, "table_source_and_HTML_preservation.csv"), row.names = FALSE, na = "")
+png_doc <- c(image, file.path(p, "qa/main_round2", paste0("page-", c(22, 64, 103), ".png")), main, html)
+write.csv(data.frame(path = png_doc, bytes = file.info(png_doc)$size, sha256 = vapply(png_doc, sha, "")), file.path(out, "reviewed_input_pins.csv"), row.names = FALSE)
+source_map <- read.csv(file.path(selected, "maps/complete_table_part_map.csv"), stringsAsFactors = FALSE, check.names = FALSE)
+write.csv(source_map[source_map[[1]] == "supp_table_s3", ], file.path(out, "S3_owner_route.csv"), row.names = FALSE)
+writeLines(c(capture.output(sessionInfo()), paste("xml2", packageVersion("xml2")), paste("jsonlite", packageVersion("jsonlite")), paste("openssl", packageVersion("openssl"))), file.path(out, "session.txt"))
+print(findings[c("key", "cells", "exact_all_cells", "source_columns", "html_columns", "source_widths", "html_widths")], row.names = FALSE)
+cat("INDEPENDENT_LAYOUT_REVIEW=PASS cells=413/413 no source mutation or render\n")

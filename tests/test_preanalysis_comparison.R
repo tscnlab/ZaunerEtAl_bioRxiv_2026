@@ -11,9 +11,9 @@ options(stringsAsFactors = FALSE, warn = 2)
 expected_normalization_sha256 <-
   "e3d484711abb54f69d63ff302e5a0329efda3fd0a8c85feaf9cc4f850005c9ab"
 expected_base_sha256 <-
-  "fd48dc5d1ecd5da125dd2c360c32239f0adfe7009eca881f5838b0e61b81b13d"
+  "8344bdc0339a53079bf9eeb7d86de1ad7c15373641c3a0a5a01d040b418895ce"
 expected_base_input_bundle_sha256 <-
-  "b6262d925937f505514834ea9d5b733a6be76c00b1a8ec6855a9a10947bfb900"
+  "e840ce9d2a7f653bc5ebbfe020ce087017dfdaf0276df09da578bda30a539916"
 
 test_preanalysis_expect_error <- function(expression, pattern) {
   observed <- tryCatch(
@@ -308,13 +308,21 @@ stopifnot(
   isTRUE(all.equal(timing_paired$mean_difference, -4.875))
 )
 
-message("Testing canonical-only variables remain explicitly not applicable")
+message("Testing the MDER mean-of-ratios field mapping")
 new_metric_specification <- crosswalk[
-  crosswalk$variable_id == "light_mder_ratio_of_integrals",
+  crosswalk$variable_id == "light_mder_mean_of_viable_ratios",
   ,
   drop = FALSE
 ]
 new_metric_data <- test_preanalysis_fixture(c(0.5, 0.6, 0.7), dates)
+new_metric_baseline <- preanalysis_value_rows(
+  new_metric_data,
+  new_metric_specification,
+  series = "baseline",
+  placement = "glasses",
+  value = new_metric_data$value,
+  local_date = new_metric_data$local_date
+)
 new_metric_canonical <- preanalysis_value_rows(
   new_metric_data,
   new_metric_specification,
@@ -324,26 +332,26 @@ new_metric_canonical <- preanalysis_value_rows(
   local_date = new_metric_data$local_date
 )
 new_metric_keys <- preanalysis_reconcile_keys(
-  NULL,
+  new_metric_baseline,
   new_metric_canonical,
   new_metric_specification
 )
 new_metric_paired <- preanalysis_paired_summary(
-  NULL,
+  new_metric_baseline,
   new_metric_canonical,
   new_metric_specification
 )
 stopifnot(
   new_metric_specification$comparison_status ==
-    "not_applicable_no_field_key_mapping",
+    "applicable_field_key_mapping",
   new_metric_specification$comparability_class ==
-    "changed_estimand_or_no_direct_mapping_no_numerical_comparison",
-  is.na(new_metric_keys$baseline_n_keys),
+    "same_nominal_construct_changed_computation_admissibility_descriptive_only",
+  new_metric_keys$baseline_n_keys == 3L,
   new_metric_keys$canonical_n_keys == 3L,
-  is.na(new_metric_keys$common_n_keys),
-  is.na(new_metric_paired$n_common_keys),
-  is.na(new_metric_paired$n_paired_observed),
-  is.na(new_metric_paired$mean_difference)
+  new_metric_keys$common_n_keys == 3L,
+  new_metric_paired$n_common_keys == 3L,
+  new_metric_paired$n_paired_observed == 3L,
+  new_metric_paired$mean_difference == 0
 )
 
 message("Building the complete pre-analysis comparison twice")

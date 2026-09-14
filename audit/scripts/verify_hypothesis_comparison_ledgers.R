@@ -429,7 +429,7 @@ contract <- paste(
 )
 stopifnot(
   grepl(
-    "manuscript-prepared-data sensitivity",
+    "gap-timing-unaware dataset sensitivity",
     contract,
     fixed = TRUE
   ),

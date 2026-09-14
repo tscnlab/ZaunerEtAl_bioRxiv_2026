@@ -1,0 +1,1046 @@
+diff --git a/audit/hypotheses/H04/H04_analysis_preparation.qmd b/audit/hypotheses/H04/H04_analysis_preparation.qmd
+index 7d88f09..873aeb9 100644
+--- a/audit/hypotheses/H04/H04_analysis_preparation.qmd
++++ b/audit/hypotheses/H04/H04_analysis_preparation.qmd
+@@ -10,6 +10,7 @@ format:
+     code-summary: "Show the R code used for this display"
+     code-tools: true
+     page-layout: full
++    lightbox: true
+ execute:
+   echo: true
+   warning: false
+@@ -289,7 +290,7 @@ stopifnot(
+ )
+ ```
+ 
+-## Purpose
++## About this analysis record
+ 
+ ::: {.callout-note title="About this analysis record"}
+ This page explains how verified one-hour melEDI records and multi-select
+@@ -306,7 +307,8 @@ measurement. The complementary chest sensor position is not a measure of
+ ocular exposure. The five interpretable categories are At home, Office/home
+ working, Outdoors, Vehicle/public transport, and Sleeping. Other/unspecified
+ activity remains in the additive population-mean model as a display-only row,
+-is heterogeneous, and supports no substantive claim.
++is a varied display-only category rather than a coherent scientific category,
++and supports no substantive claim.
+ 
+ Activity categories are not mutually exclusive behavioural states. When an
+ hour contains several retained labels, that hour contributes $1/k$ to each of
+@@ -366,11 +368,12 @@ that this page repeats model estimation.
+ 
+ Five files determine the scientific H04 frames and displays: the normalized
+ activity diary, the primary near-eye and complementary chest one-hour
+-outcomes, the gap-timing-unaware one-hour outcomes, and the submitted site
+-registry. Their complete SHA-256 identities and current contract identities
+-are recorded. The recorded R 4.6.1 comparison establishes zero-tolerance
+-equality of all values in all 14 H04 analysis frames, so the accepted model
+-objects and results remain controlling and no model refit is required.
++outcomes, the gap-timing-unaware one-hour outcomes, and the shared
++country-coded site registry. Their complete SHA-256 identities and current
++contract identities are recorded. The recorded R 4.6.1 comparison establishes
++zero-tolerance equality of all values in all 14 H04 analysis frames, so the
++accepted model objects and results remain controlling and no model refit is
++required.
+ 
+ ```{r}
+ #| label: tbl-h04-prep-input-identities
+@@ -388,7 +391,7 @@ input_labels <- c(
+   main_near_eye = "Primary near-eye one-hour outcome",
+   main_chest = "Complementary chest one-hour outcome",
+   gap_timing_unaware = "Gap-timing-unaware one-hour outcomes",
+-  site_registry = "Submitted site-display registry"
++  site_registry = "Shared country-coded site registry"
+ )
+ 
+ verified_inputs <- input_audit |>
+@@ -414,7 +417,7 @@ verified_inputs <- input_audit |>
+     ),
+     `Accepted SHA-256 prefix` = substr(.data$sha256, 1L, 12L),
+     `Current SHA-256 prefix` = substr(.data$current_sha256, 1L, 12L),
+-    Verification = case_when(
++    verification_state = case_when(
+       .data$current_sha256 == .data$sha256 ~ "PASS",
+       .data$current_contract_verified &
+         .data$all_downstream_frame_values_identical ~ "VERIFIED CURRENT IDENTITY",
+@@ -423,10 +426,21 @@ verified_inputs <- input_audit |>
+   )
+ stopifnot(
+   nrow(verified_inputs) == 5L,
+-  all(verified_inputs$Verification %in% c("PASS", "VERIFIED CURRENT IDENTITY"))
++  all(
++    verified_inputs$verification_state %in%
++      c("PASS", "VERIFIED CURRENT IDENTITY")
++  )
+ )
+ 
+ verified_inputs |>
++  mutate(
++    Verification = recode(
++      .data$verification_state,
++      PASS = "Verified",
++      `VERIFIED CURRENT IDENTITY` = "Verified current identity",
++      FAIL = "Review needed"
++    )
++  ) |>
+   select(
+     "Input",
+     "Path",
+@@ -456,8 +470,8 @@ verified_inputs |>
+ ### Activity transformation
+ 
+ The diary transformation is outcome-blind. It first combines the three
+-outdoor flags—travel by bicycle/on foot, working outdoors, and free time
+-outdoors—into **Outdoors**. It then deduplicates collapsed labels within an
++outdoor flags, travel by bicycle/on foot, working outdoors, and free time
++outdoors, into **Outdoors**. It then deduplicates collapsed labels within an
+ hour. If Other is selected with a named category, only the named category or
+ categories are retained; Other is retained only when it is the sole selected
+ label. Free text is neither inspected nor recoded.
+@@ -480,15 +494,16 @@ than single-select hours.
+ 
+ tibble::tribble(
+   ~Order, ~Operation, ~Scientific_reason,
+-  1L, "Collapse three outdoor flags before pivoting", "Represents outdoor mobility, outdoor work, and outdoor free time with the submitted reader-facing category Outdoors.",
++  1L, "Collapse three outdoor flags before pivoting", "Represents outdoor mobility, outdoor work, and outdoor free time with the reader-facing category Outdoors.",
+   2L, "Deduplicate collapsed labels within participant-hour", "Prevents two source flags that collapse to the same label from creating duplicate analytical memberships.",
+-  3L, "Apply the Other specificity rule", "Retains named information when present and keeps Other only as a separate heterogeneous Other-only category.",
++  3L, "Apply the Other specificity rule", "Retains named information when present and keeps Other only as a varied display-only Other-only category, not a coherent scientific category.",
+   4L, "Pivot one row per retained distinct label", "Preserves simultaneous reports without declaring them independent behavioural states.",
+   5L, "Assign analysis weight 1/k", "Makes the total contribution of every original participant-hour equal to one.",
+   6L, "Cluster inference by participant", "Encompasses concurrent within-hour memberships and the longitudinal record within the same covariance cluster."
+ ) |>
+   gt::gt() |>
+   gt::fmt_integer(columns = Order) |>
++  gt::cols_label(Scientific_reason = "Scientific reason") |>
+   gt::cols_width(
+     Order ~ gt::pct(6),
+     Operation ~ gt::pct(34),
+@@ -895,9 +910,9 @@ unique participant-hours, five participants, and five participants who also
+ reported At home at that site. The primary near-eye frame contains 51
+ supported and three observed-but-sparse cells; chest contains 47 supported and
+ one observed-but-sparse cell. No absent site/category cell is invented. All
+-reader-facing site labels use the submitted country-coded names: Borås (SE),
+-Delft (NL), Dortmund (DE), Tübingen (DE), Munich (DE), Madrid (ES),
+-Izmir (TR), San José (CR), and Kumasi (GH).
++reader-facing site labels use the country-coded study-site names from the
++shared registry: Borås (SE), Delft (NL), Dortmund (DE), Tübingen (DE), Munich
++(DE), Madrid (ES), Izmir (TR), San José (CR), and Kumasi (GH).
+ 
+ ```{r}
+ #| label: tbl-h04-prep-site-cell-support
+@@ -1202,7 +1217,7 @@ primary_tests |>
+     `Denominator df` = .data$denominator_df,
+     `Wald F` = .data$f_statistic,
+     `Raw p` = format_p(.data$p_raw, .data$p_raw < 0.05),
+-    Status = .data$status
++    Status = recode(.data$status, ESTIMABLE = "Estimable")
+   ) |>
+   gt::gt(groupname_col = "Placement") |>
+   gt::fmt_number(columns = `Wald F`, decimals = 2) |>
+@@ -1239,6 +1254,11 @@ tibble::tribble(
+   "Site deviation", "Five-category activity-by-site interaction model", "Site-specific category mean divided by its site-average category mean", "Supported cells only; FDR within sensor position"
+ ) |>
+   gt::gt() |>
++  gt::cols_label(
++    Source_model = "Source model",
++    Reference_distribution = "Reference distribution",
++    Inferential_role = "Inferential role"
++  ) |>
+   gt::cols_width(
+     Estimand ~ gt::pct(20),
+     Source_model ~ gt::pct(25),
+@@ -1325,7 +1345,7 @@ primary_tests |>
+     `Denominator df` = .data$denominator_df,
+     `Wald F` = .data$f_statistic,
+     `Raw p` = format_p(.data$p_raw, .data$p_raw < 0.05),
+-    Status = .data$status
++    Status = recode(.data$status, ESTIMABLE = "Estimable")
+   ) |>
+   gt::gt(rowname_col = "Placement") |>
+   gt::fmt_number(columns = `Wald F`, decimals = 2) |>
+@@ -1342,7 +1362,7 @@ ranking.
+ ### Exploratory participant random-intercept decomposition {#sec-h04-prep-participant-random-intercept}
+ 
+ The population-mean quasi-Tweedie GLM and participant-clustered covariance
+-remain the inferential analysis. A separate mixed model describes stable
++remain the inferential analysis. A separate mixed model describes
+ participant-level variation in the support-qualified five-category
+ activity-by-site frame. The random intercept lets participants have different
+ overall exposure levels while retaining the fixed activity-by-site structure:
+@@ -1360,6 +1380,11 @@ long rows representing 16,135 participant-hours from 126 participants. The
+ chest fit uses 20,440 long rows representing 19,497 participant-hours from 150
+ participants.
+ 
++This descriptive mixed-model decomposition is distinct from the
++population-mean Mundlak-style sensitivity, which adjusts current-category
++contrasts for participants' usual activity composition. Neither assessment
++changes the primary analysis or its multiplicity families.
++
+ The standard Nakagawa implementation calculates the fixed-predictor variance
+ with an unweighted variance across fitted rows. That convention would give a
+ multi-select hour more influence because it has more rows. The H04 calculation
+@@ -1523,7 +1548,19 @@ checksum manifest.
+ 
+ multiplicity_registry |>
+   transmute(
+-    Scope = .data$scope,
++    Scope = recode(
++      .data$scope,
++      `five named categories robust equality omnibus` =
++        "Five named-category equality test",
++      `six-category robust equality omnibus` =
++        "Six-category equality test",
++      `four named-category ratios versus At home` =
++        "Named-category ratios versus At home",
++      `selected site-heterogeneity omnibus` =
++        "Activity-by-site interaction test",
++      `all support-eligible site deviations` =
++        "Supported site-specific category deviations"
++    ),
+     Adjustment = recode(
+       .data$method,
+       none = "None",
+@@ -1534,7 +1571,16 @@ multiplicity_registry |>
+       "All support-eligible cells",
+       as.character(.data$family_n)
+     ),
+-    `Decision role` = .data$decision_role
++    `Decision role` = recode(
++      .data$decision_role,
++      `primary raw decision` = "Primary test",
++      `secondary raw decision` = "Secondary test",
++      `reader-facing adjusted decisions` =
++        "Reader-facing category comparisons",
++      `exploratory raw decision` = "Exploratory interaction test",
++      `exploratory adjusted decisions` =
++        "Exploratory site-specific comparisons"
++    )
+   ) |>
+   gt::gt() |>
+   gt::cols_width(
+@@ -1750,7 +1796,8 @@ The predefined branches change one aspect of the frame, weight, working
+ variance, or placement while preserving the category estimand whenever that
+ is possible. Exactly-one-category hours remove concurrent memberships.
+ Retaining co-selected Other deliberately reverses the primary specificity
+-rule. Excluding Other-only hours removes that heterogeneous category.
++rule. Excluding Other-only hours removes that varied display-only category,
++which is not a coherent scientific category.
+ Unweighted long rows change the estimand by allowing multi-select hours to
+ contribute more than one total unit. The placement-matched branch uses the
+ same participants and participant-hours at the near-eye and chest sensor
+@@ -1840,7 +1887,7 @@ sensitivity_tests |>
+     `Wald F` = .data$f_statistic,
+     `Denominator df` = .data$denominator_df,
+     `Raw p` = format_p(.data$p_raw, .data$p_raw < 0.05),
+-    Status = .data$status
++    Status = recode(.data$status, ESTIMABLE = "Estimable")
+   ) |>
+   arrange(
+     match(.data$Sensitivity, unname(scenario_labels)),
+@@ -1913,7 +1960,7 @@ near-eye vehicle or public-transport activity to all 150 chest participants
+ for Sleeping. Both Mundlak fits converged, were full rank (19/19 near eye and
+ 18/18 at chest), and had finite positive-definite participant-clustered
+ covariance. The covariance condition numbers were 7,048 and 4,301, below the
+-registered $10^{10}$ gate.
++predefined $10^{10}$ threshold.
+ 
+ The four-restriction within-participant category tests were $F(4,125)=67.17$,
+ raw $p<0.001$, near eye and $F(4,149)=77.86$, raw $p<0.001$, at chest. All four
+@@ -2232,6 +2279,7 @@ tibble::tribble(
+   "Preparation figures", "Display only", "Draws four descriptive figures from linked exact source-data CSV files."
+ ) |>
+   gt::gt() |>
++  gt::cols_label(Calculated_on_render = "Calculated on render") |>
+   gt::cols_width(
+     Category ~ gt::pct(24),
+     Calculated_on_render ~ gt::pct(18),
+@@ -2266,6 +2314,10 @@ tibble::tribble(
+ ) |>
+   gt::gt() |>
+   gt::fmt_integer(columns = Order) |>
++  gt::cols_label(
++    Principal_outputs = "Principal outputs",
++    Run_on_this_page = "Run on this page"
++  ) |>
+   gt::cols_width(
+     Order ~ gt::pct(5),
+     File ~ gt::pct(19),
+@@ -2299,6 +2351,10 @@ tibble::tribble(
+   "Preparation companion", "audit/hypotheses/H04/H04_analysis_preparation.qmd", "Data-to-result construction, checks, and provenance", "This page"
+ ) |>
+   gt::gt() |>
++  gt::cols_label(
++    Output_group = "Output group",
++    Reader_use = "Reader use"
++  ) |>
+   gt::cols_width(
+     Output_group ~ gt::pct(18),
+     Location ~ gt::pct(30),
+diff --git a/notebooks/hypotheses/H04.qmd b/notebooks/hypotheses/H04.qmd
+index 40a2651..2e4222f 100644
+--- a/notebooks/hypotheses/H04.qmd
++++ b/notebooks/hypotheses/H04.qmd
+@@ -7,6 +7,7 @@ format:
+     toc: true
+     toc-depth: 2
+     code-tools: false
++    lightbox: true
+ execute:
+   echo: false
+   warning: false
+@@ -450,28 +451,23 @@ Reported activity category was associated with near-eye melEDI,
+ *F*(`r near_primary_test$restrictions`, `r near_primary_test$denominator_df`) =
+ `r sprintf("%.2f", near_primary_test$f_statistic)`, raw *p*
+ **`r format_p(near_primary_test$p_raw)`**. Site-average estimates give each
+-study site equal weight. These estimates and 95% confidence intervals (95%
+-CIs), constructed to allow observations from the same participant to be
+-related, were:
+-
+-- `r answer_category_line("home")`
+-- `r answer_category_line("working_indoor")`
+-- `r answer_category_line("outdoors")`
+-- `r answer_category_line("road_vehicle")`
+-- `r answer_category_line("sleeping")`
+-
+-Because the activity-by-site interaction was supported, these descriptive
+-means and ratios come from the activity-by-site interaction model; only the
+-primary five-category omnibus comes from the additive population-mean model.
+-
+-Chest estimates showed the same broad ordering. All four named-versus-home
++observed study site equal weight on the fitted log-mean scale. The 95%
++confidence intervals (95% CIs) quantify statistical uncertainty while allowing
++observations from the same participant to be related. Because the
++activity-by-site interaction, which allows the activity association to differ
++by study site, was supported, the descriptive means and ratios come from that
++model. Only the primary five-category omnibus comes from the additive
++population-mean model.
++
++Chest estimates showed the same broad ordering, and all four named-versus-home
+ contrasts retained their direction and classification in every prespecified
+-sensitivity. Other/unspecified activity remains visible as a heterogeneous
+-display category but supports no scientific claim. These are observational
+-associations, not causal effects of changing activity.
++sensitivity. Other/unspecified activity remains visible as a varied
++display-only category, not a coherent scientific category, and supports no
++scientific claim. These are observational associations, not causal effects of
++changing activity.
+ :::
+ 
+-## Data and activity representation
++## What was analysed
+ 
+ The near-eye sensor position is primary because it measures light near the
+ eyes, although it is not a retinal measurement. The chest sensor position is
+@@ -494,171 +490,26 @@ activity” and are excluded from the category model.
+ A participant-hour is one original hourly record for one participant. A
+ participant-day groups that participant's records within one study day.
+ 
+-```{r}
+-#| label: tbl-h04-overall-samples
+-#| tbl-cap: "Exact fitted samples for the primary and complementary models."
+-
+-main_samples |>
+-  transmute(
+-    Placement = as.character(.data$placement),
+-    Participants = .data$participants,
+-    `Participant-days` = .data$participant_days,
+-    `Unique participant-hours` = .data$unique_participant_hours,
+-    `Generated long rows` = .data$long_rows,
+-    `Effective weighted hours` = .data$effective_weighted_hours,
+-    Sites = .data$sites,
+-    `Exact-zero hours` = .data$exact_zero_unique_hours
+-  ) |>
+-  gt::gt() |>
+-  gt::fmt_integer(
+-    columns = c(
+-      Participants, `Participant-days`, `Unique participant-hours`,
+-      `Generated long rows`, Sites, `Exact-zero hours`
+-    ),
+-    use_seps = TRUE
+-  ) |>
+-  gt::fmt_number(
+-    columns = `Effective weighted hours`,
+-    decimals = 0,
+-    use_seps = TRUE
+-  ) |>
+-  h04_gt(11.5)
+-```
+-
+-The primary model contains 126 participants, 724 participant-days, 16,526
+-unique participant-hours, 17,266 long rows, and 16,526 effective weighted
+-hours. The complementary model contains 150 participants, 875
+-participant-days, 20,128 unique participant-hours, 21,071 long rows, and
+-20,128 effective weighted hours.
+-
+-```{r}
+-#| label: tbl-h04-sample-flow
+-#| tbl-cap: "Outcome availability and explicit accounting of hours outside the category models."
+-
+-main_flow |>
+-  transmute(
+-    Placement = as.character(.data$placement),
+-    `Outcome-grid hours` = .data$outcome_grid_hours,
+-    `Outcome unavailable` = .data$outcome_unavailable_hours,
+-    `No eligible diary key` = .data$outcome_hours_without_eligible_diary_key,
+-    `No retained activity` = .data$outcome_hours_with_no_retained_activity,
+-    `Fitted participant-hours` = .data$model_candidate_unique_hours
+-  ) |>
+-  gt::gt() |>
+-  gt::fmt_integer(columns = where(is.numeric), use_seps = TRUE) |>
+-  gt::tab_source_note(
+-    gt::md(paste(
+-      "No retained activity is not a behavioural category and is not fitted",
+-      "as a zero or reference activity."
+-    ))
+-  ) |>
+-  h04_gt()
+-```
+-
+-```{r}
+-#| label: tbl-h04-category-support
+-#| tbl-cap: "Observed support and weighted totals for every displayed activity category."
+-
+-category_support |>
+-  mutate(
+-    placement = factor(.data$placement, levels = c("Near-eye", "Chest")),
+-    reader_order = unname(
+-      .env$reader_activity_order[.data$activity_code]
+-    ),
+-    reader_label = unname(
+-      .env$reader_activity_labels[.data$activity_code]
+-    )
+-  ) |>
+-  arrange(.data$placement, .data$reader_order) |>
+-  transmute(
+-    Placement = as.character(.data$placement),
+-    Category = .data$reader_label,
+-    `Unique hours` = .data$unique_participant_hours,
+-    `Long rows` = .data$long_rows,
+-    `Weighted hours` = .data$effective_weighted_hours,
+-    Participants = .data$participants,
+-    `Participant-days` = .data$participant_days,
+-    Sites = .data$sites
+-  ) |>
+-  gt::gt(groupname_col = "Placement") |>
+-  gt::fmt_integer(
+-    columns = c(
+-      `Unique hours`, `Long rows`, Participants, `Participant-days`, Sites
+-    ),
+-    use_seps = TRUE
+-  ) |>
+-  gt::fmt_number(columns = `Weighted hours`, decimals = 1, use_seps = TRUE) |>
+-  gt::cols_width(
+-    Category ~ gt::pct(31),
+-    everything() ~ gt::pct(11.5)
+-  ) |>
+-  h04_gt(11.5)
+-```
+-
+-Weighted hours can be smaller than category rows because a multi-select
+-hour's weight is divided among its retained labels. Long-row weighting is part
+-of the estimand: replacing $1/k$ by unit weight would instead analyse reported
+-selections and let multi-select hours contribute more.
+-
+-## Model and estimand
+-
+-The primary population-mean model estimates the average association between
+-reported activity and melEDI after accounting for site. It uses fixed site and
+-activity terms, a quasi-Tweedie variance function with power 1.539919, a log
+-link, and the exact $1/k$ prior weights. A separate activity-by-site
+-interaction model allows the association between each of the five
+-interpretable activity categories and melEDI to differ by study site. It is
+-used for descriptive category and site summaries, while the additive model
+-remains the basis for the primary inferential test. Other/unspecified activity
+-remains unrestricted in the additive model and is display-only.
+-
+-Participant-cluster-robust uncertainty allows concurrent category memberships
+-and longitudinal observations from the same participant to be related. The
+-technical implementation uses HC1 covariance and finite-cluster *t* and *F*
+-reference distributions, with the number of participant clusters minus one as
+-denominator degrees of freedom.
+-
+-The primary equality test compares Sleeping, At home, vehicle or
+-public-transport travel, indoor or home working, and Outdoors. The fitted
+-Other coefficient remains unrestricted and does not enter that four-row joint
+-restriction. A full six-category omnibus is reported secondarily.
+-
+-Category means are reported as site-average estimates across the sites
+-observed for that sensor position. Every site contributes equally on the
+-fitted log-mean scale. The resulting average is then back-transformed, meaning
+-that it is returned to melEDI in lux. It is therefore the geometric mean of
+-the fitted site-specific means, not an observation-weighted arithmetic mean.
+-At home is the reader-facing comparison reference.
+-
+-The estimand is average melEDI associated with each reported collapsed
+-activity category, with an hour's contribution shared across concurrently
+-reported categories. It is not a transition effect, an individual-specific
+-effect, or a causal contrast between mutually exclusive behaviours.
+-
+-### Preregistration changes {#h04-preregistration-deviations}
+-
+-- **Study-site structure ([DEV-013](../preregistration_deviations.qmd#dev-013)).**
+-  The accepted population-average category model uses fixed study-site
+-  adjustment, while a separate activity-by-site interaction model evaluates
+-  variation among sites. The site interaction does not redefine the primary
+-  omnibus test.
+-- **Response model ([DEV-014](../preregistration_deviations.qmd#dev-014)).**
+-  Fixed-power quasi-Tweedie log-mean models with participant-clustered
+-  covariance replace the registered Gaussian mixed model. They describe
+-  multiplicative mean comparisons and are not treated as calibrated
+-  zero-generating distributions.
+-- **Multi-label activity representation ([DEV-025](../preregistration_deviations.qmd#dev-025)).**
+-  The analysis collapses the three outdoor flags before pivoting, removes
+-  duplicate labels within an hour, gives each of $k$ concurrent retained
+-  categories weight $1/k$, and retains Other only when it is the sole
+-  selected category for descriptive display.
+-- **Primary and site-interaction questions ([DEV-026](../preregistration_deviations.qmd#dev-026)).**
+-  The additive site-plus-activity model supplies the primary activity
+-  omnibus; the separate activity-by-site interaction model supplies
+-  descriptive category means, ratios, and site-specific variation.
+-- **Multiple-testing adjustment ([DEV-027](../preregistration_deviations.qmd#dev-027)).**
+-  False-discovery-rate adjustment is applied to each explicitly assembled
+-  complete activity or site-interaction contrast family.
++## Terms used below
++
++- **Site-average estimate:** an average across the observed sites that gives
++  each site equal weight on the fitted log-mean scale.
++- **Activity-by-site interaction:** a model term that allows the association
++  between activity and melEDI to differ by study site.
++- **95% CI:** a confidence interval that summarizes statistical uncertainty
++  around an estimate.
++- **FDR:** a false-discovery-rate adjustment applied within a declared family
++  of comparisons.
++- **Random intercept:** a term that lets participants have different overall
++  exposure levels while retaining the fixed activity-by-site structure.
++- **Nonlinear GAM analysis:** a generalized additive model analysis in which
++  activity- and site-associated patterns may bend across clock time.
++- **AR(1):** a first-order autoregressive structure that allows adjacent
++  residuals to be more alike than residuals farther apart.
++- **Shapley allocation:** a descriptive allocation that distributes shared
++  fitted-model information instead of summing overlapping contributions.
++- **Common sample:** the same participants and participant-hours observed at
++  both sensor positions.
+ 
+ ## Principal activity-category estimates
+ 
+@@ -772,6 +623,17 @@ retain the unrounded values.
+ 
+ The four named comparisons with At home use a false-discovery-rate (FDR)
+ adjustment as one complete four-member family within each sensor position.
++FDR limits the expected proportion of false discoveries among labelled
++results in that declared family.
++
++The complementary chest primary test also rejected equality of the five named
++categories, *F*(4, 149) = `r sprintf("%.2f", chest_primary_test$f_statistic)`,
++raw *p* `r format_p(chest_primary_test$p_raw)`. This separate result supports
++the broad placement consistency; it is not an independent replication or an
++equivalence test.
++
++<details>
++<summary>Show supporting contrasts and interaction tests</summary>
+ 
+ ```{r}
+ #| label: tbl-h04-named-contrasts
+@@ -868,11 +730,150 @@ primary_tests |>
+   h04_gt(11.5)
+ ```
+ 
+-The complementary chest primary test also rejected equality of the five named
+-categories, *F*(4, 149) = `r sprintf("%.2f", chest_primary_test$f_statistic)`,
+-raw *p* `r format_p(chest_primary_test$p_raw)`. This separate result supports
+-the broad placement consistency; it is not an independent replication or an
+-equivalence test.
++</details>
++
++## Sample and activity support
++
++```{r}
++#| label: tbl-h04-overall-samples
++#| tbl-cap: "Exact fitted samples for the primary and complementary models."
++
++main_samples |>
++  transmute(
++    Placement = as.character(.data$placement),
++    Participants = .data$participants,
++    `Participant-days` = .data$participant_days,
++    `Unique participant-hours` = .data$unique_participant_hours,
++    `Generated long rows` = .data$long_rows,
++    `Effective weighted hours` = .data$effective_weighted_hours,
++    Sites = .data$sites,
++    `Exact-zero hours` = .data$exact_zero_unique_hours
++  ) |>
++  gt::gt() |>
++  gt::fmt_integer(
++    columns = c(
++      Participants, `Participant-days`, `Unique participant-hours`,
++      `Generated long rows`, Sites, `Exact-zero hours`
++    ),
++    use_seps = TRUE
++  ) |>
++  gt::fmt_number(
++    columns = `Effective weighted hours`,
++    decimals = 0,
++    use_seps = TRUE
++  ) |>
++  h04_gt(11.5)
++```
++
++The primary model contains 126 participants, 724 participant-days, 16,526
++unique participant-hours, 17,266 long rows, and 16,526 effective weighted
++hours. The complementary model contains 150 participants, 875
++participant-days, 20,128 unique participant-hours, 21,071 long rows, and
++20,128 effective weighted hours.
++
++```{r}
++#| label: tbl-h04-sample-flow
++#| tbl-cap: "Outcome availability and explicit accounting of hours outside the category models."
++
++main_flow |>
++  transmute(
++    Placement = as.character(.data$placement),
++    `Outcome-grid hours` = .data$outcome_grid_hours,
++    `Outcome unavailable` = .data$outcome_unavailable_hours,
++    `No eligible diary key` = .data$outcome_hours_without_eligible_diary_key,
++    `No retained activity` = .data$outcome_hours_with_no_retained_activity,
++    `Fitted participant-hours` = .data$model_candidate_unique_hours
++  ) |>
++  gt::gt() |>
++  gt::fmt_integer(columns = where(is.numeric), use_seps = TRUE) |>
++  gt::tab_source_note(
++    gt::md(paste(
++      "No retained activity is not a behavioural category and is not fitted",
++      "as a zero or reference activity."
++    ))
++  ) |>
++  h04_gt()
++```
++
++```{r}
++#| label: tbl-h04-category-support
++#| tbl-cap: "Observed support and weighted totals for every displayed activity category."
++
++category_support |>
++  mutate(
++    placement = factor(.data$placement, levels = c("Near-eye", "Chest")),
++    reader_order = unname(
++      .env$reader_activity_order[.data$activity_code]
++    ),
++    reader_label = unname(
++      .env$reader_activity_labels[.data$activity_code]
++    )
++  ) |>
++  arrange(.data$placement, .data$reader_order) |>
++  transmute(
++    Placement = as.character(.data$placement),
++    Category = .data$reader_label,
++    `Unique hours` = .data$unique_participant_hours,
++    `Long rows` = .data$long_rows,
++    `Weighted hours` = .data$effective_weighted_hours,
++    Participants = .data$participants,
++    `Participant-days` = .data$participant_days,
++    Sites = .data$sites
++  ) |>
++  gt::gt(groupname_col = "Placement") |>
++  gt::fmt_integer(
++    columns = c(
++      `Unique hours`, `Long rows`, Participants, `Participant-days`, Sites
++    ),
++    use_seps = TRUE
++  ) |>
++  gt::fmt_number(columns = `Weighted hours`, decimals = 1, use_seps = TRUE) |>
++  gt::cols_width(
++    Category ~ gt::pct(31),
++    everything() ~ gt::pct(11.5)
++  ) |>
++  h04_gt(11.5)
++```
++
++Weighted hours can be smaller than category rows because a multi-select
++hour's weight is divided among its retained labels. Long-row weighting is part
++of the estimand: replacing $1/k$ by unit weight would instead analyse reported
++selections and let multi-select hours contribute more.
++
++## Model and estimand
++
++The primary population-mean model estimates the average association between
++reported activity and melEDI after accounting for site. It uses fixed site and
++activity terms, a quasi-Tweedie variance function with power 1.539919, a log
++link, and the exact $1/k$ prior weights. A separate activity-by-site
++interaction model allows the association between each of the five
++interpretable activity categories and melEDI to differ by study site. It is
++used for descriptive category and site summaries, while the additive model
++remains the basis for the primary inferential test. Other/unspecified activity
++remains unrestricted in the additive model and is display-only.
++
++Participant-cluster-robust uncertainty allows concurrent category memberships
++and longitudinal observations from the same participant to be related. The
++technical implementation uses HC1 covariance and finite-cluster *t* and *F*
++reference distributions, with the number of participant clusters minus one as
++denominator degrees of freedom.
++
++The primary equality test compares Sleeping, At home, vehicle or
++public-transport travel, indoor or home working, and Outdoors. The fitted
++Other coefficient remains unrestricted and does not enter that four-row joint
++restriction. A full six-category omnibus is reported secondarily.
++
++Category means are reported as site-average estimates across the sites
++observed for that sensor position. Every site contributes equally on the
++fitted log-mean scale. The resulting average is then back-transformed, meaning
++that it is returned to melEDI in lux. It is therefore the geometric mean of
++the fitted site-specific means, not an observation-weighted arithmetic mean.
++At home is the reader-facing comparison reference.
++
++The estimand is average melEDI associated with each reported collapsed
++activity category, with an hour's contribution shared across concurrently
++reported categories. It is not a transition effect, an individual-specific
++effect, or a causal contrast between mutually exclusive behaviours.
+ 
+ ## Site-specific context
+ 
+@@ -882,9 +883,16 @@ category summaries above and tests whether the association between activity
+ category and melEDI differs among study sites. It excludes Other and uses only
+ observed, supported cells; an unsupported site-category contrast is labelled
+ non-estimable rather than forced into the model. Reader-facing site labels use
+-the submitted country-coded names: Borås (SE), Delft (NL), Dortmund (DE),
+-Tübingen (DE), Munich (DE), Madrid (ES), Izmir (TR), San José (CR), and
+-Kumasi (GH).
++the country-coded study-site names from the shared registry: Borås (SE), Delft
++(NL), Dortmund (DE), Tübingen (DE), Munich (DE), Madrid (ES), Izmir (TR), San
++José (CR), and Kumasi (GH).
++
++The activity-by-site interaction was supported at both sensor positions. This
++indicates that activity-associated means vary among study sites, but it is not
++a basis for post-hoc site ranking.
++
++<details>
++<summary>Show site-specific context and R² summaries</summary>
+ 
+ ```{r}
+ #| label: tbl-h04-heterogeneity
+@@ -1210,12 +1218,14 @@ and
+ of that fitted improvement. They are scale-dependent descriptions of the
+ fitted mean structure, not causal shares of exposure variance.
+ 
+-### Exploratory participant random-intercept decomposition
++</details>
++
++## Exploratory participant random-intercept decomposition
+ 
+ The accepted population-mean models use participant-clustered covariance and
+ do not contain random effects. A separate descriptive mixed model was fitted
+ to quantify how much model-based variation is associated with the fixed
+-activity-by-site structure and with stable participant intercepts. The random
++activity-by-site structure and with participant-level variation. The random
+ intercept lets participants have different overall exposure levels while
+ retaining the fixed activity-by-site structure:
+ 
+@@ -1231,6 +1241,12 @@ membership weights. Five hierarchy-valid models allocated marginal R² to
+ activity, study site, and their interaction. The participant random intercept
+ then supplied the difference between conditional and marginal R².
+ 
++This model has no participant-specific activity slope and no participant-day
++random effect. It is separate from the population-mean Mundlak-style
++sensitivity, which adjusts current-category contrasts for each participant's
++usual activity composition. Neither assessment changes the primary analysis
++or its multiplicity families.
++
+ ```{r}
+ #| label: tbl-h04-participant-random-intercept
+ #| tbl-cap: "Exploratory fractionally weighted participant random-intercept R² decomposition."
+@@ -1387,6 +1403,20 @@ document the exact weighting and decomposition.
+ 
+ ## Model checks
+ 
++Both fits converged at full design rank, all registered robust restrictions
++were estimable, and no participant crossed the predeclared influence limits.
++The mean models are nevertheless **acceptable with limitation**. Exact zeros
++comprise 28.9% of near-eye and 29.4% of chest hours, whereas the corresponding
++working Tweedie zero fractions are 90.3% and 93.5%. The quasi mean model
++retains observed zeros but is not a separate model of zero probability.
++Residual spread changes with fitted magnitude, and lag-one residual
++correlations remain 0.445 and 0.498. Participant clustering is the basis for
++inference across the full longitudinal record; it does not make those model
++discrepancies disappear.
++
++<details>
++<summary>Show detailed primary model checks</summary>
++
+ ```{r}
+ #| label: tbl-h04-primary-diagnostics
+ #| tbl-cap: "Numerical, influence, zero-mass, variance-pattern, and serial-dependence model checks."
+@@ -1445,17 +1475,6 @@ main_diagnostics |>
+   h04_gt(11)
+ ```
+ 
+-Both fits converged at full design rank, all registered robust restrictions
+-were estimable, and no participant crossed the predeclared influence limits.
+-The mean models are nevertheless **acceptable with limitation**. Exact zeros
+-comprise 28.9% of near-eye and 29.4% of chest hours, whereas the corresponding
+-working Tweedie zero fractions are 90.3% and 93.5%. The quasi mean model
+-retains observed zeros but is not a separate model of zero probability.
+-Residual spread changes with fitted magnitude, and lag-one residual
+-correlations remain 0.445 and 0.498. Participant clustering is the basis for
+-inference across the full longitudinal record; it does not make those model
+-discrepancies disappear.
+-
+ ```{r}
+ #| label: fig-h04-primary-diagnostics
+ #| fig-cap: "Primary-model residual, temporal-dependence, and zero-mass checks."
+@@ -1473,6 +1492,8 @@ knitr::include_graphics(artifact(
+ and [zero calibration](../../artifacts/11_source_data/H04/H04_reader_primary_zero_calibration.csv)
+ provide the exact plotted values.
+ 
++</details>
++
+ ## Sensitivity analyses
+ 
+ The original sensitivity analyses each change a stated part of the accepted
+@@ -1490,6 +1511,15 @@ per-day coverage requirements. The term means that the timing of remaining
+ missing observations is not used for an additional metric-specific
+ adjustment; it does not mean that gaps or coverage were ignored.
+ 
++All four named contrasts were stable in every sensitivity at both placements.
++The deletion audit also removed each site and each of the five highest-score
++participants in turn; no primary decision changed. These checks support the
++direction and broad magnitude ordering, but they do not remove the model
++limitations or upgrade the observational claim.
++
++<details>
++<summary>Show detailed sensitivity results</summary>
++
+ ```{r}
+ #| label: tbl-h04-sensitivities
+ #| tbl-cap: "Exact fitted samples, five-category omnibus tests, and named-contrast stability across recorded sensitivities."
+@@ -1568,12 +1598,6 @@ samples |>
+   h04_gt(10.5)
+ ```
+ 
+-All four named contrasts were stable in every sensitivity at both placements.
+-The deletion audit also removed each site and each of the five highest-score
+-participants in turn; no primary decision changed. These checks support the
+-direction and broad magnitude ordering, but they do not remove the model
+-limitations or upgrade the observational claim.
+-
+ ### Within- and between-participant activity patterns
+ 
+ For this additional sensitivity, each participant's usual category profile is
+@@ -1669,6 +1693,8 @@ mundlak_display |>
+   h04_gt(9.2)
+ ```
+ 
++</details>
++
+ The within-participant category omnibus remained clear near eye,
+ $F(4,125)=67.17$, raw $p<0.001$, and at chest, $F(4,149)=77.86$, raw
+ $p<0.001$. Every primary ratio lay inside its Mundlak sensitivity interval.
+@@ -1687,13 +1713,14 @@ four-member FDR rule. These are observational composition associations, not
+ effects of changing activity, and they do not control time-varying differences
+ such as time of day, season, weather, or purpose of travel.
+ 
+-### Same-participant, same-hour sensor-position comparison
++## Same-participant, same-hour sensor-position comparison
+ 
+ This comparison uses the same 110 participants and the same 14,308
+-participant-hours at both sensor positions. The exact frame contains 625
+-participant-days, 15,001 long rows, and 14,308 effective weighted hours at
+-each position. The positions are still fitted separately, so this is neither
+-an equivalence test nor a direct sensor-effect test.
++participant-hours at both sensor positions. This matched set is the common
++sample. The exact frame contains 625 participant-days, 15,001 long rows, and
++14,308 effective weighted hours at each position. The positions are still
++fitted separately, so this is neither an equivalence test nor a direct
++sensor-effect test.
+ 
+ ```{r}
+ #| label: fig-h04-paired-placement
+@@ -1718,7 +1745,8 @@ This nonlinear generalized additive model (GAM) analysis is separate from the
+ preregistered category inference. It allows the association with clock time
+ to bend across the day using one cyclic global time-of-day smooth plus
+ thin-plate sum-to-zero activity and site deviations, participant curves,
+-participant-day shifts, and a boundary-aware AR(1) correction. Activity
++participant-day shifts, and a boundary-aware AR(1) correction that allows
++adjacent residuals to be more alike than residuals farther apart. Activity
+ curves are also shown as ratios to the global daily smooth, not to At home,
+ and no curve-wide test is made.
+ :::
+@@ -1734,6 +1762,45 @@ Activity-specific autoregressive runs restart at participant-day, activity,
+ repeated-hour, non-consecutive-hour, and gap boundaries. Consequently,
+ concurrent long rows from the same hour never become lag neighbours.
+ 
++The activity smooth improved AIC by 3,215 near eye and 4,984 at chest, while
++deviance explained increased from 81.8% to 84.8% and from 79.5% to 83.2%.
++This supports retaining the profiles as descriptive context, not as a second
++primary activity test. Sleeping had the lowest profiles, whereas Outdoors had
++the highest daytime profiles. The activity curves use a qualitative palette
++distinct from the light-source colours used elsewhere in this report series,
++so colour does not imply a mapping between different category systems.
++
++Global time of day received 52.5% of the near-eye and 50.2% of the chest
++point allocation. Activity deviations received 30.7% and 32.6%, site
++deviations 5.6% and 6.5%, participant curves 8.4% and 7.1%, and
++participant-day shifts 2.8% and 3.5%. These are allocations of fitted
++linear-predictor variation, not independent or causal percentages of raw
++melEDI variance.
++
++Both temporal fits converged at full coefficient rank with positive-definite
++smoothing-parameter Hessians and no final warnings. Their minimum finite
++k-indices were 0.872 and 0.863. Residual lag-one correlations remained 0.176
++and 0.167, and 41 near-eye plus 40 chest clock/category cells were locally
++sparse. The non-cyclic deviations can show large endpoint ratios.
++The working zero fractions of 0.452 and 0.502 exceed the observed fractions
++of 0.289 and 0.294. The profiles are therefore assessed **acceptable with
++limitation**.
++
++For each time-by-activity profile, sites are averaged equally on the fitted
++log-mean scale after participant and participant-day contributions are set to
++zero. Uncertainty uses the fitted coefficient covariance from
++`stats::vcov(fit, unconditional = TRUE)`, with the fitted `Vp` matrix only as
++an error fallback, followed by one back-transformation. Ribbons are
++model-based pointwise 95% CIs: each interval applies to one displayed clock
++time rather than to the whole curve simultaneously. No time-specific test,
++significant period, or curve-wide inference is reported. The positive
++lag-one residual correlations mean that neighbouring hourly residuals remain
++related despite the working AR(1) correction. No resampling enters the
++displayed estimates or intervals.
++
++<details>
++<summary>Show exploratory nonlinear time-of-day details</summary>
++
+ ```{r}
+ #| label: tbl-h04-temporal-fit
+ #| tbl-cap: "Exploratory temporal-model samples, fit, and added-context summaries."
+@@ -1791,15 +1858,6 @@ temporal_activity |>
+   h04_gt(10.5)
+ ```
+ 
+-The activity smooth improved AIC by 3,215 near eye and 4,984 at chest, while
+-deviance explained increased from 81.8% to 84.8% and from 79.5% to 83.2%.
+-This supports retaining the profiles as descriptive context, not as a second
+-primary activity test.
+-
+-The activity curves use a qualitative palette distinct from the light-source
+-colours used elsewhere in this report series, so colour does not imply a
+-mapping between different category systems.
+-
+ ```{r}
+ #| label: fig-h04-temporal-near-eye
+ #| fig-cap: "Exploratory near-eye time-of-day means, ratios to the global smooth, and effective weighted support."
+@@ -1873,13 +1931,6 @@ temporal_allocation |>
+   h04_gt()
+ ```
+ 
+-Global time of day received 52.5% of the near-eye and 50.2% of the chest
+-point allocation. Activity deviations received 30.7% and 32.6%, site
+-deviations 5.6% and 6.5%, participant curves 8.4% and 7.1%, and
+-participant-day shifts 2.8% and 3.5%. These are allocations of fitted
+-linear-predictor variation, not independent or causal percentages of raw
+-melEDI variance.
+-
+ ### Temporal model checks
+ 
+ ```{r}
+@@ -1927,27 +1978,6 @@ temporal_retention |>
+   h04_gt(11)
+ ```
+ 
+-Both temporal fits converged at full coefficient rank with positive-definite
+-smoothing-parameter Hessians and no final warnings. Their minimum finite
+-k-indices were 0.872 and 0.863. Residual lag-one correlations remained 0.176
+-and 0.167, and 41 near-eye plus 40 chest clock/category cells were locally
+-sparse. The non-cyclic deviations can show large endpoint ratios.
+-The working zero fractions of 0.452 and 0.502 exceed the observed fractions
+-of 0.289 and 0.294. The profiles are therefore assessed **acceptable with
+-limitation**.
+-
+-For each time-by-activity profile, sites are averaged equally on the fitted
+-log-mean scale after participant and participant-day contributions are set to
+-zero. Uncertainty uses the fitted coefficient covariance from
+-`stats::vcov(fit, unconditional = TRUE)`, with the fitted `Vp` matrix only as
+-an error fallback, followed by one back-transformation. Ribbons are
+-model-based pointwise 95% CIs: each interval applies to one displayed clock
+-time rather than to the whole curve simultaneously. No time-specific test,
+-significant period, or curve-wide inference is reported. The positive
+-lag-one residual correlations mean that neighbouring hourly residuals remain
+-related despite the working AR(1) correction. No resampling enters the
+-displayed estimates or intervals.
+-
+ ```{r}
+ #| label: fig-h04-temporal-diagnostics
+ #| fig-cap: "Exploratory temporal-model residual, autocorrelation, and zero-mass checks."
+@@ -1965,6 +1995,8 @@ knitr::include_graphics(artifact(
+ and [zero calibration](../../artifacts/11_source_data/H04/H04_reader_temporal_zero_calibration.csv)
+ provide the exact model-check source values.
+ 
++</details>
++
+ ## Interpretation
+ 
+ Reported activity is strongly associated with one-hour personal light
+@@ -1979,9 +2011,10 @@ site.
+ The result remains observational. Fractional membership is a transparent way
+ to preserve one total contribution per participant-hour; it does not make
+ simultaneously reported labels mutually exclusive or remove ambiguity in
+-self-report timing. Other/unspecified activity is heterogeneous and supports
+-no substantive interpretation. The site-average estimates describe the
+-observed site set and do not automatically generalize to other populations.
++self-report timing. Other/unspecified activity is a varied display-only
++category, not a coherent scientific category, and supports no substantive
++interpretation. The site-average estimates describe the observed site set and
++do not automatically generalize to other populations.
+ Participant-clustered inference accommodates within-hour membership and the
+ longitudinal record under the stated mean model, but it does not cure residual
+ serial dependence, fitted-value-dependent spread, sparse site cells, or the
+@@ -1989,7 +2022,7 @@ model's limited representation of exact zeros. The time-of-day profiles add
+ descriptive context only, and the separate sensor-position fits do not
+ establish equivalence.
+ 
+-## Sources and technical details
++## Detailed analysis record
+ 
+ The exact sample-flow and model-ready dataset definitions are documented in
+ [Preparation 02](../preparation/02_coverage_sample_flow.qmd) and
+@@ -1999,6 +2032,41 @@ traces the verified inputs, multi-select transformation, model frames,
+ estimands, model checks, sensitivities, temporal construction, and recorded
+ output chain behind this report.
+ 
++### Preregistration changes {#h04-preregistration-deviations}
++
++- **Study-site structure ([DEV-013](../preregistration_deviations.qmd#dev-013)).**
++  The accepted population-average category model uses fixed study-site
++  adjustment, while a separate activity-by-site interaction model evaluates
++  variation among sites. The site interaction does not redefine the primary
++  omnibus test.
++- **Response model ([DEV-014](../preregistration_deviations.qmd#dev-014)).**
++  Fixed-power quasi-Tweedie log-mean models with participant-clustered
++  covariance replace the registered Gaussian mixed model. They describe
++  multiplicative mean comparisons and are not treated as calibrated
++  zero-generating distributions.
++- **Multi-label activity representation ([DEV-025](../preregistration_deviations.qmd#dev-025)).**
++  The analysis collapses the three outdoor flags before pivoting, removes
++  duplicate labels within an hour, gives each of $k$ concurrent retained
++  categories weight $1/k$, and retains Other only when it is the sole
++  selected category for descriptive display.
++- **Primary and site-interaction questions ([DEV-026](../preregistration_deviations.qmd#dev-026)).**
++  The additive site-plus-activity model supplies the primary activity
++  omnibus; the separate activity-by-site interaction model supplies
++  descriptive category means, ratios, and site-specific variation.
++- **Multiple-testing adjustment ([DEV-027](../preregistration_deviations.qmd#dev-027)).**
++  False-discovery-rate adjustment is applied to each explicitly assembled
++  complete activity or site-interaction contrast family.
++
++### Exact category estimates
++
++The exact category lines moved from the opening summary are retained here:
++
++- `r answer_category_line("home")`
++- `r answer_category_line("working_indoor")`
++- `r answer_category_line("outdoors")`
++- `r answer_category_line("road_vehicle")`
++- `r answer_category_line("sleeping")`
++
+ ### Exact model formulas
+ 
+ The following technical formulas are the exact Wilkinson formulas recorded

@@ -20,6 +20,9 @@ result <- run_environment_audit(
 )
 
 failed <- result$summary$check[result$summary$status == "FAIL"]
+pending <- result$summary$check[
+  result$summary$status == "PENDING_LOCK_SNAPSHOT"
+]
 if (length(failed) > 0L) {
   stop(
     sprintf(
@@ -30,4 +33,11 @@ if (length(failed) > 0L) {
   )
 }
 
-message("Deterministic environment audit passed; lock snapshot remains gated")
+if (length(pending) > 0L) {
+  message(sprintf(
+    "Deterministic environment audit passed with pending lock checks: %s",
+    paste(pending, collapse = ", ")
+  ))
+} else {
+  message("Deterministic environment audit passed; lockfile is synchronized")
+}

@@ -1,0 +1,16 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html><body><main id="quarto-document-content"><pre class="mermaid">flowchart LR
+  A["Valid minute-level melEDI measurements"] --&gt; B["Inclusive Brown recommendation checks"]
+  B --&gt; C["Preceding Sleep, Daytime, following Pre-sleep"]
+  C --&gt; D["Work or Free day of the wake-start date"]
+  D --&gt; E["Independent window eligibility"]
+  E --&gt; F["Any-valid primary sample"]
+  E --&gt; G["At least 80% coverage sensitivity"]
+  F --&gt; H["Endpoint-inflated beta-binomial model"]
+  G --&gt; H
+  H --&gt; I["Equal-site main results and model checks"]
+  E --&gt; J["Eligible paired Daytime-Sleep and Daytime-Pre-sleep observations"]
+  J --&gt; K["Within- and between-participant associations"]
+  K --&gt; L["Limited participant-level result; day-level claim withheld"]
+  I --&gt; M["Integrated reader report"]
+  L --&gt; M</pre></main></body></html>

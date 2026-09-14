@@ -1,0 +1,37 @@
+options(stringsAsFactors=FALSE)
+stopifnot(as.character(getRversion())=="4.6.1")
+ev<-"/private/tmp/nh-report-closure.Ts4qel"
+root<-normalizePath(".",winslash="/")
+sha<-function(p)digest::digest(file=p,algo="sha256")
+wr<-function(x,n)write.csv(x,file.path(ev,n),row.names=FALSE,na="")
+code<-read.csv(file.path(ev,"ast_files.csv"))
+code$final_sha256<-vapply(file.path(root,code$path),sha,character(1))
+code$final_bytes<-file.info(file.path(root,code$path))$size
+code$exact<-code$sha256==code$final_sha256&code$bytes==code$final_bytes
+wr(code,"final_54_code_postflight.csv")
+input<-read.csv(file.path(ev,"candidate_input_file_inventory.csv"))
+input$final_sha256<-vapply(input$absolute_path,sha,character(1))
+input$final_bytes<-file.info(input$absolute_path)$size
+input$exact<-input$sha256==input$final_sha256&input$bytes==input$final_bytes
+wr(input,"final_input_postflight.csv")
+dispatch<-read.csv(file.path(ev,"dispatch_34_current_recheck.csv"))
+writer<-read.csv(file.path(ev,"writer_layout_package_45_identity_recheck.csv"))
+writer$final_sha256<-vapply(file.path("/private/tmp/nature-health-layout-preflight.yMAKmA",writer$path),sha,character(1))
+writer$final_exact<-writer$sha256==writer$final_sha256
+wr(writer,"writer_layout_package_45_identity_recheck.csv")
+checks<-data.frame(check=c("54 code files unchanged","1397 inventoried candidates unchanged","34 controlling dispatch members exact","45 Writer package members exact","37 route contracts not released or executed","No package self-members"),pass=c(nrow(code)==54L&&all(code$exact),nrow(input)==1397L&&all(input$exact),nrow(dispatch)==34L&&all(dispatch$sha256_exact)&all(dispatch$bytes_exact),nrow(writer)==45L&&all(writer$final_exact),nrow(read.csv(file.path(ev,"route_37_commands_and_expected_delta_NOT_EXECUTED.csv")))==37L,TRUE))
+wr(checks,"final_structural_identity_checks.csv")
+stopifnot(all(checks$pass))
+writeLines(c("Read-only transitive preflight, R 4.6.1",paste("Canonical working directory:",root),paste("Evidence root:",ev),"Executed only temporary source/metadata/identity inspection scripts:","inspect_report_closure.R","analyze_static_graph.R","resolve_input_paths.R","consolidate_preflight.R","finalize_contracts.R","evidence_addenda.R","compare_available_preimages.R","seal_preflight.R","Invocation: RENV_CONFIG_AUTOLOADER_ENABLED=FALSE R_LIBS_USER=/Users/zauner/Library/R/arm64/4.6/library Rscript --vanilla <script>","No source/helper evaluation, RDS object loading, scientific computation, render, visual operation, artifact regeneration or canonical edit.","Prospective commands are CSV documentation only. Temporary inspection queries and scripts were corrected in place before final sealing; no historical checker was run.","",capture.output(sessionInfo())),file.path(ev,"final_session_and_command_record.txt"))
+exclude<-file.path(ev,c("preflight_manifest.csv","preflight_seal.json"))
+members<-sort(setdiff(list.files(ev,full.names=TRUE,recursive=TRUE,all.files=TRUE,no..=TRUE),exclude))
+members<-members[!dir.exists(members)]
+manifest<-data.frame(path=substring(members,nchar(ev)+2L),bytes=file.info(members)$size,sha256=vapply(members,sha,character(1)))
+stopifnot(!anyDuplicated(manifest$path),!any(manifest$path%in%c("preflight_manifest.csv","preflight_seal.json")))
+write.csv(manifest,file.path(ev,"preflight_manifest.csv"),row.names=FALSE)
+seal<-list(status="READ_ONLY_PREFLIGHT_RETURNED_EXECUTION_BLOCKERS_EXPLICIT",evidence_root=ev,r_version=as.character(getRversion()),created_utc=format(Sys.time(),"%Y-%m-%dT%H:%M:%SZ",tz="UTC"),manifest="preflight_manifest.csv",manifest_sha256=sha(file.path(ev,"preflight_manifest.csv")),members=nrow(manifest),return="harmonizer_preflight_return.md",return_sha256=sha(file.path(ev,"harmonizer_preflight_return.md")),route_contract="route_37_commands_and_expected_delta_NOT_EXECUTED.csv",route_contract_sha256=sha(file.path(ev,"route_37_commands_and_expected_delta_NOT_EXECUTED.csv")),source_count=54L,route_count=37L,input_candidate_count=nrow(input),code_unchanged=all(code$exact),candidate_inputs_unchanged=all(input$exact),scientific_execution=FALSE,production_or_canonical_writes=FALSE,render_or_visual_execution=FALSE,archive_requested_from_coordinator=TRUE)
+jsonlite::write_json(seal,file.path(ev,"preflight_seal.json"),pretty=TRUE,auto_unbox=TRUE)
+print(checks,row.names=FALSE)
+cat("Manifest",nrow(manifest),sha(file.path(ev,"preflight_manifest.csv")),"\n")
+cat("Return",sha(file.path(ev,"harmonizer_preflight_return.md")),"\n")
+cat("Seal",sha(file.path(ev,"preflight_seal.json")),"\n")

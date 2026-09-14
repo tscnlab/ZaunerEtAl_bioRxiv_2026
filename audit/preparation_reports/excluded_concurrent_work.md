@@ -46,3 +46,51 @@ This exclusion does not assert that the shared checkout was globally static.
 It records that downstream hypothesis work was outside the exact preparation
 read sets and therefore could not be an input to, or be changed by, the
 bounded documentation renders.
+
+## 2026-08-11 — METRIC-010 documentation amendment
+
+The amendment scope contains the exact shared metric, MDER, base-model-input,
+and preparation evidence read by Preparations 03, 04, and 06. Concurrent
+hypothesis-report, hypothesis-test, descriptive, manuscript-adjacent,
+environment-audit, and central-ledger changes outside those exact read sets
+remain excluded downstream/shared work. They were neither summarized nor
+adjudicated by this task.
+
+The preserved pre-edit scoped comparison checked 217 paths. Exactly six
+paths differed: the three task-owned preparation QMD sources and their three
+focused report tests. All 211 scientific/preparation inputs and described
+source files in that baseline were unchanged. Final page-specific render
+checks found 29/29, 66/66, and 141/141 paths unchanged for Preparations 03,
+04, and 06, respectively. Thus unrelated concurrent checkout activity did not
+enter, block, or become evidence for the METRIC-010 documentation amendment.
+
+## 2026-08-11 — repaired gap-timing-unaware MDER continuation
+
+The coordinator-owned repair, independent verification, and downstream repin
+were accepted as the new scientific input state before this documentation
+follow-up began. Preparations 04 and 06 added only the exact repair manifests,
+stored summaries, accepted preparation artifacts, and producing scripts they
+read or describe. Their final scoped render gates covered 93 and 157 paths,
+respectively, with zero changes during rendering.
+
+Concurrent hypothesis outputs, descriptive outputs, manuscript-adjacent
+work, environment reconciliation, and coordinator ledgers outside those
+exact page read sets remain excluded. This follow-up neither read nor
+adjudicated them and did not treat the shared checkout as globally static.
+
+## 2026-08-12 — METRIC-011 documentation follow-up
+
+The coordinator-owned numerical-zero rebuild and independent verification
+were complete before this documentation follow-up began. Preparations 04 and
+06 included only the exact current metric/preparation manifests, L10 evidence
+bundle, decisions, producing/verifying scripts, shared configuration, and
+manifest-listed artifacts they read or describe. Their render gates covered
+106 and 168 paths, respectively, with zero changes during rendering.
+
+Concurrent hypothesis model results, hypothesis figures/tables, descriptive
+outputs, manuscript work, central-ledger edits, and environment-reconciliation
+files outside those exact read sets remain excluded. Preparation 06 reads H01
+prepared-frame manifests and sample-flow files because it documents their
+pre-analysis handoff; it does not read or summarize an H01 fitted model,
+prediction, uncertainty estimate, or scientific result. This follow-up does
+not assert that the shared checkout was globally static.

@@ -431,6 +431,7 @@ save_plot(
 selected_metric_ids <- c(
   "duration_above_1000",
   "dose_time_sensitive_corrected_medi",
+  "mder_mean_of_viable_ratios",
   "duration_below_1_sleep_environment"
 )
 selected_diagnostics <- diagnostic_points |>
@@ -444,12 +445,13 @@ selected_diagnostics <- diagnostic_points |>
       levels = c(
         "Time above 1,000 lx melEDI",
         "melEDI dose",
+        "Melanopic daylight efficacy ratio",
         "Time below 1 lx melEDI during sleep"
       )
     )
   )
 stopifnot(
-  nrow(selected_diagnostics) == 2L * sum(c(816L, 761L, 778L)),
+  nrow(selected_diagnostics) == 2L * sum(c(816L, 761L, 702L, 778L)),
   all(c("residual_fitted", "normal_qq") %in% selected_diagnostics$panel)
 )
 write_reader_csv(
@@ -472,8 +474,8 @@ residual_fitted_plot <- selected_diagnostics |>
   ggplot2::labs(
     title = "Selected near-eye residual-versus-fitted checks",
     subtitle = paste0(
-      "LEBA F2 models for the two leading estimates and the unfit ",
-      "H05 sleep-environment outcome"
+      "LEBA F2 models for the two leading estimates, current MDER,\n",
+      "and the unfit H05 sleep-environment outcome"
     ),
     x = "Fitted value",
     y = "Standardized Pearson residual"
@@ -502,13 +504,13 @@ save_plot(
   residual_fitted_plot,
   "H05_reader_near_eye_residual_fitted",
   9,
-  7.5
+  9
 )
 save_plot(
   qq_plot,
   "H05_reader_near_eye_residual_qq",
   9,
-  7.5
+  9
 )
 
 paired_near_samples <- master |>
@@ -585,9 +587,9 @@ stopifnot(
       paired_display$effect_type__chest
   ),
   all(paired_display$sites__near_eye == 8L),
-  min(paired_display$participants__near_eye) == 110L,
+  min(paired_display$participants__near_eye) == 107L,
   max(paired_display$participants__near_eye) == 112L,
-  min(paired_display$participant_days__near_eye, na.rm = TRUE) == 505L,
+  min(paired_display$participant_days__near_eye, na.rm = TRUE) == 489L,
   max(paired_display$participant_days__near_eye, na.rm = TRUE) == 643L
 )
 
@@ -634,7 +636,7 @@ paired_plot <- ggplot2::ggplot(
   ggplot2::labs(
     title = "Paired/common-sample near-eye and chest effects",
     subtitle = paste0(
-      "Matched model-scale estimands: 110–112 participants, 505–643 ",
+      "Matched model-scale estimands: 107–112 participants, 489–643 ",
       "participant-days, and 8 sites;\n",
       "IS/IV use 112 participant rows"
     ),

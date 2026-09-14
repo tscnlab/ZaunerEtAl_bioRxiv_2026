@@ -1,0 +1,28 @@
+# order32 file-change event: exec-3374c6bd-c565-4227-8a45-7a900ba044b4
+--- a/audit/hypotheses/H01/H01_analysis_preparation.qmd
++++ b/audit/hypotheses/H01/H01_analysis_preparation.qmd
+@@ -1252,3 +1252,3 @@
+ producing code, and R version. The table verifies the manifests that lead from
+-the H01 data bundles to the standalone report. The final H01 inventory is
++the H01 analysis datasets to the standalone report. The final H01 inventory is
+ built after the reader-facing pages so that it can contain their final
+@@ -1262,4 +1262,4 @@
+   ~Component, ~Path,
+-  "Primary model-data bundle", main_manifest_path,
+-  "Gap-timing-unaware model-data bundle", gap_manifest_path,
++  "Primary analysis dataset", main_manifest_path,
++  "Gap-timing-unaware analysis dataset", gap_manifest_path,
+   "Complete model and diagnostic output inventory", "artifacts/12_manifests/H01_model_results_artifacts.csv",
+@@ -1308,3 +1308,3 @@
+ 
+-1. compare `h01_contract.R` with the two pinned model-data manifests to confirm
++1. compare `h01_contract.R` with the two pinned analysis-dataset manifests to confirm
+    the 17 responses, eight runs, transformations, and formulas;
+@@ -1324,4 +1324,4 @@
+ ::: {.callout-tip title="Reader takeaway"}
+-The H01 result comes from two verified model-data bundles, a single declared
+-17-response implementation, exact response-specific model frames, four
++The H01 result comes from two verified analysis datasets, one declared model
++implementation for 17 responses, exact response-specific model frames, four
+ complete multiplicity families, stored joint-refit bootstrap draws, and
+

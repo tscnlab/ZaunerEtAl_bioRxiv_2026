@@ -1,7 +1,7 @@
 ---
 title: "H07 Stage 2: implementation, diagnostics, and V0 comparison"
 subtitle: "Nature Health analysis audit — author result and production gate"
-date: "2026-08-07"
+date: "2026-08-12"
 format:
   html:
     toc: true
@@ -71,8 +71,14 @@ h07_table_path <- function(file) {
 h07_figure_path <- function(file) {
   file.path(project_root, "artifacts", "08_figures", "H07", file)
 }
+h07_manifest_path <- function(file) {
+  file.path(project_root, "artifacts", "12_manifests", "H07", file)
+}
 read_h07 <- function(file) {
   readr::read_csv(h07_table_path(file), show_col_types = FALSE, na = "")
+}
+read_h07_manifest <- function(file) {
+  readr::read_csv(h07_manifest_path(file), show_col_types = FALSE, na = "")
 }
 
 formula_registry <- read_h07("H07_formula_registry.csv")
@@ -121,6 +127,12 @@ v0_aic <- read_h07("H07_v0_aic_reconstruction.csv")
 v0_boundaries <- read_h07("H07_v0_last_detected_increase.csv")
 v0_formulas <- read_h07("H07_v0_formula_registry.csv")
 session <- read_h07("H07_session.csv")
+metric011_summary <- read_h07_manifest(
+  "H07_METRIC-011_reconciliation_summary.csv"
+)
+metric011_comparison <- read_h07_manifest(
+  "H07_METRIC-011_scientific_comparison.csv"
+)
 site_display <- readr::read_csv(
   file.path(project_root, "config", "site_display_registry.csv"),
   show_col_types = FALSE
@@ -235,6 +247,16 @@ stopifnot(
     ]
   ) == 7L,
   all(tweedie_pilot$draws == 100L),
+  all(metric011_summary$status == "PASS"),
+  metric011_summary$observed[
+    metric011_summary$check_id == "SCIENTIFIC_CONCLUSION_CHANGED"
+  ] == "FALSE",
+  metric011_summary$observed[
+    metric011_summary$check_id == "BOUNDED_ARTIFACT_APPLY"
+  ] == metric011_summary$expected[
+    metric011_summary$check_id == "BOUNDED_ARTIFACT_APPLY"
+  ],
+  !any(metric011_comparison$changed),
   max(
     main_residuals$fitted_natural_max[
       main_residuals$metric_id %in% duration_ids
@@ -271,6 +293,66 @@ These are post-result, descriptive classifications from unadjusted pointwise
 demonstrate equivalence to a zero slope, an asymptote, a mechanistic ceiling,
 or an association independent of site and collection period.
 :::
+
+## METRIC-011 bounded input reconciliation
+
+On 2026-08-12, the sealed numerical-zero normalization in
+`audit/decisions/l10_numerical_zero_normalization.md` changed eight primary
+darkest-10-h-mean source cells from the floating-point residue
+`4.163336342344337e-17` lx to exact zero: three near-eye cells and five chest
+cells. The H07 reopening was therefore restricted to the L10 mean frames,
+fits, diagnostics, declared sensitivities, leave-one-site-out checks, and the
+BH fields in families containing the L10 slot. Historical V0 fits and all
+non-L10 fits and raw tests remained frozen.
+
+The bounded refit changed no sample count, diagnostic category, derivative
+classification, transition grid point, conditional-AIC support category,
+BH significance label, or three-decimal REPORT-008 value. The primary result
+therefore remains six of nine near-eye and seven of nine chest patterns, with
+the L10 mean classified as a derivative-defined plateau pattern at both
+placements. Numerical derivative differences were limited to floating-point
+roundoff (approximately `10^-15`).
+
+```{r}
+#| label: tbl-h07-metric011-reconciliation
+#| tbl-cap: "Bounded H07 reconciliation after the sealed METRIC-011 numerical-zero normalization"
+
+metric011_summary |>
+  filter(.data$check_id %in% c(
+    "PRIMARY_CHANGED_CELLS",
+    "PRIMARY_NEAR_EYE_CHANGED_CELLS",
+    "PRIMARY_CHEST_CHANGED_CELLS",
+    "NON_L10_MODEL_FRAME_FILES",
+    "NON_L10_RAW_TABLE_CHECKS",
+    "CLASSIFICATION_FIELD_CHANGES",
+    "ADJUSTED_THREE_DECIMAL_CHANGES",
+    "SCIENTIFIC_CONCLUSION_CHANGED",
+    "BOUNDED_ARTIFACT_APPLY"
+  )) |>
+  transmute(
+    Check = str_replace_all(.data$check_id, "_", " "),
+    Observed = .data$observed,
+    Expected = .data$expected,
+    Status = .data$status
+  ) |>
+  audit_gt(
+    title = "METRIC-011 reconciliation checks",
+    subtitle = paste0(
+      "Controlling decision SHA-256: ",
+      "23b9f70d1d16f7fd3ebbdbc57aaf78c0a701fe1f9d22bd667d926cd320d40797"
+    ),
+    font_size = 9
+  ) |>
+  cols_width(
+    Check ~ px(285),
+    Observed ~ px(225),
+    Expected ~ px(225),
+    Status ~ px(85)
+  )
+```
+
+The durable reconciliation summary, scientific comparison, and exact bounded
+artifact-update inventory are under `artifacts/12_manifests/H07/`.
 
 ## Revised ceiling assessment
 

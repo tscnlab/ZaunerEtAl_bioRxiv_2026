@@ -1,0 +1,14 @@
+flowchart TD
+  A["Valid minute-level melEDI measurements"] --> B["Inclusive Brown recommendation checks"]
+  B --> C["Preceding Sleep, Daytime, following Pre-sleep"]
+  C --> D["Work or Free day of the wake-start date"]
+  D --> E["Independent window eligibility"]
+  E --> F["Any-valid primary sample"]
+  E --> G["At least 80% coverage sensitivity"]
+  F --> H["Endpoint-inflated beta-binomial model"]
+  G --> H
+  H --> I["Equal-site main results and model checks"]
+  E --> J["Eligible paired Daytime-Sleep and Daytime-Pre-sleep observations"]
+  J --> K["Within- and between-participant associations"]
+  K --> L["Limited participant-level result; day-level claim withheld"]
+  I --> M["Integrated reader report"]

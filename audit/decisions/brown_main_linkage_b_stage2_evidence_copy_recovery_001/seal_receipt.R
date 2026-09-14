@@ -1,0 +1,13 @@
+options(warn = 2, stringsAsFactors = FALSE)
+stopifnot(getRversion() == "4.6.1")
+d <- "audit/decisions/brown_main_linkage_b_stage2_evidence_copy_recovery_001"
+out <- file.path(d, "dispatch_receipt_manifest.csv")
+stopifnot(!file.exists(out))
+paths <- file.path(d, c("decision.md", "dispatch_manifest.csv", "dispatch_receipt.md", "dispatch_tool_result.json", "seal_receipt.R"))
+hash <- function(p) digest::digest(file = p, algo = "sha256", serialize = FALSE)
+m <- data.frame(path = paths, sha256 = unname(vapply(paths, hash, character(1))), bytes = as.numeric(file.info(paths)$size))
+stopifnot(!anyDuplicated(m$path), !out %in% m$path)
+write.csv(m, out, row.names = FALSE)
+z <- read.csv(out)
+stopifnot(nrow(z) == 5L, all(vapply(z$path, hash, character(1)) == z$sha256), all(file.info(z$path)$size == z$bytes))
+cat(sprintf("BA018_COPY_RECEIPT=PASS rows=5/5 sha=%s\n", hash(out)))

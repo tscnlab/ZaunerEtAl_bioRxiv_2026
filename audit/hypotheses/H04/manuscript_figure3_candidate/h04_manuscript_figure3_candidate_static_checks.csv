@@ -1,0 +1,7 @@
+gate,status,detail
+sealed_input_preflight,PASS,"All 16 dispatch rows, including the order, matched their exact SHA-256 and byte pins before work began."
+r_version,PASS,"R 4.6.1 with the synchronized project library was used for candidate generation and the focused-test invocation."
+air_format_check,PASS,"Air format check passes for the new builder and corrected focused test."
+r_parse,PASS,"The new builder and corrected focused test parse under R 4.6.1."
+git_diff_check,PASS,"git diff --check reports no whitespace error for the two new R files."
+focused_test_invocation,STOPPED,"The sole focused-test invocation exited 1 at the first SVG cell-token query because the new test omitted the SVG namespace. No focused-test rerun was made."

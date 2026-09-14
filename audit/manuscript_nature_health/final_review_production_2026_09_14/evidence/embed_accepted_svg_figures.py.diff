@@ -1,0 +1,28 @@
+--- 
++++ 
+@@ -277,11 +277,11 @@
+         "all_other_existing_parts_unchanged": all(parts[name] == blob for name, blob in original.items()
+             if name not in removed and name not in {"word/document.xml", "word/_rels/document.xml.rels", "[Content_Types].xml"}),
+         "no_new_raster_parts": all(name.endswith(".svg") for name in set(parts) - set(original)),
+-        "svg_part_count_exact": len(added) + len(retained) == len(authority["accepted_figures"]) == 22
+-            and len(set(added + retained)) == 22
+-            and len([name for name in parts if name.startswith("word/media/") and name.endswith(".svg")]) == 22,
+-        "drawing_contract_exact": len(document.xpath(".//wp:inline", namespaces=NS)) == 52
+-            and sum(len(record["drawings"]) for record in records) == 23,
++        "svg_part_count_exact": len(added) + len(retained) == len(authority["accepted_figures"]) == 23
++            and len(set(added + retained)) == 23
++            and len([name for name in parts if name.startswith("word/media/") and name.endswith(".svg")]) == 23,
++        "drawing_contract_exact": len(document.xpath(".//wp:inline", namespaces=NS)) == 54
++            and sum(len(record["drawings"]) for record in records) == 24,
+         "existing_native_drawings_preserved": all(etree.tostring(after) == etree.tostring(before)
+             for before, after in zip(before_document.xpath(".//wp:inline", namespaces=NS), document.xpath(".//wp:inline", namespaces=NS), strict=True)
+             if before.xpath(".//asvg:svgBlip", namespaces=NS)),
+@@ -295,7 +295,7 @@
+         for name, blob in parts.items():
+             archive.writestr(name, blob)
+     report = {
+-        "status": "Order72k non-S5 display-integration candidate, not promoted. Historical Brown S5 and Brown scientific replacement remain held.",
++        "status": "Order 009 complete manuscript-plus-SI candidate, not promoted.",
+         "input": str(args.input_docx.resolve()), "input_sha256": digest(args.input_docx.read_bytes()),
+         "output": str(args.output_docx.resolve()), "output_sha256": digest(args.output_docx.read_bytes()),
+         "checks": checks, "embedded_svgs": records, "removed_unreferenced_raster_parts": removed,

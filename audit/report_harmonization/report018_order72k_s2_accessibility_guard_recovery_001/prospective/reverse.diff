@@ -1,0 +1,449 @@
+--- capture_word_tables.mjs
++++ capture_word_tables.preimage.mjs
+@@ -9,230 +9,9 @@
+ import fs from "node:fs/promises";
+ import path from "node:path";
+ import process from "node:process";
+-import { createHash } from "node:crypto";
+ import { createRequire } from "node:module";
+ 
+ const require = createRequire(import.meta.url);
+-// BEGIN S2_SCREEN_READER_CONTRACT
+-const S2_SCREEN_READER_CONTRACT = [
+-  {
+-    "source_body_row": 2,
+-    "source_column": 14,
+-    "parent_tag": "td",
+-    "description_tag": "span",
+-    "description": "Time above 1,000 lx melEDI distribution by site. Exact numerical summaries are in the adjacent cells.",
+-    "style": "position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);clip-path:inset(50%);white-space:nowrap;border:0",
+-    "image_payload_sha256": "fe47619e411cd55ac5de9a59ac4a149866be86331e340872e5d14c3e8a33ea3d",
+-    "image_alt": null,
+-    "image_aria_hidden": "true"
+-  },
+-  {
+-    "source_body_row": 3,
+-    "source_column": 14,
+-    "parent_tag": "td",
+-    "description_tag": "span",
+-    "description": "Time above 250 lx melEDI during wake distribution by site. Exact numerical summaries are in the adjacent cells.",
+-    "style": "position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);clip-path:inset(50%);white-space:nowrap;border:0",
+-    "image_payload_sha256": "1036bb5970943489ba41944679ee69c016e3d058e6cbcd6e6e5e868a207a0653",
+-    "image_alt": null,
+-    "image_aria_hidden": "true"
+-  },
+-  {
+-    "source_body_row": 4,
+-    "source_column": 14,
+-    "parent_tag": "td",
+-    "description_tag": "span",
+-    "description": "Time below 10 lx melEDI before sleep distribution by site. Exact numerical summaries are in the adjacent cells.",
+-    "style": "position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);clip-path:inset(50%);white-space:nowrap;border:0",
+-    "image_payload_sha256": "a9466832fbe118c043032f2b9891ec3932b8db50060790401e3452e0c82bda7f",
+-    "image_alt": null,
+-    "image_aria_hidden": "true"
+-  },
+-  {
+-    "source_body_row": 5,
+-    "source_column": 14,
+-    "parent_tag": "td",
+-    "description_tag": "span",
+-    "description": "Time below 1 lx melEDI during sleep distribution by site. Exact numerical summaries are in the adjacent cells.",
+-    "style": "position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);clip-path:inset(50%);white-space:nowrap;border:0",
+-    "image_payload_sha256": "fd641c08bb3f4dc03ca796fe5f14e93768333caa2c6ee234d6c0e017ffb285f2",
+-    "image_alt": null,
+-    "image_aria_hidden": "true"
+-  },
+-  {
+-    "source_body_row": 6,
+-    "source_column": 14,
+-    "parent_tag": "td",
+-    "description_tag": "span",
+-    "description": "Longest period above 250 lx melEDI distribution by site. Exact numerical summaries are in the adjacent cells.",
+-    "style": "position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);clip-path:inset(50%);white-space:nowrap;border:0",
+-    "image_payload_sha256": "6eb4de282ffa499a5d56b2860c0ce407bf2288bf3182616dfde4cb30e0dce0a9",
+-    "image_alt": null,
+-    "image_aria_hidden": "true"
+-  },
+-  {
+-    "source_body_row": 8,
+-    "source_column": 14,
+-    "parent_tag": "td",
+-    "description_tag": "span",
+-    "description": "Interdaily stability distribution by site. Exact numerical summaries are in the adjacent cells.",
+-    "style": "position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);clip-path:inset(50%);white-space:nowrap;border:0",
+-    "image_payload_sha256": "d11653fb6c70ac47e6dee9ffcf994647f2629c206ea363eae0e7caae9f5e2460",
+-    "image_alt": null,
+-    "image_aria_hidden": "true"
+-  },
+-  {
+-    "source_body_row": 9,
+-    "source_column": 14,
+-    "parent_tag": "td",
+-    "description_tag": "span",
+-    "description": "Intradaily variability distribution by site. Exact numerical summaries are in the adjacent cells.",
+-    "style": "position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);clip-path:inset(50%);white-space:nowrap;border:0",
+-    "image_payload_sha256": "1995b69ca3a26391a2e3caa55de7c58b498e935af7229cbe38063c3f3b99d85e",
+-    "image_alt": null,
+-    "image_aria_hidden": "true"
+-  },
+-  {
+-    "source_body_row": 11,
+-    "source_column": 14,
+-    "parent_tag": "td",
+-    "description_tag": "span",
+-    "description": "melEDI dose distribution by site. Exact numerical summaries are in the adjacent cells.",
+-    "style": "position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);clip-path:inset(50%);white-space:nowrap;border:0",
+-    "image_payload_sha256": "069be4e2f3ecf89617e8eec3c2a97b2bec5dd94bf9db7f423a847023cf168e96",
+-    "image_alt": null,
+-    "image_aria_hidden": "true"
+-  },
+-  {
+-    "source_body_row": 13,
+-    "source_column": 14,
+-    "parent_tag": "td",
+-    "description_tag": "span",
+-    "description": "Mean melEDI distribution by site. Exact numerical summaries are in the adjacent cells.",
+-    "style": "position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);clip-path:inset(50%);white-space:nowrap;border:0",
+-    "image_payload_sha256": "f92fbd7538e69e8d131bb85c9eabc861370df3179887fe6292fd470803187071",
+-    "image_alt": null,
+-    "image_aria_hidden": "true"
+-  },
+-  {
+-    "source_body_row": 14,
+-    "source_column": 14,
+-    "parent_tag": "td",
+-    "description_tag": "span",
+-    "description": "Brightest 10 h mean distribution by site. Exact numerical summaries are in the adjacent cells.",
+-    "style": "position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);clip-path:inset(50%);white-space:nowrap;border:0",
+-    "image_payload_sha256": "ec4b8ab22e653dd66a1b5ac93b098f89583449cc3a788eae8b72cb2315b212d9",
+-    "image_alt": null,
+-    "image_aria_hidden": "true"
+-  },
+-  {
+-    "source_body_row": 15,
+-    "source_column": 14,
+-    "parent_tag": "td",
+-    "description_tag": "span",
+-    "description": "Darkest 10 h mean distribution by site. Exact numerical summaries are in the adjacent cells.",
+-    "style": "position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);clip-path:inset(50%);white-space:nowrap;border:0",
+-    "image_payload_sha256": "39af943cfb1e79aaf7ac068960703a5e2d3efaa6f798016740dc6bb7d22f13c0",
+-    "image_alt": null,
+-    "image_aria_hidden": "true"
+-  },
+-  {
+-    "source_body_row": 17,
+-    "source_column": 14,
+-    "parent_tag": "td",
+-    "description_tag": "span",
+-    "description": "Melanopic daylight efficacy ratio distribution by site. Exact numerical summaries are in the adjacent cells.",
+-    "style": "position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);clip-path:inset(50%);white-space:nowrap;border:0",
+-    "image_payload_sha256": "f2d9d2e2261b0a844524941bee9ab1295557359021b4c097fdb8cde4c60145a0",
+-    "image_alt": null,
+-    "image_aria_hidden": "true"
+-  },
+-  {
+-    "source_body_row": 19,
+-    "source_column": 14,
+-    "parent_tag": "td",
+-    "description_tag": "span",
+-    "description": "Midpoint of the brightest 10 hours distribution by site. Exact numerical summaries are in the adjacent cells.",
+-    "style": "position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);clip-path:inset(50%);white-space:nowrap;border:0",
+-    "image_payload_sha256": "11329f7395a14c80fa6ab7727c85c5038fa776834f537710c6b14c373d22628b",
+-    "image_alt": null,
+-    "image_aria_hidden": "true"
+-  },
+-  {
+-    "source_body_row": 20,
+-    "source_column": 14,
+-    "parent_tag": "td",
+-    "description_tag": "span",
+-    "description": "Midpoint of the darkest 10 hours distribution by site. Exact numerical summaries are in the adjacent cells.",
+-    "style": "position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);clip-path:inset(50%);white-space:nowrap;border:0",
+-    "image_payload_sha256": "6d64069c7fde2259ed7ca70b78d25bed1a95c075c8008f111cf732b25e4753fe",
+-    "image_alt": null,
+-    "image_aria_hidden": "true"
+-  },
+-  {
+-    "source_body_row": 21,
+-    "source_column": 14,
+-    "parent_tag": "td",
+-    "description_tag": "span",
+-    "description": "First light timing above 250 lx melEDI distribution by site. Exact numerical summaries are in the adjacent cells.",
+-    "style": "position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);clip-path:inset(50%);white-space:nowrap;border:0",
+-    "image_payload_sha256": "95f9d1f3c8904b2240f1fc95623222922e7439a838142ae85ec9b88fcc3fd337",
+-    "image_alt": null,
+-    "image_aria_hidden": "true"
+-  },
+-  {
+-    "source_body_row": 22,
+-    "source_column": 14,
+-    "parent_tag": "td",
+-    "description_tag": "span",
+-    "description": "Last light timing above 250 lx melEDI distribution by site. Exact numerical summaries are in the adjacent cells.",
+-    "style": "position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);clip-path:inset(50%);white-space:nowrap;border:0",
+-    "image_payload_sha256": "7c8ffd9f29c116b0d640ccc7bd388ebae294fc782ac8727d9bdf62c5cfb80bbe",
+-    "image_alt": null,
+-    "image_aria_hidden": "true"
+-  },
+-  {
+-    "source_body_row": 23,
+-    "source_column": 14,
+-    "parent_tag": "td",
+-    "description_tag": "span",
+-    "description": "Mean timing of exposure above 250 lx melEDI distribution by site. Exact numerical summaries are in the adjacent cells.",
+-    "style": "position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);clip-path:inset(50%);white-space:nowrap;border:0",
+-    "image_payload_sha256": "d0279891ce0dffb1abc41c18ff07ffa920cc594bb906c543c81e946c6116daa9",
+-    "image_alt": null,
+-    "image_aria_hidden": "true"
+-  }
+-];
+-// END S2_SCREEN_READER_CONTRACT
+-
+-function matchesS2ScreenReaderSpan(actual, expected) {
+-  const fields = ["source_body_row", "source_column", "parent_tag", "description_tag",
+-    "description", "style", "image_src", "image_alt", "image_aria_hidden"];
+-  const hiddenStyle = {position: "absolute", width: "1px", height: "1px", overflowX: "hidden",
+-    overflowY: "hidden", clip: "rect(0px,0px,0px,0px)", clipPath: "inset(50%)", whiteSpace: "nowrap"};
+-  return !!actual && !!expected && actual.span_count === 1 && actual.image_count === 1 &&
+-    actual.direct_child === true && actual.image_is_sibling === true && actual.single_text_node === true &&
+-    Object.entries(hiddenStyle).every(([key, value]) => actual.computed_style?.[key] === value) &&
+-    fields.every((key) => Object.hasOwn(actual, key) && Object.hasOwn(expected, key) && actual[key] === expected[key]);
+-}
+-
+-function validateS2SourceDescriptions(sourceInfo) {
+-  if (sourceInfo.tbodyCount !== 23 || sourceInfo.columnCount !== 14 ||
+-      sourceInfo.s2HiddenDescriptions.length !== S2_SCREEN_READER_CONTRACT.length) {
+-    throw new Error("S2 source structure or screen-reader inventory changed");
+-  }
+-  return S2_SCREEN_READER_CONTRACT.map((record, index) => {
+-    const actual = sourceInfo.s2HiddenDescriptions[index];
+-    const expected = {...record, image_src: actual?.image_src};
+-    if (typeof actual?.image_src !== "string" ||
+-        createHash("sha256").update(actual.image_src, "utf8").digest("hex") !== record.image_payload_sha256 ||
+-        !matchesS2ScreenReaderSpan(actual, expected)) {
+-      throw new Error("S2 source screen-reader contract or image payload changed");
+-    }
+-    return expected;
+-  });
+-}
+-
+ const { chromium } = require(
+   "/Users/zauner/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright",
+ );
+@@ -430,31 +209,6 @@
+   }
+ 
+   const sourceInfo = await sourceRoot.evaluate((root) => {
+-    function collectS2ScreenReaderSpans(table, rowOffset = 0) {
+-      return Array.from(table.querySelectorAll("tbody tr")).flatMap((row, rowIndex) => {
+-        if (row.children.length !== 14) return [];
+-        const cell = row.children[13];
+-        const spans = Array.from(cell.querySelectorAll("span"));
+-        const images = Array.from(cell.querySelectorAll("img"));
+-        const img = images[0];
+-        return spans.map((span) => {
+-          const computed = getComputedStyle(span);
+-          return {element: span, descriptor: {
+-            source_body_row: rowIndex + rowOffset + 1, source_column: 14,
+-            parent_tag: span.parentElement?.tagName.toLowerCase(),
+-            description_tag: span.tagName.toLowerCase(), description: span.textContent,
+-            style: span.getAttribute("style"), image_src: img?.getAttribute("src"),
+-            image_alt: img?.getAttribute("alt"), image_aria_hidden: img?.getAttribute("aria-hidden"),
+-            span_count: spans.length, image_count: images.length,
+-            direct_child: span.parentElement === cell, image_is_sibling: img?.parentElement === cell,
+-            single_text_node: span.childNodes.length === 1 && span.firstChild?.nodeType === 3,
+-            computed_style: {position: computed.position, width: computed.width, height: computed.height,
+-              overflowX: computed.overflowX, overflowY: computed.overflowY,
+-              clip: computed.clip.replace(/\s+/g, ""), clipPath: computed.clipPath, whiteSpace: computed.whiteSpace},
+-          }};
+-        });
+-      });
+-    }
+     const table = root.matches("table")
+       ? root
+       : root.querySelector("table.gt_table, table");
+@@ -479,10 +233,8 @@
+         Math.ceil(cell.getBoundingClientRect().width),
+       ),
+       bodyCells: Array.from(table.querySelectorAll("tbody tr")).map((row) => Array.from(row.children).map((cell) => cell.textContent)),
+-      s2HiddenDescriptions: root.id === "tbl-near-eye-metrics" ? collectS2ScreenReaderSpans(table).map(({descriptor}) => descriptor) : [],
+     };
+   });
+-  if (spec.selector === "#tbl-near-eye-metrics") sourceInfo.s2HiddenDescriptions = validateS2SourceDescriptions(sourceInfo);
+   await fs.writeFile(path.join(outputDir, `${spec.key}_source.html`), sourceInfo.outerHTML);
+ 
+   const rowRanges = spec.rowRanges ?? [[0, sourceInfo.tbodyCount]];
+@@ -534,55 +286,7 @@
+           continuation,
+           requestedWidth,
+           fixedWidths,
+-          sourceHiddenDescriptions,
+         }) => {
+-          function collectS2ScreenReaderSpans(table, rowOffset = 0) {
+-            return Array.from(table.querySelectorAll("tbody tr")).flatMap((row, rowIndex) => {
+-              if (row.children.length !== 14) return [];
+-              const cell = row.children[13];
+-              const spans = Array.from(cell.querySelectorAll("span"));
+-              const images = Array.from(cell.querySelectorAll("img"));
+-              const img = images[0];
+-              return spans.map((span) => {
+-                const computed = getComputedStyle(span);
+-                return {element: span, descriptor: {
+-                  source_body_row: rowIndex + rowOffset + 1, source_column: 14,
+-                  parent_tag: span.parentElement?.tagName.toLowerCase(),
+-                  description_tag: span.tagName.toLowerCase(), description: span.textContent,
+-                  style: span.getAttribute("style"), image_src: img?.getAttribute("src"),
+-                  image_alt: img?.getAttribute("alt"), image_aria_hidden: img?.getAttribute("aria-hidden"),
+-                  span_count: spans.length, image_count: images.length,
+-                  direct_child: span.parentElement === cell, image_is_sibling: img?.parentElement === cell,
+-                  single_text_node: span.childNodes.length === 1 && span.firstChild?.nodeType === 3,
+-                  computed_style: {position: computed.position, width: computed.width, height: computed.height,
+-                    overflowX: computed.overflowX, overflowY: computed.overflowY,
+-                    clip: computed.clip.replace(/\s+/g, ""), clipPath: computed.clipPath, whiteSpace: computed.whiteSpace},
+-                }};
+-              });
+-            });
+-          }
+-          
+-          function matchesS2ScreenReaderSpan(actual, expected) {
+-            const fields = ["source_body_row", "source_column", "parent_tag", "description_tag",
+-              "description", "style", "image_src", "image_alt", "image_aria_hidden"];
+-            const hiddenStyle = {position: "absolute", width: "1px", height: "1px", overflowX: "hidden",
+-              overflowY: "hidden", clip: "rect(0px,0px,0px,0px)", clipPath: "inset(50%)", whiteSpace: "nowrap"};
+-            return !!actual && !!expected && actual.span_count === 1 && actual.image_count === 1 &&
+-              actual.direct_child === true && actual.image_is_sibling === true && actual.single_text_node === true &&
+-              Object.entries(hiddenStyle).every(([key, value]) => actual.computed_style?.[key] === value) &&
+-              fields.every((key) => Object.hasOwn(actual, key) && Object.hasOwn(expected, key) && actual[key] === expected[key]);
+-          }
+-          
+-          function validateS2ScreenReaderSpans(table, expectedDescriptions, rowOffset = 0) {
+-            const candidates = collectS2ScreenReaderSpans(table, rowOffset);
+-            if (candidates.length !== expectedDescriptions.length) throw new Error("S2 screen-reader span count changed");
+-            for (let i = 0; i < candidates.length; i += 1) {
+-              if (!matchesS2ScreenReaderSpan(candidates[i].descriptor, expectedDescriptions[i])) {
+-                throw new Error("S2 screen-reader text/style/location/image association changed");
+-              }
+-            }
+-            return new Set(candidates.map(({element}) => element));
+-          }
+           const root = document.querySelector(selector);
+           const captureRoot = document.querySelector("#word-table-capture");
+           const table = root?.matches("table")
+@@ -590,9 +294,6 @@
+             : root?.querySelector("table.gt_table, table");
+           if (!root || !table) throw new Error("Capture table not found");
+ 
+-          const protectedS2Spans = selector === "#tbl-near-eye-metrics"
+-            ? validateS2ScreenReaderSpans(table, sourceHiddenDescriptions) : new Set();
+-
+           const keep = new Set(keepColumns);
+           const originalColumnCount = allColumnWidths.length;
+ 
+@@ -625,7 +326,6 @@
+ 
+           for (const element of [root, ...root.querySelectorAll("*")]) {
+             if (!(element instanceof HTMLElement)) continue;
+-            if (protectedS2Spans.has(element)) continue;
+             if (
+               element.style.overflow ||
+               element.style.overflowX ||
+@@ -707,7 +407,6 @@
+           continuation,
+           requestedWidth,
+           fixedWidths: spec.fixedWidths ?? null,
+-          sourceHiddenDescriptions: sourceInfo.s2HiddenDescriptions,
+         },
+       );
+ 
+@@ -715,65 +414,9 @@
+         Array.from(document.images).every((image) => image.complete),
+       );
+ 
+-      const verification = await page.evaluate(({selector, fontRepair, sourceHiddenDescriptions, rowStart, rowEnd}) => {
+-        function collectS2ScreenReaderSpans(table, rowOffset = 0) {
+-          return Array.from(table.querySelectorAll("tbody tr")).flatMap((row, rowIndex) => {
+-            if (row.children.length !== 14) return [];
+-            const cell = row.children[13];
+-            const spans = Array.from(cell.querySelectorAll("span"));
+-            const images = Array.from(cell.querySelectorAll("img"));
+-            const img = images[0];
+-            return spans.map((span) => {
+-              const computed = getComputedStyle(span);
+-              return {element: span, descriptor: {
+-                source_body_row: rowIndex + rowOffset + 1, source_column: 14,
+-                parent_tag: span.parentElement?.tagName.toLowerCase(),
+-                description_tag: span.tagName.toLowerCase(), description: span.textContent,
+-                style: span.getAttribute("style"), image_src: img?.getAttribute("src"),
+-                image_alt: img?.getAttribute("alt"), image_aria_hidden: img?.getAttribute("aria-hidden"),
+-                span_count: spans.length, image_count: images.length,
+-                direct_child: span.parentElement === cell, image_is_sibling: img?.parentElement === cell,
+-                single_text_node: span.childNodes.length === 1 && span.firstChild?.nodeType === 3,
+-                computed_style: {position: computed.position, width: computed.width, height: computed.height,
+-                  overflowX: computed.overflowX, overflowY: computed.overflowY,
+-                  clip: computed.clip.replace(/\s+/g, ""), clipPath: computed.clipPath, whiteSpace: computed.whiteSpace},
+-              }};
+-            });
+-          });
+-        }
+-        
+-        function matchesS2ScreenReaderSpan(actual, expected) {
+-          const fields = ["source_body_row", "source_column", "parent_tag", "description_tag",
+-            "description", "style", "image_src", "image_alt", "image_aria_hidden"];
+-          const hiddenStyle = {position: "absolute", width: "1px", height: "1px", overflowX: "hidden",
+-            overflowY: "hidden", clip: "rect(0px,0px,0px,0px)", clipPath: "inset(50%)", whiteSpace: "nowrap"};
+-          return !!actual && !!expected && actual.span_count === 1 && actual.image_count === 1 &&
+-            actual.direct_child === true && actual.image_is_sibling === true && actual.single_text_node === true &&
+-            Object.entries(hiddenStyle).every(([key, value]) => actual.computed_style?.[key] === value) &&
+-            fields.every((key) => Object.hasOwn(actual, key) && Object.hasOwn(expected, key) && actual[key] === expected[key]);
+-        }
+-        
+-        function validateS2ScreenReaderSpans(table, expectedDescriptions, rowOffset = 0) {
+-          const candidates = collectS2ScreenReaderSpans(table, rowOffset);
+-          if (candidates.length !== expectedDescriptions.length) throw new Error("S2 screen-reader span count changed");
+-          for (let i = 0; i < candidates.length; i += 1) {
+-            if (!matchesS2ScreenReaderSpan(candidates[i].descriptor, expectedDescriptions[i])) {
+-              throw new Error("S2 screen-reader text/style/location/image association changed");
+-            }
+-          }
+-          return new Set(candidates.map(({element}) => element));
+-        }
+-        
+-        function s2TextRectOverflows(rect, cellBox) {
+-          return rect.left < cellBox.left - 0.5 || rect.right > cellBox.right + 0.5 ||
+-            rect.top < cellBox.top - 0.5 || rect.bottom > cellBox.bottom + 0.5;
+-        }
++      const verification = await page.evaluate(({selector, fontRepair}) => {
+         const root = document.querySelector(selector);
+         const table = root.matches("table") ? root : root.querySelector("table");
+-        const expectedHiddenDescriptions = selector === "#tbl-near-eye-metrics"
+-          ? sourceHiddenDescriptions.filter((record) => record.source_body_row > rowStart && record.source_body_row <= rowEnd) : [];
+-        const protectedS2Spans = selector === "#tbl-near-eye-metrics"
+-          ? validateS2ScreenReaderSpans(table, expectedHiddenDescriptions, rowStart) : new Set();
+         const sampleSelectors = {title: ".gt_title", header: ".gt_col_heading", stub: ".gt_stub", body: "td.gt_row", note: ".gt_footnote, .gt_sourcenote"};
+         const fonts = Object.fromEntries(Object.entries(sampleSelectors).map(([key, sel]) => {
+           const el = table.querySelector(sel);
+@@ -796,10 +439,9 @@
+             const walker = document.createTreeWalker(cell, NodeFilter.SHOW_TEXT);
+             while (walker.nextNode()) {
+               if (!walker.currentNode.textContent.trim()) continue;
+-              if (protectedS2Spans.has(walker.currentNode.parentElement)) continue;
+               const range = document.createRange(); range.selectNodeContents(walker.currentNode);
+               for (const rect of range.getClientRects()) {
+-                if (s2TextRectOverflows(rect, cellBox)) {
++                if (rect.left < cellBox.left - 0.5 || rect.right > cellBox.right + 0.5 || rect.top < cellBox.top - 0.5 || rect.bottom > cellBox.bottom + 0.5) {
+                   numericalTextOverflow.push({text:walker.currentNode.textContent,left:rect.left,right:rect.right,top:rect.top,bottom:rect.bottom,cellLeft:cellBox.left,cellRight:cellBox.right,cellTop:cellBox.top,cellBottom:cellBox.bottom});
+                 }
+               }
+@@ -807,9 +449,8 @@
+           }
+         }
+         if (numericalTextOverflow.length) throw new Error(`S2 all-cell text clipping: ${JSON.stringify(numericalTextOverflow)}`);
+-        const screenReaderDescriptions = expectedHiddenDescriptions.map(({image_src, ...record}) => ({...record, hiddenStylePreserved: true, sourceImageMatched: true}));
+-        return {fonts, images, numericalTextOverflow, screenReaderDescriptions, bodyCells: Array.from(table.querySelectorAll("tbody tr")).map((row) => Array.from(row.children).map((cell) => cell.textContent))};
+-      }, {selector: spec.selector, fontRepair: !!spec.fontRepair, sourceHiddenDescriptions: sourceInfo.s2HiddenDescriptions, rowStart, rowEnd});
++        return {fonts, images, numericalTextOverflow, bodyCells: Array.from(table.querySelectorAll("tbody tr")).map((row) => Array.from(row.children).map((cell) => cell.textContent))};
++      }, {selector: spec.selector, fontRepair: !!spec.fontRepair});
+       if (JSON.stringify(verification.bodyCells) !== JSON.stringify(sourceInfo.bodyCells.slice(rowStart, rowEnd))) throw new Error("Frozen cell text changed in capture");
+       await fs.writeFile(path.join(outputDir, `${spec.key}_part_${String(part).padStart(2, "0")}.html`), await page.content());
+ 

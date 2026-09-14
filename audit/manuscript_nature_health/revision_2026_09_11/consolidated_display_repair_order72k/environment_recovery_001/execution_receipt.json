@@ -1,0 +1,50 @@
+{
+  "approval": "require_escalated request granted; exact installed Quarto command executed",
+  "command": "RENV_CONFIG_AUTOLOADER_ENABLED=FALSE R_LIBS_USER=/Users/zauner/Library/R/arm64/4.6/library TMPDIR=/private/tmp/order72k_3ok569jd /Applications/quarto/bin/quarto render selection.qmd --to html --no-execute --output-dir render_attempt1",
+  "cwd": "/Users/zauner/Documents/Arbeit/12-TUM/MeLiDos/WP2.2.5_Data_Analysis/ZaunerEtAl_bioRxiv_2026/audit/manuscript_nature_health/consolidated_display_repair_2026_09_11/integration_candidate_order72k/project",
+  "environment_changes": {
+    "RENV_CONFIG_AUTOLOADER_ENABLED": "FALSE",
+    "R_LIBS_USER": "/Users/zauner/Library/R/arm64/4.6/library",
+    "TMPDIR": "/private/tmp/order72k_3ok569jd"
+  },
+  "started": {
+    "current_time": "2026-09-11 19:05:36 UTC"
+  },
+  "ended": {
+    "current_time": "2026-09-11 19:06:00 UTC"
+  },
+  "session_id": 8102,
+  "pid": null,
+  "pid_limitation": "The render completed before the read-only PID observation. No PID is inferred from the tool session ID.",
+  "first_result": {
+    "chunk_id": "2037e2",
+    "wall_time_seconds": 1.003172834,
+    "session_id": 8102,
+    "original_token_count": 181,
+    "output": "pandoc \n  to: html\n  output-file: selection.html\n  standalone: true\n  embed-resources: true\n  section-divs: true\n  html-math-method: mathjax\n  wrap: none\n  default-image-extension: png\n  css:\n    - order72k_layout.css\n  toc: true\n  toc-depth: 3\n  variables: {}\n  \nmetadata\n  document-css: false\n  link-citations: true\n  date-format: long\n  lang: en\n  engines:\n    - path: /Applications/quarto/share/extension-subtrees/julia-engine/_extensions/julia-engine/julia-engine.js\n  title: Nature Health figure and table selection\n  subtitle: Author-reviewed main displays, Supplementary Information sequence, captions, and coordinated display repairs\n  date: '2026-08-24'\n  theme: cosmo\n  page-layout: full\n  smooth-scroll: true\n  \n"
+  },
+  "completion": {
+    "chunk_id": "acecfb",
+    "wall_time_seconds": 0.000001,
+    "exit_code": 0,
+    "original_token_count": 12,
+    "output": "Output created: render_attempt1/selection.html\n\n"
+  },
+  "pid_observation": {
+    "chunk_id": "582701",
+    "wall_time_seconds": 0.000003084,
+    "exit_code": 0,
+    "original_token_count": 59,
+    "output": "35174 58464 /bin/zsh -c ps -axo pid=,ppid=,command= | rg '/Applications/quarto/.*selection.qmd|quarto render selection.qmd|deno.*quarto.js'\n35176 35174 rg /Applications/quarto/.*selection.qmd|quarto render selection.qmd|deno.*quarto.js\n"
+  },
+  "process_preflight": {
+    "chunk_id": "7d4530",
+    "wall_time_seconds": 0.000003375,
+    "exit_code": 0,
+    "original_token_count": 67,
+    "output": "35038 58464 /bin/zsh -c ps -axo pid=,ppid=,command= | rg 'quarto.*render|pandoc|deno.*quarto|capture_word_tables|render_docx|http.server|order72k.*server'\n35040 35038 rg quarto.*render|pandoc|deno.*quarto|capture_word_tables|render_docx|http.server|order72k.*server\n"
+  },
+  "historical_failure_preserved": true,
+  "exit_code": 0,
+  "layout_correction_pass_consumed": false
+}

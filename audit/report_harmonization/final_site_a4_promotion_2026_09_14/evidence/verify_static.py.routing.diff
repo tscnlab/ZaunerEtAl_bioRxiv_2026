@@ -1,0 +1,40 @@
+--- Accepted015a/verify_static.py
++++ Production016/verify_static.py
+@@ -7,8 +7,8 @@
+ from transform import make_postimages
+ 
+ def verify(mode):
+-    assert mode=='candidate'
+-    build=BUILD
++    assert mode in ('candidate','production')
++    build=CANDIDATE if mode=='candidate' else ACTIVE_SITE
+     checks=[]
+     def check(name,condition,detail=''):
+         checks.append(dict(check=name,pass_=bool(condition),detail=str(detail)))
+@@ -48,7 +48,7 @@
+                     for target in n.get(attr,'').split():
+                         ok=ids[p][target]==1;idrefrows.append(dict(route=route,table='',attribute=attr,target=target,valid=ok));check('Entry IDREF',ok,target)
+         else:
+-            old=Counter(doc(LIVE/route).xpath('//@id'))
++            old=Counter(doc(BASELINE/route).xpath('//@id'))
+             check(route+' accepted duplicate-ID multiset',{k:v for k,v in old.items() if v>1}==duplicates)
+         idrows.append(dict(route=route,id_count=sum(ids[p].values()),duplicate_ids=json.dumps(duplicates)))
+     refs=[];external=[];seen=set();closure=set(build/r for r in routes)
+@@ -110,7 +110,7 @@
+         check(route+' full Word label',bool(d.xpath('//a[contains(@href,"ZaunerEtAl2026_NatHealth_phase3_brown.docx") and normalize-space(.)]')))
+         if route=='supplementary_information.html':check(route+'20 revision rows',len(d.xpath('//table[contains(@class,"site-change-table")]/tbody/tr'))==20)
+         else:check('Main entry links to revision utility',bool(d.xpath('//a[contains(@href,"supplementary_information.html#site-passage-changes")]')))
+-        olddoc=doc(LIVE/route)
++        olddoc=doc(BASELINE/route)
+         for selector in ['//head','//*[@data-site-utility]','//*[@id="quarto-header"]','//*[@id="quarto-sidebar"]','//nav[contains(@class,"page-navigation")]']:
+             check(route+' unchanged shell/utility '+selector,[html.tostring(n) for n in d.xpath(selector)]==[html.tostring(n) for n in olddoc.xpath(selector)])
+         check(route+' all image payloads and order retained',d.xpath('//img/@src')==olddoc.xpath('//img/@src'))
+@@ -128,7 +128,7 @@
+     oldcorpus=rows(backups[label(CORPUS)])
+     changed=[(i,k) for i,(a,b) in enumerate(zip(oldcorpus,corpus)) for k in a if a[k]!=b[k]]
+     check('Only two HTML hash cells; all37 historical source cells retained',len(corpus)==len(oldcorpus)==37 and len(changed)==2 and all(k=='html_sha256' for i,k in changed))
+-    check('Live corpus unchanged',CORPUS.read_bytes()==original)
++    check('Exact corpus at selected phase',ACTIVE_CORPUS.read_bytes()==(original if mode=='candidate' else prospective))
+     check('All19 native files equal accepted Writer donors',all(sha(build/'editable_tables'/p.name)==sha(p) for p in (WRITER/'deliverables/editable_tables').glob('*.docx')))
+     check('22 public downloads unchanged in membership',len([k for k in actual if k.startswith('editable_tables/')])+3==22)
+     for name,data in [('static_checks',checks),('id_inventory',idrows),('table_and_aria_idrefs',idrefrows),('local_reference_audit',refs),('legacy_reference_exceptions',exceptions),('external_reference_inventory',external),('search_target_checks',searchrows),('native_download_links',downloads)]:csvout(E/f'{mode}_{name}.csv',data)

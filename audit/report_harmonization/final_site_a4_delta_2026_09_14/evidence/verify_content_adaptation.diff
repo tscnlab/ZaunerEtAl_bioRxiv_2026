@@ -1,0 +1,16 @@
+--- audit/report_harmonization/final_site_integration_2026_09_14/helpers/verify_content.R
++++ audit/report_harmonization/final_site_a4_delta_2026_09_14/helpers/verify_content.R
+@@ -1,10 +1,10 @@
+-# Order011 exact reported-content reconciliation. No results are recomputed.
++# Order015 exact accepted Writer-content reconciliation. No results are recomputed.
+ stopifnot(getRversion() == numeric_version("4.6.1"))
+ suppressPackageStartupMessages(library(xml2))
+ suppressPackageStartupMessages(library(digest))
+ root <- "/Users/zauner/Documents/Arbeit/12-TUM/MeLiDos/WP2.2.5_Data_Analysis/ZaunerEtAl_bioRxiv_2026"
+-out <- file.path(root, "audit/report_harmonization/final_site_integration_2026_09_14")
+-accepted <- file.path(root, "audit/manuscript_nature_health/final_format_completion_2026_09_14/project/html_round2/ZaunerEtAl2026_NatHealth_phase3_brown.html")
++out <- file.path(root, "audit/report_harmonization/final_site_a4_delta_2026_09_14")
++accepted <- file.path(root, "audit/manuscript_nature_health/a4_display_revision_2026_09_14/html_candidate_round2/ZaunerEtAl2026_NatHealth_phase3_brown.html")
+ candidate <- file.path(out, "candidate_build")
+ options(warn=2)
+ checks <- list()

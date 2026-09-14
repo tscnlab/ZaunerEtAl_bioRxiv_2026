@@ -15,21 +15,21 @@ h02_input_contract <- function(root) {
       root,
       "artifacts/06_model_data/base/metrics_glasses_30_minute_context.rds"
     ),
-    "afa5a23308744ae495ef07a521c99e11bd7296aa855c5cb773f71f2b68eeb8e5",
+    "85a927003c54821ae9ed5d9b4266e07f75488c743b570ec67b48a14ecfa88920",
     "verified_main_near_eye",
     "main_chest",
     file.path(
       root,
       "artifacts/06_model_data/base/metrics_chest_30_minute_context.rds"
     ),
-    "01a4a85e5ead5b30219f969c64d50b94a2bebf84b60cc4006badbc3c3c9513a2",
+    "b2c0290c3eff5ef5ae5e92af6d8c693043f3ad0409392e80652e97ffcac8ef15",
     "verified_main_chest",
     "base_model_data_manifest",
     file.path(
       root,
       "artifacts/12_manifests/base_model_data_artifacts.csv"
     ),
-    "142d1044dd7e6a566e45e3a5c56033b1e8251e100c0d7c7523564c824950a0e4",
+    "8344bdc0339a53079bf9eeb7d86de1ad7c15373641c3a0a5a01d040b418895ce",
     "approved_base_model_data_verification",
     "manuscript_prepared",
     file.path(
@@ -84,7 +84,7 @@ h02_input_contract <- function(root) {
     "submitted_result_recovery",
     "submitted_manuscript",
     file.path(root, "index.qmd"),
-    "aa24170aa24cb6a39f2a1e3cf6d33ead9d1a20c6cfe2860674d20802ca28ec9e",
+    "86766c377e7ee1dcfea6b1ada8704b04320bbc231630c4044cd9c9d93aa0bf80",
     "submitted_claim_recovery"
   )
 }

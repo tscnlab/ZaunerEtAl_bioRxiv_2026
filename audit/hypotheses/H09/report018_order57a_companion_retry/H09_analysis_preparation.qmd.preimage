@@ -1,0 +1,1143 @@
+---
+title: "H09 analysis preparation and provenance"
+subtitle: "From verified chronotype fields and personal light-exposure timing metrics to reported associations"
+date: last-modified
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    code-fold: true
+    code-summary: "Show the R code used for this display"
+    code-tools: true
+    page-layout: full
+execute:
+  echo: true
+  warning: false
+  message: false
+  error: false
+fig-cap-location: bottom
+tbl-cap-location: top
+---
+
+```{r}
+#| label: setup-h09-preparation
+#| include: false
+
+root_candidates <- unique(c(
+  normalizePath(getwd(), winslash = "/", mustWork = TRUE),
+  normalizePath(
+    file.path(getwd(), "../../.."),
+    winslash = "/",
+    mustWork = FALSE
+  )
+))
+is_project_root <- vapply(
+  root_candidates,
+  function(path) {
+    file.exists(file.path(path, "renv.lock")) &&
+      file.exists(file.path(
+        path,
+        "scripts/hypotheses/H09/h09_contract.R"
+      ))
+  },
+  logical(1)
+)
+stopifnot(any(is_project_root))
+root <- root_candidates[which(is_project_root)[1L]]
+knitr::opts_knit$set(root.dir = root)
+
+project_library <- file.path(
+  root,
+  "renv/library/macos/R-4.6/aarch64-apple-darwin23"
+)
+if (dir.exists(project_library)) {
+  .libPaths(c(project_library, .libPaths()))
+}
+
+suppressPackageStartupMessages({
+  library(dplyr)
+  library(ggplot2)
+  library(gt)
+  library(knitr)
+  library(readr)
+  library(scales)
+  library(stringr)
+  library(tibble)
+  library(tidyr)
+})
+
+source(file.path(root, "scripts/pipeline/paths_io.R"))
+
+if (!identical(as.character(getRversion()), "4.6.1")) {
+  stop("H09 preparation requires R 4.6.1", call. = FALSE)
+}
+
+read_h09_csv <- function(area, name) {
+  readr::read_csv(
+    file.path(root, "artifacts", area, "H09", name),
+    show_col_types = FALSE,
+    progress = FALSE,
+    na = ""
+  )
+}
+
+prep_gt <- function(table, font_size = 11) {
+  table |>
+    gt::opt_row_striping() |>
+    gt::sub_missing(missing_text = "—") |>
+    gt::tab_options(
+      table.width = gt::pct(100),
+      table.font.size = gt::px(font_size),
+      data_row.padding = gt::px(4),
+      column_labels.font.weight = "600",
+      source_notes.font.size = gt::px(max(9, font_size - 2))
+    )
+}
+
+format_count <- function(value) {
+  format(value, big.mark = ",", scientific = FALSE, trim = TRUE)
+}
+
+input_audit <- read_h09_csv("06_model_data", "H09_input_audit.csv")
+metric_registry <- read_h09_csv(
+  "06_model_data",
+  "H09_metric_registry.csv"
+)
+predictor_registry <- read_h09_csv(
+  "06_model_data",
+  "H09_predictor_registry.csv"
+)
+formula_registry <- read_h09_csv(
+  "06_model_data",
+  "H09_formula_registry.csv"
+)
+run_registry <- read_h09_csv("06_model_data", "H09_run_registry.csv")
+family_registry <- read_h09_csv(
+  "06_model_data",
+  "H09_family_registry.csv"
+)
+frame_index <- read_h09_csv(
+  "06_model_data",
+  "H09_model_frame_index.csv"
+)
+paired_audit <- read_h09_csv(
+  "06_model_data",
+  "H09_paired_sample_audit.csv"
+)
+gap_common_audit <- read_h09_csv(
+  "06_model_data",
+  "H09_gap_common_sample_audit.csv"
+)
+non_estimable <- read_h09_csv(
+  "06_model_data",
+  "H09_non_estimable_targets.csv"
+)
+fit_index <- read_h09_csv("07_models", "H09_model_fit_index.csv")
+score_audit <- read_h09_csv(
+  "08_diagnostics",
+  "H09_chronotype_score_audit.csv"
+)
+diagnostic_registry <- read_h09_csv(
+  "08_diagnostics",
+  "H09_diagnostic_assessment_registry.csv"
+)
+diagnostic_summary <- read_h09_csv(
+  "08_diagnostics",
+  "H09_diagnostic_target_summary.csv"
+)
+diagnostic_adjudication <- read_h09_csv(
+  "08_diagnostics",
+  "H09_diagnostic_author_adjudication.csv"
+)
+residual_diagnostics <- read_h09_csv(
+  "08_diagnostics",
+  "H09_residual_diagnostics.csv"
+)
+model_effects <- read_h09_csv("09_tables", "H09_model_effects.csv")
+model_tests <- read_h09_csv("09_tables", "H09_model_tests.csv")
+family_audit <- read_h09_csv("09_tables", "H09_family_audit.csv")
+gap_sensitivity <- read_h09_csv(
+  "09_tables",
+  "H09_gap_timing_unaware_sensitivity.csv"
+)
+photoperiod <- read_h09_csv(
+  "09_tables",
+  "H09_photoperiod_sensitivity.csv"
+)
+participant_summary <- read_h09_csv(
+  "09_tables",
+  "H09_participant_summary_sensitivity.csv"
+)
+ar1 <- read_h09_csv("09_tables", "H09_ar1_sensitivity.csv")
+l10_cut <- read_h09_csv("09_tables", "H09_l10_cut_sensitivity.csv")
+paired_effects <- read_h09_csv(
+  "09_tables",
+  "H09_paired_placement_effects.csv"
+)
+fifth_outcome <- read_h09_csv(
+  "09_tables",
+  "H09_fifth_outcome_sensitivity.csv"
+)
+execution <- read_h09_csv("12_manifests", "H09_execution_record.csv")
+packages <- read_h09_csv("12_manifests", "H09_package_versions.csv")
+figure_manifest <- read_h09_csv(
+  "12_manifests",
+  "H09_figure_manifest.csv"
+)
+reader_manifest <- read_h09_csv(
+  "12_manifests",
+  "H09_stage3_artifacts.csv"
+)
+site_registry <- readr::read_csv(
+  file.path(root, "config/site_display_registry.csv"),
+  show_col_types = FALSE
+) |>
+  arrange(.data$display_order)
+
+primary_frames <- frame_index |>
+  filter(
+    .data$data_scenario_id == "primary",
+    .data$sample_scenario == "all_available"
+  ) |>
+  left_join(
+    metric_registry |>
+      select(
+        .data$metric_id,
+        .data$metric_order,
+        .data$manuscript_name,
+        .data$primary_family_member
+      ),
+    by = "metric_id",
+    relationship = "many-to-one"
+  )
+primary_registered_frames <- primary_frames |>
+  filter(.data$primary_family_member)
+```
+
+## Purpose
+
+This page explains how verified chronotype fields and personal light-exposure
+timing metrics lead to the scientific findings in the [H09 results
+report](../../../notebooks/hypotheses/H09.qmd).
+
+H09 asks whether participant-level chronotype is associated with five
+participant-day timing metrics of personal light exposure. A participant-day
+is one participant's eligible outcome on one local date. Chronotype is
+represented by the **Munich Chronotype Questionnaire corrected midsleep on
+free days (MCTQ MSFsc)** and the **Morningness–Eveningness Questionnaire
+(MEQ)**. Larger MCTQ MSFsc means later corrected midsleep, whereas larger MEQ
+means greater morning preference; the two constructs remain separate in the
+models and inferential families.
+
+Personal light exposure is expressed as **melanopic equivalent daylight
+illuminance (melEDI)**. The primary near-eye sensor position records light near
+the eyes during wear. The complementary chest sensor position is analysed
+separately, is not pooled with near-eye measurement, and is not a measure of
+ocular exposure.
+
+The **gap-timing-unaware dataset** is the dataset applying the 50%-per-hour
+and 80%-per-day coverage rules but not using the remaining gaps' time of day
+in metric-specific support decisions. At this first explanation it can be
+contrasted with the time-sensitive primary dataset; hereafter the latter is
+called simply the primary dataset.
+
+This page identifies the exact inputs, derived fields, analytical frames,
+formulae, model checks, sensitivity analyses, outputs, and file identities
+behind the results. It documents provenance and does not create an additional
+analysis. Uncertainty is reported as 95% confidence intervals (95% CIs), and
+multiplicity is handled with false-discovery-rate (FDR) adjustment.
+
+## Analysis map
+
+```{mermaid}
+flowchart TD
+  A["Verified aggregate chronotype fields<br/>MCTQ MSFsc and MEQ"] --> C["Identity, range, missingness<br/>and value-preservation checks"]
+  B["Prepared personal light exposure<br/>near eye and chest"] --> C
+  C --> D["Six timing definitions<br/>five registered + one sensitivity"]
+  D --> E["Ten run definitions<br/>dataset × placement × sample"]
+  E --> F["108 metric × instrument<br/>analytical sample identities"]
+  F --> G["Centered predictors<br/>MCTQ per 1 h; MEQ per 10 points"]
+  G --> H["Site-only, additive and<br/>chronotype-by-site models"]
+  H --> I["Effects, 95% CIs<br/>and complete-family FDR adjustment"]
+  H --> J["Residual, temporal, support,<br/>linearity and influence model checks"]
+  H --> K["Placement, preparation,<br/>photoperiod, summary and dependence checks"]
+  I --> L["Reader tables and figures<br/>with exact source CSV files"]
+  J --> L
+  K --> L
+  M["Bounded identity and<br/>structural verification"] -. verifies .-> C
+  M -. verifies .-> F
+  M -. verifies .-> L
+```
+
+The arrows show dependencies. They do not mean that this page repeats model
+estimation.
+
+## Verified inputs and chronotype predictors
+
+### File identity
+
+Eleven verified inputs define the current result-producing chain: preparation
+records, near-eye and chest participant-day data, the normalized chronotype
+table, the preparation-sensitivity data, and the site and metric display
+registries. Their complete 64-character SHA-256 values were recorded before
+analysis.
+
+```{r}
+#| label: tbl-h09-prep-input-identities
+#| tbl-cap: "Verified inputs used by the current H09 result-producing analysis."
+
+result_input_roles <- c(
+  "metric_manifest",
+  "base_manifest",
+  "primary_near_eye_context",
+  "primary_chest_context",
+  "primary_near_eye_enriched",
+  "primary_chest_enriched",
+  "normalized_chronotype",
+  "gap_timing_unaware_metrics",
+  "gap_manifest",
+  "site_display_registry",
+  "metric_display_registry"
+)
+input_labels <- c(
+  metric_manifest = "Metric-artifact record",
+  base_manifest = "Model-ready data record",
+  primary_near_eye_context = "Primary near-eye context",
+  primary_chest_context = "Complementary chest context",
+  primary_near_eye_enriched = "Primary near-eye analytical fields",
+  primary_chest_enriched = "Complementary chest analytical fields",
+  normalized_chronotype = "Normalized MCTQ and MEQ fields",
+  gap_timing_unaware_metrics = "Preparation-sensitivity metrics",
+  gap_manifest = "Preparation-sensitivity record",
+  site_display_registry = "Submitted site display registry",
+  metric_display_registry = "Manuscript metric display registry"
+)
+
+verified_inputs <- input_audit |>
+  filter(.data$input_role %in% result_input_roles) |>
+  mutate(
+    current_sha256 = vapply(
+      file.path(root, .data$path),
+      artifact_sha256,
+      character(1)
+    ),
+    Input = unname(input_labels[.data$input_role]),
+    Path = .data$path,
+    `SHA-256 prefix` = substr(.data$current_sha256, 1L, 16L),
+    Verified = if_else(
+      .data$current_sha256 == .data$observed_sha256 &
+        .data$hash_verified & .data$rows_verified,
+      "PASS",
+      "FAIL"
+    )
+  )
+stopifnot(nrow(verified_inputs) == 11L, all(verified_inputs$Verified == "PASS"))
+
+verified_inputs |>
+  select("Input", "Path", "SHA-256 prefix", "Verified") |>
+  gt::gt() |>
+  gt::cols_width(
+    Input ~ gt::pct(24),
+    Path ~ gt::pct(54),
+    `SHA-256 prefix` ~ gt::pct(15),
+    Verified ~ gt::pct(7)
+  ) |>
+  gt::tab_source_note(
+    "Complete identities remain in artifacts/06_model_data/H09/H09_input_audit.csv."
+  ) |>
+  prep_gt(10)
+```
+
+### Bounded integrity checks
+
+The stored indexes establish the joins and analytical denominators without
+reopening model objects. Chronotype is keyed by site and participant; model
+frames are keyed by dataset, placement, site, participant, local date, metric,
+and instrument.
+
+```{r}
+#| label: tbl-h09-prep-integrity-checks
+#| tbl-cap: "Bounded integrity checks from stored H09 registries and indexes."
+
+required_frame_columns <- c(
+  "frame_id", "run_id", "placement", "metric_id", "instrument_id",
+  "row_key_hash", "model_frame_hash", "participants", "participant_days",
+  "observations", "sites", "derivation_hours"
+)
+integrity_checks <- tibble::tribble(
+  ~Check, ~Expected, ~Observed, ~Status,
+  "Current result-input identities", "11 matches", paste0(sum(verified_inputs$Verified == "PASS"), " matches"), if_else(all(verified_inputs$Verified == "PASS"), "PASS", "FAIL"),
+  "Chronotype participant key", "186 unique participants", paste0(score_audit$participants, " participants"), if_else(score_audit$participants == 186L, "PASS", "FAIL"),
+  "Chronotype missingness", "MCTQ 1; MEQ 0", paste0("MCTQ ", score_audit$mctq_missing, "; MEQ ", score_audit$meq_missing), if_else(score_audit$mctq_missing == 1L && score_audit$meq_missing == 0L, "PASS", "FAIL"),
+  "Metric registry", "6 unique metrics; 5 registered", paste0(n_distinct(metric_registry$metric_id), " unique; ", sum(metric_registry$primary_family_member), " registered"), if_else(n_distinct(metric_registry$metric_id) == 6L && sum(metric_registry$primary_family_member) == 5L, "PASS", "FAIL"),
+  "Run registry", "10 unique runs", paste0(n_distinct(run_registry$run_id), " unique runs"), if_else(n_distinct(run_registry$run_id) == 10L, "PASS", "FAIL"),
+  "Model-frame index", "108 unique frames", paste0(nrow(frame_index), " rows"), if_else(nrow(frame_index) == 108L && !anyDuplicated(frame_index$frame_id), "PASS", "FAIL"),
+  "Frame-index schema", "12 required fields", paste0(sum(required_frame_columns %in% names(frame_index)), " present"), if_else(all(required_frame_columns %in% names(frame_index)), "PASS", "FAIL"),
+  "Stored fit index", "540 model records", paste0(nrow(fit_index), " records"), if_else(nrow(fit_index) == 540L, "PASS", "FAIL"),
+  "Paired placement identities", "12 exact pairs", paste0(sum(paired_audit$exact_row_keys_match), " exact pairs"), if_else(all(paired_audit$exact_row_keys_match), "PASS", "FAIL"),
+  "Primary–sensitivity common keys", "20 exact key records", paste0(sum(gap_common_audit$exact_row_keys_match, na.rm = TRUE), " exact key records"), if_else(sum(gap_common_audit$exact_row_keys_match, na.rm = TRUE) == 20L, "PASS", "FAIL"),
+  "Unavailable prepared outcomes", "12 explicit records", paste0(nrow(non_estimable), " records"), if_else(nrow(non_estimable) == 12L, "PASS", "FAIL")
+)
+stopifnot(all(integrity_checks$Status == "PASS"))
+
+integrity_checks |>
+  gt::gt() |>
+  gt::cols_width(
+    Check ~ gt::pct(28),
+    Expected ~ gt::pct(27),
+    Observed ~ gt::pct(36),
+    Status ~ gt::pct(9)
+  ) |>
+  prep_gt(10)
+```
+
+### Aggregate-field provenance and missingness
+
+The analysis uses the verified aggregate calculated fields `msf_sc` and `meq`.
+The available source does not contain item-level questionnaire responses, so
+item scoring cannot be independently reconstructed. Value-preservation,
+ranges, missingness, and joins were verified for the exact aggregate fields.
+MCTQ MSFsc and MEQ were not combined: MCTQ MSFsc describes corrected sleep
+timing, whereas MEQ describes morningness-eveningness preference. This
+construct distinction is documented in
+[`DEV-037`](../../../notebooks/preregistration_deviations.qmd#dev-037).
+
+```{r}
+#| label: tbl-h09-prep-score-audit
+#| tbl-cap: "Observed support and centering constants for the two chronotype fields."
+
+tibble::tribble(
+  ~Instrument, ~Construct, ~Complete, ~Missing, ~Minimum, ~Mean, ~Maximum, ~Coefficient_unit,
+  "MCTQ MSFsc", "Corrected midsleep timing", score_audit$mctq_complete, score_audit$mctq_missing, score_audit$mctq_min_hour, score_audit$mctq_center_hour, score_audit$mctq_max_hour, "1 hour later",
+  "MEQ", "Morningness-eveningness preference", score_audit$meq_complete, score_audit$meq_missing, score_audit$meq_min_score, score_audit$meq_center_score, score_audit$meq_max_score, "10 points greater morning preference"
+) |>
+  gt::gt() |>
+  gt::fmt_number(columns = c(Minimum, Mean, Maximum), decimals = 3) |>
+  gt::fmt_integer(columns = c(Complete, Missing)) |>
+  gt::cols_label(Coefficient_unit = "Coefficient unit") |>
+  prep_gt(10)
+```
+
+### Centering and scaling
+
+The two model-column names, `mctq_hour_centered` and `meq_10_centered`, encode
+only a change of origin and, for MEQ, a reporting scale:
+
+- **MCTQ:** `mctq_hour_centered = MCTQ MSFsc in hours - 4.1135843`
+- **MEQ:** `meq_10_centered = (MEQ score - 52.8602151) / 10`
+
+Thus one MCTQ unit means one hour later corrected midsleep, while one MEQ unit
+means 10 score points toward greater morning preference. A centered value of
+zero is the observed participant mean. Centering changes the intercept's
+reference point; it does not change the chronotype slope, its 95% CI, or its
+test.
+
+```{r}
+#| label: tbl-h09-prep-predictor-contract
+#| tbl-cap: "Predictor fields, transformations, and coefficient interpretations."
+
+predictor_registry |>
+  transmute(
+    Instrument = .data$instrument_name,
+    `Source field` = .data$predictor_column,
+    `Model field` = .data$centered_column,
+    Transformation = if_else(
+      .data$instrument_id == "MCTQ",
+      sprintf("MCTQ hours − %.7f", score_audit$mctq_center_hour),
+      sprintf("(MEQ − %.7f) / 10", score_audit$meq_center_score)
+    ),
+    `Coefficient unit` = .data$effect_unit,
+    Interpretation = .data$effect_direction
+  ) |>
+  gt::gt() |>
+  prep_gt(10)
+```
+
+## Timing metrics and analytical samples
+
+### Metric definitions
+
+Five registered participant-day outcomes enter each confirmatory family: the
+midpoint of the brightest 10 hours (M10 midpoint), midpoint of the darkest 10
+hours (L10 midpoint), first and last time above 250 lx melEDI, and midpoint of
+the longest continuous period above 250 lx melEDI. The longest-period midpoint
+is calculated only when the selected period is exactly identifiable from its
+recorded endpoints. Mean timing above 250 lx melEDI is a distinct sensitivity
+estimand and is not substituted for the registered midpoint. M10 and L10
+onset and offset are excluded. [Preparation
+04](../../../notebooks/preparation/04_metric_derivation.qmd) documents metric
+derivation, and [Preparation
+06](../../../notebooks/preparation/06_model_ready_datasets.qmd) documents the
+model-ready fields and support.
+
+Clock values were linearized because their observed support was adequately
+linear. Night-time values use the specified negative-hour conversion where
+applicable; no circular response distribution was imposed merely because an
+outcome is clock-valued.
+
+```{r}
+#| label: tbl-h09-prep-metric-contract
+#| tbl-cap: "H09 metric definitions, analytical roles, and units."
+
+metric_registry |>
+  arrange(.data$metric_order) |>
+  transmute(
+    Order = .data$metric_order,
+    Metric = .data$manuscript_name,
+    Role = if_else(
+      .data$primary_family_member,
+      "Registered family member",
+      "Distinct sensitivity estimand"
+    ),
+    `Analysis unit` = str_replace_all(.data$analysis_unit, "_", " "),
+    Unit = .data$display_unit,
+    Definition = .data$value_definition
+  ) |>
+  gt::gt(rowname_col = "Order") |>
+  prep_gt(9)
+```
+
+### Exact primary and complementary samples
+
+Each metric and instrument uses its exact complete participant-day frame.
+Primary near-eye frames contain 131–141 participants and 478–816
+participant-days. Complementary chest frames contain 149–154 participants and
+547–902 participant-days.
+
+```{r}
+#| label: tbl-h09-prep-primary-samples
+#| tbl-cap: "Exact primary-dataset samples for the five registered timing outcomes."
+
+primary_registered_frames |>
+  arrange(
+    .data$placement_label,
+    .data$metric_order,
+    .data$instrument_id
+  ) |>
+  transmute(
+    Placement = .data$placement_label,
+    Metric = .data$manuscript_name,
+    Instrument = .data$instrument_id,
+    Participants = .data$participants,
+    `Participant-days` = .data$participant_days,
+    Observations = .data$observations,
+    `Derivation hours` = .data$derivation_hours,
+    Sites = .data$sites
+  ) |>
+  gt::gt(groupname_col = "Placement") |>
+  gt::fmt_integer(
+    columns = c(Participants, `Participant-days`, Observations, Sites),
+    use_seps = TRUE
+  ) |>
+  gt::fmt_number(columns = `Derivation hours`, decimals = 1, use_seps = TRUE) |>
+  prep_gt(9)
+```
+
+```{r}
+#| label: fig-h09-prep-sample-support
+#| fig-cap: "Metric- and instrument-specific participant and participant-day support in the primary near-eye and complementary chest analyses. Counts come directly from the stored H09 model-frame index."
+#| fig-alt: "Two stacked line-and-point panels show participant and participant-day counts across five registered timing metrics for MCTQ and MEQ. Chest counts are generally above near-eye counts; participant-day counts vary most for the longest-period midpoint."
+#| fig-width: 6.692913
+#| fig-height: 5.0
+#| out-width: "100%"
+
+sample_plot_data <- primary_registered_frames |>
+  select(
+    .data$metric_order,
+    .data$placement_label,
+    .data$instrument_id,
+    .data$participants,
+    .data$participant_days
+  ) |>
+  pivot_longer(
+    cols = c("participants", "participant_days"),
+    names_to = "quantity",
+    values_to = "count"
+  ) |>
+  mutate(
+    quantity = recode(
+      .data$quantity,
+      participants = "Participants",
+      participant_days = "Participant-days"
+    ),
+    series = paste(.data$placement_label, .data$instrument_id, sep = " — ")
+  )
+
+ggplot(
+  sample_plot_data,
+  aes(
+    x = .data$metric_order,
+    y = .data$count,
+    colour = .data$placement_label,
+    linetype = .data$instrument_id,
+    group = .data$series
+  )
+) +
+  geom_line(linewidth = 0.65) +
+  geom_point(size = 2) +
+  facet_wrap(vars(.data$quantity), scales = "free_y", ncol = 1) +
+  scale_colour_manual(values = c("Near eye" = "#0072B2", "Chest" = "#D55E00")) +
+  scale_x_continuous(breaks = seq_len(5L)) +
+  scale_y_continuous(labels = scales::label_comma()) +
+  labs(
+    x = "Registered metric order",
+    y = NULL,
+    colour = "Placement",
+    linetype = "Instrument"
+  ) +
+  theme_minimal(base_size = 9) +
+  theme(
+    panel.grid.minor = element_blank(),
+    strip.text = element_text(size = 9, face = "bold"),
+    axis.text = element_text(size = 8),
+    axis.title.x = element_text(size = 9, face = "bold"),
+    legend.position = "top",
+    legend.text = element_text(size = 8),
+    legend.title = element_text(size = 8.5)
+  )
+```
+
+The figure uses the exact
+[model-frame index](../../../artifacts/06_model_data/H09/H09_model_frame_index.csv)
+as its source record. Metric order follows the preceding table.
+
+### Placement and dataset common samples
+
+For the placement comparison, near-eye and chest effects were fitted
+separately using the same participants and participant-days within each metric
+and instrument. Their paired component estimates therefore share a sample,
+but they are not a direct placement-effect or equivalence test; no equivalence
+margin was prespecified. Primary and gap-timing-unaware effects likewise use
+the same participants and participant-days—a common sample—where the same
+estimand exists in both datasets. The registered longest-period midpoint is
+unavailable in the preparation-sensitivity artifact and is not imputed.
+
+```{r}
+#| label: tbl-h09-prep-common-samples
+#| tbl-cap: "Stored sample-identity checks for placement and dataset comparisons."
+
+tibble::tribble(
+  ~Comparison, ~Stored_pairs, ~Exact_keys, ~Qualification,
+  "Near eye versus chest", nrow(paired_audit), sum(paired_audit$exact_row_keys_match), "Six metrics × two instruments; placements fitted separately.",
+  "Primary versus gap-timing-unaware", nrow(gap_common_audit), sum(gap_common_audit$exact_row_keys_match, na.rm = TRUE), "Sixteen estimable exact pairs; four registered longest-period pairs unavailable."
+) |>
+  gt::gt() |>
+  gt::fmt_integer(columns = c(Stored_pairs, Exact_keys)) |>
+  gt::cols_label(
+    Stored_pairs = "Stored pairs",
+    Exact_keys = "Exact-key pairs"
+  ) |>
+  prep_gt(10)
+```
+
+## Models, estimands, uncertainty, and multiplicity
+
+### Exact formulae supplied to the models
+
+For each metric, placement, dataset, sample, and chronotype instrument, the
+site-only model is compared with an additive chronotype model. The additive
+model estimates the study-site-adjusted average association and includes a
+participant random effect, which represents remaining between-participant
+timing variation after site and chronotype are considered. A second comparison
+adds a chronotype-by-site interaction, allowing the chronotype association to
+differ by study site. The distinction between these two questions is recorded
+in [`DEV-038`](../../../notebooks/preregistration_deviations.qmd#dev-038).
+
+Each coefficient is a signed effect in local clock hours. Positive values mean
+the timing outcome occurs later per one-hour later MCTQ MSFsc or per 10 points
+greater MEQ morning preference; negative values mean earlier. Restricted
+maximum-likelihood additive fits provide coefficients and 95% Wald CIs;
+maximum-likelihood fits provide the nested likelihood-ratio tests. A
+natural-spline fit is used only to assess whether the observed predictor
+support is adequately represented as linear.
+
+```{r}
+#| label: tbl-h09-prep-primary-formulas
+#| tbl-cap: "Exact stored Wilkinson formulae for the principal models and linearity model check."
+
+formula_registry |>
+  filter(.data$analysis_kind == "approved_participant_day") |>
+  mutate(
+    Role = recode(
+      .data$formula_id,
+      M0_site_only = "Site-only comparison model",
+      M1_main = "Additive chronotype model",
+      M2_interaction = "Chronotype-by-site interaction model",
+      D_spline = "Linearity model check"
+    )
+  ) |>
+  transmute(
+    Instrument = .data$instrument,
+    Role,
+    `Formula supplied` = .data$formula
+  ) |>
+  gt::gt(groupname_col = "Instrument") |>
+  prep_gt(9)
+```
+
+The sensitivity formulae retain the same chronotype definitions. Photoperiod
+is centered within site and added without an unsupported interaction, and
+participant-summary models use one outcome mean per participant. Measurements
+closer in time may retain more similar residuals, a dependence called
+autocorrelation. Continuous-time first-order autoregressive, or AR(1), fits
+represent this dependence as stronger at shorter elapsed-time gaps and use
+elapsed day only for the within-participant correlation structure.
+
+```{r}
+#| label: tbl-h09-prep-sensitivity-formulas
+#| tbl-cap: "Exact stored formula components for structured model sensitivities."
+
+formula_registry |>
+  filter(.data$analysis_kind %in% c(
+    "photoperiod_sensitivity",
+    "participant_summary_sensitivity",
+    "continuous_time_ar1_sensitivity"
+  )) |>
+  mutate(
+    Analysis = recode(
+      .data$analysis_kind,
+      photoperiod_sensitivity = "Within-site photoperiod",
+      participant_summary_sensitivity = "Participant summary",
+      continuous_time_ar1_sensitivity = "Continuous-time AR(1)"
+    )
+  ) |>
+  transmute(
+    Analysis,
+    Instrument = .data$instrument,
+    Component = .data$formula_id,
+    `Formula supplied` = .data$formula
+  ) |>
+  gt::gt(groupname_col = "Analysis") |>
+  prep_gt(8)
+```
+
+### Multiplicity families
+
+FDR adjustment is applied in four separate five-outcome families: MCTQ average
+associations, MEQ average associations, MCTQ-by-site
+interactions, and MEQ-by-site interactions. Near-eye, chest, paired, and
+preparation-sensitivity runs retain separate family instances. Significance is
+decided from unrounded adjusted values before three-decimal display.
+Site-specific slopes are descriptive unless the global chronotype-by-site
+interaction family supports heterogeneity. The complete-family choice is
+recorded in
+[`DEV-039`](../../../notebooks/preregistration_deviations.qmd#dev-039); the
+[H09 results deviation section](../../../notebooks/hypotheses/H09.qmd#h09-preregistration-deviations)
+summarizes all three current scientific deviations.
+
+```{r}
+#| label: tbl-h09-prep-families
+#| tbl-cap: "Registered H09 multiplicity families."
+
+family_registry |>
+  transmute(
+    Family = case_when(
+      .data$instrument_id == "MCTQ" & .data$test_kind == "main" ~
+        "MCTQ average associations",
+      .data$instrument_id == "MEQ" & .data$test_kind == "main" ~
+        "MEQ average associations",
+      .data$instrument_id == "MCTQ" & .data$test_kind == "interaction" ~
+        "MCTQ-by-site interactions",
+      .data$instrument_id == "MEQ" & .data$test_kind == "interaction" ~
+        "MEQ-by-site interactions"
+    ),
+    Instrument = .data$instrument_id,
+    Test = if_else(
+      .data$test_kind == "main",
+      "Average association",
+      "Chronotype-by-site interaction"
+    ),
+    Comparison = if_else(
+      .data$test_kind == "main",
+      "Site-only versus average-association model",
+      "Average-association versus interaction model"
+    ),
+    `Planned outcomes` = .data$planned_n,
+    Adjustment = "FDR",
+    Rule = "FDR-adjusted p < 0.050"
+  ) |>
+  gt::gt() |>
+  gt::fmt_integer(columns = `Planned outcomes`) |>
+  prep_gt(10)
+```
+
+## Model checks, influence, and limitations
+
+Sixteen model-check domains (model diagnostics) were interpreted for each of
+24 primary metric-by-instrument-by-placement targets. Stored checks cover
+questionnaire provenance, sample and join identity, site support, clock
+representation, linearity, residual distribution and spread, convergence,
+singularity, rank, temporal dependence, participant and site influence,
+placement identity, preparation sensitivity, and multiplicity.
+
+Visual inspection of the complete residual panels supported acceptable final
+response/residual distribution and heteroscedasticity assessments. The
+quantitative screen values remain stored. Eighteen targets are acceptable
+across all domains; six retain an influence, interaction-fit, or unavailable
+preparation-sensitivity limitation.
+
+```{r}
+#| label: tbl-h09-prep-diagnostic-summary
+#| tbl-cap: "Stored final model-check assessments and retained quantitative screens."
+
+tibble::tribble(
+  ~Record, ~Targets_or_rows, ~Acceptable_or_clear, ~Limitations_or_screen_flags, ~Interpretation,
+  "Overall target assessment", nrow(diagnostic_summary), sum(diagnostic_summary$overall_assessment == "acceptable"), sum(diagnostic_summary$overall_assessment == "not acceptable"), "Final interpreted assessment across 16 domains.",
+  "Integrated distribution check", nrow(diagnostic_summary), sum(diagnostic_adjudication$domain == "Response and residual distribution" & diagnostic_adjudication$numeric_screen_assessment == "acceptable"), sum(diagnostic_adjudication$domain == "Response and residual distribution" & diagnostic_adjudication$numeric_screen_assessment == "not acceptable"), "Eight conservative screen flags retained; the final visual assessment is acceptable.",
+  "Lower-level distribution screen", nrow(residual_diagnostics), sum(residual_diagnostics$distribution_assessment == "acceptable"), sum(residual_diagnostics$distribution_assessment == "not acceptable"), "Fourteen all-threshold flags retained, including outlier-only flags.",
+  "Heteroscedasticity check", nrow(residual_diagnostics), sum(residual_diagnostics$heteroscedasticity_assessment == "acceptable"), sum(residual_diagnostics$heteroscedasticity_assessment == "not acceptable"), "Four conservative screen flags retained; the final visual assessment is acceptable."
+) |>
+  gt::gt() |>
+  gt::fmt_integer(
+    columns = c(
+      Targets_or_rows,
+      Acceptable_or_clear,
+      Limitations_or_screen_flags
+    )
+  ) |>
+  gt::cols_label(
+    Targets_or_rows = "Targets or rows",
+    Acceptable_or_clear = "Acceptable or clear",
+    Limitations_or_screen_flags = "Retained limitations or screen flags"
+  ) |>
+  prep_gt(9)
+```
+
+The retained limitations among those six targets have specific
+interpretations. The two near-eye last-timing slopes were close to zero and
+changed direction under some
+participant-deletion and leave-one-site-out checks, although no deletion
+changed a slope by the material 0.25-hour threshold. The chest
+longest-period/MEQ maximum-likelihood chronotype-by-site interaction fit was
+singular; its additive average-association fit remained estimable. The
+registered longest-period outcome was unavailable in the gap-timing-unaware
+prepared artifact at both placements and for both instruments. Fixed-effect
+matrices were full rank and Hessians positive definite for all stored fits.
+
+The complete [model-check registry](../../../artifacts/08_diagnostics/H09/H09_diagnostic_assessment_registry.csv),
+[screen-to-final assessment record](../../../artifacts/08_diagnostics/H09/H09_diagnostic_author_adjudication.csv),
+[participant-influence summary](../../../artifacts/08_diagnostics/H09/H09_participant_influence_summary.csv),
+and [leave-one-site-out summary](../../../artifacts/08_diagnostics/H09/H09_leave_one_site_out_summary.csv)
+preserve the values and assessment basis. No model-check flag automatically
+removes an observation.
+
+## Named sensitivity analyses
+
+Each sensitivity analysis changes one specified component: dataset timing-gap
+handling, placement, within-site photoperiod adjustment, participant-level
+summarization, repeated-measure autocorrelation, the L10 clock cut, or the
+alternative mean-timing outcome. These are comparisons of prespecified or
+approved analysis components, not new outcome searches.
+
+```{r}
+#| label: tbl-h09-prep-sensitivity-map
+#| tbl-cap: "H09 sensitivity branches, stored scope, and interpretive role."
+
+registered_gap <- gap_sensitivity |>
+  filter(.data$metric_id != "mean_timing_above_250")
+estimable_registered_gap <- registered_gap |>
+  filter(.data$metric_id != "longest_period_midpoint")
+
+tibble::tribble(
+  ~Sensitivity, ~Stored_scope, ~Question, ~Reporting_rule,
+  "Gap-timing-unaware exact common sample", paste0(nrow(estimable_registered_gap), " estimable comparisons; ", sum(estimable_registered_gap$exact_common_keys), " exact key matches"), "Does the registered estimand change when remaining-gap time of day is not used?", "Primary and sensitivity fits remain separate; the registered longest-period outcome is unavailable.",
+  "Same-participant and same-day placement", paste0(nrow(paired_effects), " metric-by-instrument comparisons; all exact samples"), "Are separately fitted near-eye and chest component estimates similar for the same participants and participant-days?", "No pooling, direct placement-effect test, difference interval, or equivalence claim.",
+  "Within-site photoperiod", paste0(nrow(photoperiod), " stored fits"), "Does linear within-site photoperiod adjustment materially change the chronotype slope?", "Photoperiod enters only as a centered within-site additive covariate.",
+  "Equal-weight participant summary", paste0(nrow(participant_summary), " stored fits"), "Does giving each participant one outcome summary change the pattern?", "Fixed-site participant-level sensitivity, reported separately.",
+  "Continuous-time AR(1)", paste0(nrow(ar1), " stored fits"), "Does residual autocorrelation, represented as stronger at shorter elapsed-time gaps, materially change the slope?", "Elapsed day enters only the correlation structure.",
+  "L10 clock cut", paste0(nrow(l10_cut), " stored comparisons"), "Does changing the registered strict >16:00 negative-hour conversion to a noon cut materially change the slope?", "Direction, interval overlap, and slope change are retained.",
+  "Mean timing above 250 lx melEDI", paste0(nrow(fifth_outcome |> filter(.data$metric_id == "mean_timing_above_250")), " stored estimates"), "What does the distinct duration-weighted mean-timing estimand show?", "Outside the registered five-outcome families; not substituted for longest-period midpoint."
+) |>
+  gt::gt() |>
+  gt::cols_width(
+    Sensitivity ~ gt::pct(22),
+    Stored_scope ~ gt::pct(20),
+    Question ~ gt::pct(30),
+    Reporting_rule ~ gt::pct(28)
+  ) |>
+  prep_gt(9)
+```
+
+Complete sensitivity records retain exact fitted samples, 95% CIs, and
+stability classifications:
+
+- [dataset preparation](../../../artifacts/09_tables/H09/H09_gap_timing_unaware_sensitivity.csv);
+- [paired placement](../../../artifacts/09_tables/H09/H09_paired_placement_effects.csv);
+- [within-site photoperiod](../../../artifacts/09_tables/H09/H09_photoperiod_sensitivity.csv);
+- [participant summaries](../../../artifacts/09_tables/H09/H09_participant_summary_sensitivity.csv);
+- [continuous-time AR(1)](../../../artifacts/09_tables/H09/H09_ar1_sensitivity.csv);
+- [L10 clock cut](../../../artifacts/09_tables/H09/H09_l10_cut_sensitivity.csv); and
+- [registered midpoint and mean-timing estimands](../../../artifacts/09_tables/H09/H09_fifth_outcome_sensitivity.csv).
+
+## Technical provenance
+
+The material below documents the execution and file-provenance chain. The
+executable cells are designed to perform only bounded identity, schema, count,
+key, and checksum checks and lightweight descriptions during a future
+authorized render. They read stored estimates, model checks, influence
+summaries, sensitivities, and figures; they do not fit or compare models,
+predict, simulate, bootstrap, resample, or recompute scientific results.
+
+### Bounded calculations defined for this page
+
+```{r}
+#| label: tbl-h09-prep-boundary
+#| tbl-cap: "Bounded calculations defined for this page."
+
+tibble::tribble(
+  ~Category, ~Calculated_on_render, ~Explanation,
+  "File identity and schema", "Yes", "Checks recorded SHA-256 identities, required columns, row counts, and manifest entries.",
+  "Sample descriptions", "Yes", "Summarises counts already stored in the H09 model-frame index; it does not recreate a frame.",
+  "Model construction or estimation", "No", "Reads formula, fit, effect, and test registries without fitting or comparing a model.",
+  "Model checks and sensitivities", "No", "Summarises recorded assessments; no residual, influence, temporal, or sensitivity calculation is repeated.",
+  "Descriptive support figure", "Display only", "Plots exact participant and participant-day counts from the linked model-frame index."
+) |>
+  gt::gt() |>
+  gt::cols_width(
+    Category ~ gt::pct(24),
+    Calculated_on_render ~ gt::pct(18),
+    Explanation ~ gt::pct(58)
+  ) |>
+  gt::cols_label(Calculated_on_render = "Calculated on render") |>
+  prep_gt()
+```
+
+### Stored intermediate quantities
+
+The analysis driver wrote one stored frame identity per estimable target and
+five stored model records per frame. Effects and tests were kept in separate
+tables before being assembled into the master result table.
+
+```{r}
+#| label: tbl-h09-prep-intermediate-artifacts
+#| tbl-cap: "Intermediate H09 quantities persisted before reader reporting."
+
+tibble::tribble(
+  ~Intermediate, ~Rows_or_objects, ~Purpose, ~Path,
+  "Model-frame index", nrow(frame_index), "Exact samples, row hashes, frame hashes, and derivation hours", "artifacts/06_model_data/H09/H09_model_frame_index.csv",
+  "Model-frame archive", nrow(frame_index), "Stored participant-day frames keyed by frame_id", "artifacts/06_model_data/H09/H09_model_frames.rds",
+  "Model-fit index", nrow(fit_index), "Fit status, convergence, Hessian, singularity, and rank fields", "artifacts/07_models/H09/H09_model_fit_index.csv",
+  "Effect table", nrow(model_effects), "Additive coefficients and 95% CIs", "artifacts/09_tables/H09/H09_model_effects.csv",
+  "Test table", nrow(model_tests), "Main and interaction likelihood-ratio tests", "artifacts/09_tables/H09/H09_model_tests.csv",
+  "Multiplicity-family record", nrow(family_audit), "Complete-family membership and independent FDR verification", "artifacts/09_tables/H09/H09_family_audit.csv",
+  "Model-check registry", nrow(diagnostic_registry), "Sixteen explicit domains for each primary target", "artifacts/08_diagnostics/H09/H09_diagnostic_assessment_registry.csv"
+) |>
+  gt::gt() |>
+  gt::fmt_integer(columns = Rows_or_objects, use_seps = TRUE) |>
+  gt::cols_label(Rows_or_objects = "Rows or objects") |>
+  prep_gt(9)
+```
+
+### Code map and execution order
+
+#### Function modules
+
+```{r}
+#| label: tbl-h09-prep-code-map
+#| tbl-cap: "H09 and shared modules used by the analytical and reporting chain."
+
+tibble::tribble(
+  ~Path, ~Responsibility, ~Scientific_role, ~Boundary,
+  "scripts/pipeline/paths_io.R", "Typed artifact writing and SHA-256 helpers", "Records file identity, bytes, producer, and R version.", "No scientific model logic.",
+  "scripts/pipeline/p_value_display.R", "P-value display rules", "Formats p-values after unrounded decisions are made.", "No inferential decision is recalculated for display.",
+  "scripts/hypotheses/H09/h09_contract.R", "Inputs, predictors, metrics, runs, formulae, families, and thresholds", "Defines the complete H09 specification before fitting.", "Contains no fitted result.",
+  "scripts/hypotheses/H09/h09_modeling.R", "Frame construction, model fitting, effects, diagnostics, and sensitivity helpers", "Implements scientific operations against the contract.", "Called only by the analysis driver, never by this page."
+) |>
+  gt::gt() |>
+  gt::cols_label(Scientific_role = "Scientific role") |>
+  prep_gt(9)
+```
+
+#### Executable and reporting entry points
+
+```{r}
+#| label: tbl-h09-prep-script-map
+#| tbl-cap: "H09 scripts and documents in analytical and reporting order."
+
+tibble::tribble(
+  ~Order, ~Entry_point, ~Reads, ~Writes_or_displays, ~Runs_scientific_models,
+  1L, "run_h09_stage2.R", "Verified inputs plus H09 contract and modeling functions", "Frames, stored fits, effects, tests, diagnostics, sensitivities, figures, source CSVs, and execution records", "Yes; bounded analysis driver",
+  2L, "finalize_h09_figure_qa.R", "Figure manifest and final PNG/PDF exports", "Final-size visual-QA assessments", "No",
+  3L, "test_h09_stage2.R", "Scientific and reporting artifacts", "Hypothesis-scoped assertions", "No",
+  4L, "H09.qmd", "Stored effects, tests, diagnostics, sensitivities, and figures", "Standalone scientific results report", "No",
+  5L, "build_h09_stage3_manifest.R", "Reader report plus accepted H09 chain", "Reader-report checksum inventory", "No",
+  6L, "H09_analysis_preparation.qmd", "Stored registries, indexes, diagnostics, sensitivities, and manifests", "This preparation and provenance companion", "No",
+  7L, "build_h09_preparation_report_manifest.R", "Final source, render, scripts, outputs, source data, and environment", "Non-circular preparation-report manifest", "No",
+  8L, "test_h09_preparation_report.R", "Preparation source, render, reciprocal links, and manifest", "Hypothesis-scoped structural and provenance assertions", "No"
+) |>
+  gt::gt() |>
+  gt::fmt_integer(columns = Order) |>
+  gt::cols_label(
+    Entry_point = "Entry point",
+    Writes_or_displays = "Writes or displays",
+    Runs_scientific_models = "Runs scientific models"
+  ) |>
+  prep_gt(8)
+```
+
+The scientific build was recorded under R 4.6.1 with the existing project
+library. No production bootstrap, simulation, or other resampling was run.
+
+```text
+Rscript --vanilla scripts/hypotheses/H09/run_h09_stage2.R
+Rscript --vanilla scripts/hypotheses/H09/finalize_h09_figure_qa.R
+Rscript --vanilla tests/hypotheses/H09/test_h09_stage2.R
+quarto render notebooks/hypotheses/H09.qmd --profile nathealth
+quarto render audit/hypotheses/H09/H09_analysis_preparation.qmd --profile nathealth
+```
+
+### Output and checksum provenance
+
+The accepted reader-report manifest inventories code, tests, contracts,
+scientific outputs, figures, source data, and the rendered result. On render,
+this page verifies every manifest identity except the two continuing handoff
+documents, which are intentionally updated at later review points.
+
+```{r}
+#| label: tbl-h09-prep-reader-manifest-check
+#| tbl-cap: "Bounded verification of the accepted H09 reader-report manifest."
+
+mutable_records <- c(
+  "audit/handoffs/H09_worker_handoff.md",
+  "audit/handoffs/H09_shared_change_request.md"
+)
+immutable_reader_manifest <- reader_manifest |>
+  filter(!.data$path %in% mutable_records)
+manifest_paths <- file.path(root, immutable_reader_manifest$path)
+manifest_exists <- file.exists(manifest_paths)
+manifest_hash_match <- rep(FALSE, length(manifest_paths))
+manifest_hash_match[manifest_exists] <- vapply(
+  manifest_paths[manifest_exists],
+  artifact_sha256,
+  character(1)
+) == immutable_reader_manifest$sha256[manifest_exists]
+
+manifest_check <- tibble::tibble(
+  Check = c(
+    "Immutable manifest paths exist",
+    "Immutable SHA-256 identities match",
+    "Manifest rows are unique",
+    "Recorded R version"
+  ),
+  Observed = c(
+    paste0(sum(manifest_exists), " / ", length(manifest_exists)),
+    paste0(sum(manifest_hash_match), " / ", length(manifest_hash_match)),
+    paste0(nrow(reader_manifest) - anyDuplicated(reader_manifest$path), " unique-row result"),
+    paste(sort(unique(reader_manifest$r_version)), collapse = ", ")
+  ),
+  Status = c(
+    if_else(all(manifest_exists), "PASS", "FAIL"),
+    if_else(all(manifest_hash_match), "PASS", "FAIL"),
+    if_else(!anyDuplicated(reader_manifest$path), "PASS", "FAIL"),
+    if_else(all(reader_manifest$r_version == "4.6.1"), "PASS", "FAIL")
+  )
+)
+stopifnot(all(manifest_check$Status == "PASS"))
+
+manifest_check |>
+  gt::gt() |>
+  prep_gt(10)
+```
+
+```{r}
+#| label: tbl-h09-prep-key-output-identities
+#| tbl-cap: "Selected reader-report, result, model-check, sensitivity, and figure identities."
+
+key_output_paths <- c(
+  "notebooks/hypotheses/H09.qmd",
+  "artifacts/09_tables/H09/H09_model_results_master.csv",
+  "artifacts/08_diagnostics/H09/H09_diagnostic_assessment_registry.csv",
+  "artifacts/08_diagnostics/H09/H09_diagnostic_author_adjudication.csv",
+  "artifacts/09_tables/H09/H09_gap_timing_unaware_sensitivity.csv",
+  "artifacts/10_figures/H09/H09_primary_effects.png",
+  "artifacts/11_source_data/H09/H09_primary_effects_data.csv",
+  "artifacts/12_manifests/H09/H09_figure_manifest.csv",
+  "artifacts/12_manifests/H09/H09_execution_record.csv"
+)
+
+reader_manifest |>
+  filter(.data$path %in% key_output_paths) |>
+  mutate(
+    `SHA-256 prefix` = substr(.data$sha256, 1L, 16L),
+    `Bytes` = .data$bytes
+  ) |>
+  select(Path = .data$path, `SHA-256 prefix`, Bytes) |>
+  gt::gt() |>
+  gt::fmt_integer(columns = Bytes, use_seps = TRUE) |>
+  gt::tab_source_note(
+    "Complete identities remain in artifacts/12_manifests/H09/H09_stage3_artifacts.csv."
+  ) |>
+  prep_gt(9)
+```
+
+The final [figure manifest](../../../artifacts/12_manifests/H09/H09_figure_manifest.csv)
+records PNG/PDF paths, intended display width, export scaling, final-size text,
+visual inspection, alt text, and paired source CSVs. The
+[reader-report manifest](../../../artifacts/12_manifests/H09/H09_stage3_artifacts.csv)
+provides the complete accepted result-chain inventory. A separate preparation
+manifest seals this page after rendering, so the page never attempts to hash
+its own final HTML during its creation.
+
+### How to examine or reproduce H09
+
+1. Verify the 11 result-producing inputs against
+   `H09_input_audit.csv`.
+2. Inspect the chronotype support and centering constants in
+   `H09_chronotype_score_audit.csv` and the exact value-preservation audit.
+3. Inspect metric, predictor, run, formula, family, and threshold registries.
+4. Inspect the 108-row model-frame index and exact row/frame hashes before
+   opening the stored frame archive.
+5. Re-run the bounded analysis driver only under R 4.6.1 and the existing
+   project library when scientific reproduction is intended.
+6. Compare effects, tests, complete-family adjustment, model checks,
+   sensitivities, figures, and source CSVs with the reader report.
+7. Verify the final reader and preparation manifests against the current
+   checkout.
+
+No package installation, lockfile update, full-project render, or unrestricted
+environment scan is required for these checks.
+
+### Environment
+
+```{r}
+#| label: tbl-h09-prep-execution
+#| tbl-cap: "Recorded scientific execution environment."
+
+execution |>
+  transmute(
+    `R version` = .data$r_version,
+    Platform = .data$platform,
+    `Model frames` = .data$model_frames,
+    `Stored model objects` = .data$fitted_model_objects,
+    `Primary model-check targets` = .data$diagnostic_targets,
+    `Production resampling replicates` =
+      .data$production_resampling_replicates,
+    `Run completed (UTC)` = .data$run_completed_utc
+  ) |>
+  gt::gt() |>
+  gt::fmt_integer(
+    columns = c(
+      `Model frames`,
+      `Stored model objects`,
+      `Primary model-check targets`,
+      `Production resampling replicates`
+    ),
+    use_seps = TRUE
+  ) |>
+  prep_gt(9)
+```
+
+The complete [package-version record](../../../artifacts/12_manifests/H09/H09_package_versions.csv)
+and project `renv.lock` identify the software environment. The current
+timing-support qualification described in [Preparation
+04](../../../notebooks/preparation/04_metric_derivation.qmd) carries forward:
+not every shared metric and timing-support value has an independent
+reconstruction against the current file identities.
+
+```{r}
+#| label: h09-preparation-session-information
+#| code-fold: true
+#| code-summary: "R session information"
+
+sessionInfo()
+```

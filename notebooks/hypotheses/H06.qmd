@@ -1,43 +1,1685 @@
 ---
-title: "H06: Day type, exercise, sleep, and light exposure"
-params:
-  placement: glasses
-  scenario: primary
+title: "H06: Day type, exercise, sleep, and personal light exposure"
+subtitle: "Associations with mean hourly melanopic equivalent daylight illuminance among observed hours that met support criteria"
+date: "2026-08-11"
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    lightbox: true
+    embed-resources: true
+    css: H06.css
+    code-fold: true
+    code-summary: "Show analysis code"
+execute:
+  echo: false
+  warning: false
+  message: false
+resources:
+  - ../../artifacts/06_model_data/H06/H06_category_cells.csv
+  - ../../artifacts/09_tables/H06/H06_stage3_site_specific_significance_screen.csv
+  - ../../artifacts/11_source_data/H06/H06_reader_primary_effects_figure.csv
+  - ../../artifacts/11_source_data/H06/H06_stage3_site_specific_significance_screen_figure.csv
+  - ../../artifacts/11_source_data/H06/H06_paired_placement_effects_figure.csv
+  - ../../artifacts/11_source_data/H06/H06_primary_residual_clock_figure.csv
+  - ../../artifacts/11_source_data/H06/H06_reader_temporal_day_type_curves.csv
+  - ../../artifacts/11_source_data/H06/H06_reader_temporal_day_type_ratios.csv
+  - ../../artifacts/11_source_data/H06/H06_reader_temporal_day_type_support.csv
+  - ../../artifacts/11_source_data/H06/H06_reader_temporal_activity_curves.csv
+  - ../../artifacts/11_source_data/H06/H06_reader_temporal_activity_ratios.csv
+  - ../../artifacts/11_source_data/H06/H06_reader_temporal_activity_support.csv
+  - ../../artifacts/11_source_data/H06/H06_primary_work_free_site_deviations.csv
+  - ../../artifacts/06_model_data/H06/employment_eligibility_sensitivity/H06_employment_eligibility_sample_flow.csv
+  - ../../artifacts/09_tables/H06/employment_eligibility_sensitivity/H06_employment_eligibility_effect_comparison.csv
+  - ../../artifacts/09_tables/H06/employment_eligibility_sensitivity/H06_employment_eligibility_heterogeneity_comparison.csv
+editor: source
 ---
 
-## What this notebook checks
+```{r}
+#| label: setup
 
-Define exactly how day type, exercise, and sleep are coded and confirm that the
-analysed exposure outcome matches the approved definition. Account for
-repeated measurements and similarity between measurements close in time.
-Whenever an interaction---a test of whether an association differs across
-groups---is included, retain the corresponding individual terms. Define the
-groups of \(p\)-values adjusted together for the H06 site comparisons before
-inspecting results.
+locate_project_root <- function(start = getwd()) {
+  candidate <- normalizePath(start, winslash = "/", mustWork = TRUE)
+  repeat {
+    if (
+      file.exists(file.path(candidate, "renv.lock")) &&
+        file.exists(file.path(candidate, "_quarto.yml"))
+    ) {
+      return(candidate)
+    }
+    parent <- dirname(candidate)
+    if (identical(parent, candidate)) {
+      stop("Could not locate the project root", call. = FALSE)
+    }
+    candidate <- parent
+  }
+}
 
-## What this notebook uses and produces
+h06_root <- locate_project_root()
+source(file.path(h06_root, "scripts", "pipeline", "paths_io.R"))
+source(file.path(h06_root, "scripts", "pipeline", "p_value_display.R"))
+source(file.path(
+  h06_root, "scripts", "hypotheses", "H06", "h06_contract.R"
+))
+knitr::opts_knit$set(
+  root.dir = file.path(h06_root, "notebooks", "hypotheses")
+)
 
-- Uses: the prepared H06 dataset in `artifacts/06_model_data/H06.rds`.
-- Produces: definitions of the day type, exercise, and sleep variables; fitted
-  models; raw and adjusted tests; model checks; effect estimates in
-  interpretable units with 95% confidence intervals; the exact participants,
-  participant-days, hourly observations, and sites used by each model; counts
-  for every day-type and exercise category overall and by site; the usable
-  sleep observations in each fitted sleep model; tables; figures; and source
-  data.
-- Data sensitivity: fit this identical H06 implementation to the
-  manuscript-prepared dataset and compare exact samples, category counts,
-  estimates, 95% confidence intervals, diagnostics, and conclusions.
-- Formula display: the completed audit must contain a visible evaluated code
-  cell printing the exact Wilkinson formulas passed to the selected model and
-  every fitted comparison model.
+options(dplyr.summarise.inform = FALSE)
+
+artifact <- function(...) file.path(h06_root, "artifacts", ...)
+read_h06 <- function(...) {
+  readr::read_csv(artifact(...), show_col_types = FALSE, na = "")
+}
+
+samples <- read_h06("06_model_data", "H06", "H06_exact_samples.csv")
+multiplicity <- read_h06(
+  "06_model_data", "H06", "H06_multiplicity_registry.csv"
+)
+package_versions <- read_h06(
+  "06_model_data", "H06", "H06_package_versions.csv"
+)
+primary_contrasts <- read_h06(
+  "09_tables", "H06", "H06_robust_F3_practical_contrasts.csv"
+)
+wald_tests <- read_h06(
+  "09_tables", "H06", "H06_robust_wald_tests.csv"
+)
+sensitivity <- read_h06(
+  "09_tables", "H06", "H06_robust_sensitivity_comparisons.csv"
+)
+employment_eligibility_flow <- read_h06(
+  "06_model_data", "H06", "employment_eligibility_sensitivity",
+  "H06_employment_eligibility_sample_flow.csv"
+)
+employment_eligibility_effects <- read_h06(
+  "09_tables", "H06", "employment_eligibility_sensitivity",
+  "H06_employment_eligibility_effect_comparison.csv"
+)
+employment_eligibility_heterogeneity <- read_h06(
+  "09_tables", "H06", "employment_eligibility_sensitivity",
+  "H06_employment_eligibility_heterogeneity_comparison.csv"
+)
+exploratory_effects <- read_h06(
+  "09_tables", "H06", "H06_robust_exploratory_effects.csv"
+)
+fit_diagnostics <- read_h06(
+  "08_diagnostics", "H06", "H06_robust_fit_diagnostics.csv"
+)
+calibration <- read_h06(
+  "08_diagnostics", "H06", "H06_robust_fitted_decile_calibration.csv"
+)
+residual_acf <- read_h06(
+  "08_diagnostics", "H06", "H06_robust_residual_acf.csv"
+)
+influence <- read_h06(
+  "08_diagnostics", "H06", "H06_robust_influence_deletions.csv"
+)
+two_part_fit <- read_h06(
+  "08_diagnostics", "H06", "H06_exploratory_two_part_fit_summary.csv"
+)
+two_part_k <- read_h06(
+  "08_diagnostics", "H06", "H06_exploratory_two_part_k_sensitivity.csv"
+)
+two_part_k_check <- read_h06(
+  "08_diagnostics", "H06", "H06_exploratory_two_part_k_check.csv"
+)
+two_part_formula_registry <- read_h06(
+  "06_model_data", "H06", "H06_exploratory_two_part_formula_registry.csv"
+)
+two_part_day_type_predictions <- read_h06(
+  "11_source_data", "H06",
+  "H06_exploratory_two_part_day_type_predictions.csv"
+)
+two_part_activity_predictions <- read_h06(
+  "11_source_data", "H06",
+  "H06_exploratory_two_part_activity_predictions.csv"
+)
+temporal_contrasts <- read_h06(
+  "11_source_data", "H06",
+  "H06_exploratory_two_part_temporal_contrasts.csv"
+)
+work_free_site_deviations <- read_h06(
+  "11_source_data", "H06",
+  "H06_primary_work_free_site_deviations.csv"
+)
+site_specific_screen <- read_h06(
+  "09_tables", "H06",
+  "H06_stage3_site_specific_significance_screen.csv"
+)
+
+stage2_figure_qa <- read_h06(
+  "12_manifests", "H06", "H06_stage2_figure_readability_qa.csv"
+)
+reader_display_qa <- read_h06(
+  "12_manifests", "H06",
+  "H06_stage3_reader_display_figure_readability_qa.csv"
+)
+site_screen_figure_qa <- read_h06(
+  "12_manifests", "H06",
+  "H06_stage3_site_specific_significance_figure_readability_qa.csv"
+)
+
+predictor_labels <- c(
+  work_free_day = "Free day versus work day",
+  activity_status = "Active versus sedentary",
+  previous_sleep_duration_centered_h = "Previous sleep duration (per hour)"
+)
+
+display_predictor <- function(x) {
+  out <- unname(predictor_labels[x])
+  out[is.na(out)] <- x[is.na(out)]
+  out
+}
+
+format_effect <- function(estimate, low, high, digits = 2L) {
+  sprintf(
+    paste0("%.", digits, "f × (%.", digits, "f–%.", digits, "f)"),
+    estimate, low, high
+  )
+}
+
+format_p_cell <- function(value, significant = FALSE) {
+  display <- nh_p_value_display(value, significant = significant)
+  ifelse(
+    display$p_bold,
+    paste0("**", display$p_display, "**"),
+    display$p_display
+  )
+}
+
+compact_gt <- function(
+  data,
+  title = NULL,
+  subtitle = NULL,
+  source_note = NULL,
+  groupname_col = NULL,
+  font_size = 12
+) {
+  output <- if (inherits(data, "gt_tbl")) {
+    data
+  } else {
+    gt::gt(data, groupname_col = groupname_col)
+  }
+  output <- output |>
+    gt::opt_row_striping() |>
+    gt::sub_missing(missing_text = "—") |>
+    gt::tab_options(
+      table.width = gt::pct(100),
+      table.font.size = gt::px(font_size),
+      data_row.padding = gt::px(5),
+      column_labels.font.weight = "600",
+      heading.align = "left",
+      source_notes.font.size = gt::px(11)
+    )
+  if (!is.null(title) || !is.null(subtitle)) {
+    output <- gt::tab_header(output, title = title, subtitle = subtitle)
+  }
+  if (!is.null(source_note)) {
+    output <- gt::tab_source_note(output, source_note = source_note)
+  }
+  output
+}
+
+primary_run <- "main__glasses__all_available"
+primary_results <- primary_contrasts |>
+  dplyr::filter(.data$run_id == primary_run) |>
+  dplyr::mutate(
+    Predictor = display_predictor(.data$predictor_id),
+    `Ratio (95% CI)` = format_effect(
+      .data$estimate_ratio,
+      .data$conf_low_ratio,
+      .data$conf_high_ratio
+    ),
+    `FDR-adjusted p` = format_p_cell(
+      .data$p_adjusted,
+      .data$p_adjusted <= 0.05
+    )
+  )
+
+primary_heterogeneity <- wald_tests |>
+  dplyr::filter(
+    .data$run_id == primary_run,
+    .data$family_id == multiplicity$family_id[
+      multiplicity$content ==
+        "Primary near-eye site-heterogeneity tests"
+    ]
+  ) |>
+  dplyr::mutate(
+    Predictor = display_predictor(.data$predictor_id),
+    Test = sprintf(
+      "F(%d, %d) = %.2f",
+      .data$restrictions,
+      .data$denominator_df,
+      .data$f_statistic
+    ),
+    `FDR-adjusted p` = format_p_cell(
+      .data$p_adjusted,
+      .data$p_adjusted <= 0.05
+    )
+  )
+
+calibration_ranges <- calibration |>
+  dplyr::group_by(.data$run_id, .data$model_role) |>
+  dplyr::summarise(
+    calibration_low = min(.data$observed_to_fitted_ratio),
+    calibration_high = max(.data$observed_to_fitted_ratio),
+    .groups = "drop"
+  )
+
+lag_summary <- residual_acf |>
+  dplyr::filter(
+    .data$model_role == "additive",
+    .data$lag_hours %in% c(1, 6)
+  ) |>
+  dplyr::select(
+    .data$run_id,
+    .data$lag_hours,
+    .data$residual_correlation
+  ) |>
+  tidyr::pivot_wider(
+    names_from = .data$lag_hours,
+    values_from = .data$residual_correlation,
+    names_prefix = "lag_"
+  )
+
+diagnostic_summary <- fit_diagnostics |>
+  dplyr::filter(.data$model_role == "additive") |>
+  dplyr::left_join(calibration_ranges, by = c("run_id", "model_role")) |>
+  dplyr::left_join(lag_summary, by = "run_id")
+
+influence_summary <- influence |>
+  dplyr::mutate(
+    ci_excludes_one =
+      .data$deletion_conf_low_ratio > 1 |
+        .data$deletion_conf_high_ratio < 1
+  ) |>
+  dplyr::group_by(.data$deletion_type, .data$predictor_id) |>
+  dplyr::summarise(
+    Deletions = dplyr::n(),
+    `Largest shift (HC3 SE)` = max(.data$absolute_shift_full_hc3_se),
+    `CIs excluding 1` = sum(.data$ci_excludes_one),
+    .groups = "drop"
+  )
+
+reader_figure_qa <- dplyr::bind_rows(
+  stage2_figure_qa |>
+    dplyr::filter(.data$figure_id %in% c(
+      "H06_primary_residual_clock",
+      "H06_paired_placement_effects"
+    )),
+  reader_display_qa,
+  site_screen_figure_qa
+)
+
+input_contract <- h06_input_contract(h06_root) |>
+  dplyr::mutate(
+    observed_sha256 = vapply(.data$path, artifact_sha256, character(1)),
+    hash_verified = .data$observed_sha256 == .data$expected_sha256
+  )
+
+stopifnot(
+  identical(as.character(getRversion()), "4.6.1"),
+  all(input_contract$hash_verified),
+  nrow(samples) == 6L,
+  all(fit_diagnostics$numerical_gate_pass),
+  all(wald_tests$status == "ESTIMABLE"),
+  all(primary_contrasts$planned_size == 3L),
+  all(reader_figure_qa$report_011_status == "PASS"),
+  all(reader_figure_qa$effective_final_text_pt >= 7),
+  nrow(reader_figure_qa) == 6L,
+  all(two_part_fit$converged),
+  all(two_part_fit$discrete),
+  all(two_part_formula_registry$selected_basis_k == 16L),
+  !any(two_part_formula_registry$sum_to_zero_smooths),
+  !any(two_part_formula_registry$site_specific_clock_smooth),
+  nrow(two_part_day_type_predictions) == 194L,
+  nrow(two_part_activity_predictions) == 194L,
+  nrow(temporal_contrasts) == 194L,
+  identical(
+    sort(unique(temporal_contrasts$contrast_id)),
+    c("active_vs_sedentary", "free_vs_work")
+  ),
+  all(temporal_contrasts$basis_k == 16L),
+  all(temporal_contrasts$sites_standardized == 9L),
+  all(temporal_contrasts$null_reference_ratio == 1),
+  all(temporal_contrasts$pointwise_highlighting == "none"),
+  all(is.finite(temporal_contrasts$expected_melEDI_ratio)),
+  all(temporal_contrasts$pointwise_low_ratio > 0),
+  all(
+    temporal_contrasts$pointwise_low_ratio <=
+      temporal_contrasts$expected_melEDI_ratio
+  ),
+  all(
+    temporal_contrasts$expected_melEDI_ratio <=
+      temporal_contrasts$pointwise_high_ratio
+  ),
+  nrow(work_free_site_deviations) == 9L,
+  isTRUE(all.equal(
+    unique(work_free_site_deviations$equal_site_heterogeneity_model_ratio),
+    1.15495727277359,
+    tolerance = 1e-12
+  )),
+  isTRUE(all.equal(
+    unique(
+      work_free_site_deviations[[
+        "equal_site_heterogeneity_model_conf_low_ratio"
+      ]]
+    ),
+    0.926410139391625,
+    tolerance = 1e-12
+  )),
+  isTRUE(all.equal(
+    unique(
+      work_free_site_deviations[[
+        "equal_site_heterogeneity_model_conf_high_ratio"
+      ]]
+    ),
+    1.43988741618114,
+    tolerance = 1e-12
+  )),
+  identical(
+    work_free_site_deviations$display_name[
+      work_free_site_deviations$pointwise_deviation == "above_average"
+    ],
+    c("Borås (SE)", "Dortmund (DE)")
+  ),
+  !any(
+    work_free_site_deviations$pointwise_deviation == "below_average"
+  ),
+  nrow(site_specific_screen) == 27L,
+  dplyr::n_distinct(site_specific_screen$family_id) == 3L,
+  all(!is.na(site_specific_screen$family_id)),
+  all(site_specific_screen$planned_size == 9L),
+  all(site_specific_screen$observed_size == 9L),
+  all(site_specific_screen$family_method == "Benjamini-Hochberg"),
+  dplyr::n_distinct(site_specific_screen$reference_family_id) == 1L,
+  all(site_specific_screen$reference_planned_size == 9L),
+  all(site_specific_screen$reference_observed_size == 9L),
+  all(site_specific_screen$reference_family_method == "Benjamini-Hochberg"),
+  all(is.finite(
+    site_specific_screen$reference_vs_equal_site_p_adjusted
+  )),
+  !any(
+    site_specific_screen$
+      reference_vs_equal_site_adjusted_significant_0_05
+  ),
+  identical(
+    paste(
+      site_specific_screen$predictor_id[
+        site_specific_screen$adjusted_significant_0_05
+      ],
+      site_specific_screen$site[
+        site_specific_screen$adjusted_significant_0_05
+      ],
+      sep = "__"
+    ),
+    c(
+      "work_free_day__RISE",
+      "work_free_day__BAUA",
+      "activity_status__MPI"
+    )
+  )
+)
+```
+
+## Scientific question
+
+The preregistered hypothesis was:
+
+> **H6: Day type, daily exercise, and sleep variables predict daily light exposure metrics.**
+
+The main H06 analysis deliberately narrows that broad question to the
+zero-aware geometric mean of melanopic equivalent daylight illuminance
+(melEDI) in each observed one-hour interval that met the support criteria. It
+asks whether estimated mean hourly near-eye melEDI differs for free versus
+work days, active versus sedentary day status, and per one additional hour of
+previous sleep. It averages over retained hours rather than estimating daily
+light-exposure metrics. Time of day is examined separately and exploratorily.
+Near-eye measurements are primary; chest measurements provide complementary,
+non-ocular evidence. Neither position is a direct retinal measure.
+
+The [complementary participant-day analysis](H06_daily.qmd), which treats one
+calendar day from one participant as the analytical unit, addresses daily
+light-exposure metrics. It is complementary evidence, while this hourly report
+remains the main H06 analysis. The two reports answer related but different
+questions, so their estimates are not interchangeable.
+
+[How the hourly H06 analysis was prepared](../../audit/hypotheses/H06/H06_analysis_preparation.qmd)
+traces the inputs, fitted samples, formulas, model checks, sensitivity
+analyses, and source data underlying this report.
+
+::: {.callout-note title="Answer in brief"}
+- **Primary result.** After false-discovery-rate adjustment, activity status
+  (**FDR-adjusted p < 0.001**) and day type (**FDR-adjusted p = 0.004**) met
+  the adjusted 0.050 threshold. Previous sleep did not (FDR-adjusted p =
+  0.745).
+
+- **Qualification.** The day-type association is site- and model-dependent.
+  Chest, paired-day, dataset-sensitivity, and model-check results provide
+  complementary qualifications. The primary conclusions were also stable in
+  a near-eye-only sensitivity that excluded six participants outside the
+  employment requirement.
+
+- **Timing context.** The nonlinear clock-time analysis is exploratory. Its
+  intervals describe individual displayed times, not a simultaneous or
+  multiplicity-controlled whole-curve test.
+
+All reported associations are observational.
+:::
+
+## Reader orientation
+
+A participant-hour is one observed one-hour interval from one participant
+that met the support criteria; a participant-day is one calendar day
+contributed by one participant. The analysis reports the estimated mean
+hourly melEDI among observed hours that met the support criteria. Because
+participant-days contribute different numbers of retained participant-hours,
+the main estimand gives more weight to days with more observed hours.
+
+Near-eye measurements are primary because the sensor position is closer to
+ocular light exposure. Chest measurements are complementary, non-ocular
+evidence. Neither sensor is a direct retinal measure.
+
+A participant-cluster-robust 95% confidence interval (95% CI) allows
+observations from the same participant to be related and uses the HC3
+small-sample correction. False-discovery-rate adjustment is used for each
+declared set of related tests and is abbreviated FDR below. A
+predictor-by-site interaction model allows an association to differ by study
+site. Its site-average estimate is an average across sites that gives each
+site equal weight. A sensitivity analysis asks whether a conclusion changes
+when a defined feature of the dataset, sample, covariance correction, working
+variance, site weighting, calendar label, participant or site inclusion, or
+response model is changed.
+
+
+## Principal hourly result
+
+@fig-h06-core-effects summarizes the common-effect estimates and
+their supporting sensor-position, paired-day, and dataset comparisons.
 
 ```{r}
-#| label: setup-h06
-#| eval: false
+#| label: fig-h06-core-effects
+#| fig-alt: "Three aligned forest-plot panels show ratios and participant-cluster-robust 95% confidence intervals for free versus work day, active versus sedentary day status, and each additional hour of previous sleep. Rows compare the primary near-eye estimate with complementary chest, paired-day near-eye and chest, and gap-timing-unaware near-eye and chest estimates. Activity ratios remain above the null ratio of one across the displayed analyses, whereas previous-sleep intervals include one."
+#| fig-cap: "Estimated mean hourly melEDI among observed hours that met the support criteria. Points and bars are ratios and participant-cluster-robust 95% CIs; the dashed line is the null ratio of 1. Near-eye is the primary sensor position, and chest estimates are complementary non-ocular comparisons."
+#| out-width: 170mm
 
-root <- normalizePath(Sys.getenv("QUARTO_PROJECT_DIR"), winslash = "/", mustWork = TRUE)
-source(file.path(root, "scripts/pipeline/paths_io.R"))
-source(file.path(root, "scripts/pipeline/assertions.R"))
-source(file.path(root, "scripts/pipeline/multiplicity.R"))
+knitr::include_graphics(artifact(
+  "10_figures", "H06", "H06_reader_primary_effects.png"
+))
 ```
+
+[Source CSV](../../artifacts/11_source_data/H06/H06_reader_primary_effects_figure.csv)
+
+@tbl-h06-primary-effects gives the three primary common-effect tests.
+
+```{r}
+#| label: tbl-h06-primary-effects
+#| tbl-cap: "Primary near-eye associations."
+
+primary_results |>
+  dplyr::select(
+    .data$Predictor,
+    .data$`Ratio (95% CI)`,
+    .data$`FDR-adjusted p`
+  ) |>
+  compact_gt(
+    source_note = paste0(
+      "Directions are free versus work day, active versus sedentary day ",
+      "status, and the ratio per one additional hour of previous sleep. ",
+      "Participant-cluster-robust 95% CIs use HC3 with 137 participants. ",
+      "The three p-values form one FDR-adjusted family; the null ratio is 1."
+    )
+  ) |>
+  gt::fmt_markdown(columns = `FDR-adjusted p`)
+```
+
+Estimated mean hourly near-eye melEDI among observed hours that met the support
+criteria was 1.45 times as high on free as on work days (95% CI 1.14–1.85;
+FDR-adjusted p = 0.004) and 2.06 times as high on active as on sedentary days
+(1.54–2.76; FDR-adjusted p < 0.001). The ratio per one additional hour of
+previous sleep was 0.98 (0.85–1.12; FDR-adjusted p = 0.745). That interval
+allows a modest decrease or increase; it does not establish the absence of an
+association.
+
+## Site dependence
+
+The work/free association differed across study sites (FDR-adjusted p =
+0.017). Activity and previous sleep had no FDR-retained predictor-by-site
+interaction. In the interaction model, the site-average work/free ratio,
+calculated with equal weight for each site, was 1.15 (95% CI 0.93–1.44),
+compared with 1.45 in the common-effect model. The interaction model's
+site-average day-type association did not meet the adjusted threshold
+(three-predictor FDR-adjusted p = 0.298). Day type also did not meet the
+adjusted threshold when the working variance changed (FDR-adjusted p = 0.260).
+The day-type conclusion is therefore site- and model-dependent.
+
+<details>
+<summary>Show site-specific estimates and interaction details</summary>
+
+### Site-specific estimates and interaction details
+
+```{r}
+#| label: tbl-h06-primary-site-interactions
+#| tbl-cap: "Predictor-by-site interaction tests for the primary near-eye analysis."
+
+primary_heterogeneity |>
+  dplyr::select(
+    .data$Predictor,
+    .data$Test,
+    .data$`FDR-adjusted p`
+  ) |>
+  compact_gt(
+    source_note = paste0(
+      "The three predictor-by-site interaction blocks form one FDR-adjusted ",
+      "family. Only adjusted p-values at alpha = 0.050 ",
+      "are bolded."
+    )
+  ) |>
+  gt::fmt_markdown(columns = `FDR-adjusted p`)
+```
+
+The work/free association differed across sites (FDR-adjusted p = 0.017).
+Activity and previous sleep had no FDR-retained site interaction. The primary
+1.45 work/free ratio comes from a model that constrains this association to be
+common across sites; it is not the average of the ratios from the interaction
+model. In the interaction model, the site-average ratio is the geometric mean
+of the nine site ratios: 1.15 (95% CI 0.93–1.44). Three sites are above that
+average and six are below it because three larger positive log-scale
+departures balance six smaller negative departures. This is not an algebraic
+inconsistency, but the attenuation from 1.45 to 1.15 shows that the work/free
+conclusion depends on model structure. The interaction-model site averages
+remain close to the common-effect results for activity (1.93 versus 2.06) and
+previous sleep (0.97 versus 0.98).
+
+```{r}
+#| label: fig-h06-primary-site-associations
+#| fig-alt: "Three aligned site-specific forest-plot panels show free versus work day, active versus sedentary day status, and previous-sleep ratios with pointwise 95% confidence intervals. Sites are Borås (SE), Delft (NL), Dortmund (DE), Tübingen (DE), Munich (DE), Madrid (ES), Izmir (TR), San José (CR), and Kumasi (GH). Filled points mark associations retained after a separate nine-site FDR adjustment within that predictor: free versus work day at Borås (SE) and Dortmund (DE), and active versus sedentary at Tübingen (DE). Hollow points were not retained. A solid grey line marks ratio 1 and a dashed line marks the site-average estimate."
+#| fig-cap: "Site-specific estimates from the predictor-by-site interaction model. Filled and hollow points distinguish associations that did and did not meet alpha 0.050 after a separate nine-site FDR adjustment within each predictor. Pointwise 95% CIs are unadjusted; the dashed line is the site-average estimate, calculated with equal weight for each of the nine sites."
+#| out-width: 170mm
+
+knitr::include_graphics(artifact(
+  "10_figures", "H06",
+  "H06_stage3_site_specific_significance_screen.png"
+))
+```
+
+[Source CSV](../../artifacts/11_source_data/H06/H06_stage3_site_specific_significance_screen_figure.csv)
+
+```{r}
+#| label: tbl-h06-site-specific-associations
+#| tbl-cap: "Site-specific near-eye associations with separate nine-site FDR adjustments."
+
+site_columns <- c(
+  "Reference profile",
+  "Free / Work",
+  "Active / Sedentary",
+  "Previous sleep / hour"
+)
+
+reference_sleep_h <- unique(site_specific_screen$reference_sleep_duration_h)
+stopifnot(length(reference_sleep_h) == 1L, is.finite(reference_sleep_h))
+
+site_display_cells <- site_specific_screen |>
+  dplyr::distinct(
+    .data$site,
+    .data$display_name,
+    .data$color_hex,
+    .data$display_order
+  ) |>
+  dplyr::mutate(
+    Location = paste0(
+      "<strong><span title='Study-site colour marker' ",
+      "aria-label='Study-site colour marker' style='color:",
+      .data$color_hex,
+      ";font-size:1.15em'>●</span>&nbsp;",
+      .data$display_name,
+      "</strong>"
+    )
+  )
+
+stopifnot(
+  nrow(site_display_cells) == 9L,
+  all(grepl("●", site_display_cells$Location, fixed = TRUE)),
+  all(grepl("<strong>", site_display_cells$Location, fixed = TRUE))
+)
+
+overall_reference_context <- site_specific_screen |>
+  dplyr::slice(1L) |>
+  dplyr::transmute(
+    Location = "Site-average estimate<br><small>predictor-by-site model</small>",
+    row_order = 0,
+    row_type = "overall",
+    column_label = "Reference profile",
+    cell = paste0(
+      "<span style='white-space:nowrap'>",
+      sprintf(
+        "%.0f lx <small>(95%% CI %.0f–%.0f lx)</small>",
+        .data$interaction_equal_site_reference_expected_melEDI_lx,
+        .data$interaction_equal_site_reference_conf_low_melEDI_lx,
+        .data$interaction_equal_site_reference_conf_high_melEDI_lx
+      ),
+      "</span>"
+    )
+  )
+
+overall_screen_context <- site_specific_screen |>
+  dplyr::distinct(
+    .data$predictor_id,
+    .data$interaction_equal_site_ratio,
+    .data$interaction_equal_site_conf_low_ratio,
+    .data$interaction_equal_site_conf_high_ratio,
+    .data$interaction_equal_site_p_adjusted,
+    .data$interaction_equal_site_comparison_expected_melEDI_lx,
+    .data$interaction_equal_site_comparison_conf_low_melEDI_lx,
+    .data$interaction_equal_site_comparison_conf_high_melEDI_lx
+  ) |>
+  dplyr::mutate(
+    column_label = dplyr::recode(
+      .data$predictor_id,
+      work_free_day = "Free / Work",
+      activity_status = "Active / Sedentary",
+      previous_sleep_duration_centered_h = "Previous sleep / hour"
+    ),
+    estimate_ci = sprintf(
+      "%.2f× <small>(95%% CI %.2f–%.2f)</small>",
+      .data$interaction_equal_site_ratio,
+      .data$interaction_equal_site_conf_low_ratio,
+      .data$interaction_equal_site_conf_high_ratio
+    ),
+    cell = paste0(
+      dplyr::if_else(.data$interaction_equal_site_p_adjusted <= 0.05, "**", ""),
+      "<span style='white-space:nowrap'>",
+      .data$estimate_ci,
+      "</span>",
+      dplyr::if_else(.data$interaction_equal_site_p_adjusted <= 0.05, "**", ""),
+      "<br><small>3-predictor FDR p ",
+      format_p_cell(
+        .data$interaction_equal_site_p_adjusted,
+        .data$interaction_equal_site_p_adjusted <= 0.05
+      ),
+      "</small><br><span style='white-space:nowrap'>",
+      sprintf(
+        "%.0f lx <small>(95%% CI %.0f–%.0f lx)</small>",
+        .data$interaction_equal_site_comparison_expected_melEDI_lx,
+        .data$interaction_equal_site_comparison_conf_low_melEDI_lx,
+        .data$interaction_equal_site_comparison_conf_high_melEDI_lx
+      ),
+      "</span>"
+    ),
+    Location = "Site-average estimate<br><small>predictor-by-site model</small>",
+    row_order = 0,
+    row_type = "overall"
+  ) |>
+  dplyr::select(
+    .data$Location,
+    .data$row_order,
+    .data$row_type,
+    .data$column_label,
+    .data$cell
+  )
+
+separator_screen_context <- tidyr::expand_grid(
+  column_label = site_columns
+) |>
+  dplyr::mutate(
+    Location = "&nbsp;",
+    row_order = 0.5,
+    row_type = "separator",
+    cell = "&nbsp;",
+    .before = 1
+  )
+
+site_reference_context <- site_specific_screen |>
+  dplyr::filter(.data$predictor_id == "work_free_day") |>
+  dplyr::left_join(
+    dplyr::select(site_display_cells, .data$site, .data$Location),
+    by = "site"
+  ) |>
+  dplyr::mutate(
+    row_order = .data$display_order,
+    row_type = "site",
+    column_label = "Reference profile",
+    estimate_ci = sprintf(
+      "%.0f lx <small>(95%% CI %.0f–%.0f lx)</small>",
+      .data$reference_expected_melEDI_lx,
+      .data$reference_conf_low_melEDI_lx,
+      .data$reference_conf_high_melEDI_lx
+    ),
+    cell = paste0(
+      dplyr::if_else(
+        .data$reference_vs_equal_site_adjusted_significant_0_05,
+        "**",
+        ""
+      ),
+      "<span style='white-space:nowrap'>",
+      .data$estimate_ci,
+      "</span>",
+      dplyr::if_else(
+        .data$reference_vs_equal_site_adjusted_significant_0_05,
+        "**",
+        ""
+      ),
+      "<br><small>vs site average FDR p ",
+      format_p_cell(
+        .data$reference_vs_equal_site_p_adjusted,
+        .data$reference_vs_equal_site_adjusted_significant_0_05
+      ),
+      "</small>"
+    )
+  ) |>
+  dplyr::select(
+    .data$Location,
+    .data$row_order,
+    .data$row_type,
+    .data$column_label,
+    .data$cell
+  )
+
+site_screen_context <- site_specific_screen |>
+  dplyr::left_join(
+    dplyr::select(site_display_cells, .data$site, .data$Location),
+    by = "site"
+  ) |>
+  dplyr::mutate(
+    row_order = .data$display_order,
+    row_type = "site",
+    column_label = dplyr::recode(
+      .data$predictor_id,
+      work_free_day = "Free / Work",
+      activity_status = "Active / Sedentary",
+      previous_sleep_duration_centered_h = "Previous sleep / hour"
+    ),
+    estimate_ci = sprintf(
+      "%.2f× <small>(95%% CI %.2f–%.2f)</small>",
+      .data$estimate_ratio,
+      .data$conf_low_ratio,
+      .data$conf_high_ratio
+    ),
+    cell = paste0(
+      dplyr::if_else(.data$adjusted_significant_0_05, "**", ""),
+      "<span style='white-space:nowrap'>",
+      .data$estimate_ci,
+      "</span>",
+      dplyr::if_else(.data$adjusted_significant_0_05, "**", ""),
+      "<br><small>9-site FDR p ",
+      format_p_cell(
+        .data$p_adjusted,
+        .data$adjusted_significant_0_05
+      ),
+      "</small><br><span style='white-space:nowrap'>",
+      sprintf(
+        "%.0f lx <small>(95%% CI %.0f–%.0f lx)</small>",
+        .data$comparison_expected_melEDI_lx,
+        .data$comparison_conf_low_melEDI_lx,
+        .data$comparison_conf_high_melEDI_lx
+      ),
+      "</span>"
+    )
+  ) |>
+  dplyr::select(
+    .data$Location,
+    .data$row_order,
+    .data$row_type,
+    .data$column_label,
+    .data$cell
+  )
+
+site_screen_display <- dplyr::bind_rows(
+  overall_reference_context,
+  overall_screen_context,
+  separator_screen_context,
+  site_reference_context,
+  site_screen_context
+) |>
+  dplyr::mutate(
+    column_label = factor(.data$column_label, levels = site_columns)
+  ) |>
+  dplyr::arrange(.data$row_order) |>
+  dplyr::select(-.data$row_order, -.data$row_type) |>
+  tidyr::pivot_wider(names_from = .data$column_label, values_from = .data$cell) |>
+  dplyr::select(
+    .data$Location,
+    `Reference profile`,
+    `Free / Work`,
+    `Active / Sedentary`,
+    `Previous sleep / hour`
+  )
+
+site_screen_display |>
+  gt::gt() |>
+  gt::fmt_markdown(columns = gt::everything()) |>
+  gt::cols_label(
+    Location = "Site",
+    `Reference profile` = gt::md(paste0(
+      "Reference<br><small>Work day · sedentary · ",
+      sprintf("%.1f", reference_sleep_h),
+      " h sleep</small>"
+    )),
+    `Free / Work` = gt::md("Free /<br>Work"),
+    `Active / Sedentary` = gt::md("Active /<br>Sedentary"),
+    `Previous sleep / hour` = gt::md("Previous sleep /<br>hour")
+  ) |>
+  gt::cols_width(
+    Location ~ gt::px(130),
+    `Reference profile` ~ gt::px(180),
+    `Free / Work` ~ gt::px(180),
+    `Active / Sedentary` ~ gt::px(180),
+    `Previous sleep / hour` ~ gt::px(180)
+  ) |>
+  compact_gt(
+    font_size = 12,
+    source_note = paste0(
+      "The reference is a work day with sedentary status and ",
+      sprintf("%.1f", reference_sleep_h),
+      " h previous sleep, the participant-day mean in the fitted sample. ",
+      "Reference and comparison melEDI values are response-scale point ",
+      "predictions in lx. The final lx line in each effect cell is the ",
+      "comparison condition: free day, active status, or one additional ",
+      "hour of previous sleep. All displayed 95% CIs use participant-cluster ",
+      "HC3. ",
+      "The blue-grey row gives site-average estimates from the same ",
+      "predictor-by-site interaction model and adjusts its three predictor ",
+      "contrasts together. Site-ratio tests use three separate nine-site FDR ",
+      "adjustments, one per predictor. Reference-profile site effects use a ",
+      "fourth nine-site FDR adjustment against the site-average reference. Only ",
+      "adjusted p-values are shown. ",
+      "Bold ratios meet alpha = 0.050 against ratio 1; these are not ",
+      "site-to-average or between-site tests. Bold site labels and filled ",
+      "site-colour circles identify the study sites; circle fill does not ",
+      "encode significance. The reference-column adjusted p-values show the ",
+      "separate reference-profile site-to-average tests."
+    )
+  ) |>
+  gt::tab_style(
+    style = list(
+      gt::cell_fill(color = "#E8EEF3"),
+      gt::cell_text(weight = "700"),
+      gt::cell_borders(
+        sides = "bottom",
+        color = "#8192A3",
+        weight = gt::px(2)
+      )
+    ),
+    locations = gt::cells_body(rows = 1)
+  ) |>
+  gt::tab_style(
+    style = list(
+      gt::cell_fill(color = "#FFFFFF"),
+      gt::cell_text(color = "#FFFFFF", size = gt::px(1)),
+      gt::cell_borders(
+        sides = c("top", "bottom"),
+        color = "#FFFFFF",
+        weight = gt::px(0)
+      )
+    ),
+    locations = gt::cells_body(rows = 2)
+  )
+```
+
+[Site-specific results CSV](../../artifacts/09_tables/H06/H06_stage3_site_specific_significance_screen.csv)
+
+[Site-to-average deviation source CSV](../../artifacts/11_source_data/H06/H06_primary_work_free_site_deviations.csv)
+
+</details>
+
+## Sensitivity and complementary sensor evidence
+
+The required **gap-timing-unaware dataset** uses the same 50%-per-hour and
+80%-per-day coverage rules as the primary dataset, but does not use the timing
+of the remaining within-hour and within-day gaps for a metric-specific
+adjustment. The primary analysis could therefore be interpreted as
+time-sensitive. The near-eye estimates were stable under this dataset change,
+including on exact common hours. Complementary chest estimates had similar
+directions.
+
+The paired-day comparison used the same 109 participants and 553
+participant-days at both sensor positions, but three hourly keys differed at
+each position. It is not an observation-level identity comparison, an
+equivalence analysis, or a direct sensor-position effect. Activity and
+previous-sleep conclusions were stable across the declared checks. Day type
+remained sensitive to the working variance and to omission of some sites.
+
+A separate near-eye-only sensitivity excluded participants recorded as not
+employed or marginally employed. It retained all nine sites and classified all
+three primary associations as stable within model uncertainty.
+
+<details>
+<summary>Show complementary placement and sensitivity results</summary>
+
+### Required dataset sensitivity
+
+The gap-timing-unaware sensitivity applies the comparison defined above to the
+same three predictors and sensor positions.
+
+The all-available near-eye comparison contains 16,329 hours from 702
+participant-days, 137 participants, and nine sites. On the exact common-hour
+frame, 16,329 hour keys remain and only 12 response values differ. The three
+near-eye ratios are stable: 1.44 for free/work, 2.08 for active/sedentary, and
+0.96 per additional hour of sleep. The work/free site interaction also remains
+FDR-retained (FDR-adjusted p = 0.015).
+
+```{r}
+#| label: tbl-h06-gap-sensitivity-comparisons
+#| tbl-cap: "Primary and gap-sensitivity estimates on all available and exact common hours."
+
+sensitivity |>
+  dplyr::filter(.data$comparison_id %in% c(
+    "primary_vs_gap_timing_unaware_all_available",
+    "primary_vs_gap_timing_unaware_exact_common_hours"
+  )) |>
+  dplyr::mutate(
+    Frame = dplyr::recode(
+      .data$comparison_id,
+      primary_vs_gap_timing_unaware_all_available = "All available",
+      primary_vs_gap_timing_unaware_exact_common_hours = "Exact common hours"
+    ),
+    Predictor = display_predictor(.data$predictor_id),
+    Primary = format_effect(
+      .data$reference_ratio,
+      .data$reference_conf_low,
+      .data$reference_conf_high
+    ),
+    `Gap sensitivity` = format_effect(
+      .data$alternative_ratio,
+      .data$alternative_conf_low,
+      .data$alternative_conf_high
+    )
+  ) |>
+  dplyr::select(
+    .data$Frame,
+    .data$Predictor,
+    .data$Primary,
+    .data$`Gap sensitivity`
+  ) |>
+  compact_gt(
+    groupname_col = "Frame",
+    source_note = "Exact-common models use identical hour keys."
+  )
+```
+
+### Employment-eligibility sensitivity (near-eye only)
+
+This sensitivity excluded six participants recorded as not employed or
+marginally employed. Students and trainees were retained, and age above 65
+years was not an exclusion criterion. The restricted sample contained 15,871
+supported hours from 684 participant-days and 131 participants at all nine
+sites, compared with 16,596 hours, 715 participant-days, and 137 participants
+in the primary near-eye sample. The same additive and predictor-by-site models,
+participant-cluster HC3 inference, and three-test false-discovery-rate families
+were used.
+
+```{r}
+#| label: tbl-h06-employment-eligibility-sensitivity
+#| tbl-cap: "Near-eye associations before and after the employment-eligibility restriction."
+
+employment_eligibility_effects |>
+  dplyr::mutate(
+    Predictor = display_predictor(.data$predictor_id),
+    Primary = format_effect(
+      .data$reference_ratio,
+      .data$reference_conf_low,
+      .data$reference_conf_high
+    ),
+    `Employment eligible` = format_effect(
+      .data$alternative_ratio,
+      .data$alternative_conf_low,
+      .data$alternative_conf_high
+    ),
+    `Employment-eligible FDR-adjusted p` = format_p_cell(
+      .data$alternative_p_adjusted,
+      .data$alternative_p_adjusted <= 0.05
+    ),
+    Stability = dplyr::recode(
+      .data$detailed_stability_classification,
+      `stable within model uncertainty` =
+        "Stable within model uncertainty"
+    )
+  ) |>
+  dplyr::select(
+    .data$Predictor,
+    .data$Primary,
+    .data$`Employment eligible`,
+    .data$`Employment-eligible FDR-adjusted p`,
+    .data$Stability
+  ) |>
+  compact_gt(
+    font_size = 11,
+    source_note = paste(
+      "Ratios compare free with work days, active with sedentary days, and",
+      "one additional hour of previous sleep. The three employment-eligible",
+      "p-values form one FDR-adjusted family; the null ratio is 1."
+    )
+  ) |>
+  gt::fmt_markdown(columns = `Employment-eligible FDR-adjusted p`)
+```
+
+The restricted estimates were 1.46 for free versus work days (95% CI
+1.11–1.91; **FDR-adjusted p = 0.010**), 1.88 for active versus sedentary days
+(1.42–2.48; **FDR-adjusted p < 0.001**), and 0.95 per additional hour of
+previous sleep (0.83–1.09; FDR-adjusted p = 0.437). Day-type heterogeneity
+across sites also remained supported, F(8, 130) = 3.59
+(**FDR-adjusted p = 0.003**); activity and previous-sleep heterogeneity remained
+unsupported. Both restricted fits passed the stored numerical checks. The
+existing residual mean-variance, calibration, and temporal-correlation
+qualifications remain.
+
+[Sample-flow CSV](../../artifacts/06_model_data/H06/employment_eligibility_sensitivity/H06_employment_eligibility_sample_flow.csv) ·
+[association-comparison CSV](../../artifacts/09_tables/H06/employment_eligibility_sensitivity/H06_employment_eligibility_effect_comparison.csv) ·
+[site-heterogeneity CSV](../../artifacts/09_tables/H06/employment_eligibility_sensitivity/H06_employment_eligibility_heterogeneity_comparison.csv)
+
+### Complementary chest and paired-day results
+
+The all-available chest ratios are 1.51 (95% CI 1.21–1.89), 1.81
+(1.28–2.54), and 0.95 (0.84–1.07) for free/work, active/sedentary, and sleep,
+respectively. Chest is a complementary non-ocular sensor position. The
+paired-day comparison uses the same 109 participants and 553 participant-days
+at both sensor positions. Near-eye ratios are 1.59, 1.96, and 0.96; chest
+ratios are 1.53, 1.82, and 0.95. Each frame contains 12,842 participant-hours,
+but three hourly keys differ at each sensor position. An observation-level
+identity scatter is therefore not valid, and similar directions do not show
+equivalence or estimate a direct sensor-position effect.
+
+```{r}
+#| label: fig-h06-paired-placement
+#| fig-alt: "Side-by-side forest plot comparing near-eye and chest ratios with 95% confidence intervals on the paired-day sample. Both placements show ratios above one for free versus work and active versus sedentary days, while the sleep intervals include one."
+#| fig-cap: "Near-eye and complementary chest estimates for the same participants and participant-days. Three hourly keys differ at each sensor position, so an observation-level identity scatter is not valid."
+#| out-width: 170mm
+
+knitr::include_graphics(artifact(
+  "10_figures", "H06", "H06_paired_placement_effects.png"
+))
+```
+
+[Source CSV](../../artifacts/11_source_data/H06/H06_paired_placement_effects_figure.csv)
+
+### Working-variance and influence sensitivity analyses
+
+Changing the working variance from power 1 to fixed power 1.8 changes the
+work/free estimate to 1.15 (95% CI 0.91–1.45; FDR-adjusted p = 0.260).
+Activity remains 1.91 (1.49–2.45; FDR-adjusted p < 0.001), and sleep is 0.95
+(0.88–1.04; FDR-adjusted p = 0.260). Changing the participant-cluster
+small-sample correction from HC3 to HC1 or HC2 changes uncertainty only
+slightly. Giving each site equal weight or weighting sites by the observed
+sample gives the same common-effect estimates. Replacing diary-defined day
+type with weekday/weekend gives 1.23 (0.92–1.66) for weekend versus weekday
+and has no new p-value family.
+
+```{r}
+#| label: tbl-h06-key-sensitivities
+#| tbl-cap: "Selected declared sensitivities for the three primary predictors."
+
+sensitivity |>
+  dplyr::filter(.data$comparison_id %in% c(
+    "quasi_poisson_vs_fixed_p1_8",
+    "HC3_vs_HC1",
+    "HC3_vs_HC2",
+    "equal_site_vs_observed_sample"
+  )) |>
+  dplyr::mutate(
+    Comparison = dplyr::recode(
+      .data$comparison_id,
+      quasi_poisson_vs_fixed_p1_8 = "Quasi-Poisson vs p = 1.8",
+      HC3_vs_HC1 = "HC3 vs HC1",
+      HC3_vs_HC2 = "HC3 vs HC2",
+      equal_site_vs_observed_sample =
+        "Site-average weighting compared with observed-site weighting"
+    ),
+    Predictor = display_predictor(.data$predictor_id),
+    Reference = format_effect(
+      .data$reference_ratio,
+      .data$reference_conf_low,
+      .data$reference_conf_high
+    ),
+    Alternative = format_effect(
+      .data$alternative_ratio,
+      .data$alternative_conf_low,
+      .data$alternative_conf_high
+    ),
+    Classification = tools::toTitleCase(gsub(
+      "_",
+      " ",
+      .data$stability_classification
+    ))
+  ) |>
+  dplyr::select(
+    .data$Comparison,
+    .data$Predictor,
+    .data$Reference,
+    .data$Alternative,
+    .data$Classification
+  ) |>
+  compact_gt(groupname_col = "Comparison")
+```
+
+Seven score-ranked participants and all nine sites were deleted one at a time;
+all 16 refit sets passed the numerical model checks. Activity intervals exclude one
+in all 16 checks, and sleep intervals do so in none. Work/free intervals
+exclude one after all seven participant deletions but only seven of nine site
+deletions: omitting Dortmund (DE) gives 1.26 (0.98–1.62), and omitting
+Borås (SE) gives 1.34 (0.99–1.80).
+
+```{r}
+#| label: tbl-h06-influence-checks
+#| tbl-cap: "Targeted participant and site deletion checks."
+
+influence_summary |>
+  dplyr::mutate(
+    Type = dplyr::recode(
+      .data$deletion_type,
+      participant = "Participant deletion",
+      site = "Site deletion"
+    ),
+    Predictor = display_predictor(.data$predictor_id),
+    `CIs excluding 1` = paste0(
+      .data$`CIs excluding 1`,
+      "/",
+      .data$Deletions
+    )
+  ) |>
+  dplyr::select(
+    .data$Type,
+    .data$Predictor,
+    .data$`Largest shift (HC3 SE)`,
+    .data$`CIs excluding 1`
+  ) |>
+  compact_gt() |>
+  gt::fmt_number(columns = `Largest shift (HC3 SE)`, decimals = 3)
+```
+
+</details>
+
+## Model-check qualification
+
+All common-effect and predictor-by-site interaction fits met the stored
+numerical checks. The primary response nevertheless has substantial
+dispersion, imperfect fitted-decile calibration, increasing residual spread,
+and residual correlation across nearby hours. Participant-cluster HC3
+supports the reported uncertainty but does not remove those patterns or
+repair the mean structure.
+
+<details>
+<summary>Show detailed model checks and influence analyses</summary>
+
+### Detailed model checks and influence analyses
+
+All stored additive and full fits converge, have full-rank fixed-effect
+designs, and have finite, positive-definite unmodified HC3 covariance
+matrices. These checks establish numerical estimability, not adequate fit.
+
+```{r}
+#| label: tbl-h06-model-checks
+#| tbl-cap: "Model checks for the six common-effect mean models."
+
+diagnostic_summary |>
+  dplyr::transmute(
+    Scenario = dplyr::recode(
+      .data$run_id,
+      main__glasses__all_available = "Primary near-eye",
+      main__chest__all_available = "Chest, all available",
+      main__glasses__paired_common = "Near-eye, paired days",
+      main__chest__paired_common = "Chest, paired days",
+      gap_timing_unaware__glasses__all_available =
+        "Gap sensitivity, near-eye",
+      gap_timing_unaware__chest__all_available =
+        "Gap sensitivity, chest"
+    ),
+    `Zero hours` = .data$exact_zero_fraction,
+    Dispersion = .data$dispersion,
+    `Observed/fitted decile range` = sprintf(
+      "%.2f–%.2f",
+      .data$calibration_low,
+      .data$calibration_high
+    ),
+    `Residual–fitted Spearman` = .data$residual_fitted_spearman,
+    `|Residual|–fitted Spearman` =
+      .data$absolute_residual_fitted_spearman,
+    `Residual lag 1` = .data$lag_1,
+    `Residual lag 6` = .data$lag_6,
+    Checks = .data$numerical_gate_pass
+  ) |>
+  compact_gt(
+    source_note = paste0(
+      "Calibration is in-sample and descriptive. Dispersion is the ",
+      "Pearson working-dispersion estimate."
+    )
+  ) |>
+  gt::fmt_percent(columns = `Zero hours`, decimals = 1) |>
+  gt::fmt_number(
+    columns = c(
+      Dispersion,
+      `Residual–fitted Spearman`,
+      `|Residual|–fitted Spearman`,
+      `Residual lag 1`,
+      `Residual lag 6`
+    ),
+    decimals = 3
+  ) |>
+  gt::fmt(
+    columns = Checks,
+    fns = function(x) ifelse(
+      x,
+      "Meets numerical checks",
+      "Review needed"
+    )
+  )
+```
+
+The primary response contains 28.3% exact-zero hours and has working
+dispersion 3,618. Fitted-decile observed/fitted ratios range from 0.78 to
+1.61. Residual–fitted Spearman correlation is -0.564, and absolute
+residual–fitted correlation is 0.553. Residual correlation is 0.464 at lag 1,
+0.233 at lag 2, and 0.013 at lag 6. Participant-cluster HC3 accommodates
+within-participant dependence for uncertainty but does not whiten residuals or
+repair the mean structure. The residual-clock display shows remaining daytime
+structure.
+
+```{r}
+#| label: fig-h06-residual-clock
+#| fig-alt: "Residual model-check plot across local clock hour for the primary near-eye model. Mean residuals vary over the day, and a residual-versus-fitted panel shows imperfect mean calibration and increasing spread."
+#| fig-cap: "Primary residual structure by local clock and fitted value. Participant-cluster HC3 does not remove these patterns."
+#| out-width: 170mm
+
+knitr::include_graphics(artifact(
+  "10_figures", "H06", "H06_primary_residual_clock.png"
+))
+```
+
+[Source CSV](../../artifacts/11_source_data/H06/H06_primary_residual_clock_figure.csv)
+
+</details>
+
+## Exploratory diary and clock-time analyses
+
+Exercise location, active travel, sedentary time, sleep onset, and final wake
+time are descriptive extensions fitted one at a time. They do not select or
+rescue the primary model. The nonlinear generalized additive model (GAM)
+analysis allows the association with local clock time to bend across the day
+and is separate from the primary average associations. Its pointwise 95% CI
+applies to one displayed time. It is not a simultaneous band or a
+multiplicity-controlled whole-curve test.
+
+Active status was higher from about 07:15 to 19:00 and lower from about 23:30
+to 05:15 across midnight, when estimated melEDI was low. The free-day curve
+was lower from about 06:45 to 09:15 and from 18:45 to 19:15. These windows
+exclude the null ratio 1 on the local 15-minute grid, but they do not define
+confirmatory significant time segments.
+
+<details>
+<summary>Show exploratory clock-time and diary analyses</summary>
+
+### Detailed exploratory analyses
+
+### Additional diary measures
+
+Exercise location, active travel, sedentary time, sleep onset, and final wake
+time were fitted one at a time on their own exact samples. They are descriptive
+extensions, have 95% CIs but no confirmatory p-values, and do not select or
+rescue the primary model.
+
+```{r}
+#| label: tbl-h06-exploratory-diary-associations
+#| tbl-cap: "Exploratory one-at-a-time diary associations."
+
+exploratory_effects |>
+  dplyr::mutate(
+    Effect = dplyr::recode(
+      .data$effect_id,
+      Indoors_vs_Outdoors = "Exercise indoors vs outdoors",
+      `Indoors and outdoors_vs_Outdoors` = "Both locations vs outdoors",
+      per_hour__active_commute_h = "Active travel, per hour",
+      per_hour__sedentary_h = "Sedentary time, per hour",
+      per_hour__previous_sleep_onset_centered_h =
+        "Sleep onset, per hour later",
+      per_hour__wake_centered_h = "Wake time, per hour later"
+    ),
+    `Ratio (95% CI)` = format_effect(
+      .data$estimate_ratio,
+      .data$conf_low_ratio,
+      .data$conf_high_ratio
+    )
+  ) |>
+  dplyr::select(.data$Effect, .data$`Ratio (95% CI)`) |>
+  compact_gt(
+    source_note = paste0(
+      "Exploratory quasi-Poisson log means with participant-cluster HC3. ",
+      "No p-values are calculated or displayed."
+    )
+  )
+```
+
+### Nonlinear time-of-day GAM analysis
+
+The exploratory nonlinear generalized additive model (GAM) analysis allows
+the associations with local clock time to bend across the day. It separates
+occurrence (melEDI greater than zero, binomial-logit) from positive magnitude
+(Gamma-log); multiplying their response-scale means gives estimated hourly
+melEDI. Both components use four cyclic factor-by clock smooths for work/free
+day × activity status, with one smoothing parameter shared across the four
+curves. Study site enters as a fixed adjustment only; there is no
+site-specific clock smooth and no `sz` component. Participant and
+participant-day random-effect smooths, true-sequence `AR.start`, and residual
+working correlations remain. The chosen basis is `k = 16`, fitted with
+`bam(method = "fREML", discrete = TRUE)`.
+
+```{r}
+#| label: tbl-h06-exploratory-two-part-formulas
+#| tbl-cap: "Exploratory two-part formulas."
+#| echo: true
+#| code-fold: false
+#| code-summary: "Exploratory two-part formulas (always shown)"
+
+two_part_formula_registry |>
+  dplyr::select(
+    Component = .data$component,
+    Family = .data$response_family,
+    `Evaluated Wilkinson formula` = .data$selected_formula,
+    Method = .data$method,
+    Discrete = .data$discrete,
+    `Basis k` = .data$selected_basis_k
+  ) |>
+  compact_gt(
+    source_note = paste0(
+      "Exploratory only. Positive-magnitude sequences are rebuilt after ",
+      "zero hours are removed."
+    )
+  )
+```
+
+The occurrence and positive-magnitude models converge with full-rank
+fixed-smooth designs. Their residual working correlations are 0.418 and
+0.440. Occurrence calibration overpredicts the lowest fitted-probability
+decile (observed/fitted ratio 0.829); positive-magnitude calibration ranges
+from about 0.89 to 1.21. The four occurrence smooths have `k`-check p-values
+0.013–0.023, although their edf remain below the basis ceiling; this is a
+residual model-structure warning. Positive-magnitude `k`-check p-values are
+0.18–0.21. Moving from `k = 12` to `k = 16` changes the combined curves by
+15.1% at the 95th percentile, so the curves provide timing context rather
+than confirmatory whole-curve tests.
+
+#### Reader displays and temporal contrasts
+
+Each figure has three aligned parts: (A) expected curves, (B) the
+corresponding complete response-scale
+ratio with a null reference of one, and (C) participant-hour support. The
+contrast panels are derived from the fitted two-part models without refitting;
+they compare complete estimated melEDI rather than one smooth term.
+Free day is divided by work day after equal weighting over activity status and
+the nine sites. Active is divided by sedentary after equal weighting over
+work/free day and the nine sites.
+
+The expected-value panels use a symmetric logarithmic, or symlog, display
+that is linear from 0 to 1 lx and logarithmic above 1 lx. Tick labels remain
+in lux.
+
+```{r}
+#| label: fig-h06-exploratory-day-type-time
+#| fig-alt: "Three vertically aligned panels summarize exploratory near-eye melEDI by day type and local clock time. The top panel overlays work-day and free-day expected curves with pointwise 95% bands and dots at integer hours supported in all nine sites. The middle panel shows free day divided by work day with a dashed null line at ratio one; integer-hour points are filled when the pointwise interval excludes one and hollow when it includes one. The bottom panel shows available participant-hours for each day type at every integer hour."
+#| fig-cap: "Exploratory nonlinear day-type timing display: overlaid estimated curves, the complete response-scale free-day/work-day contrast, and participant-hour support. The other binary factor and all nine sites receive equal weight. A pointwise 95% CI applies at one displayed hour, not to the whole curve. Filled and hollow points distinguish intervals that exclude and include the null ratio of 1; this is not a multiplicity-controlled or simultaneous whole-curve test."
+#| out-width: 170mm
+
+knitr::include_graphics(artifact(
+  "10_figures", "H06", "H06_reader_temporal_day_type.png"
+))
+```
+
+[Curve source CSV](../../artifacts/11_source_data/H06/H06_reader_temporal_day_type_curves.csv) ·
+[Ratio source CSV](../../artifacts/11_source_data/H06/H06_reader_temporal_day_type_ratios.csv) ·
+[Support source CSV](../../artifacts/11_source_data/H06/H06_reader_temporal_day_type_support.csv)
+
+```{r}
+#| label: fig-h06-exploratory-activity-time
+#| fig-alt: "Three vertically aligned panels summarize exploratory near-eye melEDI by activity status and local clock time. The top panel overlays sedentary and active expected curves with pointwise 95% bands and dots at integer hours supported in all nine sites. The middle panel shows active divided by sedentary with a dashed null line at ratio one; integer-hour points are filled when the pointwise interval excludes one and hollow when it includes one. The bottom panel shows available participant-hours for each activity status at every integer hour."
+#| fig-cap: "Exploratory nonlinear activity timing display: overlaid estimated curves, the complete response-scale active/sedentary contrast, and participant-hour support. Work and free days and all nine sites receive equal weight. A pointwise 95% CI applies at one displayed hour, not to the whole curve. Filled and hollow points distinguish intervals that exclude and include the null ratio of 1; this is not a multiplicity-controlled or simultaneous whole-curve test."
+#| out-width: 170mm
+
+knitr::include_graphics(artifact(
+  "10_figures", "H06", "H06_reader_temporal_activity.png"
+))
+```
+
+[Curve source CSV](../../artifacts/11_source_data/H06/H06_reader_temporal_activity_curves.csv) ·
+[Ratio source CSV](../../artifacts/11_source_data/H06/H06_reader_temporal_activity_ratios.csv) ·
+[Support source CSV](../../artifacts/11_source_data/H06/H06_reader_temporal_activity_support.csv)
+
+The paired prediction gradients retain covariance between numerator and
+denominator within each component. The interval calculation treats smoothing
+parameters as fixed and sets cross-component occurrence–magnitude covariance
+to zero. It also inherits the residual working-correlation, occurrence
+calibration, and basis-sensitivity limitations above. Overnight ratios and
+intervals widen where numerator and denominator expectations approach zero.
+No time segment is labelled significant, and no global or simultaneous
+whole-curve inference is made.
+
+</details>
+
+## Interpretation and limitations
+
+The common-effect results describe observational associations with estimated
+mean hourly near-eye melEDI among observed hours that met the support criteria.
+They do not establish causal effects and do not answer the broader
+preregistered question about daily light-exposure metrics. Participant-days
+with more retained participant-hours contribute more weight.
+
+The free/work result is qualified by its predictor-by-site interaction, the
+smaller site-average estimate from that interaction model, the alternative
+working-variance result, and leave-one-site-out checks. Chest and paired-day
+analyses provide complementary non-ocular context, not sensor-position
+equivalence or a direct placement effect. Participant-cluster-robust inference
+allows within-participant dependence, but it does not remove residual
+time-of-day structure or repair an imperfect mean model. The nonlinear GAM
+analysis is exploratory; its pointwise intervals apply to individual displayed
+hours and do not support simultaneous whole-curve claims.
+
+## Preregistration deviations {#h06-preregistration-deviations}
+
+- [`DEV-015`](../preregistration_deviations.qmd#dev-015) records the documented
+  hourly geometric-mean melEDI estimand rather than the preregistered daily
+  metric set.
+- [`DEV-030`](../preregistration_deviations.qmd#dev-030) limits the primary
+  family to day type, active/sedentary status, and previous-night sleep
+  duration.
+- [`DEV-031`](../preregistration_deviations.qmd#dev-031) records the
+  zero-inclusive quasi-Poisson common-effect model, participant-cluster HC3
+  inference, predictor-by-site interactions, and separate exploratory
+  nonlinear clock-time analysis.
+- [`DEV-032`](../preregistration_deviations.qmd#dev-032) records the separate
+  FDR families and the distinction between average associations,
+  predictor-by-site interactions, and exploratory site screens.
+
+## Detailed analysis record
+
+This section retains the exact fitted samples, model formulas, declared FDR
+families, linked source data, and technical provenance for auditing.
+
+### Outcome, predictors, sensor positions, and fitted samples
+
+The primary outcome is the zero-aware geometric mean melEDI for each retained
+participant-hour at the near-eye sensor position. A participant-hour is one
+observed one-hour interval from one participant that met the support criteria
+defined in [Preparation 06](../preparation/06_model_ready_datasets.qmd).
+Activity is binary: sedentary means no reported exercise, while active
+includes light, moderate, or vigorous reported exercise. Day type and
+activity are participant-day diary variables, where a participant-day is one
+calendar day contributed by one participant; previous sleep duration is
+linked from the preceding sleep period. Because participant-days contribute
+19–24 supported participant-hours, the estimand is participant-hour weighted
+rather than participant-day weighted.
+
+```{r}
+#| label: tbl-h06-exact-samples
+#| tbl-cap: "Exact fitted samples for the six core H06 analyses."
+
+samples |>
+  dplyr::transmute(
+    Scenario = dplyr::recode(
+      .data$run_id,
+      main__glasses__all_available = "Primary near-eye",
+      main__chest__all_available = "Chest, all available",
+      main__glasses__paired_common = "Near-eye, paired days",
+      main__chest__paired_common = "Chest, paired days",
+      gap_timing_unaware__glasses__all_available =
+        "Gap sensitivity, near-eye",
+      gap_timing_unaware__chest__all_available =
+        "Gap sensitivity, chest"
+    ),
+    Hours = .data$one_hour_observations,
+    `Participant-days` = .data$participant_days,
+    Participants = .data$participants,
+    Sites = .data$sites,
+    `Supported hours/day` = paste0(
+      .data$minimum_supported_hours_per_day,
+      "–",
+      .data$maximum_supported_hours_per_day
+    )
+  ) |>
+  compact_gt(
+    source_note = paste0(
+      "All rows are exact fitted samples. The complete site × category ",
+      "registry is available below."
+    )
+  ) |>
+  gt::fmt_integer(columns = c(Hours, `Participant-days`, Participants, Sites))
+```
+
+The primary fit contains 16,596 supported hours from 715 participant-days,
+137 participants, and nine study sites. The smallest primary site ×
+category cells contain 185 hours, 8 participant-days, and 4 participants;
+these minima do not all occur in the same cell. [Download the exact category
+cell registry](../../artifacts/06_model_data/H06/H06_category_cells.csv).
+
+The TUM exercise-diary identity check uses the pinned immutable
+`melidosData` 1.0.6 object and finds 7 S001 rows and 0 S101 rows, with no local
+identifier rewrite. The `KNUST_S005` numeral 3,600 is interpreted as 3,600
+seconds, or one sedentary hour, only for eligible exploratory analyses; it is
+not added to the primary analysis.
+
+For the required sensitivity analysis, the **gap-timing-unaware dataset**
+applies the same 50%-per-hour and 80%-per-day coverage rules but does not use
+the timing of remaining missing observations for a metric-specific
+adjustment. The primary analysis could therefore be interpreted as
+time-sensitive. Both datasets are defined in
+[Preparation 06](../preparation/06_model_ready_datasets.qmd). Hereafter, the
+corrected input is called the **primary dataset**.
+
+### Models and inference
+
+The common-effect model is a zero-inclusive quasi-Poisson generalized linear
+model with a log link and fixed study-site terms. A participant-cluster-robust
+95% confidence interval (95% CI) allows observations from the same participant
+to be related and uses the HC3 small-sample correction. Participants, rather
+than participant-hours, are therefore the inferential replicates.
+One-coefficient tests use a *t* reference with 136 degrees of freedom.
+
+The predictor-by-site interaction model allows the association of day type,
+activity, or previous sleep with hourly melEDI to differ by study site. Its
+site-interaction blocks use Wald *F* tests with restriction-rank and 136
+denominator degrees of freedom. A site-average estimate averages across the
+nine sites with equal weight for each site on the linear-predictor scale
+before back-transformation.
+
+```{r}
+#| label: tbl-h06-exact-confirmatory-formulas
+#| tbl-cap: "Exact evaluated Wilkinson formulas."
+#| echo: true
+#| code-fold: false
+#| code-summary: "Exact evaluated Wilkinson formulas (always shown)"
+
+formula_text <- function(x) paste(deparse(x), collapse = " ")
+selected_formulas <- h06_formula_set()[c("additive", "full")]
+
+tibble::enframe(
+  selected_formulas,
+  name = "model_id",
+  value = "formula"
+) |>
+  dplyr::mutate(
+    Role = dplyr::recode(
+      .data$model_id,
+      additive = "Primary population-mean associations",
+      full = "Predictor-by-site interaction blocks"
+    ),
+    `Evaluated Wilkinson formula` = vapply(
+      .data$formula,
+      formula_text,
+      character(1)
+    )
+  ) |>
+  dplyr::select(Model = .data$model_id, .data$Role,
+                .data$`Evaluated Wilkinson formula`) |>
+  compact_gt(
+    source_note = paste0(
+      "All comparisons use the same prepared rows. Quasi-likelihood AIC and ",
+      "likelihood-ratio tests are not reported."
+    )
+  )
+```
+
+False-discovery-rate (FDR) adjustment is applied separately to the three
+primary association tests, the three site-interaction tests, and the three
+practical contrasts. Only FDR-adjusted p-values are displayed. The exploratory
+site-specific screen uses three additional, separate nine-site FDR
+adjustments, one within each predictor. Chest, paired-position,
+weekday/weekend, influence, and other exploratory outputs do not create post
+hoc p-value families.
+
+```{r}
+#| label: tbl-h06-fdr-adjustment
+#| tbl-cap: "Declared sets of tests and FDR adjustment."
+
+multiplicity |>
+  dplyr::transmute(
+    `Set of tests` = .data$content,
+    Tests = .data$planned_size,
+    Adjustment = dplyr::recode(.data$method, BH = "FDR")
+  ) |>
+  compact_gt()
+```
+
+<details>
+<summary>Show technical source and figure checks</summary>
+
+### Technical source and figure checks
+
+
+### Figure reproducibility
+
+All six reader-facing figures were assessed at 170 mm on an A4 portrait page
+with 20-mm side margins. Native and intended widths are equal, and the
+smallest essential text remains 7.5 pt. Physical-size inspection found no
+clipping, overlap, harmful wrapping, distortion, or materially imbalanced
+data region. Every figure has accessible alt text and linked source data.
+
+```{r}
+#| label: tbl-h06-figure-readability-checks
+#| tbl-cap: "Physical-size checks for all reader-facing H06 figures."
+
+reader_figure_qa |>
+  dplyr::transmute(
+    Figure = .data$figure_id,
+    `Native width (mm)` = .data$native_width_mm,
+    `Intended width (mm)` = .data$intended_print_display_width_mm,
+    `Scale factor` = .data$scale_factor,
+    `Smallest nominal text (pt)` =
+      .data$smallest_essential_nominal_text_pt,
+    `Effective final text (pt)` = .data$effective_final_text_pt,
+    Status = dplyr::if_else(
+      .data$report_011_status == "PASS",
+      "Verified",
+      "Review needed"
+    )
+  ) |>
+  compact_gt()
+```
+
+The analysis used R 4.6.1 and the project library. Scientific transformations,
+model fits, model checks, contrasts, tables, and figures are implemented in
+H06-scoped R scripts. The temporal contrasts use the stored model objects and
+did not refit a GAM. No bootstrap was required, no package was installed, and
+no shared input was edited.
+
+[How the hourly H06 analysis was prepared](../../audit/hypotheses/H06/H06_analysis_preparation.qmd)
+provides the data, model, model-check, sensitivity, source-data, and
+file-identity record for these results.
+
+</details>

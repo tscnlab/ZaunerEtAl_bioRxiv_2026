@@ -118,6 +118,8 @@ current_hash <-
   "5e08099602682a4b951b0304764f341932ef2f03ccd4c62f32793ea82084e062"
 preceding_hash <-
   "c8e02302521360d3a5cb18f49e0a97aed4a1f0ea64343ead68bde274cddce10d"
+mder_decision_hash <-
+  "1664347de976057807fcb5ac6e24bd4b66af1fe32378fabd1f2acafcfc9266de"
 expect_true(grepl(current_hash, full, fixed = TRUE), "Current manifest is absent.")
 expect_true(
   grepl(preceding_hash, full, fixed = TRUE),
@@ -135,8 +137,47 @@ expect_true(
 expect_true(grepl("PREP-002", visible, fixed = TRUE), "PREP-002 is absent.")
 expect_true(grepl("FIND-043", visible, fixed = TRUE), "FIND-043 is absent.")
 expect_true(
-  grepl("This provenance gap is not evidence", visible, fixed = TRUE),
+  grepl(
+    "This incomplete provenance check is not evidence",
+    visible,
+    fixed = TRUE
+  ) &&
+    grepl(
+      "a current[[:space:]]+profile, metric, or downstream result is incorrect",
+      visible,
+      perl = TRUE
+    ),
   "The open audit item lacks its non-discrepancy qualification."
+)
+expect_true(
+  grepl(
+    "No[[:space:]]+reference profile weights, scales, or gates",
+    visible,
+    perl = TRUE
+  ) &&
+    grepl(
+      "not active Preparation 04[[:space:]]+inputs for MDER",
+      visible,
+      perl = TRUE
+    ),
+  "Preparation 03 does not clearly retire profile-based MDER support."
+)
+expect_true(
+  !grepl(
+    "The MDER maps require paired melEDI and illuminance observations",
+    visible,
+    fixed = TRUE
+  ),
+  "The superseded MDER-map claim remains visible."
+)
+decision_path <- file.path(root, "audit/decisions/mder_mean_of_viable_ratios.md")
+expect_true(file.exists(decision_path), "The controlling MDER decision is missing.")
+expect_true(
+  identical(
+    digest::digest(file = decision_path, algo = "sha256"),
+    mder_decision_hash
+  ),
+  "The controlling MDER decision identity changed."
 )
 
 table_chunks <- Filter(

@@ -1,0 +1,27 @@
+options(warn = 2)
+stopifnot(getRversion() == "4.6.1")
+root <- normalizePath(getwd(), mustWork = TRUE)
+rel <- "audit/report_harmonization/report018_order72k_s2_accessibility_guard_recovery_001"
+full <- function(p) ifelse(startsWith(p, "/"), p, file.path(root, p))
+relative <- function(p) ifelse(startsWith(p, paste0(root, "/")), substring(p, nchar(root) + 2L), p)
+pin <- function(p) {
+  f <- full(p)
+  stopifnot(file.exists(f), !dir.exists(f), Sys.readlink(f) == "")
+  data.frame(path = relative(p), sha256 = digest::digest(file = f, algo = "sha256", serialize = FALSE), bytes = unname(file.info(f)$size))
+}
+inputs <- read.csv(full(file.path(rel, "independent_replay/input_pins.csv")), stringsAsFactors = FALSE)
+observed <- do.call(rbind, lapply(inputs$path, pin))
+stopifnot(all(inputs$sha256 == observed$sha256), all(inputs$bytes == observed$bytes))
+checks <- read.csv(full(file.path(rel, "independent_replay/checks.csv")))
+stopifnot(nrow(checks) == 16L, all(checks$pass))
+files <- list.files(full(rel), recursive = TRUE, all.files = TRUE, no.. = TRUE, full.names = TRUE)
+files <- files[!dir.exists(files)]
+paths <- sort(unique(c(observed$path, relative(files))))
+m <- do.call(rbind, lapply(paths, pin))
+out <- file.path(rel, "independent_stop_manifest.csv")
+stopifnot(!anyDuplicated(m$path), !out %in% m$path, !file.exists(full(out)))
+write.csv(m, full(out), row.names = FALSE)
+rehash <- do.call(rbind, lapply(m$path, pin))
+stopifnot(identical(rehash$sha256, m$sha256), all(rehash$bytes == m$bytes))
+print(do.call(rbind, lapply(c(file.path(rel, "independent_stop_acceptance.md"), out), pin)), row.names = FALSE)
+cat(sprintf("ORDER72K_ATTEMPT4_INDEPENDENT_STOP_SEAL=PASS %d/%d unique non-circular; no retry authority\n", nrow(m), nrow(m)))

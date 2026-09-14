@@ -1,0 +1,11 @@
+"stage","command","scientific_execution","quarto_command"
+"preflight","Rscript --vanilla collect_order32k_preflight.R",FALSE,FALSE
+"test_repair","Rscript --vanilla record_order32k_test_repair.R",FALSE,FALSE
+"worker_reseal","Rscript --vanilla complete_order32k_worker_reseal.R",FALSE,FALSE
+"no_render_checks","Rscript --vanilla run_order32k_checks.R",FALSE,FALSE
+"semantic_audit","Rscript --vanilla run_order32k_semantic_audit.R",FALSE,FALSE
+"postedit_reconciliation","Rscript --vanilla audit_order32k_postedit_state.R",FALSE,FALSE
+"loopback_server","python3 -m http.server 0 --bind 127.0.0.1",FALSE,FALSE
+"browser_qa","Codex in-app browser against the isolated 127.0.0.1 URL",FALSE,FALSE
+"teardown","SIGINT; read-only ps and lsof verification",FALSE,FALSE
+"final_seal","Rscript --vanilla finalize_order32k_acceptance.R",FALSE,FALSE

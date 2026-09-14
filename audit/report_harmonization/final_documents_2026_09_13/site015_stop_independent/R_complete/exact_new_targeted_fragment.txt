@@ -1,0 +1,11 @@
+# Empty-fragment navbar controls are not document-target references.
+# Permit exactly the five unchanged Order013 controls, not arbitrary empty links.
+accepted_shell <- read_html(file.path('_build/nathealth',route))
+menu_nodes <- xml_find_all(new,'//a[@href="#"]')
+accepted_menu_nodes <- xml_find_all(accepted_shell,'//a[@href="#"]')
+expected_menu_ids <- c('nav-menu-study--data','nav-menu-environment','nav-menu-behaviour--time','nav-menu-individual-factors','nav-menu-supporting-material')
+check('No_new_broken_internal_links',
+  all(bad[nzchar(bad)] %in% oldbad[nzchar(oldbad)]) &&
+  length(menu_nodes)==5L &&
+  identical(xml_attr(menu_nodes,'id'),expected_menu_ids) &&
+  identical(as.character(menu_nodes),as.character(accepted_menu_nodes)))

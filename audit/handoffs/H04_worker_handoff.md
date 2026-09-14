@@ -36,7 +36,7 @@ the owner requested a final H04-scoped commit after approving this companion.
    are implemented; the additive-model primary omnibus remains unchanged.
 6. The owner then fixed the reader-facing category order as At home,
    Office/home working, Outdoors, Vehicle/public transport, Sleeping, with
-   Other/unspecified last where displayed. The owner also requested taller
+   Other last where displayed. The owner also requested taller
    Figures 5 and 6, single-line abbreviated facet strips, and separation of
    panel tags from axis labels. These display-only amendments are implemented;
    model reference coding, fitted objects, estimates, and inference did not
@@ -173,7 +173,7 @@ is retained only as its additive-model display estimate:
 | On the road with public transport/car | 331.22 | 512.91 |
 | Working in the office/from home | 198.87 | 202.87 |
 | Outdoors | 714.22 | 998.85 |
-| Other/unspecified activity | 221.83 | 315.69 |
+| Other | 221.83 | 315.69 |
 
 The primary five-named-category tests are:
 
@@ -512,3 +512,154 @@ updates, not applied here:
 
 H04-owned work is complete. No further H04 scientific computation, model
 fitting, or shared-profile change is required.
+
+## REPORT-014/017 order 35 stopped source-only state
+
+Order 35 was assembled as one consolidated source-only result and companion
+rewrite on 2026-08-14. No QMD was executed and no report or figure was
+rendered. The exact exercised source identities are:
+
+- `notebooks/hypotheses/H04.qmd`:
+  `63e815683e1e81dadd480aeb230c7913de7726aa9242f5ce89ec4a0e7e90471c`;
+- `audit/hypotheses/H04/H04_analysis_preparation.qmd`:
+  `52160297aaaa65f9cc0e36839adb0fcbe86e55631c847476b5006f03d657e9da`;
+- `tests/hypotheses/H04/test_h04_report017_source_harmonization.R`:
+  `02e7494ad081f6395fe19ceca2ed3ded1fe8bc3e8dbaf550e3279f3406ac427f`.
+
+The source pair preserves the accepted scientific role separation. The
+additive site-plus-activity population-mean model supplies the primary
+activity-category test. The population-mean Mundlak-style sensitivity
+separates participant-level category composition from within-participant
+departures. The exploratory random-intercept model describes stable
+participant-level variation in overall exposure while retaining the fixed
+activity-by-site structure. It adds neither a participant-specific activity
+slope nor a participant-day random effect. The exploratory nonlinear temporal
+analysis remains separate from all three. None changes the primary estimand or
+supports a causal interpretation.
+
+The preserved dynamic source links are:
+
+- result to companion:
+  `../../audit/hypotheses/H04/H04_analysis_preparation.qmd`;
+- result to the auxiliary mixed-model details:
+  `../../audit/hypotheses/H04/H04_analysis_preparation.qmd#sec-h04-prep-participant-random-intercept`;
+- companion to result:
+  `../../../notebooks/hypotheses/H04.qmd`;
+- companion to the result's preregistration changes:
+  `../../../notebooks/hypotheses/H04.qmd#h04-preregistration-deviations`.
+
+The two prescribed R 4.6.1 tests were invoked once in sequence:
+
+```text
+/usr/bin/time -p Rscript --vanilla tests/hypotheses/H04/test_h04_participant_random_intercept_assessment.R
+env H04_ORDER35_AUDIT_CSV=audit/hypotheses/H04/report017_order35/H04_order35_source_audit.csv /usr/bin/time -p Rscript --vanilla tests/hypotheses/H04/test_h04_report017_source_harmonization.R
+```
+
+The combined tool response was truncated and did not retain the individual
+runtime or exit objects. The source-only test wrote its complete 37-row audit
+before stopping: 35 checks passed and two failed. The first failure is a
+48-character truncated expected SHA-256 for the otherwise approved
+`tbl-h04-prep-output-map` changed chunk. The second uses two incorrect hashes
+for the excluded untracked audit HTML pages; those pages still match their
+accepted Stage 3 manifest entries and retain their earlier modification times.
+Per the one-pass order, neither the test nor sources were patched and neither
+test was rerun. The complete combined defect analysis is in
+`audit/hypotheses/H04/report017_order35/H04_order35_stopped_audit.md`.
+
+The following accepted identities remain preserved:
+
+- Stage 3 manifest:
+  `6215a9496f5f542ff92c19536b5601aa49c1ca804523eb7f9ff8bfdff852e115`;
+- preparation manifest:
+  `ba6164aa81a38d79670ddf7d89b7b9b17bfd8e906d45293c568f01c079c5d524`;
+- stale result HTML:
+  `cad724ca28c651db62f2bb11a51d0d53adbf133785a6d9477f600900269e3cbe`;
+- stale companion HTML:
+  `73e1c1f097b2053fd55bfea4857d3c72490af490bfa5e7ebf96c8f801bb57a8f`.
+
+Both HTML reports are stale context and are not renders of the revised QMDs.
+The known baked wording in
+`H04_reader_heterogeneity_category_estimates.{png,pdf,svg}` and
+`H04_site_activity_estimates.{png,pdf,svg}` remains inventoried only. Those
+two figure families were not rebuilt or edited. Their later bounded label
+refresh remains deferred.
+
+H04 scientific closure is unchanged, no new central decision is proposed,
+and REPORT-017 rendering remains held. A later owner instruction is required
+before repairing the stopped test expectations or running any verification
+again.
+
+## REPORT-014/017 order 35b country-label source reflow
+
+Order 35b applied exactly two source-line whitespace reflows on 2026-08-20:
+
+- in `notebooks/hypotheses/H04.qmd`, the line break between `Delft` and
+  `(NL)` moved to immediately before `Delft`, producing contiguous source text
+  `Delft (NL)`;
+- in `audit/hypotheses/H04/H04_analysis_preparation.qmd`, the line break
+  between `Munich` and `(DE)` moved to immediately before `Munich`, producing
+  contiguous source text `Munich (DE)`.
+
+The resulting current-source identities are:
+
+- result QMD:
+  `f8adb6d78be041ce296dd7e89eb92769b128631c1b4227ce5d8ab3d526daf1d5`,
+  83,285 bytes;
+- preparation companion QMD:
+  `efdb5be8dc194695f40c50249fab14905ec337bc63079ae589557de860188474`,
+  91,202 bytes.
+
+Normalized reader text is unchanged. Each complete source remains
+byte-identical to its preimage after whitespace removal, and the complete
+non-whitespace byte and token sequences are identical. Every executable R
+chunk body, inline-R expression, endpoint, formula, numeric token, assignment,
+link, artifact reference, and source-data reference remains unchanged. Exact
+reverse substitution reconstructs the preceding result and companion hashes
+already recorded in the historical order-35 section above.
+
+Under R 4.6.1, the unchanged participant random-intercept assessment passed,
+the unchanged complete H04 source test passed all 37 gates, and the unchanged
+global country-coded-site test passed for all 37 reader-facing QMD sources
+with zero findings.
+
+No QMD was executed. No scientific computation, model fit, prediction,
+simulation, bootstrap, Shapley allocation, artifact regeneration, Quarto
+render, HTML or profile edit, commit, or push occurred. Every H04 render
+remains held, and H01 remains the sole active integration path.
+
+## Reader-facing `Other` label correction
+
+The author clarified that the normalized H04 source option is exactly
+`Other`. It does not combine missing flags, hours without a selected category,
+free-text recoding, or a separate unspecified response. Current reader-facing
+H04 sources and display builders therefore use `Other` alone. The internal
+`other` and `act_other` keys, and the frozen model-factor identity needed to
+read accepted scientific artifacts, remain unchanged. This is a terminology
+correction only and does not alter support, weighting, samples, estimates,
+intervals, tests, or claims.
+
+The final H04-only postimage candidate also applies the previously requested
+H03-aligned compact table treatment. It uses uppercase left panel tags,
+single-line P/D/H support, inline 95% confidence intervals, country-coded
+registry colours, and `Other` alone in all visible labels and captions. The
+accepted H04 temporal image, category estimates, site estimates, support,
+1/k weighting, non-estimable cells, and FDR decisions remain frozen. The
+focused R 4.6.1 verifier passed 23/23 gates.
+
+Final source and candidate identities are:
+
+- result QMD: `243896d4c22f68d23027f77f3721882e0a3d55274e67014e75d6ff55e2e243af`;
+- preparation companion QMD: `5b6255184ab1988f2b89dfc363e1eb7d010d6f85436c7ff32754289af6e6de48`;
+- Figure 3 builder: `d162b72a96d2d76732f7529473b810eaf1276bbedbdac0d80d92e65b7b6d9ce6`;
+- Figure 3 verifier: `9a190001edb50d3161c2e7d61a982e246ffdc866f4dda9f02f56cc1a3455544f`;
+- selected Figure 3 PNG: `22d402974fc0df26c77536e5db8af166e87637f2192ea4cc4f01da2d98ebb122`;
+- selected Figure 3 SVG: `012453debcd7994ab8b8437bd1b829a4935b26d97803963c6621ee2093bd72dd`;
+- selected Figure 3 caption: `a2f55a592ee759237497c7ac5197c54132862f25cd4625f829ebafc84471ae36`;
+- candidate output manifest: `a6b6ee2d53d30f5e92a4611f390650d6a436cc91a9b51a10b28ee47eb2b9edf6`;
+- non-circular 13-row acceptance manifest:
+  `81c0c3bbdbed7b9851a6815c8a765e2b32865d15ea6fa2be9ad20340a6fd2485`.
+
+No Quarto render was run. No shared manuscript, shared selection, navigation,
+configuration, build-profile, central ledger, or harmonizer-owned file was
+edited. Shared integration and the canonical website renders remain held for
+the coordinator.

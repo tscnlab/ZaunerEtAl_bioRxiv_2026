@@ -1,0 +1,8 @@
+check,command,exit_status,runtime_seconds,result
+parse and bounded reseal,Rscript --vanilla audit/hypotheses/H01/report017_report016_display_transition_reseal/reseal_h01_report017_31h.R,0,3.34,PASS
+REPORT-016 first run,Rscript --vanilla tests/hypotheses/H01/test_h01_report016_deviation_reconciliation.R,1,4.13,STOP: named SHA vector rejected by exact identical check
+parse and direct test-identity correction,Rscript --vanilla audit/hypotheses/H01/report017_report016_display_transition_reseal/reseal_h01_report017_31h_test_correction.R,0,2.4,PASS
+REPORT-016 complete rerun,Rscript --vanilla tests/hypotheses/H01/test_h01_report016_deviation_reconciliation.R,1,5.23,FAIL-CLOSED: unchanged historical reconciliation-manifest gate
+order31f focused display-refresh test,Rscript --vanilla tests/hypotheses/H01/test_h01_stage3_model_support_display_refresh.R,,,NOT RUN AFTER FAIL-CLOSED STOP
+complete H01 reporting test,Rscript --vanilla tests/hypotheses/H01/test_h01_reporting_inputs.R,,,NOT RUN AFTER FAIL-CLOSED STOP
+Quarto render,quarto render,,,PROHIBITED AND NOT RUN

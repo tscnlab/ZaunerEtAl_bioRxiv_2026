@@ -1,0 +1,31 @@
+--- audit/manuscript_nature_health/revision_2026_09_11/consolidated_display_repair_order72k/project/order72k_layout.css
++++ PROSPECTIVE_ONLY/order72k_layout.css
+@@ -1,16 +1,22 @@
+ 
+-/* Order72k candidate-only layout. No rule targets protected Main Table 3. */
++/* PROSPECTIVE ONLY. No rule targets protected Main Table 3. */
+ #tbl-near-eye-metrics table {width:1490px !important;min-width:1490px !important;table-layout:fixed !important;}
+ #tbl-near-eye-metrics {min-width:0 !important;max-width:100%;}
+ #tbl-near-eye-metrics tr > :first-child {width:200px !important;min-width:0 !important;}
+-#tbl-near-eye-metrics tr > :nth-child(2) {width:80px !important;min-width:0 !important;}
+-#tbl-near-eye-metrics tr > :nth-child(3) {width:105px !important;min-width:0 !important;}
+-#tbl-near-eye-metrics tr > :nth-child(n+4):nth-child(-n+12) {width:86px !important;min-width:0 !important;}
+-#tbl-near-eye-metrics tr > :nth-child(13) {width:100px !important;min-width:0 !important;}
+-#tbl-near-eye-metrics tr > :nth-child(14) {width:231px !important;min-width:0 !important;}
++#tbl-near-eye-metrics tr > :nth-child(2) {width:60px !important;min-width:0 !important;}
++#tbl-near-eye-metrics tr > :nth-child(3) {width:103px !important;min-width:0 !important;}
++#tbl-near-eye-metrics tr > :nth-child(n+4):nth-child(-n+12) {width:96px !important;min-width:0 !important;}
++#tbl-near-eye-metrics tr > :nth-child(13) {width:78px !important;min-width:0 !important;}
++#tbl-near-eye-metrics tr > :nth-child(14) {width:185px !important;min-width:0 !important;}
+ #tbl-near-eye-metrics tbody img {width:100% !important;height:auto !important;max-width:100% !important;min-width:0 !important;object-fit:contain;}
+ #tbl-near-eye-metrics tbody tr > :nth-child(n+3):nth-child(-n+12),
+ #tbl-near-eye-metrics tbody tr > :nth-child(n+3):nth-child(-n+12) * {white-space:normal !important;overflow-wrap:normal !important;word-break:normal !important;}
++#tbl-near-eye-metrics tbody tr > :nth-child(n+3):nth-child(-n+12) {padding-left:4px !important;padding-right:4px !important;}
++/* Preserve the complete existing mean-plus-minus-SD unit, not just the sign. */
++#tbl-near-eye-metrics tbody tr > :nth-child(n+3):nth-child(-n+12) span[style*="white-space:nowrap"],
++#tbl-near-eye-metrics tbody tr > :nth-child(n+3):nth-child(-n+12) span[style*="white-space:nowrap"] *,
++#tbl-near-eye-metrics tbody tr > :nth-child(n+3):nth-child(-n+12) span[style*="white-space: nowrap"],
++#tbl-near-eye-metrics tbody tr > :nth-child(n+3):nth-child(-n+12) span[style*="white-space: nowrap"] * {white-space:nowrap !important;}
+ #tbl-plan-h02-glasses-variation-shapley-gt-candidate, #tbl-plan-h02-glasses-variation-shapley-gt-candidate table, #tbl-plan-h02-glasses-variation-shapley-gt-candidate th, #tbl-plan-h02-glasses-variation-shapley-gt-candidate td, #tbl-plan-h02-glasses-variation-shapley-gt-candidate * {font-family:Arial, Helvetica, sans-serif !important;}
+ #tbl-plan-h02-chest-variation-shapley-gt-candidate, #tbl-plan-h02-chest-variation-shapley-gt-candidate table, #tbl-plan-h02-chest-variation-shapley-gt-candidate th, #tbl-plan-h02-chest-variation-shapley-gt-candidate td, #tbl-plan-h02-chest-variation-shapley-gt-candidate * {font-family:Arial, Helvetica, sans-serif !important;}
+ #tbl-plan-person-level-synthesis-gt-candidate, #tbl-plan-person-level-synthesis-gt-candidate table, #tbl-plan-person-level-synthesis-gt-candidate th, #tbl-plan-person-level-synthesis-gt-candidate td, #tbl-plan-person-level-synthesis-gt-candidate * {font-family:Arial, Helvetica, sans-serif !important;}

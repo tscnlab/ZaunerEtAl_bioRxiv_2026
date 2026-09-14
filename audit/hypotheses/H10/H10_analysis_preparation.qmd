@@ -1,0 +1,1414 @@
+---
+title: "H10 analysis preparation and provenance"
+subtitle: "From verified demographic and personal light-exposure records to reported associations"
+date: last-modified
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    code-fold: true
+    code-summary: "Show the R code used for this display"
+    code-tools: true
+    page-layout: full
+execute:
+  echo: true
+  warning: false
+  message: false
+  error: false
+  freeze: false
+fig-cap-location: bottom
+tbl-cap-location: top
+---
+
+```{r}
+#| label: setup-h10-preparation
+#| include: false
+
+suppressPackageStartupMessages({
+  library(dplyr)
+  library(gt)
+  library(knitr)
+  library(readr)
+  library(stringr)
+  library(tibble)
+  library(tidyr)
+})
+
+locate_project_root <- function(start = getwd()) {
+  candidate <- normalizePath(start, winslash = "/", mustWork = TRUE)
+  repeat {
+    if (
+      file.exists(file.path(candidate, "renv.lock")) &&
+        file.exists(file.path(candidate, "_quarto.yml"))
+    ) {
+      return(candidate)
+    }
+    parent <- dirname(candidate)
+    if (identical(parent, candidate)) {
+      stop("Could not locate the project root", call. = FALSE)
+    }
+    candidate <- parent
+  }
+}
+
+configured_root <- Sys.getenv("NATHEALTH_PROJECT_ROOT", unset = "")
+if (
+  nzchar(configured_root) &&
+    file.exists(file.path(configured_root, "renv.lock"))
+) {
+  root <- normalizePath(configured_root, winslash = "/", mustWork = TRUE)
+} else {
+  root <- locate_project_root()
+}
+knitr::opts_knit$set(
+  root.dir = file.path(root, "audit", "hypotheses", "H10")
+)
+
+project_library <- file.path(
+  root,
+  "renv/library/macos/R-4.6/aarch64-apple-darwin23"
+)
+if (!dir.exists(project_library)) {
+  stop("The authoritative R 4.6 project library is unavailable", call. = FALSE)
+}
+.libPaths(c(project_library, .libPaths()))
+
+if (!identical(as.character(getRversion()), "4.6.1")) {
+  stop("H10 preparation requires R 4.6.1", call. = FALSE)
+}
+
+source(file.path(root, "scripts/pipeline/paths_io.R"))
+
+read_h10_csv <- function(relative_path) {
+  readr::read_csv(
+    file.path(root, relative_path),
+    show_col_types = FALSE,
+    progress = FALSE,
+    na = ""
+  )
+}
+
+prep_gt <- function(data, title = NULL, note = NULL, font_size = 10) {
+  output <- data |>
+    gt::gt() |>
+    gt::opt_align_table_header(align = "left") |>
+    gt::opt_row_striping() |>
+    gt::sub_missing(missing_text = "—") |>
+    gt::tab_options(
+      table.width = gt::pct(100),
+      table.font.size = gt::px(font_size),
+      data_row.padding = gt::px(3),
+      heading.align = "left",
+      source_notes.font.size = gt::px(max(8, font_size - 2))
+    )
+  if (!is.null(title)) {
+    output <- output |> gt::tab_header(title = gt::md(title))
+  }
+  if (!is.null(note)) {
+    output <- output |> gt::tab_source_note(gt::md(note))
+  }
+  output
+}
+
+format_count <- function(value) {
+  ifelse(
+    is.na(value),
+    "—",
+    format(round(value), big.mark = ",", scientific = FALSE, trim = TRUE)
+  )
+}
+
+format_hours <- function(value) {
+  ifelse(
+    is.na(value),
+    "—",
+    format(round(value, 1), big.mark = ",", scientific = FALSE, trim = TRUE)
+  )
+}
+
+input_audit <- read_h10_csv(
+  "artifacts/06_model_data/H10/H10_input_audit.csv"
+)
+provenance_qualification <- read_h10_csv(
+  "artifacts/06_model_data/H10/H10_provenance_qualification.csv"
+)
+metric_registry <- read_h10_csv(
+  "artifacts/06_model_data/H10/H10_metric_registry.csv"
+)
+run_registry <- read_h10_csv(
+  "artifacts/06_model_data/H10/H10_run_registry.csv"
+)
+comparison_registry <- read_h10_csv(
+  "artifacts/06_model_data/H10/H10_comparison_registry.csv"
+)
+frame_index <- read_h10_csv(
+  "artifacts/06_model_data/H10/H10_model_frame_index.csv"
+)
+demographic_cells <- read_h10_csv(
+  paste0(
+    "artifacts/06_model_data/H10/",
+    "H10_demographic_coding_and_site_cells.csv"
+  )
+)
+paired_sample_audit <- read_h10_csv(
+  paste0(
+    "artifacts/06_model_data/H10/",
+    "H10_paired_placement_sample_audit.csv"
+  )
+)
+gap_common_audit <- read_h10_csv(
+  paste0(
+    "artifacts/06_model_data/H10/",
+    "H10_primary_gap_common_sample_audit.csv"
+  )
+)
+excluded_participants <- read_h10_csv(
+  paste0(
+    "artifacts/06_model_data/H10/",
+    "H10_preregistered_exclusion_participants.csv"
+  )
+)
+model_manifest <- read_h10_csv(
+  "artifacts/07_models/H10/H10_model_manifest.csv"
+)
+model_diagnostics <- read_h10_csv(
+  "artifacts/08_diagnostics/H10/H10_model_diagnostics.csv"
+)
+diagnostic_assessment <- read_h10_csv(
+  paste0(
+    "artifacts/08_diagnostics/H10/",
+    "H10_primary_diagnostic_assessment.csv"
+  )
+)
+leave_one_site_summary <- read_h10_csv(
+  paste0(
+    "artifacts/08_diagnostics/H10/",
+    "H10_leave_one_site_out_summary.csv"
+  )
+)
+participant_influence <- read_h10_csv(
+  paste0(
+    "artifacts/08_diagnostics/H10/",
+    "H10_participant_deletion_influence.csv"
+  )
+)
+family_audit <- read_h10_csv(
+  "artifacts/09_tables/H10/H10_multiplicity_family_audit.csv"
+)
+main_results <- read_h10_csv(
+  "artifacts/09_tables/H10/H10_primary_main_results.csv"
+)
+interaction_results <- read_h10_csv(
+  "artifacts/09_tables/H10/H10_primary_interaction_results.csv"
+)
+model_effects <- read_h10_csv(
+  "artifacts/09_tables/H10/H10_model_effects.csv"
+)
+model_tests <- read_h10_csv(
+  "artifacts/09_tables/H10/H10_model_tests.csv"
+)
+paired_results <- read_h10_csv(
+  paste0(
+    "artifacts/08_diagnostics/H10/sensitivity/",
+    "H10_paired_placement_main_effects.csv"
+  )
+)
+gap_common_results <- read_h10_csv(
+  paste0(
+    "artifacts/08_diagnostics/H10/sensitivity/",
+    "H10_primary_gap_common_sample_effects.csv"
+  )
+)
+preregistered_exclusion_results <- read_h10_csv(
+  paste0(
+    "artifacts/08_diagnostics/H10/sensitivity/",
+    "H10_preregistered_exclusion_effects.csv"
+  )
+)
+metric_sensitivities <- read_h10_csv(
+  paste0(
+    "artifacts/08_diagnostics/H10/sensitivity/",
+    "H10_metric_specific_sensitivities.csv"
+  )
+)
+mder_distribution <- read_h10_csv(
+  paste0(
+    "artifacts/08_diagnostics/H10/sensitivity/",
+    "H10_mder_current_distribution.csv"
+  )
+)
+mder_influence <- read_h10_csv(
+  paste0(
+    "artifacts/08_diagnostics/H10/sensitivity/",
+    "H10_mder_current_influence_assessment.csv"
+  )
+)
+mder_identity_audit <- read_h10_csv(
+  paste0(
+    "artifacts/12_manifests/H10/",
+    "H10_METRIC010_gap_repair_non_mder_identity_audit.csv"
+  )
+)
+mder_primary_identity_audit <- read_h10_csv(
+  paste0(
+    "artifacts/12_manifests/H10/",
+    "H10_METRIC010_gap_repair_primary_identity_audit.csv"
+  )
+)
+mder_multiplicity_audit <- read_h10_csv(
+  paste0(
+    "artifacts/12_manifests/H10/",
+    "H10_METRIC010_gap_repair_multiplicity_change_audit.csv"
+  )
+)
+gap_repair <- read_h10_csv(
+  paste0(
+    "artifacts/06_model_data/H10/",
+    "H10_METRIC010_gap_repair_record.csv"
+  )
+)
+l10_cell_changes <- read_h10_csv(
+  paste0(
+    "artifacts/06_model_data/H10/",
+    "H10_METRIC011_l10_cell_changes.csv"
+  )
+)
+l10_identity_audit <- read_h10_csv(
+  paste0(
+    "artifacts/12_manifests/H10/",
+    "H10_METRIC011_frozen_identity_audit.csv"
+  )
+)
+l10_multiplicity_audit <- read_h10_csv(
+  paste0(
+    "artifacts/12_manifests/H10/",
+    "H10_METRIC011_multiplicity_audit.csv"
+  )
+)
+l10_update_summary <- read_h10_csv(
+  paste0(
+    "artifacts/12_manifests/H10/",
+    "H10_METRIC011_update_summary.csv"
+  )
+)
+stability_summary <- read_h10_csv(
+  paste0(
+    "artifacts/08_diagnostics/H10/sensitivity/",
+    "H10_sensitivity_stability_summary.csv"
+  )
+)
+waking_mder <- read_h10_csv(
+  paste0(
+    "artifacts/08_diagnostics/H10/sensitivity/",
+    "H10_waking_mder_unavailable.csv"
+  )
+)
+execution_environment <- read_h10_csv(
+  "artifacts/12_manifests/H10/H10_execution_environment.csv"
+)
+figure_manifest <- read_h10_csv(
+  "artifacts/12_manifests/H10/H10_figure_manifest.csv"
+)
+stage2_manifest <- read_h10_csv(
+  "artifacts/12_manifests/H10/H10_stage2_artifacts.csv"
+)
+stage3_manifest <- read_h10_csv(
+  "artifacts/12_manifests/H10/H10_stage3_artifacts.csv"
+)
+core_diagnostic_manifest <- read_h10_csv(
+  paste0(
+    "artifacts/12_manifests/H10/",
+    "H10_core_diagnostic_figure_manifest.csv"
+  )
+)
+core_diagnostic_figure_rows <- core_diagnostic_manifest |>
+  filter(!is.na(.data$figure_path))
+preparation_age <- read_h10_csv(
+  paste0(
+    "artifacts/11_source_data/H10/",
+    "H10_preparation_age_distribution_data.csv"
+  )
+)
+preparation_support <- read_h10_csv(
+  paste0(
+    "artifacts/11_source_data/H10/",
+    "H10_preparation_sample_support_data.csv"
+  )
+)
+preparation_figure_qa <- read_h10_csv(
+  paste0(
+    "artifacts/12_manifests/H10/",
+    "H10_preparation_figure_readability_qa.csv"
+  )
+)
+site_registry <- read_h10_csv("config/site_display_registry.csv") |>
+  arrange(.data$display_order)
+
+input_paths <- file.path(root, input_audit$path)
+input_current_hashes <- vapply(
+  input_paths,
+  artifact_sha256,
+  character(1)
+)
+input_identity_checks <- tibble::tibble(
+  check = "Exact analytical input files",
+  records = nrow(input_audit),
+  passed = all(input_audit$exists) &&
+    all(input_audit$hash_verified) &&
+    all(input_current_hashes == input_audit$observed_sha256)
+)
+
+scientific_inventory <- stage2_manifest |>
+  filter(grepl(
+    "^artifacts/(06_model_data|07_models|08_diagnostics|09_tables)/H10/",
+    .data$path
+  ))
+scientific_paths <- file.path(root, scientific_inventory$path)
+scientific_current_hashes <- vapply(
+  scientific_paths,
+  artifact_sha256,
+  character(1)
+)
+scientific_identity_checks <- tibble::tibble(
+  check = "Frozen H10 scientific artifacts",
+  records = nrow(scientific_inventory),
+  passed = all(scientific_current_hashes == scientific_inventory$sha256)
+)
+
+model_frames <- readRDS(file.path(
+  root,
+  "artifacts/06_model_data/H10/H10_model_frames.rds"
+))
+expected_frame_names <- paste(
+  frame_index$run_id,
+  frame_index$metric_id,
+  sep = "__"
+)
+required_frame_columns <- c(
+  "data_scenario",
+  "placement",
+  "site",
+  "Id",
+  "local_date",
+  "metric_id",
+  "analysis_unit",
+  "value",
+  "age",
+  "biological_sex",
+  "age_decade",
+  "response",
+  ".model_row_id"
+)
+frame_structure <- tibble::tibble(
+  frame_name = names(model_frames),
+  observations = vapply(model_frames, nrow, integer(1)),
+  required_columns = vapply(
+    model_frames,
+    function(frame) all(required_frame_columns %in% names(frame)),
+    logical(1)
+  ),
+  unique_row_keys = vapply(
+    model_frames,
+    function(frame) !anyDuplicated(frame$.model_row_id),
+    logical(1)
+  ),
+  complete_core_fields = vapply(
+    model_frames,
+    function(frame) {
+      !anyNA(frame[c("site", "Id", "age", "biological_sex", "response")])
+    },
+    logical(1)
+  ),
+  age_unit_exact = vapply(
+    model_frames,
+    function(frame) {
+      isTRUE(all.equal(
+        as.numeric(frame$age_decade),
+        as.numeric(frame$age) / 10,
+        tolerance = 0
+      ))
+    },
+    logical(1)
+  )
+) |>
+  mutate(
+    indexed_observations = frame_index$observations[
+      match(.data$frame_name, expected_frame_names)
+    ],
+    observation_count_matches = .data$observations ==
+      .data$indexed_observations
+  )
+frame_identity_checks <- tibble::tibble(
+  check = "Model-frame schema, keys, counts, and age units",
+  records = nrow(frame_structure),
+  passed = setequal(names(model_frames), expected_frame_names) &&
+    all(frame_structure$required_columns) &&
+    all(frame_structure$unique_row_keys) &&
+    all(frame_structure$complete_core_fields) &&
+    all(frame_structure$age_unit_exact) &&
+    all(frame_structure$observation_count_matches)
+)
+
+render_checks <- bind_rows(
+  input_identity_checks,
+  scientific_identity_checks,
+  frame_identity_checks,
+  tibble::tibble(
+    check = "METRIC-011 bounded-update identities",
+    records = nrow(l10_identity_audit),
+    passed = nrow(l10_cell_changes) == 8L &&
+      all(l10_cell_changes$new_value_lx == 0) &&
+      all(l10_identity_audit$passed) &&
+      l10_update_summary$non_l10_raw_p_values_changed == 0L &&
+      l10_update_summary$mder_models_changed == 0L &&
+      l10_update_summary$significance_decisions_changed == 0L &&
+      l10_update_summary$boundary_assessment == "PASS"
+  ),
+  tibble::tibble(
+    check = "Descriptive figure/source identities",
+    records = nrow(preparation_figure_qa),
+    passed = all(preparation_figure_qa$overall_status == "PASS") &&
+      all(vapply(
+        file.path(root, preparation_figure_qa$path),
+        artifact_sha256,
+        character(1)
+      ) == preparation_figure_qa$sha256) &&
+      all(vapply(
+        file.path(root, preparation_figure_qa$source_data_path),
+        artifact_sha256,
+        character(1)
+      ) == preparation_figure_qa$source_data_sha256)
+  ),
+  tibble::tibble(
+    check = "Core diagnostic display identities",
+    records = nrow(core_diagnostic_manifest),
+    passed = all(vapply(
+      file.path(root, core_diagnostic_figure_rows$figure_path),
+      artifact_sha256,
+      character(1)
+    ) == core_diagnostic_figure_rows$figure_sha256) &&
+      all(vapply(
+      file.path(root, core_diagnostic_manifest$pdf_path),
+      artifact_sha256,
+      character(1)
+    ) == core_diagnostic_manifest$pdf_sha256) &&
+      all(vapply(
+        file.path(root, core_diagnostic_manifest$source_data_path),
+        artifact_sha256,
+        character(1)
+      ) == core_diagnostic_manifest$source_data_sha256) &&
+      all(vapply(
+        file.path(root, core_diagnostic_manifest$model_index_path),
+        artifact_sha256,
+        character(1)
+      ) == core_diagnostic_manifest$model_index_sha256)
+  )
+)
+
+stopifnot(
+  all(render_checks$passed),
+  nrow(metric_registry) == 17L,
+  nrow(run_registry) == 4L,
+  nrow(frame_index) == 68L,
+  nrow(model_manifest) == 612L,
+  nrow(model_effects) == 136L,
+  nrow(model_tests) == 272L,
+  nrow(main_results) == 68L,
+  nrow(interaction_results) == 68L,
+  nrow(diagnostic_assessment) == 68L,
+  nrow(core_diagnostic_manifest) == 3L,
+  sum(core_diagnostic_manifest$models) == 79L,
+  nrow(family_audit) == 16L,
+  all(family_audit$complete_17_member_family),
+  all(family_audit$independent_recalculation_matches),
+  all(model_manifest$converged),
+  all(model_manifest$positive_definite_hessian),
+  all(!model_manifest$singular),
+  all(model_manifest$fixed_full_rank),
+  sum(main_results$adjusted_significant) == 11L,
+  sum(interaction_results$adjusted_significant) == 2L,
+  sum(diagnostic_assessment$final_assessment == "acceptable") == 25L,
+  sum(
+    diagnostic_assessment$final_assessment ==
+      "acceptable with specified limitations"
+  ) == 43L,
+  !any(diagnostic_assessment$final_assessment == "not acceptable"),
+  nrow(preparation_age) == 295L,
+  nrow(preparation_support) == 34L,
+  nrow(mder_influence) == 4L,
+  all(mder_identity_audit$identity_status == "PASS"),
+  all(mder_primary_identity_audit$identity_status == "PASS"),
+  all(mder_multiplicity_audit$changed_adjusted_p_rows_above_1e_12 == 0L),
+  all(mder_multiplicity_audit$changed_adjusted_decision_rows == 0L),
+  nrow(waking_mder) == 2L,
+  nrow(gap_repair) == 1L,
+  gap_repair$repair_status == "REPAIRED_IN_SHARED_PREPARATION"
+)
+```
+
+## Purpose
+
+::: {.callout-note title="About this analysis record"}
+This page explains how verified demographic data and personal light-exposure
+metrics were turned into the H10 results. The companion
+[H10 results report](../../../notebooks/hypotheses/H10.qmd) presents the
+scientific findings.
+
+Model estimates and intervals, model checks, influence results, sensitivity
+analyses, figures, and source data are read from stored H10 outputs. This page
+does not fit or compare models, calculate predictions, repeat influence checks,
+bootstrap, resample, or simulate data.
+:::
+
+The preregistered hypothesis was:
+
+> Personal light exposure metrics depend on age and gender.
+
+Biological sex and gender were recorded as separate variables.
+The accepted analyses used biological sex, coded Female or Male; gender was not analysed.
+Age associations were estimated per 10-year increase and describe cross-sectional associations, not
+causal effects of ageing. The primary estimands were the site-adjusted common
+age association and Female-minus-Male association. Separate age-by-site and
+biological-sex-by-site interactions allowed those associations to differ by
+study site.
+
+The primary near-eye sensor position sampled light closer to the eyes during
+wear, although it did not directly measure retinal exposure. The complementary
+chest sensor position measured light at the chest, not ocular exposure. The 17
+responses include melanopic equivalent daylight illuminance (melEDI), an
+illuminance weighted for melanopsin-related sensitivity. A participant-day is
+one participant's retained daily record on one local calendar day.
+
+Every reported interval is a 95% confidence interval (95% CI). Four separate
+complete 17-test families use false-discovery-rate (FDR) adjustment: age main
+effects, biological-sex main effects, age-by-site interactions, and
+biological-sex-by-site interactions. Metric derivation and support are
+documented in [Preparation 04](../../../notebooks/preparation/04_metric_derivation.qmd),
+and model-ready dataset construction is documented in
+[Preparation 06](../../../notebooks/preparation/06_model_ready_datasets.qmd).
+The [H10 results report](../../../notebooks/hypotheses/H10.qmd) presents the
+scientific findings and its
+[linked registration-record summary](../../../notebooks/hypotheses/H10.qmd#h10-preregistration-deviations).
+
+## Analysis map
+
+```{mermaid}
+flowchart TD
+  A["Verified Preparation 06 data<br/>near eye and chest"] --> C["Input identity, schema,<br/>key and value checks"]
+  B["Normalised age, biological sex,<br/>site and employment data"] --> C
+  C --> D["Four dataset × sensor-position runs"]
+  D --> E["Seventeen metric-specific frames<br/>per run; 68 frames total"]
+  E --> F["Age per decade and<br/>Male/Female contrast coding"]
+  F --> G["Site-only, additive and<br/>predictor-by-site interaction models"]
+  G --> H["Practical effects, 95% CIs<br/>and separate 17-test FDR families"]
+  G --> I["Numerical, residual, temporal,<br/>distribution and influence checks"]
+  G --> J["Sensor-position, remaining-gap, exclusion<br/>and metric-specific sensitivity analyses"]
+  H --> K["Tables, figures and<br/>paired source-data CSV files"]
+  I --> K
+  J --> K
+  K --> L["H10 results report"]
+  M["Automated identity and<br/>structure checks"] -. verify .-> C
+  M -. verify .-> E
+  M -. verify .-> K
+```
+
+The arrows show dependencies. They do not mean that this page repeats model
+estimation.
+
+## Verified inputs, demographic construct, and response contracts
+
+### Verified inputs and current qualification
+
+The analysis used the current Preparation 06 model-ready layer. Its base
+objects contained 816 near-eye and 902 chest participant-days before
+metric-specific availability was applied. The model-ready layer, current MDER
+values, and L10 numerical-zero normalization were independently verified. The
+L10 normalization changed exactly eight primary L10 values from numerical
+noise to exact zero without changing a sample, a non-L10 scientific value, or
+an inferential decision. The corrected gap-timing-unaware chest day with no
+viable momentary ratio is recorded as missing, and every finite gap MDER value
+is strictly positive.
+
+The remaining qualification is explicit: **complete independent reconstruction of the exact current state-support classification remains open**. This qualification is not evidence that the
+stored values are incorrect.
+
+### Demographic construct and site support
+
+Age and biological sex were joined as participant-level variables and were
+complete in every fitted frame. Biological sex had exactly the levels Male and
+Female. Male was the reference, so the reported coefficient is Female minus
+Male. Site was explicitly sum-coded. The gender variable and unsupported predictors did not enter any model.
+
+The smallest fitted site-by-sex cell was the near-eye San José (CR) Male cell with
+two participants. This was estimable but motivated the interaction and
+leave-one-site-out qualifications.
+
+```{r}
+#| label: tbl-h10-prep-site-cells
+#| tbl-cap: "Participant support by sensor position, country-coded study site, and measured biological sex."
+
+site_cell_display <- demographic_cells |>
+  left_join(
+    site_registry |>
+      select("site", "display_order", "display_name"),
+    by = "site",
+    relationship = "many-to-one"
+  ) |>
+  mutate(
+    Placement = if_else(
+      .data$placement == "glasses",
+      "Near eye (primary)",
+      "Chest (complementary)"
+    ),
+    Placement = factor(
+      .data$Placement,
+      levels = c("Near eye (primary)", "Chest (complementary)")
+    ),
+    Cell = sprintf(
+      "%d; age %.0f–%.0f",
+      .data$participants,
+      .data$age_min,
+      .data$age_max
+    )
+  ) |>
+  select(
+    "Placement",
+    "display_order",
+    Site = "display_name",
+    "biological_sex",
+    "Cell"
+  ) |>
+  pivot_wider(names_from = "biological_sex", values_from = "Cell") |>
+  arrange(.data$Placement, .data$display_order) |>
+  select(-"display_order")
+
+site_cell_display |>
+  prep_gt(
+    note = "Cells show participants followed by the observed age range in years."
+  ) |>
+  gt::tab_spanner(
+    label = "Measured biological sex",
+    columns = c("Female", "Male")
+  )
+```
+
+```{r}
+#| label: fig-h10-prep-age-distribution
+#| fig-cap: "Participant age distributions by country-coded study site and sensor position; one point is shown per participant."
+#| fig-alt: "Two-panel horizontal boxplot showing participant age by country-coded study site. The near-eye panel contains 141 participants across nine sites and the chest panel 154 participants across eight sites. Site colours follow the submitted manuscript, circles denote Female and triangles Male. Tübingen (DE) has near-eye but no chest observations."
+#| out-width: "100%"
+#| fig-align: center
+
+knitr::include_graphics(file.path(
+  root,
+  "artifacts/10_figures/H10/H10_preparation_age_distribution.png"
+))
+```
+
+The figure has an exact [paired source-data CSV](../../../artifacts/11_source_data/H10/H10_preparation_age_distribution_data.csv)
+with 295 de-identified participant display rows. Submitted site order and
+colours come from the shared site-display registry.
+
+### Responses, metrics, and fitted samples
+
+#### Seventeen registered metrics
+
+IS and IV contributed one outcome row per participant. The other 15 metrics
+contributed participant-day rows. The final response package used 14 Gaussian
+responses and three Tweedie responses with a log link. Pre-sleep time below
+10 lx melEDI was an untransformed Gaussian response, so its effects are
+differences in hours and minutes rather than ratios.
+
+```{r}
+#| label: tbl-h10-prep-metrics
+#| tbl-cap: "Metric units, response specifications, and practical effect scales."
+
+metric_registry |>
+  arrange(.data$metric_order) |>
+  transmute(
+    Metric = .data$manuscript_name,
+    Abbreviation = .data$abbreviation,
+    `Analysis unit` = str_replace_all(.data$display_analysis_unit, "_", "-"),
+    Unit = .data$display_unit,
+    `Response family` = recode(
+      .data$response_family,
+      gaussian = "Gaussian",
+      tweedie_log = "Tweedie, log link"
+    ),
+    Transformation = recode(
+      .data$response_transform,
+      identity = "None",
+      logit = "Logit",
+      log10_offset_0.1 = "log10(value + 0.1)",
+      clock_minutes = "Clock minutes",
+      clock_minutes_after_16 = "Continuous clock minutes after 16:00"
+    ),
+    `Reported effect` = recode(
+      .data$effect_scale,
+      difference = "Difference",
+      ratio = "Ratio",
+      odds_ratio = "Odds ratio"
+    )
+  ) |>
+  prep_gt(font_size = 8.5)
+```
+
+For METRIC-010, daily MDER is the arithmetic mean of viable one-minute
+melEDI/illuminance ratios on a complete 1,440-minute local wall-clock grid. A
+minute is viable only when both channels are finite and strictly positive, and
+the daily value is retained with at least 720 viable minutes. Fall-back
+duplicate local minutes are averaged channel-wise before forming the ratio;
+spring-forward absent minutes remain missing. The analysis does not use
+time-profile weighting or a ratio of daily integrals.
+
+#### Exact frame construction
+
+Four run definitions crossed the primary and gap-timing-unaware datasets with
+the near-eye and chest sensor positions. Each run contained 17 metric-specific frames,
+giving 68 frames. Rows with missing outcome, age, biological sex, site or
+participant identifier were excluded before the frame was indexed. Every
+stored row had a unique key that included dataset, placement, metric, site,
+participant, and participant or date unit.
+
+```{r}
+#| label: tbl-h10-prep-runs
+#| tbl-cap: "Dataset and sensor-position run definitions."
+
+run_registry |>
+  arrange(.data$data_scenario, .data$placement) |>
+  transmute(
+    Dataset = if_else(
+      .data$data_scenario == "primary",
+      "Primary",
+      "Gap-timing-unaware"
+    ),
+    Placement = if_else(
+      .data$placement == "glasses",
+      "Near eye (primary)",
+      "Chest (complementary)"
+    ),
+    Sample = str_replace_all(.data$sample_scenario, "_", " "),
+    `Analytical role` = str_replace_all(.data$analytical_role, "_", " ")
+  ) |>
+  prep_gt()
+```
+
+The primary metric-specific samples ranged from 137–141 participants and
+655–816 participant-days at near eye, and from 152–154 participants and
+732–902 participant-days at chest. Participant-level IS and IV used 141
+near-eye and 153 chest participant rows; their stored provenance records 816
+and 900 contributing participant-days, respectively.
+
+```{r}
+#| label: fig-h10-prep-sample-support
+#| fig-cap: "Metric-specific fitted observations relative to each sensor position's base rows."
+#| fig-alt: "Dot plot with 17 metric rows and separate participant-level and participant-day facets. Blue circles show near-eye and orange triangles chest. The two participant metrics retain nearly all participants. Most participant-day metrics retain all base days, while pre-sleep, waking, timing, dose and MDER metrics retain smaller proportions; the lowest is approximately 80 percent."
+#| out-width: "100%"
+#| fig-align: center
+
+knitr::include_graphics(file.path(
+  root,
+  "artifacts/10_figures/H10/H10_preparation_sample_support.png"
+))
+```
+
+The denominator is 141 near-eye or 154 chest participants for participant
+metrics and 816 near-eye or 902 chest participant-days for participant-day
+metrics. Exact numerators, participants, participant-days, support hours,
+site counts, keys, and frame identities are in the [paired source-data CSV](../../../artifacts/11_source_data/H10/H10_preparation_sample_support_data.csv).
+
+```{r}
+#| label: tbl-h10-prep-near-samples
+#| tbl-cap: "Exact primary near-eye fitted samples."
+
+preparation_support |>
+  filter(.data$placement == "glasses") |>
+  arrange(.data$metric_order) |>
+  transmute(
+    Metric = .data$manuscript_name,
+    Unit = str_replace_all(.data$analysis_unit, "_", "-"),
+    Observations = format_count(.data$observations),
+    Participants = format_count(.data$participants),
+    `Participant-days` = format_count(.data$participant_days),
+    `Contributing days` = format_count(.data$contributing_participant_days),
+    `Valid support hours` = format_hours(.data$metric_support_valid_hours),
+    Sites = .data$sites
+  ) |>
+  prep_gt(font_size = 8.5)
+```
+
+```{r}
+#| label: tbl-h10-prep-chest-samples
+#| tbl-cap: "Exact complementary chest fitted samples."
+
+preparation_support |>
+  filter(.data$placement == "chest") |>
+  arrange(.data$metric_order) |>
+  transmute(
+    Metric = .data$manuscript_name,
+    Unit = str_replace_all(.data$analysis_unit, "_", "-"),
+    Observations = format_count(.data$observations),
+    Participants = format_count(.data$participants),
+    `Participant-days` = format_count(.data$participant_days),
+    `Contributing days` = format_count(.data$contributing_participant_days),
+    `Valid support hours` = format_hours(.data$metric_support_valid_hours),
+    Sites = .data$sites
+  ) |>
+  prep_gt(font_size = 8.5)
+```
+
+## Model construction and inference
+
+### Exact Wilkinson formulae
+
+For participant-day outcomes, the random effect `(1 | site:Id)` accounts for
+repeated days within participant and represents remaining between-participant
+variation after the fixed predictors and study site are considered. IS and IV
+have one row per participant, so an ordinary site-adjusted linear model avoids
+a non-identifiable one-observation random effect. The exact evaluated formulae
+stored with the model records are:
+
+```{r}
+#| label: tbl-h10-prep-formulas
+#| tbl-cap: "Exact evaluated Wilkinson formulae."
+
+model_labels <- c(
+  M0 = "Site-only reference",
+  M_age = "Site-adjusted age association",
+  M_age_site = "Age-by-site interaction",
+  M_sex = "Site-adjusted Female-minus-Male association",
+  M_sex_site = "Biological-sex-by-site interaction"
+)
+
+model_manifest |>
+  filter(.data$fit_role == "maximum_likelihood_comparison") |>
+  distinct(.data$analysis_unit, .data$model_name, .data$formula) |>
+  mutate(
+    `Analysis unit` = if_else(
+      .data$analysis_unit == "participant",
+      "Participant",
+      "Participant-day"
+    ),
+    Model = unname(model_labels[.data$model_name])
+  ) |>
+  arrange(.data$`Analysis unit`, match(.data$model_name, names(model_labels))) |>
+  select("Analysis unit", "Model", Formula = "formula") |>
+  prep_gt(font_size = 9)
+```
+
+Age was represented as `age_decade = age / 10`; this changes the coefficient's
+unit but not fitted values or test statistics. Its coefficient is the
+cross-sectional association per 10-year increase, not a causal ageing effect.
+Site used sum contrasts. Biological sex used Male then Female treatment coding.
+The additive coefficient was the site-adjusted common association. An
+interaction comparison asked separately whether the association varied among
+sites. Where an interaction summary uses a **site-average estimate**, it is an
+average across the represented sites that gives each site equal weight.
+
+### Engines, estimation, and confidence intervals
+
+Gaussian participant-day comparisons were fitted by maximum likelihood and
+their final coefficients by REML. Gaussian participant-level models used
+ordinary least squares. Tweedie/log models used maximum likelihood. The model
+record contains 612 fits: five comparison fits and four final fits for each of
+68 frames.
+
+```{r}
+#| label: tbl-h10-prep-engines
+#| tbl-cap: "Model engines and estimation roles."
+
+model_manifest |>
+  count(
+    .data$analysis_unit,
+    .data$response_family,
+    .data$engine,
+    .data$fit_role,
+    name = "Fits"
+  ) |>
+  transmute(
+    `Analysis unit` = str_replace_all(.data$analysis_unit, "_", "-"),
+    `Response family` = recode(
+      .data$response_family,
+      gaussian = "Gaussian",
+      tweedie_log = "Tweedie, log link"
+    ),
+    Engine = .data$engine,
+    `Estimation role` = recode(
+      .data$fit_role,
+      maximum_likelihood_comparison = "Maximum-likelihood comparison",
+      REML_final_estimation = "REML final estimation",
+      final_estimation_same_as_ML = "Final estimate from maximum likelihood"
+    ),
+    Fits = .data$Fits
+  ) |>
+  arrange(.data$`Analysis unit`, .data$`Response family`, .data$`Estimation role`) |>
+  prep_gt(font_size = 9)
+```
+
+Every reported coefficient has a model-based 95% CI. Ordinary
+linear-model coefficients use a residual-degree-of-freedom *t* interval;
+mixed-model and Tweedie coefficients use the fixed-effect covariance matrix
+with a normal critical value. Logit effects are odds ratios, base-10
+transformed Gaussian effects are ratios, Tweedie/log effects are ratios, and
+identity-scale effects are differences. Clock-time differences are reported in
+minutes. **Back-transformed** effects have been converted from the model scale
+to these practical ratios or differences.
+
+### Interaction tests and multiplicity
+
+Four separate complete 17-metric FDR families were evaluated for each dataset
+and sensor position. Age main effects, biological-sex main effects,
+age-by-site interactions, and biological-sex-by-site interactions were never
+combined into one family.
+
+```{r}
+#| label: tbl-h10-prep-multiplicity
+#| tbl-cap: "Primary-dataset multiplicity families."
+
+comparison_labels <- c(
+  "AGE-MAIN" = "Age main association",
+  "SEX-MAIN" = "Biological-sex main association",
+  "AGE-SITE" = "Age-by-site interaction",
+  "SEX-SITE" = "Biological-sex-by-site interaction"
+)
+
+family_audit |>
+  filter(.data$data_scenario == "primary") |>
+  transmute(
+    Placement = if_else(
+      .data$placement == "glasses",
+      "Near eye (primary)",
+      "Chest (complementary)"
+    ),
+    Family = unname(comparison_labels[.data$comparison_id]),
+    `Planned tests` = .data$planned_n,
+    `Observed raw p-values` = .data$observed_raw_p,
+    `Retained results` = .data$adjusted_significant_n,
+    `Complete family` = if_else(
+      .data$complete_17_member_family,
+      "Yes",
+      "No"
+    ),
+    `Independent FDR check` = if_else(
+      .data$independent_recalculation_matches,
+      "PASS",
+      "FAIL"
+    )
+  ) |>
+  arrange(.data$Placement, match(.data$Family, unname(comparison_labels))) |>
+  prep_gt(
+    note = paste0(
+      "Significance was decided from numeric adjusted p-values before ",
+      "formatting. Every family used FDR adjustment with planned n = 17."
+    )
+  )
+```
+
+The stored primary package contains 136 main-effect estimates and 272 model
+comparisons. Eleven main associations and two complementary-chest age-by-site
+interactions met their separately labelled adjusted rules. Site-specific
+interaction components were stored with 95% CIs as descriptive estimates, not
+as a new set of site-level significance tests.
+
+## Model checks, influence, and limitations
+
+All 612 fits converged, had positive-definite Hessians and full-rank fixed
+effects, were non-singular, and emitted no fit error. Model checks were
+interpreted for 68 primary metric-sensor-position-association targets: 25 were
+acceptable and 43 acceptable with specified limitations; none was classified
+not acceptable.
+
+```{r}
+#| label: tbl-h10-prep-diagnostics
+#| tbl-cap: "Stored model-check and influence evidence."
+
+diagnostic_summary <- tibble::tribble(
+  ~Domain, ~Stored_evidence, ~Assessment,
+  "Fit and rank", sprintf("%d fits", nrow(model_manifest)), "All converged; positive-definite Hessians; full-rank fixed effects; no singular fit or fit error.",
+  "Residual and distributional checks", sprintf("%d primary targets", nrow(diagnostic_assessment)), "Residual spread, Q–Q correlation, fitted-response bounds, dispersion, and zero-mass evidence were interpreted jointly.",
+  "Temporal dependence", sprintf("%s consecutive-day residual pairs", format_count(sum(diagnostic_assessment$consecutive_day_pairs, na.rm = TRUE))), sprintf("All 60 participant-day checks passed the descriptive threshold; maximum absolute correlation %.3f.", max(abs(diagnostic_assessment$pooled_consecutive_day_residual_correlation), na.rm = TRUE)),
+  "Participant deletion", sprintf("%d target summaries", nrow(participant_influence)), sprintf("Every check passed; maximum change %.3f full-fit standard errors.", max(participant_influence$change_in_full_standard_errors, na.rm = TRUE)),
+  "Leave one site out", sprintf("%d target summaries", nrow(leave_one_site_summary)), sprintf("No failed refit; maximum change %.2f full-fit standard errors.", max(leave_one_site_summary$max_change_in_full_standard_errors, na.rm = TRUE)),
+  "Final classification", "25 acceptable; 43 acceptable with specified limitations", "No primary target was classified not acceptable."
+)
+
+diagnostic_summary |>
+  prep_gt(font_size = 9)
+```
+
+The most recurrent qualifications were residual-spread or Q–Q flags for
+selected right-skewed or timing responses, plus a zero-mass mismatch for sleep-
+environment time below 1 lx melEDI. Four observed zeros at each sensor position
+remained in those fitted Tweedie models. These issues were retained in the
+interpretation rather than used to select an unregistered replacement model.
+
+Complete numerical model-check results are available in the [assessment file](../../../artifacts/08_diagnostics/H10/H10_primary_diagnostic_assessment.csv),
+[participant-deletion](../../../artifacts/08_diagnostics/H10/H10_participant_deletion_influence.csv),
+and [leave-one-site-out](../../../artifacts/08_diagnostics/H10/H10_leave_one_site_out_summary.csv)
+files.
+
+The results report also displays residual-versus-fitted and descriptive normal
+Q-Q plots for all 11 multiplicity-retained main-association models. A
+[68-page appendix](../../../artifacts/10_figures/H10/H10_all_primary_model_core_diagnostics.pdf)
+provides the same core plots for all 68 primary models, with an exact
+[page and assessment index](../../../artifacts/11_source_data/H10/H10_all_primary_core_diagnostic_index.csv)
+and complete [plot data](../../../artifacts/11_source_data/H10/H10_all_primary_core_diagnostic_data.csv).
+These displays are constructed from the stored fitted values, Pearson
+residuals, and Q-Q points already produced by the analysis; no model is
+refitted and no assessment is recalculated.
+
+## Sensitivity analyses
+
+Each sensitivity analysis changed one declared feature while retaining the H10
+estimand and model implementation. The **gap-timing-unaware dataset** applies
+the same general coverage rules as the primary dataset but does not use the
+timing of remaining missing observations for metric-specific adjustment. The
+sensitivity analyses were not used to replace the primary conclusion.
+
+```{r}
+#| label: tbl-h10-prep-sensitivities
+#| tbl-cap: "Sensitivity analyses and exact stored output sizes."
+
+tibble::tribble(
+  ~Sensitivity, ~Purpose, ~Stored_rows, ~Output,
+  "Sensor-position-matched participant-day samples", "Compare separately fitted near-eye and chest estimates for the same participants and participant-days; this is not an equivalence or direct sensor-position effect test.", nrow(paired_results), "H10_paired_placement_main_effects.csv",
+  "Primary versus gap-timing-unaware common samples", "Separate preparation changes from sample-composition changes using identical within-metric keys.", nrow(gap_common_results), "H10_primary_gap_common_sample_effects.csv",
+  "Documented age/employment exclusions", "Apply the registered age and employment exclusions linked as [DEV-003](../../../notebooks/preregistration_deviations.qmd#dev-003) below.", nrow(preregistered_exclusion_results), "H10_preregistered_exclusion_effects.csv",
+  "Metric-specific checks", "Assess exactly identified longest periods and the noon clock conversion.", nrow(metric_sensitivities), "H10_metric_specific_sensitivities.csv",
+  "Current MDER distribution and influence", "Assess the current same-estimand distribution, participant deletion, leave-one-site-out stability, and the gap-timing-unaware comparator without post-hoc exclusions.", nrow(mder_influence), "H10_mder_current_distribution.csv; H10_mder_current_influence_assessment.csv",
+  "Cross-sensitivity stability", "Classify direction and adjusted-support stability for every primary main association.", nrow(stability_summary), "H10_sensitivity_stability_summary.csv",
+  "Waking-only MDER", "Record why the requested construct cannot be estimated from an approved current artifact.", nrow(waking_mder), "H10_waking_mder_unavailable.csv"
+) |>
+  prep_gt(font_size = 9) |>
+  gt::fmt_markdown(columns = Purpose)
+```
+
+Exact sensor-position-matched keys passed for all 15 participant-day metrics in
+both datasets. These rows represent the same participants and participant-days
+at both sensor positions, but the associations were fitted separately. Paired
+participant-level IS and IV were unavailable because those
+metrics would need to be recomputed on identical paired day sets; all-available
+participant values were not substituted. All 34 primary versus gap-timing-
+unaware common-key sets matched exactly. The exclusion sensitivity removed
+nine unique participants: one older than 65 years, two recorded as not
+employed, and seven recorded as marginally employed, with one person meeting
+both age and employment criteria. Students and trainees were not excluded
+solely for that status.
+
+```{r}
+#| label: tbl-h10-prep-key-audits
+#| tbl-cap: "Common-key and exclusion audit."
+
+tibble::tribble(
+  ~Audit, ~Records, ~Outcome,
+  "Sensor-position-matched participant-day metrics", nrow(paired_sample_audit), if_else(all(paired_sample_audit$exact_key_match), "All exact", "Mismatch"),
+  "Primary versus gap-timing-unaware metric-sensor-position sets", nrow(gap_common_audit), if_else(all(gap_common_audit$exact_key_match), "All exact", "Mismatch"),
+  "Unique participants in the documented exclusion sensitivity", nrow(excluded_participants), "Nine unique participants"
+) |>
+  prep_gt()
+```
+
+No bootstrap, simulation, or other resampling was required. Waking-only MDER
+remained unavailable because no approved current artifact derives that metric.
+The primary MDER frames contained 702 near-eye participant-days from 137
+participants and 732 chest participant-days from 152 participants. The
+gap-timing-unaware MDER frames contained 687 near-eye participant-days from 137
+participants and 723 chest participant-days from 152 participants. The paired
+gap MDER branch used 478 participant-days from 107 participants at each sensor
+position, and the exact primary-versus-gap common samples used 687 near-eye
+and 723 chest participant-days. Every finite MDER value was strictly positive;
+the chest day with no viable momentary ratio was reason-coded missing.
+
+### Linked preregistration deviations {#h10-preparation-preregistration-deviations}
+
+- [DEV-003](../../../notebooks/preregistration_deviations.qmd#dev-003) is a current qualification: retained samples include documented participants outside the preregistered age or employment criteria, and exclusion-sensitivity coverage is not uniform across all affected hypotheses. The H10 exclusion sensitivity does not resolve that broader qualification.
+- [DEV-040](../../../notebooks/preregistration_deviations.qmd#dev-040) records that all planned age-by-site and biological-sex-by-site interactions are fitted, tested, and reported, with non-estimable branches kept visible.
+- [DEV-041](../../../notebooks/preregistration_deviations.qmd#dev-041) records four separate complete 17-metric FDR families: age main effects, biological-sex main effects, age-by-site interactions, and biological-sex-by-site interactions.
+
+The [H10 results deviation section](../../../notebooks/hypotheses/H10.qmd#h10-preregistration-deviations) gives the reciprocal reader summary.
+
+## Technical provenance
+
+The sections below record bounded identity and structure checks, file roles,
+script order, checksums, the computational environment, and reproduction
+guidance. They are technical provenance rather than additional scientific
+analyses. The declared FDR calculation uses the Benjamini-Hochberg method.
+
+### What is calculated when this page opens
+
+```{r}
+#| label: tbl-h10-prep-render-boundary
+#| tbl-cap: "Calculations performed when this page is rendered."
+
+tibble::tribble(
+  ~Category, ~Calculated_on_render, ~Explanation,
+  "File identities", "Yes", "Recomputes bounded SHA-256 identities for the recorded analytical inputs, scientific outputs, and descriptive figure/source pairs.",
+  "Frame structure", "Yes", "Checks 68 stored frame names, required columns, unique row keys, indexed row counts, complete demographic fields, and age divided by 10.",
+  "Descriptive summaries", "Yes", "Summarises stored sample support, site cells, model counts, model checks, sensitivities, and output inventories.",
+  "Model estimation and contrasts", "No", "Reads registered formulae, stored model records, coefficient tables, comparisons, and confidence intervals.",
+  "Model checks and sensitivities", "No", "Reads recorded residual, influence, common-sample, exclusion, and metric-specific outputs.",
+  "Figures", "Display only", "Displays two prebuilt descriptive figures whose exact layer data and identities are paired with source CSV files."
+) |>
+  prep_gt(font_size = 10)
+```
+
+The four automated check groups all pass:
+
+```{r}
+#| label: tbl-h10-prep-render-checks
+#| tbl-cap: "Bounded identity and structure checks."
+
+render_checks |>
+  transmute(
+    Check = .data$check,
+    Records = .data$records,
+    Status = if_else(.data$passed, "PASS", "FAIL")
+  ) |>
+  prep_gt(
+    note = "A failed check stops rendering before any table or figure is presented."
+  )
+```
+
+### Recorded input identities and roles
+
+```{r}
+#| label: tbl-h10-prep-pins
+#| tbl-cap: "Authoritative preparation identities."
+
+tibble::tribble(
+  ~Input, ~SHA256,
+  "Metric-artifact manifest", "028bce108339c1277df4a070597430ea20b49c34c2888f4eef42741c1fe76a5e",
+  "Site/context manifest", "c0c6d7f97782c0d880a213050f576213f5d56b3204a02732f6399e7e4aeb8518",
+  "Base-model-data manifest", "8344bdc0339a53079bf9eeb7d86de1ad7c15373641c3a0a5a01d040b418895ce",
+  "Base-model input bundle", "e840ce9d2a7f653bc5ebbfe020ce087017dfdaf0276df09da578bda30a539916",
+  "L10 numerical-zero decision", "23b9f70d1d16f7fd3ebbdbc57aaf78c0a701fe1f9d22bd667d926cd320d40797",
+  "L10 numerical-zero evidence", "a37efd3449a8d1a6065d0eb8964bd6cf8b241f1683a26c065ea1a946e23214fb",
+  "MDER estimand decision", "1664347de976057807fcb5ac6e24bd4b66af1fe32378fabd1f2acafcfc9266de",
+  "Independent MDER audit manifest", "5bd34fd4ac26dc2761540393d40e096cde835d8dd4b4edda9253243c9083d4bb",
+  "State-support manifest", "755508076e42ed74ce0d40f48de192b69ea81b04532db2d5a950c451236e2619",
+  "Gap-preparation manifest", "4ed62fbe58de65a6d05d8cfc6b5d870d7c74a3c83fe89bcd72bd1dd838698935",
+  "Gap-repair evidence manifest", "81e3aa9439b88cf239d6669dc4343cfb146cd2f45790bae412ab837156315018"
+) |>
+  prep_gt(
+    note = paste0(
+      "The complete 36-file input audit, with paths, byte sizes, expected and ",
+      "observed identities, is available in the linked input-audit CSV."
+    ),
+    font_size = 9
+  ) |>
+  gt::cols_width(Input ~ gt::pct(28), SHA256 ~ gt::pct(72))
+```
+
+The complete [input audit](../../../artifacts/06_model_data/H10/H10_input_audit.csv)
+contains 36 exact file identities.
+
+```{r}
+#| label: tbl-h10-prep-input-roles
+#| tbl-cap: "Verified result-producing input roles."
+
+input_labels <- c(
+  metric_manifest = "Metric manifest",
+  site_context_manifest = "Site/context manifest",
+  base_manifest = "Base model-data manifest",
+  metric011_decision = "L10 numerical-zero decision",
+  metric011_evidence_manifest = "L10 numerical-zero evidence",
+  mder_decision = "MDER estimand decision",
+  mder_audit_manifest = "Independent MDER audit manifest",
+  state_support_manifest = "State-support manifest",
+  near_eye_context = "Near-eye context data",
+  chest_context = "Chest context data",
+  near_eye_daily_enriched = "Near-eye participant-day metrics",
+  chest_daily_enriched = "Chest participant-day metrics",
+  near_eye_participant_enriched = "Near-eye participant metrics",
+  chest_participant_enriched = "Chest participant metrics",
+  normalized_demographics = "Normalised demographics",
+  gap_daily_metrics = "Remaining-gap participant-day metrics",
+  gap_participant_metrics = "Remaining-gap participant metrics",
+  gap_mder_support = "Remaining-gap MDER support",
+  gap_preparation_manifest = "Remaining-gap preparation manifest",
+  primary_h01_prepared_provenance = "Primary prepared-row provenance",
+  gap_h01_prepared_provenance = "Remaining-gap prepared-row provenance",
+  primary_h01_prepared_manifest = "Primary prepared-row manifest",
+  gap_h01_prepared_manifest = "Remaining-gap prepared-row manifest",
+  preanalysis_comparison_manifest = "Preanalysis comparison manifest",
+  gap_repair_evidence_manifest = "Gap-MDER repair evidence",
+  downstream_rebuild_manifest = "Gap-MDER downstream rebuild evidence",
+  metric_display_registry = "Metric display registry",
+  site_display_registry = "Site display registry",
+  final_h01_response_selection = "Response-family selection record",
+  deviation_source = "Documented deviation record"
+)
+
+input_audit |>
+  filter(.data$input_role %in% names(input_labels)) |>
+  transmute(
+    Input = unname(input_labels[.data$input_role]),
+    Path = .data$path,
+    Bytes = format_count(.data$bytes),
+    Verified = if_else(.data$hash_verified, "Yes", "No")
+  ) |>
+  prep_gt(font_size = 9) |>
+  gt::cols_width(
+    Input ~ gt::pct(25),
+    Path ~ gt::pct(55),
+    Bytes ~ gt::pct(10),
+    Verified ~ gt::pct(10)
+  )
+```
+
+### Code in execution order
+
+The analysis is separated into a contract, reusable modelling operations, one
+result-producing driver, and display/provenance builders. This separation makes
+the model contract auditable without causing this page to execute it.
+
+```{r}
+#| label: tbl-h10-prep-code-order
+#| tbl-cap: "H10 scripts and modules in execution order."
+
+tibble::tribble(
+  ~Order, ~File, ~Reads_or_uses, ~Contribution, ~Primary_outputs,
+  1L, "scripts/hypotheses/H10/h10_contract.R", "Metric and reporting registries", "Defines 17 metrics, response specifications, exact formula sets, comparisons, and multiplicity families.", "In-memory contract used by the driver",
+  2L, "scripts/hypotheses/H10/h10_modeling.R", "Contract and model-ready rows", "Constructs frames; implements transformations, fits, effects, model comparisons, model checks, and influence operations.", "Functions called by the driver",
+  3L, "scripts/hypotheses/H10/run_h10_stage2.R", "Original recorded inputs, demographic data, support files, contract and modelling functions", "Records the original complete registered analysis; current use is restricted to inventory mode.", "H10_stage2_artifacts.csv in inventory mode",
+  4L, "scripts/hypotheses/H10/run_h10_metric010_update.R", "The recorded METRIC-010 input set and accepted H10 artifacts", "Records the corrected gap-MDER update and its stored-result guards.", "Affected METRIC-010 model, model-check, sensitivity, table and provenance artifacts",
+  5L, "scripts/hypotheses/H10/run_h10_metric011_update.R", "All 36 current inputs and accepted H10 artifacts", "Refits only primary L10 branches that consume the eight normalized cells, recalculates complete affected FDR families, and exact-guards all stored models and raw p-values.", "Affected L10 model, model-check, sensitivity, table and provenance artifacts",
+  6L, "scripts/hypotheses/H10/build_h10_metric011_figures.R", "Recorded affected tables", "Rebuilds only displays and paired source CSVs that contain L10 or its FDR-derived fields, without fitting or prediction.", "Affected H10 figure/source-data pairs",
+  7L, "scripts/hypotheses/H10/build_h10_stage3_association_overview.R", "Stored model-frame display rows, results and site-effect tables", "Builds the reader overview without fitting or predicting.", "H10_age_site_significant_associations.{png,pdf,csv}",
+  8L, "scripts/hypotheses/H10/build_h10_core_diagnostic_figures.R", "Stored residual, fitted-value and Q-Q point data plus the accepted assessment table", "Builds retained-model model-check figures and the 68-page all-model appendix without fitting, predicting, or changing assessments.", "H10_*core_diagnostics figures, source data, index and manifest",
+  9L, "scripts/hypotheses/H10/build_h10_stage3_figure_qa.R", "Existing reader PNGs", "Creates 170-mm physical-size evidence on an A4 inspection scaffold.", "H10_stage3_figure_readability_qa.csv and proof PDF",
+  10L, "scripts/hypotheses/H10/build_h10_preparation_artifacts.R", "Stored frame index and de-identified age-display rows", "Builds the two descriptive preparation figures and exact paired source CSVs.", "H10_preparation_* figures and source data",
+  11L, "scripts/hypotheses/H10/build_h10_preparation_figure_qa.R", "Existing preparation PNGs and source CSVs", "Creates final-size physical QA evidence without recalculating analysis results.", "H10_preparation_figure_readability_qa.csv and proof PDF",
+  12L, "scripts/hypotheses/H10/build_h10_preparation_report_manifest.R", "Source, render, scripts, stored outputs and environment files", "Records the non-circular preparation-report identity inventory after the website source copy exists.", "H10_preparation_report_manifest.csv"
+) |>
+  prep_gt(font_size = 8.5)
+```
+
+The result-producing drivers are deliberately not called by this document. The
+display builders read stored tables or de-identified descriptive rows; neither
+can change an estimate, interval, *p*-value, model-check, or sensitivity result.
+
+### Stored outputs and checksums
+
+#### Result and claim map
+
+```{r}
+#| label: tbl-h10-prep-output-map
+#| tbl-cap: "Stored outputs supporting the H10 report."
+
+tibble::tribble(
+  ~Output_role, ~Path, ~What_it_supports,
+  "Model frames and index", "artifacts/06_model_data/H10/H10_model_frames.rds; H10_model_frame_index.csv", "Exact metric-specific rows, samples, units, support and keys",
+  "Stored model records", "artifacts/07_models/H10/", "612 model fits and metric/sample-sensitivity model archives",
+  "Model checks and influence", "artifacts/08_diagnostics/H10/", "Convergence, residual, distributional, temporal, participant and site assessments",
+  "Primary numerical results", "artifacts/09_tables/H10/H10_primary_main_results.csv; H10_primary_interaction_results.csv", "Effects, 95% CIs, exact samples, raw and adjusted p-values",
+  "METRIC-010 amendment record", "artifacts/09_tables/H10/H10_METRIC010_amendment_results.csv; artifacts/08_diagnostics/H10/sensitivity/H10_mder_current_*", "Current MDER samples, estimates, 95% intervals, distribution and influence assessments",
+  "METRIC-011 L10 normalization", "artifacts/06_model_data/H10/H10_METRIC011_l10_cell_changes.csv; artifacts/12_manifests/H10/H10_METRIC011_*", "Eight exact-zero source changes, bounded refits, complete-family FDR rederivation and stored-result identities",
+  "Selective-update identity audits", "artifacts/12_manifests/H10/H10_METRIC010_*_audit.csv; H10_METRIC011_*_audit.csv", "Exact stored-result preservation and complete-family adjusted-p rederivation",
+  "Age-by-site interaction components", "artifacts/09_tables/H10/H10_site_specific_effects.csv", "Descriptive site-specific slopes and contrasts with 95% CIs",
+  "Reader figures", "artifacts/10_figures/H10/", "Native PNG and PDF exports",
+  "Paired figure data", "artifacts/11_source_data/H10/", "Exact data used by every durable figure layer",
+  "Identity and readability records", "artifacts/12_manifests/H10/", "Environment, figure, report and physical-size identities",
+  "Scientific report", "notebooks/hypotheses/H10.qmd", "Reader-facing question, methods, results, interpretation and limitations",
+  "Preparation companion", "audit/hypotheses/H10/H10_analysis_preparation.qmd", "Input-to-output provenance and bounded reproducibility checks"
+) |>
+  prep_gt(font_size = 8.5)
+```
+
+#### Current key identities
+
+The following identities are recalculated from the current files when this
+page renders. They are structural checksums, not scientific calculations.
+
+```{r}
+#| label: tbl-h10-prep-key-hashes
+#| tbl-cap: "Current identities of key H10 source and output files."
+
+key_paths <- c(
+  "scripts/hypotheses/H10/h10_contract.R",
+  "scripts/hypotheses/H10/h10_modeling.R",
+  "scripts/hypotheses/H10/run_h10_stage2.R",
+  "scripts/hypotheses/H10/run_h10_metric010_update.R",
+  "scripts/hypotheses/H10/run_h10_metric011_update.R",
+  "scripts/hypotheses/H10/build_h10_metric011_figures.R",
+  "artifacts/06_model_data/H10/H10_METRIC010_gap_repair_record.csv",
+  "artifacts/12_manifests/H10/H10_METRIC010_gap_repair_non_mder_identity_audit.csv",
+  "artifacts/12_manifests/H10/H10_METRIC010_gap_repair_primary_identity_audit.csv",
+  "artifacts/12_manifests/H10/H10_METRIC010_gap_repair_multiplicity_change_audit.csv",
+  "artifacts/06_model_data/H10/H10_METRIC011_l10_cell_changes.csv",
+  "artifacts/12_manifests/H10/H10_METRIC011_frozen_identity_audit.csv",
+  "artifacts/12_manifests/H10/H10_METRIC011_multiplicity_audit.csv",
+  "artifacts/12_manifests/H10/H10_METRIC011_update_summary.csv",
+  "artifacts/06_model_data/H10/H10_model_frames.rds",
+  "artifacts/07_models/H10/H10_primary_and_gap_model_bundles.rds",
+  "artifacts/08_diagnostics/H10/H10_primary_diagnostic_assessment.csv",
+  "artifacts/09_tables/H10/H10_primary_main_results.csv",
+  "artifacts/09_tables/H10/H10_primary_interaction_results.csv",
+  "artifacts/10_figures/H10/H10_age_site_significant_associations.png",
+  "artifacts/10_figures/H10/H10_retained_age_core_diagnostics.png",
+  "artifacts/10_figures/H10/H10_retained_biological_sex_core_diagnostics.png",
+  "artifacts/10_figures/H10/H10_all_primary_model_core_diagnostics.pdf",
+  "artifacts/11_source_data/H10/H10_age_site_significant_associations_data.csv",
+  "artifacts/12_manifests/H10/H10_core_diagnostic_figure_manifest.csv",
+  "notebooks/hypotheses/H10.qmd",
+  "audit/hypotheses/H10/H10_analysis_preparation.qmd"
+)
+key_files <- file.path(root, key_paths)
+
+tibble::tibble(
+  Path = key_paths,
+  SHA256 = vapply(key_files, artifact_sha256, character(1)),
+  Bytes = format_count(file.info(key_files)$size)
+) |>
+  prep_gt(font_size = 8) |>
+  gt::cols_width(
+    Path ~ gt::pct(43),
+    SHA256 ~ gt::pct(47),
+    Bytes ~ gt::pct(10)
+  )
+```
+
+The [complete result inventory](../../../artifacts/12_manifests/H10/H10_stage3_artifacts.csv)
+records the accepted reader package.
+The preparation-report manifest builder excludes itself and evolving handoff
+records so its checksum chain is non-circular.
+
+### Computational environment
+
+R 4.6.1 and the project library are authoritative. Packages were neither
+installed nor updated for this work.
+
+```{r}
+#| label: tbl-h10-prep-environment
+#| tbl-cap: "Recorded result-producing environment."
+
+execution_environment |>
+  rename(Component = "component", `Version or status` = "version_or_status") |>
+  prep_gt(font_size = 9)
+```
+
+The environment record includes `resampling = None`: no production resampling
+or pilot computation was needed. The project lockfile, H10 execution record,
+source scripts, stored model archives, tables, figures, source data and
+manifests provide the complete local reproduction chain.
+
+### Reproducibility boundary
+
+To reproduce the accepted numerical package from the verified inputs, the
+result-producing sequence is `h10_contract.R`, `h10_modeling.R`, and
+`run_h10_stage2.R` under R 4.6.1 with the project library. That sequence is not
+run when this page is opened. The report and this companion instead read the
+stored outputs and check their identities.
+
+The [H10 results report](../../../notebooks/hypotheses/H10.qmd) gives the
+scientific interpretation. This page gives the reciprocal provenance path from
+verified input identities through frames, models, diagnostics, sensitivities,
+figures, tables, source data and checksums.
+
+```{r}
+#| label: h10-preparation-session-information
+#| code-fold: true
+#| code-summary: "R session information"
+
+sessionInfo()
+```

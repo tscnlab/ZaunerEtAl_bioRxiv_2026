@@ -1,0 +1,1626 @@
+---
+title: "H06 analysis preparation and provenance"
+subtitle: "From supported one-hour personal-light records and linked diaries to day-type, activity, and previous-sleep contrasts"
+date: last-modified
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    lightbox: true
+    code-fold: true
+    code-summary: "Show the R code used for this display"
+    code-tools: true
+    page-layout: full
+execute:
+  echo: true
+  warning: false
+  message: false
+  error: false
+fig-cap-location: bottom
+tbl-cap-location: top
+---
+
+```{r}
+#| label: setup-h06-preparation
+#| include: false
+
+suppressPackageStartupMessages({
+  library(cowplot)
+  library(dplyr)
+  library(ggplot2)
+  library(gt)
+  library(knitr)
+  library(LightLogR)
+  library(readr)
+  library(scales)
+  library(tibble)
+  library(tidyr)
+})
+
+root_candidates <- unique(c(
+  normalizePath(getwd(), winslash = "/", mustWork = TRUE),
+  normalizePath(
+    file.path(getwd(), "../../.."),
+    winslash = "/",
+    mustWork = FALSE
+  )
+))
+is_project_root <- vapply(
+  root_candidates,
+  function(path) {
+    file.exists(file.path(path, "renv.lock")) &&
+      file.exists(file.path(
+        path,
+        "scripts/hypotheses/H06/h06_contract.R"
+      ))
+  },
+  logical(1)
+)
+stopifnot(any(is_project_root))
+root <- root_candidates[which(is_project_root)[1L]]
+knitr::opts_knit$set(root.dir = root)
+
+source(file.path(root, "scripts/pipeline/paths_io.R"))
+
+if (!identical(as.character(getRversion()), "4.6.1")) {
+  stop("H06 preparation requires R 4.6.1", call. = FALSE)
+}
+
+read_h06_csv <- function(relative_path) {
+  readr::read_csv(file.path(root, relative_path), show_col_types = FALSE)
+}
+
+h06_gt <- function(table, font_size = 12) {
+  table |>
+    gt::opt_row_striping() |>
+    gt::sub_missing(missing_text = "—") |>
+    gt::tab_options(
+      table.width = gt::pct(100),
+      table.font.size = gt::px(font_size),
+      data_row.padding = gt::px(4),
+      column_labels.font.weight = "600",
+      source_notes.font.size = gt::px(11)
+    )
+}
+
+placement_colors <- c(
+  "Near-eye" = "#0072B2",
+  "Chest" = "#D55E00"
+)
+joint_colors <- c(
+  "Work day · Sedentary" = "#0072B2",
+  "Work day · Active" = "#D55E00",
+  "Free day · Sedentary" = "#56B4E9",
+  "Free day · Active" = "#CC79A7"
+)
+
+frame_integrity <- read_h06_csv(
+  "artifacts/11_source_data/H06/H06_preparation_frame_integrity.csv"
+)
+response_distribution <- read_h06_csv(
+  "artifacts/11_source_data/H06/H06_preparation_response_distribution.csv"
+)
+site_day_activity_support <- read_h06_csv(
+  paste0(
+    "artifacts/11_source_data/H06/",
+    "H06_preparation_site_day_activity_support.csv"
+  )
+)
+clock_day_activity_support <- read_h06_csv(
+  paste0(
+    "artifacts/11_source_data/H06/",
+    "H06_preparation_clock_day_activity_support.csv"
+  )
+)
+participant_day_support <- read_h06_csv(
+  paste0(
+    "artifacts/11_source_data/H06/",
+    "H06_preparation_participant_day_support.csv"
+  )
+)
+input_provenance <- read_h06_csv(
+  "artifacts/11_source_data/H06/H06_preparation_input_provenance.csv"
+)
+shared_provenance <- read_h06_csv(
+  "artifacts/11_source_data/H06/H06_preparation_shared_provenance.csv"
+)
+exercise_diary_source_pin <- read_h06_csv(
+  paste0(
+    "artifacts/11_source_data/H06/",
+    "H06_preparation_exercise_diary_source_pin.csv"
+  )
+)
+
+candidate_flow <- read_h06_csv(
+  "artifacts/06_model_data/H06/H06_candidate_flow.csv"
+)
+candidate_missingness <- read_h06_csv(
+  "artifacts/06_model_data/H06/H06_candidate_missingness.csv"
+)
+exact_samples <- read_h06_csv(
+  "artifacts/06_model_data/H06/H06_exact_samples.csv"
+)
+category_cells <- read_h06_csv(
+  "artifacts/06_model_data/H06/H06_category_cells.csv"
+)
+predictor_registry <- read_h06_csv(
+  "artifacts/06_model_data/H06/H06_predictor_registry.csv"
+)
+multiplicity_registry <- read_h06_csv(
+  "artifacts/06_model_data/H06/H06_multiplicity_registry.csv"
+)
+true_time_sequences <- read_h06_csv(
+  "artifacts/06_model_data/H06/H06_true_time_sequences.csv"
+)
+previous_night_linkage <- read_h06_csv(
+  "artifacts/06_model_data/H06/H06_previous_night_linkage_audit.csv"
+)
+exploratory_predictor_samples <- read_h06_csv(
+  "artifacts/06_model_data/H06/H06_exploratory_predictor_samples.csv"
+)
+temporal_formula_registry <- read_h06_csv(
+  paste0(
+    "artifacts/06_model_data/H06/",
+    "H06_exploratory_two_part_formula_registry.csv"
+  )
+)
+package_versions <- read_h06_csv(
+  "artifacts/06_model_data/H06/H06_package_versions.csv"
+)
+
+fit_diagnostics <- read_h06_csv(
+  "artifacts/08_diagnostics/H06/H06_robust_fit_diagnostics.csv"
+)
+residual_acf <- read_h06_csv(
+  "artifacts/08_diagnostics/H06/H06_robust_residual_acf.csv"
+)
+influence_deletions <- read_h06_csv(
+  "artifacts/08_diagnostics/H06/H06_robust_influence_deletions.csv"
+)
+temporal_fit_summary <- read_h06_csv(
+  paste0(
+    "artifacts/08_diagnostics/H06/",
+    "H06_exploratory_two_part_fit_summary.csv"
+  )
+)
+temporal_k_check <- read_h06_csv(
+  paste0(
+    "artifacts/08_diagnostics/H06/",
+    "H06_exploratory_two_part_k_check.csv"
+  )
+)
+sensitivity_comparisons <- read_h06_csv(
+  "artifacts/09_tables/H06/H06_robust_sensitivity_comparisons.csv"
+)
+
+primary_formula_registry <- tibble::tribble(
+  ~model, ~wilkinson_formula, ~purpose,
+  "Primary additive model",
+  paste0(
+    "response_value ~ site + work_free_day + activity_status + ",
+    "previous_sleep_duration_centered_h"
+  ),
+  "Average association for each of the three prespecified predictors",
+  "Predictor-by-site interaction model",
+  paste0(
+    "response_value ~ site * work_free_day + site * activity_status + ",
+    "site * previous_sleep_duration_centered_h"
+  ),
+  "Site-specific associations and three omnibus site-interaction tests"
+)
+
+model_settings <- tibble::tribble(
+  ~setting, ~implementation, ~interpretation,
+  "Mean and link", "Quasi-Poisson mean with log link; working variance power 1", "Estimated zero-aware geometric-mean melEDI for an observed hour that met support criteria",
+  "Site adjustment", "Fixed site effects with sum contrasts", "The site-average ratios give each included site equal weight",
+  "Repeated observations", "Participant-cluster HC3 covariance with finite-cluster correction", "Hours may repeat within participant-days and participants",
+  "Reference coding", "Work day; Sedentary; previous sleep centred at 8 h", "Ratios compare Free versus Work, Active versus Sedentary, and one additional hour of sleep",
+  "Uncertainty", "95% confidence intervals with participants minus one degrees of freedom", "Finite-participant rather than asymptotic normal inference",
+  "Back-transformation", "Standardized log means are exponentiated once", "Reported contrasts are ratios of estimated mean hourly melEDI"
+)
+
+sensitivity_registry <- tibble::tribble(
+  ~check, ~`stored comparison`, ~`question addressed`,
+  "Gap timing", "Gap-timing-unaware near-eye and chest frames", "Whether the metric-specific use of remaining gap timing changes the conclusion",
+  "Exact common hours", "Primary and gap-timing-unaware frames restricted to common hour keys", "Whether different retained hours explain the dataset comparison",
+  "Sensor position", "Separate near-eye and chest estimates on all available and paired days", "Whether the pattern remains similar after changing sensor position or restricting to paired days; not a direct position effect",
+  "Working variance", "Power 1.8 in the same quasi-likelihood mean model", "Whether inference depends on the power-1 working variance",
+  "Cluster covariance", "Participant-cluster HC1, HC2, and HC3", "Whether the sandwich correction changes uncertainty",
+  "Site standardization", "Site-average weighting and observed-site weighting", "Whether large sites dominate the reported average",
+  "Calendar label", "Weekday/weekend replacing diary-defined work/free day", "Whether the diary label drives the day-type conclusion",
+  "Influence", "Seven targeted one-participant deletions and nine leave-one-site-out refits", "Whether individual participants or sites dominate a contrast",
+  "Response model", "Gaussian log10 sensitivity", "Whether the log-mean result depends on the quasi-Poisson working mean"
+)
+
+code_map <- tibble::tribble(
+  ~file, ~responsibility,
+  "scripts/hypotheses/H06/h06_contract.R", "Predictor labels, input identities, formula and multiplicity contracts",
+  "scripts/hypotheses/H06/h06_robust_modeling.R", "Frame assembly, quasi-likelihood fits, clustered covariance, contrasts, and stored model checks",
+  "scripts/hypotheses/H06/run_h06_stage2_robust.R", "Analysis orchestration and artifact writing",
+  "scripts/hypotheses/H06/run_h06_exploratory_time_of_day_two_part.R", "Separate exploratory occurrence and positive-magnitude clock-time models",
+  "scripts/hypotheses/H06/diagnose_h06_exploratory_two_part.R", "Stored temporal calibration, residual, basis, and correlation checks",
+  "scripts/hypotheses/H06/build_h06_stage3_reader_displays.R", "Reader tables, primary figures, and paired source data",
+  "scripts/hypotheses/H06/build_h06_stage3_temporal_contrasts.R", "Stored-model exploratory Active/Sedentary and Free/Work clock-time contrasts",
+  "notebooks/hypotheses/H06.qmd", "Reader-facing results and qualifications",
+  "audit/hypotheses/H06/H06_analysis_preparation.qmd", "This bounded preparation and provenance display"
+)
+
+output_inventory <- tibble::tribble(
+  ~role, ~relative_path,
+  "Primary model bundle", "artifacts/07_models/H06/H06_robust_core_models.rds",
+  "Primary effect estimates", "artifacts/09_tables/H06/H06_robust_core_effects.csv",
+  "Site-specific estimates", "artifacts/09_tables/H06/H06_robust_site_specific_effects.csv",
+  "Model-check outputs", "artifacts/08_diagnostics/H06/H06_robust_fit_diagnostics.csv",
+  "Temporal model bundle", "artifacts/07_models/H06/H06_exploratory_time_of_day_two_part.rds",
+  "Temporal model-check outputs", "artifacts/08_diagnostics/H06/H06_exploratory_two_part_fit_summary.csv",
+  "Reader primary figure", "artifacts/10_figures/H06/H06_reader_primary_effects.png",
+  "Temporal activity figure", "artifacts/10_figures/H06/H06_reader_temporal_activity.png",
+  "Temporal day-type figure", "artifacts/10_figures/H06/H06_reader_temporal_day_type.png",
+  "Reader artifact manifest", "artifacts/12_manifests/H06/H06_stage3_artifacts.csv"
+) |>
+  mutate(
+    absolute_path = file.path(root, .data$relative_path),
+    exists = file.exists(.data$absolute_path),
+    sha256 = vapply(.data$absolute_path, artifact_sha256, character(1))
+  )
+stopifnot(all(output_inventory$exists))
+
+knitr::opts_chunk$set(
+  fig.align = "center",
+  dpi = 192,
+  dev = "png",
+  fig.retina = 1
+)
+```
+
+This page records how the hourly H06 analysis was prepared. It follows
+melanopic equivalent daylight illuminance (melEDI) from observed hours that
+met the support criteria through the reported models and displays. A
+participant-hour is one observed one-hour interval from one participant that
+met the support criteria; a participant-day is one calendar day contributed
+by one participant. The near-eye sensor position is primary because it is
+closer to ocular light exposure. The chest sensor position is complementary
+and represents non-ocular exposure.
+
+The [Hourly H06 results report](../../../notebooks/hypotheses/H06.qmd) gives
+the associations, uncertainty, model checks, and interpretation.
+
+The [complementary participant-day report](../../../notebooks/hypotheses/H06_daily.qmd)
+addresses daily light-exposure metrics. The hourly analysis remains the main
+H06 analysis, and the two estimands are not interchangeable.
+
+::: {.callout-note title="About this analysis record"}
+This page reads the reviewed stored frames, tables, model-check outputs,
+figures, and file identities for display. It does not repeat model fitting or
+scientific computation. In particular, it does not fit or refit a model,
+generate model predictions, estimate residual correlation, rerun a sensitivity
+analysis, resample, or simulate.
+:::
+
+## Analysis path
+
+The common-effect path estimates one association across sites. The
+predictor-by-site interaction path allows the association of day type,
+activity, or previous sleep with hourly melEDI to differ by study site.
+
+```{mermaid}
+flowchart TD
+  A["Verified near-eye and chest one-hour melEDI"] --> B["Hourly coverage and temporal provenance"]
+  C["Normalized work/free and exercise diary"] --> D["Participant-day predictor join"]
+  E["Normalized preceding sleep period"] --> D
+  B --> D
+  D --> F["Observed-hour frames meeting support criteria"]
+  F --> G["Common-effect log-mean model"]
+  F --> H["Predictor-by-site interaction model"]
+  F --> I["Separate exploratory nonlinear clock-time GAM"]
+  G --> J["Contrasts, uncertainty, and model checks"]
+  H --> J
+  I --> K["Pointwise exploratory curves and contrasts"]
+  J --> L["Hourly H06 results"]
+  K --> L
+```
+
+```{r}
+#| label: tbl-h06-prep-render-boundary
+#| tbl-cap: "What this page reads and what it deliberately does not execute"
+
+tibble::tribble(
+  ~Activity, ~Status, ~Reason,
+  "Read stored H06 frames and CSVs", "Read from stored records", "Needed for transparent sample and provenance summaries",
+  "Verify file hashes and hour keys", "Read from stored records", "Detects stale or mismatched inputs without changing them",
+  "Summarize observed support", "Read from stored records", "Describes the already-fitted rows in original units",
+  "Fit, refit, or compare statistical models", "Not repeated here", "Reviewed model objects and outputs are read from disk",
+  "Generate predictions or contrasts", "Not repeated here", "Reader displays use already-stored estimates",
+  "Bootstrap, simulate, or delete clusters", "Not repeated here", "Reviewed model-check and influence outputs are read from disk"
+) |>
+  gt::gt() |>
+  h06_gt()
+```
+
+## Inputs, outcome, predictors, and exact samples
+
+### Verified inputs and provenance
+
+```{r}
+#| label: tbl-h06-prep-shared-provenance
+#| tbl-cap: "Current shared provenance identities and exact hourly-frame check"
+
+shared_provenance |>
+  transmute(
+    Record = tools::toTitleCase(gsub("_", " ", .data$record)),
+    Path = .data$relative_path,
+    `Recorded identity` = .data$pinned_identity,
+    Status = dplyr::if_else(
+      .data$status == "PASS",
+      "Verified",
+      "Review needed"
+    )
+  ) |>
+  gt::gt() |>
+  gt::fmt_markdown(columns = "Path") |>
+  h06_gt(font_size = 11)
+```
+
+The shared preparation was updated after a correction to a daily metric that
+H06 does not use. The current base manifest and input-bundle identities are
+recorded above. An independent R comparison rebuilt all six H06 hourly frames
+and found exact equality with the analysis frames, including attributes. The
+transition therefore changes provenance identities only; it does not change
+an H06 row, value, model, estimate, interval, model check, sensitivity, or
+claim.
+
+```{r}
+#| label: tbl-h06-prep-input-provenance
+#| tbl-cap: "Verified scientific and reporting inputs"
+
+input_provenance |>
+  transmute(
+    Input = tools::toTitleCase(gsub("_", " ", .data$input_role)),
+    Path = .data$relative_path,
+    `Identity check` = dplyr::if_else(
+      .data$hash_verified,
+      "Verified",
+      "Review needed"
+    )
+  ) |>
+  gt::gt() |>
+  gt::fmt_markdown(columns = "Path") |>
+  h06_gt(font_size = 11)
+```
+
+At first use, this report calls the comparison input the
+**gap-timing-unaware dataset**. It passed the 50%-per-hour and 80%-per-day
+coverage rules, but the timing of the remaining within-hour and within-day
+gaps was not used for an additional metric-specific adjustment. The primary
+dataset could therefore be interpreted as time-sensitive. Below, the current
+corrected input is called simply the **primary dataset**. Both inputs are
+defined in
+[Preparation 06](../../../notebooks/preparation/06_model_ready_datasets.qmd).
+
+### Exercise-diary identity
+
+The TUM exercise diary is the immutable `melidosData` 1.0.6 object rather than
+a remote moving target. Its upstream correction contains seven `TUM_S001`
+rows and no `S101` row; no local identifier rewrite is applied.
+
+```{r}
+#| label: tbl-h06-prep-diary-pin
+#| tbl-cap: "Pinned TUM exercise-diary source and normalized identity assertion"
+
+exercise_diary_source_pin |>
+  transmute(
+    Release = .data$melidosData_release,
+    Commit = .data$commit,
+    DOI = .data$doi,
+    `Object SHA-256` = .data$expected_sha256,
+    `S001 rows` = .data$normalized_s001_rows,
+    `S101 rows` = .data$normalized_s101_rows,
+    `Local rewrite` = dplyr::if_else(
+      .data$local_identifier_rewrite,
+      "Yes",
+      "No"
+    )
+  ) |>
+  gt::gt() |>
+  h06_gt(font_size = 11)
+```
+
+One KNUST record reported 3,600 minutes of sedentary time. For the exploratory
+sedentary-time analysis only, that entry is interpreted as 3,600 seconds, or
+one hour. It is not added to the three-predictor primary analysis.
+
+### Constructing the fitted samples
+
+#### Outcome and analytical unit
+
+The outcome is the zero-aware geometric mean melEDI for each retained
+participant-hour. The quantity remains in lux, exact zeros remain valid, and
+an hour is retained only after the upstream one-hour coverage rule is met.
+The model therefore estimates mean hourly melEDI among observed hours that met
+the support criteria; it does not estimate a daily light-exposure metric.
+Because participant-days contribute 19–24 supported participant-hours, days
+with more retained hours receive more weight.
+
+```{r}
+#| label: tbl-h06-prep-candidate-flow
+#| tbl-cap: "Candidate one-hour flow into complete three-predictor frames"
+
+candidate_flow |>
+  mutate(
+    Dataset = if_else(
+      .data$data_scenario_id == "main",
+      "Primary dataset",
+      "Gap-timing-unaware dataset"
+    ),
+    Placement = recode(
+      .data$placement,
+      glasses = "Near-eye",
+      chest = "Chest"
+    ),
+    Step = recode(
+      .data$flow_stage,
+      source_one_hour_rows = "Source one-hour rows",
+      admissible_outcome = "Admissible melEDI outcome",
+      plus_work_free_day = "Plus work/free diary",
+      plus_binary_activity = "Plus binary activity",
+      complete_three_core_predictors = "Complete previous sleep"
+    )
+  ) |>
+  mutate(Group = paste(.data$Dataset, .data$Placement, sep = " · ")) |>
+  select(
+    Group,
+    Step,
+    Observations = .data$one_hour_observations,
+    `Removed at step` = .data$removed_at_stage
+  ) |>
+  gt::gt(groupname_col = "Group") |>
+  gt::fmt_integer(columns = c("Observations", "Removed at step")) |>
+  h06_gt(font_size = 11)
+```
+
+```{r}
+#| label: tbl-h06-prep-missingness
+#| tbl-cap: "Predictor availability among hours with an admissible outcome"
+
+candidate_missingness |>
+  transmute(
+    Dataset = if_else(
+      .data$data_scenario_id == "main",
+      "Primary dataset",
+      "Gap-timing-unaware dataset"
+    ),
+    Placement = recode(
+      .data$placement,
+      glasses = "Near-eye",
+      chest = "Chest"
+    ),
+    `Outcome hours` = .data$admissible_outcome_rows,
+    `Missing work/free` = .data$missing_work_free_day,
+    `Missing binary activity` = .data$missing_binary_activity,
+    `Missing previous sleep` = .data$missing_previous_sleep_duration,
+    Complete = .data$complete_three_core_predictors
+  ) |>
+  gt::gt(groupname_col = "Dataset") |>
+  gt::fmt_integer(columns = where(is.numeric)) |>
+  h06_gt(font_size = 11)
+```
+
+The primary near-eye source contains 19,584 one-hour records. After outcome
+admissibility, work/free linkage, binary activity linkage, and preceding-sleep
+linkage, 16,596 hours remain. Activity is the largest source of exclusion.
+Missingness is handled by constructing an exact complete frame before fitting;
+model-specific row dropping is not left to the fitting function.
+
+#### Day type, activity, and previous sleep
+
+- `work_free_day` is a participant-day diary label: Work day or Free day.
+- `activity_status` is Sedentary when no exercise was reported and Active when
+  light, moderate, or vigorous exercise was reported. The four original
+  intensity labels are not used as separate primary levels.
+- `previous_sleep_duration_h` is taken from the preceding eligible sleep
+  period and centred at 8 h. The fitted coefficient is therefore the ratio for
+  one additional hour of previous sleep.
+
+```{r}
+#| label: tbl-h06-prep-previous-night
+#| tbl-cap: "Previous-night temporal linkage audit"
+
+previous_night_linkage |>
+  transmute(
+    `Onset relative to wake date` = recode(
+      .data$onset_to_wake_date_relation,
+      onset_on_wake_date_after_midnight = "After midnight on the wake date",
+      onset_on_preceding_date = "On the preceding date",
+      unavailable = "Unavailable"
+    ),
+    `Diary rows` = .data$diary_rows,
+    Quarantined = .data$quarantined_rows,
+    `Eligible for analysis` = .data$analysis_eligible_rows
+  ) |>
+  gt::gt() |>
+  gt::fmt_integer(columns = where(is.numeric)) |>
+  h06_gt()
+```
+
+The sleep onset may lie on the preceding calendar date or after midnight on
+the wake date. Both relations are valid when they belong to the same eligible
+sleep interval; the one unavailable interval is quarantined. This prevents a
+calendar-date join from assigning sleep to the wrong participant-day.
+
+#### Exact samples
+
+```{r}
+#| label: tbl-h06-prep-exact-samples
+#| tbl-cap: "Exact fitted samples for the six core H06 analyses"
+
+exact_samples |>
+  arrange(.data$run_order) |>
+  transmute(
+    Analysis = recode(
+      .data$analytical_role,
+      primary_near_eye = "Primary near-eye",
+      contextual_chest_all_available = "Chest, all available",
+      paired_near_eye = "Near-eye, paired days",
+      paired_chest = "Chest, paired days",
+      required_gap_near_eye = "Gap-timing-unaware near-eye",
+      contextual_gap_chest = "Gap-timing-unaware chest"
+    ),
+    Hours = .data$one_hour_observations,
+    `Participant-days` = .data$participant_days,
+    Participants = .data$participants,
+    Sites = .data$sites,
+    `Hours/day` = paste0(
+      .data$minimum_supported_hours_per_day,
+      "–",
+      .data$maximum_supported_hours_per_day
+    ),
+    `True-time sequences` = .data$true_time_sequences
+  ) |>
+  gt::gt() |>
+  gt::fmt_integer(columns = c(
+    "Hours", "Participant-days", "Participants", "Sites",
+    "True-time sequences"
+  )) |>
+  h06_gt(font_size = 11)
+```
+
+The primary near-eye fit contains **16,596 supported hours from 715
+participant-days, 137 participants, and nine sites**. The complementary chest
+fit contains 18,352 hours from 789 participant-days, 149 participants, and
+eight sites. The paired-day comparison uses the same participants and
+participant-days at both sensor positions, but three hourly keys differ at
+each position. It therefore compares estimates rather than paired
+observations; it is not an observation-level identity comparison, an
+equivalence analysis, or a direct sensor-position effect.
+
+```{r}
+#| label: tbl-h06-prep-frame-integrity
+#| tbl-cap: "Analysis-frame key, completeness, and provenance checks"
+
+frame_integrity |>
+  transmute(
+    Analysis = paste(
+      dplyr::recode(
+        .data$data_scenario,
+        main = "Primary dataset",
+        gap_timing_unaware = "Gap-timing-unaware dataset"
+      ),
+      dplyr::recode(
+        .data$placement,
+        glasses = "Near-eye",
+        chest = "Chest"
+      ),
+      dplyr::recode(
+        .data$sample_scenario,
+        all_available = "All available",
+        paired_common = "Paired days"
+      ),
+      sep = " · "
+    ),
+    Hours = .data$observations,
+    `Duplicate hour keys` = .data$duplicate_hour_keys,
+    `Missing core fields` =
+      .data$missing_outcome + .data$missing_site +
+      .data$missing_day_type + .data$missing_activity +
+      .data$missing_previous_sleep,
+    `Invalid response` = .data$invalid_response,
+    `Current exact identity` = dplyr::if_else(
+      .data$accepted_identity_match,
+      "Verified",
+      "Review needed"
+    ),
+    `Provenance-only identity update` = dplyr::if_else(
+      .data$provenance_only_file_reseal,
+      "Yes",
+      "No"
+    )
+  ) |>
+  gt::gt() |>
+  gt::fmt_integer(columns = c(
+    "Hours", "Duplicate hour keys", "Missing core fields",
+    "Invalid response"
+  )) |>
+  h06_gt(font_size = 11)
+```
+
+All six frames have unique participant-hour keys, complete core fields,
+non-negative finite responses, and current hashes matching the exact
+invariance evidence. The analysis and current file hashes are both retained
+so that the provenance-only identity update is visible rather than mistaken
+for a scientific change.
+
+## Observed response and predictor support
+
+### Original-unit melEDI
+
+For the distribution display, a symlog axis is linear from 0 to 1 lux and
+base-10 logarithmic above 1 lux; its tick labels remain in lux.
+
+```{r}
+#| label: fig-h06-prep-response-distribution
+#| fig-cap: "Observed one-hour melEDI in the primary frames. Panel A summarizes positive observations using the 10th–90th percentile line, 25th–75th percentile thick line, median point, and open 99th-percentile point on a true symlog axis. Panel B shows the share of exact-zero hours retained in the models."
+#| fig-alt: "Two-panel distribution display for near-eye and chest one-hour melEDI. Positive values span a broad right-skewed range on an axis that is linear from zero to one lux and logarithmic above one lux. The adjacent panel shows that exact zeros comprise about 28 to 29 percent of fitted hours."
+#| fig-width: 10
+#| fig-height: 5.8
+#| out-width: "100%"
+
+positive_plot <- ggplot(
+  response_distribution,
+  aes(y = factor(.data$placement, levels = c("Chest", "Near-eye")))
+) +
+  geom_segment(
+    aes(
+      x = .data$positive_p10_lx,
+      xend = .data$positive_p90_lx,
+      yend = factor(.data$placement, levels = c("Chest", "Near-eye"))
+    ),
+    linewidth = 1,
+    colour = "grey45"
+  ) +
+  geom_segment(
+    aes(
+      x = .data$positive_p25_lx,
+      xend = .data$positive_p75_lx,
+      yend = factor(.data$placement, levels = c("Chest", "Near-eye"))
+    ),
+    linewidth = 5,
+    lineend = "round",
+    colour = "grey70"
+  ) +
+  geom_point(
+    aes(x = .data$positive_median_lx, colour = .data$placement),
+    size = 4
+  ) +
+  geom_point(
+    aes(x = .data$positive_p99_lx, colour = .data$placement),
+    shape = 21,
+    fill = "white",
+    stroke = 1.1,
+    size = 3.5
+  ) +
+  scale_colour_manual(values = placement_colors, guide = "none") +
+  scale_x_continuous(
+    trans = LightLogR::symlog_trans(base = 10, thr = 1, scale = 1),
+    breaks = c(0, 0.1, 1, 10, 100, 1000, 10000),
+    labels = scales::label_number(big.mark = ",")
+  ) +
+  labs(
+    title = "A  Positive melEDI distribution",
+    subtitle = "Thin: P10–P90; thick: P25–P75; filled: median; open: P99",
+    x = "melEDI (lux; symlog axis)",
+    y = NULL
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(panel.grid.major.y = element_blank())
+
+zero_plot <- ggplot(
+  response_distribution,
+  aes(
+    y = factor(.data$placement, levels = c("Chest", "Near-eye")),
+    x = .data$exact_zero_fraction,
+    colour = .data$placement
+  )
+) +
+  geom_segment(
+    aes(
+      x = 0,
+      xend = .data$exact_zero_fraction,
+      yend = factor(.data$placement, levels = c("Chest", "Near-eye"))
+    ),
+    linewidth = 1,
+    colour = "grey70"
+  ) +
+  geom_point(size = 4) +
+  scale_colour_manual(values = placement_colors, guide = "none") +
+  scale_x_continuous(
+    labels = scales::label_percent(accuracy = 1),
+    limits = c(0, 0.35),
+    breaks = c(0, 0.1, 0.2, 0.3)
+  ) +
+  labs(
+    title = "B  Exact-zero hours",
+    subtitle = "Retained as valid outcomes",
+    x = "Share of supported hours",
+    y = NULL
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(panel.grid.major.y = element_blank())
+
+cowplot::plot_grid(
+  positive_plot,
+  zero_plot,
+  nrow = 1,
+  rel_widths = c(1.8, 1)
+)
+```
+
+[Response-distribution source CSV](../../../artifacts/11_source_data/H06/H06_preparation_response_distribution.csv)
+
+```{r}
+#| label: tbl-h06-prep-response-distribution
+#| tbl-cap: "Observed one-hour melEDI distribution in the primary frames"
+
+response_distribution |>
+  transmute(
+    Placement = .data$placement,
+    Hours = .data$observations,
+    `Exact zeros` = .data$exact_zero_hours,
+    `Zero share` = .data$exact_zero_fraction,
+    `Positive median (lx)` = .data$positive_median_lx,
+    `Positive P90 (lx)` = .data$positive_p90_lx,
+    `Positive P99 (lx)` = .data$positive_p99_lx,
+    `Maximum (lx)` = .data$maximum_lx
+  ) |>
+  gt::gt() |>
+  gt::fmt_integer(columns = c("Hours", "Exact zeros")) |>
+  gt::fmt_percent(columns = "Zero share", decimals = 1) |>
+  gt::fmt_number(
+    columns = contains("lx"),
+    decimals = 1,
+    use_seps = TRUE
+  ) |>
+  h06_gt(font_size = 11)
+```
+
+The near-eye frame contains 4,697 exact-zero hours (28.3%) and the chest frame
+5,337 (29.1%). The symlog axis is display-only and preserves zero. Source
+values and fitted responses are unchanged.
+
+### Site, day type, and activity support
+
+```{r}
+#| label: fig-h06-prep-site-day-activity-support
+#| fig-cap: "Observed participant support for each joint day-type and activity category by study site and placement. Point size represents supported hours; crosses mark cells without observations and open circles mark observed cells with fewer than four participants or eight participant-days. Colours identify sites only."
+#| fig-alt: "Two-panel dot matrix of four day-type and activity combinations across nine near-eye and eight chest sites: Borås (SE), Delft (NL), Dortmund (DE), Tübingen (DE), Munich (DE), Madrid (ES), Izmir (TR), San José (CR), and Kumasi (GH). Every primary near-eye site has observations in all four combinations, though some free-day sedentary cells are sparse. Chest data are absent for Tübingen (DE). Point sizes show supported hours, shapes distinguish support categories, and colours identify sites."
+#| fig-width: 11
+#| fig-height: 8
+#| out-width: "100%"
+
+site_order <- site_day_activity_support |>
+  distinct(.data$display_order, .data$display_name) |>
+  arrange(.data$display_order) |>
+  pull(.data$display_name)
+
+ggplot(
+  site_day_activity_support,
+  aes(
+    x = factor(.data$joint_group, levels = names(joint_colors)),
+    y = factor(.data$display_name, levels = rev(site_order)),
+    size = .data$hours,
+    colour = .data$color_hex,
+    shape = .data$support_status
+  )
+) +
+  geom_point(stroke = 1.2) +
+  facet_wrap(~factor(.data$placement, levels = c("Near-eye", "Chest")), ncol = 1) +
+  scale_colour_identity() +
+  scale_shape_manual(
+    values = c(
+      "Supported" = 16,
+      "Observed but sparse" = 1,
+      "No observations" = 4
+    )
+  ) +
+  scale_size_continuous(
+    range = c(2.5, 8),
+    breaks = c(100, 250, 500, 1000),
+    name = "Supported hours"
+  ) +
+  scale_x_discrete(labels = function(value) gsub(" · ", "\n", value, fixed = TRUE)) +
+  labs(x = NULL, y = NULL, shape = "Cell support") +
+  theme_minimal(base_size = 14) +
+  theme(
+    panel.grid.minor = element_blank(),
+    panel.grid.major = element_line(colour = "grey88"),
+    axis.text.x = element_text(lineheight = 0.95),
+    strip.text = element_text(face = "bold")
+  )
+```
+
+[Site-by-category source CSV](../../../artifacts/11_source_data/H06/H06_preparation_site_day_activity_support.csv)
+
+```{r}
+#| label: tbl-h06-prep-site-cell-summary
+#| tbl-cap: "Range of site-specific support for each day-type and activity combination"
+
+site_day_activity_support |>
+  group_by(.data$placement, .data$joint_group) |>
+  summarise(
+    Sites = n_distinct(.data$site),
+    `Cells with observations` = sum(.data$hours > 0L),
+    `Sparse observed cells` = sum(.data$support_status == "Observed but sparse"),
+    `Minimum hours` = min(.data$hours[.data$hours > 0L]),
+    `Median hours` = median(.data$hours[.data$hours > 0L]),
+    `Minimum participants` = min(.data$participants[.data$hours > 0L]),
+    .groups = "drop"
+  ) |>
+  transmute(
+    Placement = .data$placement,
+    Category = .data$joint_group,
+    Sites,
+    `Cells with observations`,
+    `Sparse observed cells`,
+    `Minimum hours`,
+    `Median hours`,
+    `Minimum participants`
+  ) |>
+  gt::gt(groupname_col = "Placement") |>
+  gt::fmt_number(columns = "Median hours", decimals = 1) |>
+  h06_gt(font_size = 11)
+```
+
+```{r}
+#| label: tbl-h06-prep-category-cell-minima
+#| tbl-cap: "Smallest observed site-by-category cells in the primary near-eye frame"
+
+category_cells |>
+  filter(
+    .data$run_id == "main__glasses__all_available",
+    .data$cell_type %in% c("site_by_work_free_day", "site_by_activity_status")
+  ) |>
+  arrange(.data$participants, .data$participant_days, .data$one_hour_observations) |>
+  slice_head(n = 10L) |>
+  transmute(
+    Site = recode(
+      .data$site,
+      RISE = "Borås (SE)",
+      THUAS = "Delft (NL)",
+      BAUA = "Dortmund (DE)",
+      MPI = "Tübingen (DE)",
+      TUM = "Munich (DE)",
+      FUSPCEU = "Madrid (ES)",
+      IZTECH = "Izmir (TR)",
+      UCR = "San José (CR)",
+      KNUST = "Kumasi (GH)"
+    ),
+    Category = .data$category,
+    Hours = .data$one_hour_observations,
+    `Participant-days` = .data$participant_days,
+    Participants = .data$participants
+  ) |>
+  gt::gt() |>
+  gt::fmt_integer(columns = c("Hours", "Participant-days", "Participants")) |>
+  h06_gt(font_size = 11)
+```
+
+The smallest cells are reported explicitly because the full interaction model
+requires site-specific information for every predictor. These cells remain
+estimable, but their wide site-specific intervals and sensitivity to site
+deletion limit localized interpretation.
+
+### Local-clock support
+
+```{r}
+#| label: fig-h06-prep-clock-support
+#| fig-cap: "Supported participant-hours across local clock time for the four joint day-type and activity categories. Colour and line type jointly identify category; panels separate near-eye and chest. The display describes fitted-row support rather than an exposure effect."
+#| fig-alt: "Two-panel line chart of supported participant-hours at each local clock hour. Work-day Active hours are most numerous, followed by Free-day Active hours; Sedentary categories have fewer observations. Support remains present across all 24 clock hours at both placements."
+#| fig-width: 10
+#| fig-height: 6
+#| out-width: "100%"
+
+ggplot(
+  clock_day_activity_support,
+  aes(
+    x = .data$local_hour,
+    y = .data$hours,
+    colour = factor(.data$joint_group, levels = names(joint_colors)),
+    linetype = .data$activity_label,
+    group = .data$joint_group
+  )
+) +
+  geom_line(linewidth = 1.2) +
+  geom_point(size = 2) +
+  facet_wrap(~factor(.data$placement, levels = c("Near-eye", "Chest")), ncol = 1) +
+  scale_colour_manual(
+    values = joint_colors,
+    name = "Day type and activity",
+    guide = guide_legend(nrow = 2, byrow = TRUE)
+  ) +
+  scale_linetype_manual(
+    values = c("Sedentary" = "solid", "Active" = "22"),
+    guide = "none"
+  ) +
+  scale_x_continuous(breaks = seq(0, 20, by = 4), limits = c(0, 23)) +
+  scale_y_continuous(labels = scales::label_number(big.mark = ",")) +
+  labs(x = "Local clock hour", y = "Supported participant-hours") +
+  theme_minimal(base_size = 14) +
+  theme(
+    panel.grid.minor = element_blank(),
+    strip.text = element_text(face = "bold"),
+    legend.position = "bottom"
+  )
+```
+
+[Clock-support source CSV](../../../artifacts/11_source_data/H06/H06_preparation_clock_day_activity_support.csv)
+
+```{r}
+#| label: tbl-h06-prep-participant-day-support
+#| tbl-cap: "Participant-day support in the primary frames"
+
+participant_day_support |>
+  group_by(.data$placement) |>
+  summarise(
+    `Participant-days` = n(),
+    `Minimum supported hours` = min(.data$supported_hours),
+    `Median supported hours` = median(.data$supported_hours),
+    `Maximum supported hours` = max(.data$supported_hours),
+    `Days with more than one sequence` = sum(.data$true_time_sequences > 1L),
+    `Days with an irregular elapsed bin` = sum(.data$irregular_elapsed_bins > 0L),
+    .groups = "drop"
+  ) |>
+  transmute(
+    Placement = .data$placement,
+    `Participant-days`,
+    `Minimum supported hours`,
+    `Median supported hours`,
+    `Maximum supported hours`,
+    `Days with more than one sequence`,
+    `Days with an irregular elapsed bin`
+  ) |>
+  gt::gt() |>
+  gt::fmt_number(columns = "Median supported hours", decimals = 1) |>
+  h06_gt(font_size = 11)
+```
+
+[Participant-day support CSV](../../../artifacts/11_source_data/H06/H06_preparation_participant_day_support.csv)
+
+### True-time sequences and repeated hours
+
+Repeated supported hours are ordered by their true UTC interval, not by a
+naive local-clock sort. A new sequence begins at a participant-day boundary,
+after an elapsed gap, or around a non-one-to-one wall-clock interval. Local
+clock time describes when an observation occurred; it is not the correlation
+coordinate.
+
+```{r}
+#| label: tbl-h06-prep-true-time-sequences
+#| tbl-cap: "True-time sequence construction in the six fitted frames"
+
+true_time_sequences |>
+  transmute(
+    Analysis = recode(
+      .data$run_id,
+      main__glasses__all_available = "Primary near-eye",
+      main__chest__all_available = "Chest, all available",
+      main__glasses__paired_common = "Near-eye, paired days",
+      main__chest__paired_common = "Chest, paired days",
+      gap_timing_unaware__glasses__all_available =
+        "Gap-timing-unaware near-eye",
+      gap_timing_unaware__chest__all_available =
+        "Gap-timing-unaware chest"
+    ),
+    Hours = .data$one_hour_observations,
+    `Sequence starts` = .data$sequence_starts,
+    Sequences = .data$true_time_sequences,
+    `Maximum sequence hours` = .data$maximum_sequence_hours,
+    `Irregular elapsed bins` = .data$irregular_elapsed_bins,
+    `Non-3,600-s rows` = .data$non_3600_second_rows
+  ) |>
+  gt::gt() |>
+  gt::fmt_integer(columns = where(is.numeric)) |>
+  h06_gt(font_size = 11)
+```
+
+The primary near-eye frame has 1,052 true-time sequences and three irregular
+elapsed bins. The clustered primary covariance addresses repeated
+participant-level observations; the sequence information is retained for
+temporal residual model checks and the separate clock-time analysis.
+
+## Primary model and estimands
+
+### Exact formulas
+
+The quasi-Poisson model estimates a log mean while allowing the response
+variance to differ from a Poisson variance. Study site enters as a fixed
+effect, so the model adjusts for the listed sites rather than treating them as
+a random sample of sites. A participant-cluster-robust 95% CI allows hours
+from the same participant to be related and uses the HC3 small-sample
+correction. The predictor-by-site interaction model allows an association to
+differ by study site. A site-average estimate gives each included site equal
+weight on the log scale, then back-transforms once to the reported ratio.
+
+```{r}
+#| label: tbl-h06-prep-primary-formulas
+#| tbl-cap: "Exact Wilkinson formulas used for the common-effect and predictor-by-site interaction models"
+
+primary_formula_registry |>
+  gt::gt() |>
+  gt::cols_label(
+    model = "Model",
+    wilkinson_formula = "Wilkinson formula",
+    purpose = "Purpose"
+  ) |>
+  gt::fmt_markdown(columns = "wilkinson_formula") |>
+  gt::tab_style(
+    style = gt::cell_text(font = gt::google_font("Roboto Mono"), size = gt::px(11)),
+    locations = gt::cells_body(columns = "wilkinson_formula")
+  ) |>
+  h06_gt(font_size = 11)
+```
+
+The common-effect formula asks whether estimated mean hourly near-eye melEDI
+among observed hours that met the support criteria differs for free versus
+work days, active versus sedentary day status, and per one additional hour of
+previous sleep. The null ratio is 1. Local clock time is not a primary
+predictor. The predictor-by-site interaction formula allows each of those
+three associations to differ by study site; it is not a different reference
+outcome or a test of whether a site lies above the site-average association,
+which gives each included site equal weight.
+
+The quasi-Poisson specification is used as a log-mean estimating model, not as
+a claim that the observed melEDI distribution is Poisson. A
+participant-cluster-robust 95% confidence interval (95% CI) allows
+observations from the same participant to be related and uses the HC3
+small-sample correction. The site-average estimate gives each included site
+equal weight and then back-transforms once; participant-hours do not determine
+site weights.
+
+```{r}
+#| label: tbl-h06-prep-model-settings
+#| tbl-cap: "Primary model, covariance, and contrast settings"
+
+model_settings |>
+  gt::gt() |>
+  gt::cols_label(
+    setting = "Setting",
+    implementation = "Specification",
+    interpretation = "What it fixes"
+  ) |>
+  h06_gt(font_size = 11)
+```
+
+### False-discovery-rate adjustment
+
+False-discovery-rate (FDR) adjustment is applied within each declared family
+of related tests below.
+
+```{r}
+#| label: tbl-h06-prep-multiplicity
+#| tbl-cap: "Declared false-discovery-rate adjustment families"
+
+multiplicity_registry |>
+  arrange(.data$family_order) |>
+  transmute(
+    Family = .data$content,
+    Tests = .data$planned_size,
+    Adjustment = "FDR"
+  ) |>
+  gt::gt() |>
+  gt::fmt_integer(columns = "Tests") |>
+  h06_gt()
+```
+
+The three primary common-effect tests, three primary site-interaction tests,
+and three practical standardized contrasts form separate FDR families. The
+near-eye gap-timing-unaware counterparts use separate three-test families.
+Only FDR-adjusted p-values are interpreted in the results report. The
+exploratory site-specific display applies a separate nine-site FDR adjustment
+within each predictor rather than pooling all 27 site estimates. Those
+site-wise tests compare each site's ratio with the null ratio 1; they do not
+test whether sites differ from the site-average association or from one
+another.
+
+### Preregistration decisions
+
+- [`DEV-015`](../../../notebooks/preregistration_deviations.qmd#dev-015)
+  records the documented hourly geometric-mean melEDI estimand rather than the
+  preregistered daily metric set.
+- [`DEV-030`](../../../notebooks/preregistration_deviations.qmd#dev-030)
+  limits the primary family to day type, active/sedentary status, and
+  previous-night sleep duration.
+- [`DEV-031`](../../../notebooks/preregistration_deviations.qmd#dev-031)
+  records the zero-inclusive quasi-Poisson common-effect model,
+  participant-cluster HC3 inference, predictor-by-site interactions, and
+  separate exploratory nonlinear clock-time analysis.
+- [`DEV-032`](../../../notebooks/preregistration_deviations.qmd#dev-032)
+  records the separate FDR families and the distinction between average
+  associations, predictor-by-site interactions, and exploratory site screens.
+
+These choices are summarized with the results under
+[Linked registration-record summary](../../../notebooks/hypotheses/H06.qmd#h06-preregistration-deviations).
+
+## Model checks, influence, and sensitivity analyses
+
+### Numerical and distributional model checks
+
+```{r}
+#| label: tbl-h06-prep-fit-diagnostics
+#| tbl-cap: "Stored numerical and distributional model checks for the primary working models"
+
+fit_diagnostics |>
+  filter(
+    .data$run_id %in% c(
+      "main__glasses__all_available",
+      "main__chest__all_available",
+      "gap_timing_unaware__glasses__all_available"
+    )
+  ) |>
+  transmute(
+    Analysis = recode(
+      .data$run_id,
+      main__glasses__all_available = "Primary near-eye",
+      main__chest__all_available = "Chest, all available",
+      gap_timing_unaware__glasses__all_available =
+        "Gap-timing-unaware near-eye"
+    ),
+    Model = recode(
+      .data$model_role,
+      additive = "Common-effect",
+      full = "Predictor-by-site interaction"
+    ),
+    Converged = dplyr::if_else(.data$converged, "Yes", "No"),
+    `Full design rank` = dplyr::if_else(
+      .data$full_rank,
+      "Yes",
+      "No"
+    ),
+    `Finite HC3 covariance` = dplyr::if_else(
+      .data$hc3_covariance_finite,
+      "Yes",
+      "No"
+    ),
+    `Positive-definite HC3` = dplyr::if_else(
+      .data$hc3_covariance_positive_definite,
+      "Yes",
+      "No"
+    ),
+    Dispersion = .data$dispersion,
+    `Exact-zero share` = .data$exact_zero_fraction,
+    `|residual|-fitted Spearman` = .data$absolute_residual_fitted_spearman,
+    `Largest participant score share` = .data$maximum_cluster_score_share,
+    `Numerical check` = dplyr::if_else(
+      .data$numerical_gate_pass,
+      "Meets numerical checks",
+      "Review needed"
+    )
+  ) |>
+  gt::gt(groupname_col = "Analysis") |>
+  gt::fmt_number(
+    columns = c("Dispersion"),
+    decimals = 1,
+    use_seps = TRUE
+  ) |>
+  gt::fmt_percent(
+    columns = c("Exact-zero share", "Largest participant score share"),
+    decimals = 1
+  ) |>
+  gt::fmt_number(columns = "|residual|-fitted Spearman", decimals = 3) |>
+  h06_gt(font_size = 10.5)
+```
+
+All stored fits converged with full-rank fixed designs and finite,
+positive-definite HC3 covariance matrices. Large dispersion and the positive
+association between absolute residuals and fitted values show that the
+working distribution is an approximation. These checks support finite
+log-mean estimation; they do not establish a fully specified outcome
+distribution.
+
+```{r}
+#| label: tbl-h06-prep-residual-correlation
+#| tbl-cap: "Stored within-sequence residual correlation at the first two hourly lags"
+
+residual_acf |>
+  filter(.data$lag_hours %in% c(1L, 2L)) |>
+  transmute(
+    Analysis = recode(
+      .data$run_id,
+      main__glasses__all_available = "Primary near-eye",
+      main__chest__all_available = "Chest, all available",
+      main__glasses__paired_common = "Near-eye, paired days",
+      main__chest__paired_common = "Chest, paired days",
+      gap_timing_unaware__glasses__all_available =
+        "Gap-timing-unaware near-eye",
+      gap_timing_unaware__chest__all_available =
+        "Gap-timing-unaware chest"
+    ),
+    `Lag (h)` = .data$lag_hours,
+    `Residual correlation` = .data$residual_correlation,
+    `Residual pairs` = .data$residual_pairs
+  ) |>
+  gt::gt(groupname_col = "Analysis") |>
+  gt::fmt_number(columns = "Residual correlation", decimals = 3) |>
+  gt::fmt_integer(columns = "Residual pairs") |>
+  h06_gt(font_size = 11)
+```
+
+Residual correlation remains positive at one hour, especially near eye. The
+primary inference clusters by participant, while the temporal model below
+adds a working within-sequence correlation. Neither device turns local clock
+time into a primary effect.
+
+### Influence
+
+```{r}
+#| label: tbl-h06-prep-influence
+#| tbl-cap: "Stored targeted deletion checks for the primary near-eye model"
+
+influence_deletions |>
+  group_by(.data$deletion_type, .data$predictor_id) |>
+  summarise(
+    Deletions = n(),
+    `All additive fits converged` = all(.data$additive_converged),
+    `All interaction fits converged` = all(.data$full_converged),
+    `Maximum absolute shift (HC3 SE)` = max(
+      .data$absolute_shift_full_hc3_se,
+      na.rm = TRUE
+    ),
+    .groups = "drop"
+  ) |>
+  transmute(
+    Deletion = tools::toTitleCase(.data$deletion_type),
+    Predictor = recode(
+      .data$predictor_id,
+      work_free_day = "Free versus Work day",
+      activity_status = "Active versus Sedentary",
+      previous_sleep_duration_centered_h = "Previous sleep per hour"
+    ),
+    Deletions,
+    `All additive fits converged` = dplyr::if_else(
+      .data$`All additive fits converged`,
+      "Yes",
+      "No"
+    ),
+    `All interaction fits converged` = dplyr::if_else(
+      .data$`All interaction fits converged`,
+      "Yes",
+      "No"
+    ),
+    `Maximum absolute shift (HC3 SE)`
+  ) |>
+  gt::gt(groupname_col = "Deletion") |>
+  gt::fmt_number(columns = "Maximum absolute shift (HC3 SE)", decimals = 2) |>
+  h06_gt(font_size = 11)
+```
+
+Targeted participant deletions remained numerically stable. Leave-one-site-out
+results are more consequential for the day-type association, which is why the
+reader report describes that result as site- and model-dependent. These are
+model-stability checks, not additional independent samples.
+
+### Sensitivity analyses
+
+```{r}
+#| label: tbl-h06-prep-sensitivity-map
+#| tbl-cap: "Stored sensitivity analyses and the question each addresses"
+
+sensitivity_registry |>
+  gt::gt() |>
+  gt::cols_label(
+    check = "Check",
+    `stored comparison` = "Stored comparison",
+    `question addressed` = "Question addressed"
+  ) |>
+  h06_gt(font_size = 11)
+```
+
+```{r}
+#| label: tbl-h06-prep-sensitivity-stability
+#| tbl-cap: "Classification of stored primary sensitivity contrasts"
+
+sensitivity_comparisons |>
+  count(
+    .data$comparison_id,
+    .data$stability_classification,
+    name = "Predictor contrasts"
+  ) |>
+  transmute(
+    Comparison = dplyr::recode(
+      .data$comparison_id,
+      primary_vs_gap_timing_unaware_all_available =
+        "Primary and gap-timing-unaware datasets, all available hours",
+      primary_vs_gap_timing_unaware_exact_common_hours =
+        "Primary and gap-timing-unaware datasets, exact common hours",
+      primary_all_available_vs_primary_exact_common_hours =
+        "Primary dataset, all available and exact common hours",
+      gap_all_available_vs_gap_exact_common_hours =
+        "Gap-timing-unaware dataset, all available and exact common hours",
+      quasi_poisson_vs_fixed_p1_8 =
+        "Quasi-Poisson and fixed power-1.8 working variance",
+      HC3_vs_HC1 = "Participant-cluster HC3 and HC1 corrections",
+      HC3_vs_HC2 = "Participant-cluster HC3 and HC2 corrections",
+      equal_site_vs_observed_sample =
+        "Site-average and observed-site weighting",
+      near_eye_vs_chest_all_available =
+        "Near-eye and chest, all available hours",
+      paired_common_near_eye_vs_chest =
+        "Near-eye and chest on paired days"
+    ),
+    Classification = tools::toTitleCase(gsub(
+      "_",
+      " ",
+      .data$stability_classification
+    )),
+    `Predictor contrasts` = .data$`Predictor contrasts`
+  ) |>
+  gt::gt() |>
+  gt::fmt_integer(columns = "Predictor contrasts") |>
+  h06_gt(font_size = 11)
+```
+
+Each sensitivity analysis changes the dataset, retained sample, cluster
+covariance correction, site weighting, response model, calendar label, or
+deleted participant or site named in the table while preserving the relevant
+comparison contract. The gap-timing-unaware, common-hour, paired-day, chest,
+covariance, and working-variance outputs are preserved separately. Reusing the
+same prepared model frames across comparisons prevents a changed denominator
+from being hidden inside a model label.
+
+## Exploratory analyses
+
+### Nonlinear local-clock GAM analysis
+
+Time of day is described separately from the three primary average
+associations. This nonlinear generalized additive model (GAM) analysis allows
+the associations with local clock time to bend across the day. It has two
+parts: a binomial model for whether hourly melEDI is positive and a Gamma
+log-link model for the positive magnitude. Their response-scale product gives
+estimated mean hourly melEDI.
+
+```{r}
+#| label: tbl-h06-prep-temporal-formulas
+#| tbl-cap: "Exact formulas for the exploratory two-part clock-time model"
+
+temporal_formula_registry |>
+  filter(.data$selected_basis_k == 16L) |>
+  transmute(
+    Component = recode(
+      .data$component,
+      occurrence = "Occurrence",
+      positive_magnitude = "Positive magnitude"
+    ),
+    Family = .data$response_family,
+    Formula = gsub("[[:space:]]+", " ", .data$selected_formula),
+    Method = .data$method,
+    `Discrete computation` = dplyr::if_else(
+      .data$discrete,
+      "Yes",
+      "No"
+    ),
+    `Basis k` = .data$selected_basis_k,
+    `Site-specific clock smooth` = dplyr::if_else(
+      .data$site_specific_clock_smooth,
+      "Yes",
+      "No"
+    ),
+    Role = "Exploratory clock-time context"
+  ) |>
+  gt::gt() |>
+  gt::fmt_markdown(columns = "Formula") |>
+  gt::tab_style(
+    style = gt::cell_text(font = gt::google_font("Roboto Mono"), size = gt::px(10.5)),
+    locations = gt::cells_body(columns = "Formula")
+  ) |>
+  h06_gt(font_size = 10.5)
+```
+
+The four day-type-by-activity curves use cyclic cubic factor-by smooths with a
+shared smoothing parameter. They are not sum-to-zero site-deviation smooths,
+and no site-specific clock smooth is fitted. Site enters parametrically, and
+the displayed curves average equally across the nine near-eye sites. Both
+components use fREML and `discrete = TRUE`; no `discrete = FALSE` computation
+is required.
+
+```{r}
+#| label: tbl-h06-prep-temporal-diagnostics
+#| tbl-cap: "Stored model checks for the selected exploratory clock-time components"
+
+temporal_fit_summary |>
+  filter(.data$selected_for_exploratory_display) |>
+  transmute(
+    Component = recode(
+      .data$component,
+      occurrence = "Occurrence",
+      positive_magnitude = "Positive magnitude"
+    ),
+    Observations = .data$observations,
+    `Participant-days` = .data$participant_days,
+    Participants = .data$participants,
+    Sequences = .data$analysis_sequences,
+    `Basis k` = .data$basis_k,
+    `Working rho` = .data$working_ar_rho,
+    Converged = dplyr::if_else(.data$converged, "Yes", "No"),
+    `Deviance explained` = .data$deviance_explained
+  ) |>
+  gt::gt() |>
+  gt::fmt_integer(columns = c(
+    "Observations", "Participant-days", "Participants", "Sequences",
+    "Basis k"
+  )) |>
+  gt::fmt_number(columns = "Working rho", decimals = 3) |>
+  gt::fmt_percent(columns = "Deviance explained", decimals = 1) |>
+  h06_gt(font_size = 11)
+```
+
+The selected occurrence component uses all 16,596 primary hours; the positive
+magnitude component uses 11,899 positive hours. Removing zeros splits some
+positive-magnitude sequences, so residual correlation never bridges an
+excluded zero. The working residual correlations are approximately 0.418 and
+0.440. The AR(1) working structure relates residuals in adjacent supported
+hours within a true-time sequence, with the working relation weakening across
+larger lags. It is a GEE-like working adjustment for these non-Gaussian `bam`
+fits, not a fully generative joint autoregressive likelihood.
+
+```{r}
+#| label: tbl-h06-prep-temporal-basis
+#| tbl-cap: "Stored basis-dimension model checks for the selected exploratory clock-time model"
+
+temporal_k_check |>
+  filter(.data$basis_k == 16L) |>
+  transmute(
+    Component = recode(
+      .data$component,
+      occurrence = "Occurrence",
+      positive_magnitude = "Positive magnitude"
+    ),
+    Smooth = .data$smooth,
+    `Available k'` = .data$`k'`,
+    `Effective df` = .data$edf,
+    `k-index` = .data$`k-index`,
+    `k-check p-value` = .data$`p-value`
+  ) |>
+  gt::gt(groupname_col = "Component") |>
+  gt::fmt_number(
+    columns = c("Available k'", "Effective df", "k-index", "k-check p-value"),
+    decimals = 3
+  ) |>
+  h06_gt(font_size = 10.5)
+```
+
+The occurrence basis check remains a warning: its k-check p-values are small,
+although effective degrees of freedom remain below the basis ceiling. The
+lower-basis comparison changes some response-scale curves. Together with
+occurrence calibration, residual working correlation, and omitted
+cross-component covariance, this prevents confirmatory whole-curve inference.
+Active/Sedentary and Free/Work contrasts are response-scale pointwise displays
+with null ratio 1. A pointwise 95% CI applies to one displayed hour, not to the
+whole curve; filled points only indicate that the interval at that hour
+excludes 1. They are neither simultaneous bands nor multiplicity-controlled
+whole-curve tests.
+
+### Additional diary measures
+
+```{r}
+#| label: tbl-h06-prep-exploratory-samples
+#| tbl-cap: "Exact samples for additional exploratory diary predictors"
+
+exploratory_predictor_samples |>
+  transmute(
+    Analysis = recode(
+      .data$analysis_id,
+      exercise_location_active_days = "Exercise location on active days",
+      active_travel = "Walking/cycling travel time",
+      sedentary_time = "Sitting/reclining time",
+      previous_sleep_onset = "Previous sleep onset",
+      final_wake = "Final wake time"
+    ),
+    Hours = .data$one_hour_observations,
+    `Participant-days` = .data$participant_days,
+    Participants = .data$participants,
+    Sites = .data$sites,
+    Role = "Exploratory"
+  ) |>
+  gt::gt() |>
+  gt::fmt_integer(columns = c("Hours", "Participant-days", "Participants", "Sites")) |>
+  h06_gt(font_size = 11)
+```
+
+Exercise location, active travel, sedentary time, previous sleep onset, and
+final wake time are retained as exploratory context. They are not inserted
+into the primary model, and no temperature or unsupported predictor is added.
+
+## Technical provenance and reproduction
+
+Exact paths, hashes, software versions, and producer relationships are kept
+below for reproducibility. They are subordinate to the scientific preparation
+record above.
+
+<details>
+<summary>Show technical files and reproduction details</summary>
+
+### Code and stored outputs
+
+```{r}
+#| label: tbl-h06-prep-code-map
+#| tbl-cap: "H06 code map"
+
+code_map |>
+  gt::gt() |>
+  gt::cols_label(file = "File", responsibility = "Responsibility") |>
+  gt::fmt_markdown(columns = "file") |>
+  h06_gt(font_size = 11)
+```
+
+```{r}
+#| label: tbl-h06-prep-output-inventory
+#| tbl-cap: "Selected stored outputs and their current identities"
+
+output_inventory |>
+  transmute(
+    Role = .data$role,
+    Path = .data$relative_path,
+    `SHA-256` = .data$sha256
+  ) |>
+  gt::gt() |>
+  gt::fmt_markdown(columns = "Path") |>
+  h06_gt(font_size = 10.5)
+```
+
+The full H06 manifests record every model frame, fitted object, model check,
+table, figure, and paired source CSV. Hashes identify exact files; they do not
+replace the scientific checks of samples, formulas, estimands, multiplicity,
+and model adequacy documented above.
+
+```{r}
+#| label: tbl-h06-prep-environment
+#| tbl-cap: "Recorded software versions for the hourly H06 analysis"
+
+package_versions |>
+  transmute(Package = .data$package, Version = .data$version) |>
+  gt::gt() |>
+  h06_gt(font_size = 11)
+```
+
+The analysis and this provenance display use R 4.6.1 and the project library.
+No package is installed or updated by this render.
+
+### Reproduction guidance
+
+A reproducibility check can proceed in this order:
+
+1. verify the recorded scientific inputs and the current base manifest;
+2. inspect candidate flow, missingness, exact frames, and category support;
+3. confirm the two Wilkinson formulas, site contrasts, cluster covariance, and
+   multiplicity families;
+4. inspect convergence, residual, temporal, and influence model checks;
+5. compare the required dataset, placement, paired-day, working-variance, and
+   covariance sensitivities; and
+6. trace each reader table and figure to its paired stored CSV and manifest
+   identity.
+
+```{r}
+#| label: tbl-h06-prep-source-data
+#| tbl-cap: "Preparation source-data files created from the hourly H06 frames"
+
+tibble::tribble(
+  ~File, ~Contents,
+  "H06_preparation_frame_integrity.csv", "Six-frame keys, completeness, samples, sequences, and analysis/current identities",
+  "H06_preparation_response_distribution.csv", "Original-unit positive quantiles and exact-zero support",
+  "H06_preparation_site_day_activity_support.csv", "Site-by-day-type/activity hours, participants, and participant-days",
+  "H06_preparation_clock_day_activity_support.csv", "Local-hour support for the four day-type/activity categories",
+  "H06_preparation_participant_day_support.csv", "Supported hours, zeros, predictors, and sequences per participant-day",
+  "H06_preparation_input_provenance.csv", "Verified scientific input paths and SHA-256 identities",
+  "H06_preparation_shared_provenance.csv", "Current base manifest, input-bundle, and six-frame invariance records",
+  "H06_preparation_exercise_diary_source_pin.csv", "Pinned TUM diary object and S001/S101 assertion"
+) |>
+  gt::gt() |>
+  gt::fmt_markdown(columns = "File") |>
+  h06_gt(font_size = 11)
+```
+
+</details>
+
+This record preserves the analysis boundary: the primary estimand is an
+average participant-hour association, the predictor-by-site interaction model
+provides localized context, and the nonlinear clock-time GAM analysis remains
+exploratory and separate. The [Hourly H06 results report](../../../notebooks/hypotheses/H06.qmd)
+provides the reader-facing estimates and qualifications.

@@ -10,6 +10,7 @@ format:
     code-summary: "Show the R code used for this display"
     code-tools: true
     page-layout: full
+    lightbox: true
 execute:
   echo: true
   warning: false
@@ -113,7 +114,7 @@ reader_order <- c(
   "Outdoors",
   "Vehicle/public transport",
   "Sleeping",
-  "Other/unspecified"
+  "Other"
 )
 
 input_audit <- read_h04_csv(
@@ -154,19 +155,40 @@ response_distribution <- read_h04_csv(
 )
 category_support <- read_h04_csv(
   "artifacts/11_source_data/H04/H04_preparation_category_support.csv"
-)
+) |>
+  mutate(
+    short_label = if_else(
+      .data$activity_code == "other",
+      "Other",
+      .data$short_label
+    )
+  )
 site_category_support <- read_h04_csv(
   paste0(
     "artifacts/11_source_data/H04/",
     "H04_preparation_site_category_support.csv"
   )
-)
+) |>
+  mutate(
+    short_label = if_else(
+      .data$activity_code == "other",
+      "Other",
+      .data$short_label
+    )
+  )
 clock_support <- read_h04_csv(
   paste0(
     "artifacts/11_source_data/H04/",
     "H04_preparation_clock_category_support.csv"
   )
-)
+) |>
+  mutate(
+    short_label = if_else(
+      .data$activity_code == "other",
+      "Other",
+      .data$short_label
+    )
+  )
 participant_day_support <- read_h04_csv(
   paste0(
     "artifacts/11_source_data/H04/",
@@ -289,7 +311,7 @@ stopifnot(
 )
 ```
 
-## Purpose
+## About this analysis record
 
 ::: {.callout-note title="About this analysis record"}
 This page explains how verified one-hour melEDI records and multi-select
@@ -304,9 +326,10 @@ melanopsin-weighted measure of illuminance expressed in lux. The primary
 near-eye sensor position measures light near the eyes but is not a retinal
 measurement. The complementary chest sensor position is not a measure of
 ocular exposure. The five interpretable categories are At home, Office/home
-working, Outdoors, Vehicle/public transport, and Sleeping. Other/unspecified
+working, Outdoors, Vehicle/public transport, and Sleeping. Other
 activity remains in the additive population-mean model as a display-only row,
-is heterogeneous, and supports no substantive claim.
+is a varied display-only category rather than a coherent scientific category,
+and supports no substantive claim.
 
 Activity categories are not mutually exclusive behavioural states. When an
 hour contains several retained labels, that hour contributes $1/k$ to each of
@@ -366,11 +389,12 @@ that this page repeats model estimation.
 
 Five files determine the scientific H04 frames and displays: the normalized
 activity diary, the primary near-eye and complementary chest one-hour
-outcomes, the gap-timing-unaware one-hour outcomes, and the submitted site
-registry. Their complete SHA-256 identities and current contract identities
-are recorded. The recorded R 4.6.1 comparison establishes zero-tolerance
-equality of all values in all 14 H04 analysis frames, so the accepted model
-objects and results remain controlling and no model refit is required.
+outcomes, the gap-timing-unaware one-hour outcomes, and the shared
+country-coded site registry. Their complete SHA-256 identities and current
+contract identities are recorded. The recorded R 4.6.1 comparison establishes
+zero-tolerance equality of all values in all 14 H04 analysis frames, so the
+accepted model objects and results remain controlling and no model refit is
+required.
 
 ```{r}
 #| label: tbl-h04-prep-input-identities
@@ -388,7 +412,7 @@ input_labels <- c(
   main_near_eye = "Primary near-eye one-hour outcome",
   main_chest = "Complementary chest one-hour outcome",
   gap_timing_unaware = "Gap-timing-unaware one-hour outcomes",
-  site_registry = "Submitted site-display registry"
+  site_registry = "Shared country-coded site registry"
 )
 
 verified_inputs <- input_audit |>
@@ -414,7 +438,7 @@ verified_inputs <- input_audit |>
     ),
     `Accepted SHA-256 prefix` = substr(.data$sha256, 1L, 12L),
     `Current SHA-256 prefix` = substr(.data$current_sha256, 1L, 12L),
-    Verification = case_when(
+    verification_state = case_when(
       .data$current_sha256 == .data$sha256 ~ "PASS",
       .data$current_contract_verified &
         .data$all_downstream_frame_values_identical ~ "VERIFIED CURRENT IDENTITY",
@@ -423,10 +447,21 @@ verified_inputs <- input_audit |>
   )
 stopifnot(
   nrow(verified_inputs) == 5L,
-  all(verified_inputs$Verification %in% c("PASS", "VERIFIED CURRENT IDENTITY"))
+  all(
+    verified_inputs$verification_state %in%
+      c("PASS", "VERIFIED CURRENT IDENTITY")
+  )
 )
 
 verified_inputs |>
+  mutate(
+    Verification = recode(
+      .data$verification_state,
+      PASS = "Verified",
+      `VERIFIED CURRENT IDENTITY` = "Verified current identity",
+      FAIL = "Review needed"
+    )
+  ) |>
   select(
     "Input",
     "Path",
@@ -456,8 +491,8 @@ verified_inputs |>
 ### Activity transformation
 
 The diary transformation is outcome-blind. It first combines the three
-outdoor flags—travel by bicycle/on foot, working outdoors, and free time
-outdoors—into **Outdoors**. It then deduplicates collapsed labels within an
+outdoor flags, travel by bicycle/on foot, working outdoors, and free time
+outdoors, into **Outdoors**. It then deduplicates collapsed labels within an
 hour. If Other is selected with a named category, only the named category or
 categories are retained; Other is retained only when it is the sole selected
 label. Free text is neither inspected nor recoded.
@@ -480,15 +515,16 @@ than single-select hours.
 
 tibble::tribble(
   ~Order, ~Operation, ~Scientific_reason,
-  1L, "Collapse three outdoor flags before pivoting", "Represents outdoor mobility, outdoor work, and outdoor free time with the submitted reader-facing category Outdoors.",
+  1L, "Collapse three outdoor flags before pivoting", "Represents outdoor mobility, outdoor work, and outdoor free time with the reader-facing category Outdoors.",
   2L, "Deduplicate collapsed labels within participant-hour", "Prevents two source flags that collapse to the same label from creating duplicate analytical memberships.",
-  3L, "Apply the Other specificity rule", "Retains named information when present and keeps Other only as a separate heterogeneous Other-only category.",
+  3L, "Apply the Other specificity rule", "Retains named information when present and keeps Other only as a varied display-only Other-only category, not a coherent scientific category.",
   4L, "Pivot one row per retained distinct label", "Preserves simultaneous reports without declaring them independent behavioural states.",
   5L, "Assign analysis weight 1/k", "Makes the total contribution of every original participant-hour equal to one.",
   6L, "Cluster inference by participant", "Encompasses concurrent within-hour memberships and the longitudinal record within the same covariance cluster."
 ) |>
   gt::gt() |>
   gt::fmt_integer(columns = Order) |>
+  gt::cols_label(Scientific_reason = "Scientific reason") |>
   gt::cols_width(
     Order ~ gt::pct(6),
     Operation ~ gt::pct(34),
@@ -815,13 +851,13 @@ category_support |>
   h04_gt(10.5)
 ```
 
-Other/unspecified is shown separately and quietly. Its support does not make
+Other is shown separately and quietly. Its support does not make
 it a coherent scientific category.
 
 ```{r}
 #| label: fig-h04-prep-category-support
 #| fig-cap: "Observed activity support in the primary frames. Effective weighted hours reflect the accepted 1/k sharing across concurrent memberships; participants are unique within each category. The two measures use separate horizontal scales."
-#| fig-alt: "Two-panel horizontal bar chart shows effective weighted participant-hours and participants for six activity categories, with near-eye bars in blue and chest bars in orange. Sleeping and At home have the largest weighted-hour support, while Other or unspecified activity and vehicle or public transport have less support."
+#| fig-alt: "Two-panel horizontal bar chart shows effective weighted participant-hours and participants for six activity categories, with near-eye bars in blue and chest bars in orange. Sleeping and At home have the largest weighted-hour support, while Other and vehicle or public transport have less support."
 #| fig-width: 10
 #| fig-height: 6.4
 
@@ -895,9 +931,9 @@ unique participant-hours, five participants, and five participants who also
 reported At home at that site. The primary near-eye frame contains 51
 supported and three observed-but-sparse cells; chest contains 47 supported and
 one observed-but-sparse cell. No absent site/category cell is invented. All
-reader-facing site labels use the submitted country-coded names: Borås (SE),
-Delft (NL), Dortmund (DE), Tübingen (DE), Munich (DE), Madrid (ES),
-Izmir (TR), San José (CR), and Kumasi (GH).
+reader-facing site labels use the country-coded study-site names from the
+shared registry: Borås (SE), Delft (NL), Dortmund (DE), Tübingen (DE),
+Munich (DE), Madrid (ES), Izmir (TR), San José (CR), and Kumasi (GH).
 
 ```{r}
 #| label: tbl-h04-prep-site-cell-support
@@ -1202,7 +1238,7 @@ primary_tests |>
     `Denominator df` = .data$denominator_df,
     `Wald F` = .data$f_statistic,
     `Raw p` = format_p(.data$p_raw, .data$p_raw < 0.05),
-    Status = .data$status
+    Status = recode(.data$status, ESTIMABLE = "Estimable")
   ) |>
   gt::gt(groupname_col = "Placement") |>
   gt::fmt_number(columns = `Wald F`, decimals = 2) |>
@@ -1232,13 +1268,18 @@ tibble::tribble(
   "Mundlak within-participant category contrast", "Additive site + activity model with participant-level category proportions", "Current activity category at the weighted mean participant composition", "Four named ratios to At home with participant-clustered 95% CIs and FDR",
   "Mundlak between-participant composition", "Same Mundlak sensitivity model", "10 percentage-point higher usual category share replacing At home", "Four named composition ratios with participant-clustered 95% CIs and FDR",
   "Named-category mean melEDI", "Supported five-category activity-by-site interaction model", "Site-average: observed sites weighted equally on the fitted log-mean scale", "Descriptive geometric expectation with 95% CI",
-  "Other/unspecified mean melEDI", "Additive model", "Site-average: observed sites weighted equally on the fitted log-mean scale", "Display only; no substantive claim",
+  "Other mean melEDI", "Additive model", "Site-average: observed sites weighted equally on the fitted log-mean scale", "Display only; no substantive claim",
   "Named-category ratio", "Same model as the corresponding named-category mean", "At home with the same site-average weights", "Four non-reference ratios; FDR within sensor position",
   "Named-category difference", "Same model as the corresponding named-category mean", "At home with the same site-average weights", "Absolute magnitude summary with 95% CI",
   "Activity-by-site interaction omnibus", "Five-category activity-by-site interaction model", "All estimable named-category site departures", "One raw robust additivity test per sensor position",
   "Site deviation", "Five-category activity-by-site interaction model", "Site-specific category mean divided by its site-average category mean", "Supported cells only; FDR within sensor position"
 ) |>
   gt::gt() |>
+  gt::cols_label(
+    Source_model = "Source model",
+    Reference_distribution = "Reference distribution",
+    Inferential_role = "Inferential role"
+  ) |>
   gt::cols_width(
     Estimand ~ gt::pct(20),
     Source_model ~ gt::pct(25),
@@ -1325,7 +1366,7 @@ primary_tests |>
     `Denominator df` = .data$denominator_df,
     `Wald F` = .data$f_statistic,
     `Raw p` = format_p(.data$p_raw, .data$p_raw < 0.05),
-    Status = .data$status
+    Status = recode(.data$status, ESTIMABLE = "Estimable")
   ) |>
   gt::gt(rowname_col = "Placement") |>
   gt::fmt_number(columns = `Wald F`, decimals = 2) |>
@@ -1342,7 +1383,7 @@ ranking.
 ### Exploratory participant random-intercept decomposition {#sec-h04-prep-participant-random-intercept}
 
 The population-mean quasi-Tweedie GLM and participant-clustered covariance
-remain the inferential analysis. A separate mixed model describes stable
+remain the inferential analysis. A separate mixed model describes
 participant-level variation in the support-qualified five-category
 activity-by-site frame. The random intercept lets participants have different
 overall exposure levels while retaining the fixed activity-by-site structure:
@@ -1359,6 +1400,11 @@ five-named-category interaction frame. The near-eye fit therefore uses 16,875
 long rows representing 16,135 participant-hours from 126 participants. The
 chest fit uses 20,440 long rows representing 19,497 participant-hours from 150
 participants.
+
+This descriptive mixed-model decomposition is distinct from the
+population-mean Mundlak-style sensitivity, which adjusts current-category
+contrasts for participants' usual activity composition. Neither assessment
+changes the primary analysis or its multiplicity families.
 
 The standard Nakagawa implementation calculates the fixed-predictor variance
 with an unweighted variance across fitted rows. That convention would give a
@@ -1523,7 +1569,19 @@ checksum manifest.
 
 multiplicity_registry |>
   transmute(
-    Scope = .data$scope,
+    Scope = recode(
+      .data$scope,
+      `five named categories robust equality omnibus` =
+        "Five named-category equality test",
+      `six-category robust equality omnibus` =
+        "Six-category equality test",
+      `four named-category ratios versus At home` =
+        "Named-category ratios versus At home",
+      `selected site-heterogeneity omnibus` =
+        "Activity-by-site interaction test",
+      `all support-eligible site deviations` =
+        "Supported site-specific category deviations"
+    ),
     Adjustment = recode(
       .data$method,
       none = "None",
@@ -1534,7 +1592,16 @@ multiplicity_registry |>
       "All support-eligible cells",
       as.character(.data$family_n)
     ),
-    `Decision role` = .data$decision_role
+    `Decision role` = recode(
+      .data$decision_role,
+      `primary raw decision` = "Primary test",
+      `secondary raw decision` = "Secondary test",
+      `reader-facing adjusted decisions` =
+        "Reader-facing category comparisons",
+      `exploratory raw decision` = "Exploratory interaction test",
+      `exploratory adjusted decisions` =
+        "Exploratory site-specific comparisons"
+    )
   ) |>
   gt::gt() |>
   gt::cols_width(
@@ -1750,7 +1817,8 @@ The predefined branches change one aspect of the frame, weight, working
 variance, or placement while preserving the category estimand whenever that
 is possible. Exactly-one-category hours remove concurrent memberships.
 Retaining co-selected Other deliberately reverses the primary specificity
-rule. Excluding Other-only hours removes that heterogeneous category.
+rule. Excluding Other-only hours removes that varied display-only category,
+which is not a coherent scientific category.
 Unweighted long rows change the estimand by allowing multi-select hours to
 contribute more than one total unit. The placement-matched branch uses the
 same participants and participant-hours at the near-eye and chest sensor
@@ -1840,7 +1908,7 @@ sensitivity_tests |>
     `Wald F` = .data$f_statistic,
     `Denominator df` = .data$denominator_df,
     `Raw p` = format_p(.data$p_raw, .data$p_raw < 0.05),
-    Status = .data$status
+    Status = recode(.data$status, ESTIMABLE = "Estimable")
   ) |>
   arrange(
     match(.data$Sensitivity, unname(scenario_labels)),
@@ -1913,7 +1981,7 @@ near-eye vehicle or public-transport activity to all 150 chest participants
 for Sleeping. Both Mundlak fits converged, were full rank (19/19 near eye and
 18/18 at chest), and had finite positive-definite participant-clustered
 covariance. The covariance condition numbers were 7,048 and 4,301, below the
-registered $10^{10}$ gate.
+predefined $10^{10}$ threshold.
 
 The four-restriction within-participant category tests were $F(4,125)=67.17$,
 raw $p<0.001$, near eye and $F(4,149)=77.86$, raw $p<0.001$, at chest. All four
@@ -2232,6 +2300,7 @@ tibble::tribble(
   "Preparation figures", "Display only", "Draws four descriptive figures from linked exact source-data CSV files."
 ) |>
   gt::gt() |>
+  gt::cols_label(Calculated_on_render = "Calculated on render") |>
   gt::cols_width(
     Category ~ gt::pct(24),
     Calculated_on_render ~ gt::pct(18),
@@ -2266,6 +2335,10 @@ tibble::tribble(
 ) |>
   gt::gt() |>
   gt::fmt_integer(columns = Order) |>
+  gt::cols_label(
+    Principal_outputs = "Principal outputs",
+    Run_on_this_page = "Run on this page"
+  ) |>
   gt::cols_width(
     Order ~ gt::pct(5),
     File ~ gt::pct(19),
@@ -2299,6 +2372,10 @@ tibble::tribble(
   "Preparation companion", "audit/hypotheses/H04/H04_analysis_preparation.qmd", "Data-to-result construction, checks, and provenance", "This page"
 ) |>
   gt::gt() |>
+  gt::cols_label(
+    Output_group = "Output group",
+    Reader_use = "Reader use"
+  ) |>
   gt::cols_width(
     Output_group ~ gt::pct(18),
     Location ~ gt::pct(30),

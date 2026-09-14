@@ -111,11 +111,40 @@ h08_build_manifest <- function() {
       normalizePath(artifact_files, winslash = "/", mustWork = TRUE) !=
         normalizePath(manifest_path, winslash = "/", mustWork = FALSE)
   ]
+  artifact_relative <- vapply(
+    artifact_files,
+    h08_relative_path,
+    character(1)
+  )
+  downstream_artifact <-
+    grepl(
+      "^artifacts/11_source_data/H08/H08_preparation_",
+      artifact_relative
+    ) |
+    startsWith(
+      artifact_relative,
+      "artifacts/12_manifests/H08/physical_size_qa/"
+    ) |
+    artifact_relative %in%
+      c(
+        "artifacts/12_manifests/H08/H08_figure_physical_size_qa.csv",
+        "artifacts/12_manifests/H08/H08_preparation_report_manifest.csv",
+        "artifacts/12_manifests/H08/H08_stage3_artifacts.csv"
+      )
+  artifact_files <- artifact_files[!downstream_artifact]
   code_and_report <- c(
     file.path(root, "scripts/hypotheses/H08/h08_contract.R"),
     file.path(root, "scripts/hypotheses/H08/h08_modeling.R"),
     file.path(root, "scripts/hypotheses/H08/run_h08_stage2.R"),
+    file.path(
+      root,
+      "scripts/hypotheses/H08/reseal_h08_l10_metric011.R"
+    ),
     file.path(root, "tests/hypotheses/H08/test_h08_stage2.R"),
+    file.path(
+      root,
+      "tests/hypotheses/H08/test_h08_metric011_reseal.R"
+    ),
     file.path(
       root,
       "audit/hypotheses/H08/02_implementation_and_v0_comparison.qmd"
@@ -123,6 +152,24 @@ h08_build_manifest <- function() {
     file.path(
       root,
       "audit/hypotheses/H08/02_implementation_and_v0_comparison.html"
+    ),
+    file.path(
+      root,
+      "audit/decisions/l10_numerical_zero_normalization.md"
+    ),
+    file.path(
+      root,
+      paste0(
+        "audit/reconciliation/l10_METRIC-011/",
+        "METRIC-011_evidence_manifest.csv"
+      )
+    ),
+    file.path(
+      root,
+      paste0(
+        "audit/reconciliation/l10_METRIC-011/",
+        "primary_scientific_cell_changes.csv"
+      )
     ),
     file.path(root, "audit/handoffs/H08_worker_handoff.md")
   )

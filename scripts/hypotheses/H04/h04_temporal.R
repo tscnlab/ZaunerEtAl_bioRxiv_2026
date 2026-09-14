@@ -1232,7 +1232,7 @@ h04_temporal_figure <- function(
       activity = factor(.data$activity, levels = registry$activity_label),
       display_role = ifelse(
         as.character(.data$activity) == "Other/unspecified activity",
-        "Other/unspecified",
+        "Other",
         "Named category"
       )
     )
@@ -1352,7 +1352,7 @@ h04_temporal_figure <- function(
         "Curves share each multi-select hour through 1/k weights and exclude participant/day smooths.",
         "\nRibbons are model-based pointwise 95% intervals from the fitted-coefficient covariance.",
         "They are not simultaneous bands and do not support curve-wide inference.",
-        "\nNo line wraps from 24:00 to 00:00. Other/unspecified activity is display-only."
+        "\nNo line wraps from 24:00 to 00:00. Other is display-only."
       ),
       theme = h04_figure_theme()
     )
@@ -1765,7 +1765,7 @@ h04_temporal_reader_figure <- function(
       caption = paste0(
         "Bands are conditional pointwise 95% intervals; no simultaneous-band or curve-wide inferential claim is made.\n",
         "Sites are averaged equally on the fitted log-mean scale; participant and participant-day smooths are excluded from displayed curves.\n",
-        "Panel B divides each displayed activity curve by the displayed global time-of-day mean; the dashed reference is 1. Other/unspecified activity is display-only.\n",
+        "Panel B divides each displayed activity curve by the displayed global time-of-day mean; the dashed reference is 1. Other is display-only.\n",
         "The activity palette is distinct from the light-source category colours used elsewhere in this report series.\n",
         "Each multi-select participant-hour contributes 1/k to every retained activity. Filled circles mark observed support; open circles mark locally sparse support.\n",
         "Grey regions and × mark zero observations. Only the global smooth is cyclic; thin-plate activity and site deviations may separate over midnight.\n",

@@ -1,0 +1,175 @@
+--- a/tests/hypotheses/H01/test_h01_stage3_model_support_display_refresh.R
++++ b/tests/hypotheses/H01/test_h01_stage3_model_support_display_refresh.R
+@@ -62,6 +62,11 @@
+   evidence_relative,
+   "H01_model_support_fdr_refresh_core_manifest.csv"
+ )
++historical_test_relative <- paste0(
++  "audit/report_harmonization/",
++  "report017_h01_order32g_historical_test_recovery/",
++  "H01_stage3_model_support_display_refresh_pre32g.R"
++)
+ 
+ required <- c(
+   source_relative,
+@@ -76,7 +81,8 @@
+   comparison_relative,
+   png_difference_relative,
+   svg_difference_relative,
+-  core_manifest_relative
++  core_manifest_relative,
++  historical_test_relative
+ )
+ stopifnot(all(file.exists(file.path(root, required))))
+ 
+@@ -221,6 +227,16 @@
+   progress = FALSE
+ )
+ stopifnot(
++  identical(
++    artifact_sha256(file.path(root, historical_test_relative)),
++    "121135a4ea1c86cc6e11fc476615ee207fb34fe01270912d3f74ef2c8b5ad9cb"
++  ),
++  identical(
++    as.numeric(file.info(file.path(root, historical_test_relative))$size),
++    6747
++  )
++)
++stopifnot(
+   !any(core_manifest$path == core_manifest_relative),
+   !anyDuplicated(core_manifest$path),
+   all(file.exists(file.path(root, core_manifest$path)))
+@@ -237,6 +253,11 @@
+       "audit/hypotheses/H01/report017_order32g_continuation/",
+       "build_h01_stage3_reporting_inputs_pre32g.R"
+     )
++  } else if (identical(
++    relative_path,
++    "tests/hypotheses/H01/test_h01_stage3_model_support_display_refresh.R"
++  )) {
++    file.path(root, historical_test_relative)
+   } else {
+     file.path(root, relative_path)
+   }
+--- a/tests/hypotheses/H01/test_h01_report016_deviation_reconciliation.R
++++ b/tests/hypotheses/H01/test_h01_report016_deviation_reconciliation.R
+@@ -140,27 +140,44 @@
+     ),
+     current_bytes = as.numeric(file.info(file.path(root, .data$path))$size)
+   )
+-transition_contract <- tibble::tibble(
+-  path = c(
+-    "artifacts/10_figures/H01/stage3/H01_stage3_model_support.png",
+-    "artifacts/10_figures/H01/stage3/H01_stage3_model_support.svg"
+-  ),
+-  frozen_sha256 = c(
+-    "601c65eebff8260b9c19d6f5e3a6054799e1fb7fa7f39442745073cb36098e7a",
+-    "c054674bacdd41ca2d02fff0a784955dfd77caf7604dacc166ccd0c8e1cfc098"
+-  ),
+-  frozen_bytes = c(238260, 54756),
+-  fdr_transition_sha256 = c(
+-    "2244f043d4fb676200524440098be223e23106578513f4ac61567ba3f636da8b",
+-    "602dd62de063d3e12ac53ca7d22dd2563e64213255b9cdc7e138941450ce1966"
+-  ),
+-  fdr_transition_bytes = c(238682, 54757),
+-  live_sha256 = c(
+-    "a06d33e4d9708e7a60c0296a645b7c136ffea9f6be5bcf0c7a5e38615a3069de",
+-    "897e7b11a27136fd2f3ffca978af72c108ba1f443bb8941ce7d9a5515847e8ba"
+-  ),
+-  live_bytes = c(332771, 54914)
++transition_paths <- c(
++  "artifacts/10_figures/H01/stage3/H01_stage3_diagnostic_assessment.png",
++  "artifacts/10_figures/H01/stage3/H01_stage3_diagnostic_assessment.svg",
++  "artifacts/10_figures/H01/stage3/H01_stage3_model_support.png",
++  "artifacts/10_figures/H01/stage3/H01_stage3_model_support.svg",
++  "artifacts/10_figures/H01/stage3/H01_stage3_paired_placement.png",
++  "artifacts/10_figures/H01/stage3/H01_stage3_paired_placement.svg"
+ )
++order32g_manifest_relative <- paste0(
++  "audit/hypotheses/H01/report017_order32g_continuation/",
++  "order32g_stopped_state_manifest.csv"
++)
++stopifnot(
++  identical(
++    artifact_sha256(file.path(root, order32g_manifest_relative)),
++    "05b44c9e852334e191a766ef784767f3197c603a5713e30f55e852a0580b9443"
++  )
++)
++order32g_manifest <- read_table(order32g_manifest_relative)
++transition_contract <- protected |>
++  filter(.data$path %in% transition_paths) |>
++  arrange(match(.data$path, transition_paths)) |>
++  transmute(
++    path = .data$path,
++    frozen_sha256 = .data$sha256,
++    frozen_bytes = .data$bytes
++  ) |>
++  left_join(
++    order32g_manifest |>
++      filter(.data$path %in% transition_paths) |>
++      transmute(
++        path = .data$path,
++        live_sha256 = .data$sha256,
++        live_bytes = .data$bytes
++      ),
++    by = "path",
++    relationship = "one-to-one"
++  )
+ core_manifest_relative <- paste0(
+   "audit/hypotheses/H01/report017_model_support_fdr_refresh/",
+   "H01_model_support_fdr_refresh_core_manifest.csv"
+@@ -172,7 +189,11 @@
+   )
+ )
+ core_manifest <- read_table(core_manifest_relative)
+-transition_paths <- transition_contract$path
++core_transition_paths <- transition_paths[grepl(
++  "model_support",
++  transition_paths,
++  fixed = TRUE
++)]
+ protected_unchanged <- protected_current |>
+   filter(!.data$path %in% transition_paths)
+ protected_transition <- protected_current |>
+@@ -184,29 +205,34 @@
+       .data$bytes != .data$current_bytes
+   )
+ core_transition <- core_manifest |>
+-  filter(.data$path %in% transition_paths) |>
+-  arrange(match(.data$path, transition_paths))
++  filter(.data$path %in% core_transition_paths) |>
++  arrange(match(.data$path, core_transition_paths))
+ stopifnot(
+   nrow(protected_current) > 0L,
+   !anyDuplicated(protected_current$path),
+   !anyDuplicated(core_manifest$path),
++  !anyDuplicated(order32g_manifest$path),
++  identical(transition_contract$path, transition_paths),
+   identical(protected_transition$path, transition_paths),
+   identical(protected_mismatches$path, transition_paths),
+-  nrow(protected_unchanged) == nrow(protected_current) - 2L,
++  nrow(protected_unchanged) == nrow(protected_current) - 6L,
+   all(protected_unchanged$sha256 == protected_unchanged$current_sha256),
+   all(protected_unchanged$bytes == protected_unchanged$current_bytes),
+   identical(protected_transition$sha256, transition_contract$frozen_sha256),
+   identical(protected_transition$bytes, transition_contract$frozen_bytes),
+   identical(unname(protected_transition$current_sha256), transition_contract$live_sha256),
+   identical(protected_transition$current_bytes, transition_contract$live_bytes),
+-  identical(core_transition$path, transition_paths),
++  identical(core_transition$path, core_transition_paths),
+   identical(
+     core_transition$sha256,
+-    transition_contract$fdr_transition_sha256
++    c(
++      "2244f043d4fb676200524440098be223e23106578513f4ac61567ba3f636da8b",
++      "602dd62de063d3e12ac53ca7d22dd2563e64213255b9cdc7e138941450ce1966"
++    )
+   ),
+   identical(
+     core_transition$bytes,
+-    transition_contract$fdr_transition_bytes
++    c(238682, 54757)
+   )
+ )
+ 
+

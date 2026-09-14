@@ -1,0 +1,8 @@
+document,selector,api,observed_count_or_length,interpretation,status
+pre_hook,main#quarto-document-content,rvest::html_element_length,2,child-element count from one xml_node,VERIFIER_BUG
+pre_hook,main#quarto-document-content,rvest::html_elements_count,1,exactly one matching main element,PASS
+pre_hook,//main[@id="quarto-document-content"],xml2::xml_find_all_count,1,exactly one matching main element,PASS
+post_hook,main#quarto-document-content,rvest::html_element_length,2,child-element count from one xml_node,VERIFIER_BUG
+post_hook,main#quarto-document-content,rvest::html_elements_count,1,exactly one matching main element,PASS
+post_hook,//main[@id="quarto-document-content"],xml2::xml_find_all_count,1,exactly one matching main element,PASS
+verifier_assertion,tests/hypotheses/H06_daily/test_h06_daily_order48_display_repair.R:1212,length(pre_main) != 1L || length(post_main) != 1L,TRUE,incorrect cardinality assertion,FAIL_CLOSED

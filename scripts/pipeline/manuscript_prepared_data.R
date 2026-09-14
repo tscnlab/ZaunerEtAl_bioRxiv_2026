@@ -1,6 +1,7 @@
 # Define the frozen-input contract for the manuscript-prepared-data sensitivity.
 #
-# Source paths_io.R, assertions.R, and metric_display_registry.R first.
+# Source paths_io.R, assertions.R, metric_display_registry.R, and
+# time_support.R first.
 
 manuscript_prepared_scenario_id <- function() {
   "manuscript_prepared_data"
@@ -28,7 +29,7 @@ manuscript_prepared_source_contract <- function() {
     source_role = c(
       rep("participant_participant_day_and_30_minute", 2L),
       rep("manuscript_model_input_metrics", 2L),
-      rep("one_minute_input_for_one_hour_aggregation", 2L)
+      rep("one_minute_input_for_mder_and_one_hour_aggregation", 2L)
     ),
     path = file.path(
       "data",
@@ -203,7 +204,7 @@ manuscript_prepared_metric_mapping <- function(root = project_root()) {
       "first_timing_above_250",
       "last_timing_above_250",
       "dose_time_sensitive_corrected_medi",
-      "mder_ratio_of_integrals",
+      "mder_mean_of_viable_ratios",
       "thirty_minute_arithmetic_medi",
       "one_hour_geometric_mean_medi"
     ),
@@ -252,8 +253,8 @@ manuscript_prepared_metric_mapping <- function(root = project_root()) {
         "coverage correction"
       ),
       paste(
-        "Manuscript-prepared mean of epoch-wise MEDI/LIGHT ratios, not",
-        "the new ratio of integrals"
+        "Gap-timing-unaware arithmetic mean of viable positive finite",
+        "one-minute melEDI/illuminance ratios"
       ),
       "Manuscript-prepared 30-minute arithmetic mean melEDI",
       "Manuscript-prepared one-hour zero-aware geometric mean melEDI"
@@ -387,6 +388,248 @@ manuscript_prepared_extract_metric_rows <- function(
   }
   assert_unique_key(result, key, paste(position, analysis_unit, "metrics"))
   result
+}
+
+manuscript_prepared_mder_metric_id <- function() {
+  "mder_mean_of_viable_ratios"
+}
+
+manuscript_prepared_mder_minimum_fraction <- function() {
+  0.50
+}
+
+manuscript_prepared_mder_expected_minutes <- function() {
+  1440L
+}
+
+manuscript_prepared_mean_finite <- function(value) {
+  finite <- is.finite(value)
+  if (!any(finite)) {
+    return(NA_real_)
+  }
+  mean(value[finite])
+}
+
+manuscript_prepared_build_mder_support <- function(data, position) {
+  assert_columns(
+    data,
+    c("site", "Id", "Datetime", "Date", "MEDI", "LIGHT"),
+    object = paste(position, "frozen one-minute MDER input")
+  )
+  if (!position %in% manuscript_prepared_positions()) {
+    abort_pipeline("Unknown manuscript-prepared position: %s", position)
+  }
+
+  minute_input <- data |>
+    dplyr::ungroup() |>
+    dplyr::transmute(
+      site = as.character(.data$site),
+      Id = as.character(.data$Id),
+      local_date = as.Date(.data$Date),
+      datetime_date = as.Date(format(.data$Datetime, tz = "UTC")),
+      local_clock_minute =
+        as.integer(format(.data$Datetime, "%H", tz = "UTC")) * 60L +
+          as.integer(format(.data$Datetime, "%M", tz = "UTC")),
+      medi = as.numeric(.data$MEDI),
+      light = as.numeric(.data$LIGHT)
+    )
+  if (
+    anyNA(minute_input$site) ||
+      anyNA(minute_input$Id) ||
+      anyNA(minute_input$local_date) ||
+      anyNA(minute_input$local_clock_minute) ||
+      any(minute_input$local_date != minute_input$datetime_date) ||
+      any(
+        minute_input$local_clock_minute < 0L |
+          minute_input$local_clock_minute >=
+            manuscript_prepared_mder_expected_minutes()
+      )
+  ) {
+    abort_pipeline(
+      "Frozen %s one-minute data have invalid local-day or minute keys",
+      position
+    )
+  }
+
+  collapsed <- minute_input |>
+    dplyr::group_by(
+      .data$site,
+      .data$Id,
+      .data$local_date,
+      .data$local_clock_minute
+    ) |>
+    dplyr::summarise(
+      medi = manuscript_prepared_mean_finite(.data$medi),
+      light = manuscript_prepared_mean_finite(.data$light),
+      source_rows = dplyr::n(),
+      .groups = "drop"
+    )
+  day_counts <- collapsed |>
+    dplyr::count(.data$site, .data$Id, .data$local_date, name = "local_minutes")
+  if (any(day_counts$local_minutes > manuscript_prepared_mder_expected_minutes())) {
+    abort_pipeline("Frozen %s input contains more than 1,440 local minutes", position)
+  }
+  support <- collapsed |>
+    dplyr::arrange(
+      .data$site,
+      .data$Id,
+      .data$local_date,
+      .data$local_clock_minute
+    ) |>
+    dplyr::group_by(.data$site, .data$Id, .data$local_date) |>
+    dplyr::group_modify(function(.data, .key) {
+      missing_minutes <-
+        manuscript_prepared_mder_expected_minutes() - nrow(.data)
+      medi <- c(.data$medi, rep(NA_real_, missing_minutes))
+      light <- c(.data$light, rep(NA_real_, missing_minutes))
+      result <- mder_mean_of_viable_ratios(
+        medi = medi,
+        light = light,
+        minimum_viable_fraction =
+          manuscript_prepared_mder_minimum_fraction()
+      )
+      raw_source_rows <- as.integer(sum(.data$source_rows, na.rm = TRUE))
+      observed_local_minutes <- as.integer(nrow(.data))
+      duplicated_local_minutes <- as.integer(
+        sum(.data$source_rows > 1L, na.rm = TRUE)
+      )
+      duplicate_source_rows <- as.integer(
+        sum(pmax(.data$source_rows - 1L, 0L), na.rm = TRUE)
+      )
+      dplyr::mutate(
+        result,
+        raw_source_rows = raw_source_rows,
+        observed_local_minutes = observed_local_minutes,
+        duplicated_local_minutes = duplicated_local_minutes,
+        duplicate_source_rows = duplicate_source_rows
+      )
+    }) |>
+    dplyr::ungroup() |>
+    dplyr::rename(manuscript_prepared_value = "MDER") |>
+    dplyr::mutate(
+      metric_id = manuscript_prepared_mder_metric_id(),
+      metric_decision_id = "METRIC-010",
+      duplicate_minute_rule = "channel_mean_before_ratio",
+      expected_day_rule = "complete_1440_local_wall_clock_minutes"
+    ) |>
+    manuscript_prepared_add_ids(position) |>
+    dplyr::select(
+      "scenario_id",
+      "model_implementation_id",
+      "position",
+      "position_role",
+      "site",
+      "Id",
+      "local_date",
+      "metric_id",
+      "metric_decision_id",
+      "manuscript_prepared_value",
+      "viable_ratio_minutes",
+      "expected_minutes",
+      "viable_ratio_fraction",
+      "raw_source_rows",
+      "observed_local_minutes",
+      "duplicated_local_minutes",
+      "duplicate_source_rows",
+      "excluded_nonfinite_source_minutes",
+      "excluded_zero_either_minutes",
+      "excluded_zero_medi_minutes",
+      "excluded_zero_light_minutes",
+      "excluded_both_zero_minutes",
+      "excluded_nonfinite_ratio_minutes",
+      "minimum_viable_fraction",
+      "passes_viable_ratio_support",
+      "support_threshold_enforced",
+      "ratio_scaled_or_weighted",
+      "estimable",
+      "failure_reason",
+      "duplicate_minute_rule",
+      "expected_day_rule"
+    )
+
+  assert_unique_key(
+    support,
+    c("scenario_id", "position", "site", "Id", "local_date", "metric_id"),
+    paste(position, "manuscript-prepared MDER support")
+  )
+  if (
+    any(support$expected_minutes !=
+      manuscript_prepared_mder_expected_minutes()) ||
+      any(support$minimum_viable_fraction !=
+        manuscript_prepared_mder_minimum_fraction()) ||
+      any(
+        is.finite(support$manuscript_prepared_value) &
+          support$manuscript_prepared_value <= 0
+      ) ||
+      any(
+        support$estimable !=
+          (support$passes_viable_ratio_support &
+            is.na(support$failure_reason) &
+            is.finite(support$manuscript_prepared_value))
+      )
+  ) {
+    abort_pipeline("Rebuilt %s MDER support is internally inconsistent", position)
+  }
+  support
+}
+
+manuscript_prepared_replace_mder <- function(participant_day, support) {
+  key <- c(
+    "scenario_id",
+    "model_implementation_id",
+    "position",
+    "position_role",
+    "site",
+    "Id",
+    "local_date",
+    "metric_id"
+  )
+  mder_rows <- participant_day |>
+    dplyr::filter(.data$metric_id == manuscript_prepared_mder_metric_id())
+  if (
+    nrow(mder_rows) != nrow(support) ||
+      nrow(dplyr::anti_join(mder_rows, support, by = key)) != 0L ||
+      nrow(dplyr::anti_join(support, mder_rows, by = key)) != 0L
+  ) {
+    abort_pipeline(
+      "Rebuilt MDER support does not match the participant-day key set"
+    )
+  }
+  replacement <- dplyr::select(
+    support,
+    dplyr::all_of(key),
+    replacement_value = "manuscript_prepared_value"
+  ) |>
+    dplyr::mutate(replacement_present = TRUE)
+  result <- participant_day |>
+    dplyr::mutate(.row_order = dplyr::row_number()) |>
+    dplyr::left_join(replacement, by = key, relationship = "many-to-one") |>
+    dplyr::mutate(
+      manuscript_prepared_value = dplyr::if_else(
+        .data$metric_id == manuscript_prepared_mder_metric_id(),
+        .data$replacement_value,
+        .data$manuscript_prepared_value
+      )
+    ) |>
+    dplyr::arrange(.data$.row_order)
+  if (
+    any(
+      result$metric_id == manuscript_prepared_mder_metric_id() &
+        is.na(result$replacement_present)
+    ) ||
+      any(
+        result$metric_id != manuscript_prepared_mder_metric_id() &
+          !is.na(result$replacement_present)
+      )
+  ) {
+    abort_pipeline("MDER replacement did not preserve the declared scope")
+  }
+  dplyr::select(
+    result,
+    -".row_order",
+    -"replacement_value",
+    -"replacement_present"
+  )
 }
 
 manuscript_prepared_add_occurrence <- function(data) {
@@ -641,7 +884,7 @@ manuscript_prepared_correction_manifest <- function(root = project_root()) {
 }
 
 manuscript_prepared_variable_dictionary <- function() {
-  data.frame(
+  dictionary <- data.frame(
     variable = c(
       "scenario_id",
       "model_implementation_id",
@@ -722,4 +965,80 @@ manuscript_prepared_variable_dictionary <- function() {
     ),
     stringsAsFactors = FALSE
   )
+  mder_support <- data.frame(
+    variable = c(
+      "metric_decision_id",
+      "viable_ratio_minutes",
+      "expected_minutes",
+      "viable_ratio_fraction",
+      "raw_source_rows",
+      "observed_local_minutes",
+      "duplicated_local_minutes",
+      "duplicate_source_rows",
+      "excluded_nonfinite_source_minutes",
+      "excluded_zero_either_minutes",
+      "excluded_zero_medi_minutes",
+      "excluded_zero_light_minutes",
+      "excluded_both_zero_minutes",
+      "excluded_nonfinite_ratio_minutes",
+      "minimum_viable_fraction",
+      "passes_viable_ratio_support",
+      "support_threshold_enforced",
+      "ratio_scaled_or_weighted",
+      "estimable",
+      "failure_reason",
+      "duplicate_minute_rule",
+      "expected_day_rule"
+    ),
+    definition = c(
+      "Decision governing the MDER calculation",
+      "Local minutes with finite strictly positive melEDI and illuminance",
+      "Local wall-clock minutes in the MDER day denominator",
+      "Viable one-minute MDER ratios divided by expected minutes",
+      "One-minute source rows before repeated-clock-minute averaging",
+      "Distinct local clock minutes represented by at least one source row",
+      "Local clock minutes represented more than once at the DST fall-back",
+      "Source rows beyond the first within repeated local clock minutes",
+      "Minutes excluded because either source channel was non-finite",
+      "Minutes excluded because either finite source channel was zero",
+      "Minutes with finite zero melEDI",
+      "Minutes with finite zero photopic illuminance",
+      "Minutes with both finite source channels equal to zero",
+      "Positive-source minutes excluded because their ratio was non-finite",
+      "Minimum viable-ratio fraction required for daily MDER",
+      "Whether viable one-minute ratios meet the MDER support threshold",
+      "Whether the metric-specific support threshold is enforced",
+      "Whether one-minute ratios are time-weighted or rescaled",
+      "Whether the participant-day MDER is finite and retained",
+      "Reason a participant-day MDER is unavailable",
+      "Rule for repeated fall-back local clock minutes",
+      "Declared local wall-clock day used for the MDER denominator"
+    ),
+    unit_or_values = c(
+      "METRIC-010",
+      "minutes",
+      "minutes",
+      "proportion",
+      "rows",
+      "minutes",
+      "minutes",
+      "rows",
+      "minutes",
+      "minutes",
+      "minutes",
+      "minutes",
+      "minutes",
+      "minutes",
+      "proportion",
+      "TRUE/FALSE",
+      "TRUE",
+      "FALSE",
+      "TRUE/FALSE",
+      "no_viable_momentary_ratio/below_viable_ratio_fraction/NA",
+      "channel_mean_before_ratio",
+      "complete_1440_local_wall_clock_minutes"
+    ),
+    stringsAsFactors = FALSE
+  )
+  dplyr::bind_rows(dictionary, mder_support)
 }

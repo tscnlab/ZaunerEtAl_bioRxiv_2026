@@ -2,10 +2,18 @@
 
 Finding ID: `FIND-021`  
 Related finding: `FIND-018`  
-Related decision: `METRIC-008`  
-Status: provenance verified; episodes remain unresolved; sensitivities registered  
+Related historical decision: `METRIC-008`  
+Current decision: `METRIC-010`  
+Status: **historical device provenance; not a preselected exclusion under the new estimand**  
 Date: 2026-07-30  
 Severity: high for MDER influence and maximum-value claims
+
+> **Supersession notice (2026-08-11).** The serial assignments and device
+> records below remain verified. They were selected because they generated the
+> two largest ratio-of-integrals values. `METRIC-010` changes the estimand to a
+> mean of viable momentary ratios, so these dates are no longer automatically
+> the relevant upper-tail or influence cases. New-estimand diagnostics must
+> identify any influential days without importing the old selection rule.
 
 ## Finding
 

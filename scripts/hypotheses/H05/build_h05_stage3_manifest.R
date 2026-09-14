@@ -109,6 +109,12 @@ single_files <- file.path(
     "audit/decisions/paired_placement_comparison_display.md",
     "audit/decisions/gap_timing_unaware_dataset_terminology.md",
     "audit/decisions/manuscript_prepared_data_sensitivity.md",
+    "audit/decisions/mder_mean_of_viable_ratios.md",
+    "audit/decisions/l10_numerical_zero_normalization.md",
+    paste0(
+      "audit/reconciliation/l10_METRIC-011/",
+      "METRIC-011_evidence_manifest.csv"
+    ),
     "audit/decisions/answer_in_brief_callout.md",
     "audit/decisions/figure_readability_and_layout.md",
     "audit/decisions/report011_physical_size_revalidation.md",
@@ -196,7 +202,8 @@ artifact_class <- dplyr::case_when(
   startsWith(
     relative,
     "_build/nathealth/notebooks/hypotheses/H05_files/"
-  ) ~ "reader_report_page_asset",
+  ) ~
+    "reader_report_page_asset",
   startsWith(relative, "_build/nathealth/artifacts/") ~
     "reader_report_linked_asset",
   startsWith(relative, "scripts/hypotheses/H05/") ~ "H05_code",
@@ -205,25 +212,20 @@ artifact_class <- dplyr::case_when(
   startsWith(relative, "audit/handoffs/H05_") ~ "H05_prior_handoff",
   startsWith(relative, "audit/decisions/") ~ "coordinator_decision",
   startsWith(relative, "audit/ledgers/") ~ "coordinator_ledger_snapshot",
-  relative == "scripts/pipeline/p_value_display.R" ~
-    "shared_reporting_helper",
+  relative == "scripts/pipeline/p_value_display.R" ~ "shared_reporting_helper",
   startsWith(relative, "artifacts/06_model_data/H05/") ~
     "frozen_model_data_or_contract",
-  startsWith(relative, "artifacts/07_models/H05/") ~
-    "frozen_model_archive",
+  startsWith(relative, "artifacts/07_models/H05/") ~ "frozen_model_archive",
   startsWith(relative, "artifacts/08_diagnostics/H05/") ~
     "frozen_diagnostic_source",
-  startsWith(relative, "artifacts/09_tables/H05/") ~
-    "frozen_table_source",
+  startsWith(relative, "artifacts/09_tables/H05/") ~ "frozen_table_source",
   startsWith(relative, "artifacts/10_figures/H05/") ~ "H05_figure",
   startsWith(relative, "artifacts/11_source_data/H05/") ~
     "H05_paired_source_data",
-  startsWith(relative, "artifacts/12_manifests/H05/") ~
-    "prior_H05_manifest",
+  startsWith(relative, "artifacts/12_manifests/H05/") ~ "prior_H05_manifest",
   relative %in% c("_quarto.yml", "_quarto-nathealth.yml") ~
     "shared_quarto_configuration",
-  relative == "config/site_display_registry.csv" ~
-    "shared_display_registry",
+  relative == "config/site_display_registry.csv" ~ "shared_display_registry",
   relative == "renv.lock" ~ "environment_lock",
   TRUE ~ "supporting_provenance"
 )

@@ -1,0 +1,40 @@
+715 Daily temporal architecture
+
+716 The daily-pattern analysis used supported 30-minute arithmetic means, retaining a bin when
+717 at least 15 one-minute values were valid. The outcome was log10(melanopic EDI + 0.1 lx). A
+718 generalised additive model fitted with mgcv::bam() and fREML combined a cyclic common
+719 local-clock smooth, sum-to-zero site curves, participant curves and participant-day random
+720 intercepts67–70. A boundary-aware first-order autoregressive working structure prevented
+721 residual sequences from crossing participant-day, clock-repeat or gap boundaries. Fitted-
+722 curve dispersion was compared on a common 48-bin grid. A Shapley decomposition
+723 averaged each component’s addition to R² across all component orders, thereby distributing
+724 the model’s explained variance71,72. The decomposition partitioned the full model’s row-
+725 weighted in-sample R² for log10(melanopic EDI + 0.1 lx), defined as the reduction in squared
+726 prediction error relative to predicting the fitted-sample mean. The percentages therefore
+727 partition full-model R² on that transformed response scale. They are not percentages of
+728 variance explained in raw melanopic EDI and do not indicate causal or out-of-sample
+729 predictive importance. Confidence intervals for dispersion and R²-share ratios used 2,000
+730 hierarchical cluster resamples while holding the fitted model structure fixed.
+
+731 Geographic and photoperiod analyses
+
+732 We analysed 17 participant-level or participant-day metrics with metric-specific Gaussian or
+733 Tweedie exponential-dispersion models73,74. We treated overall site differences, civil
+734 photoperiod (day length including civil twilight), absolute latitude and the adequacy of a
+735 linear latitude term relative to site as four separate model questions, each adjusted as a
+736 complete 17-test FDR family. Participant-day models included participant random intercepts.
+737 Mixed-effects models were fitted with lme4 or glmmTMB, and component R² values were
+738 obtained with performance where reported75–77. Site and latitude were not entered as
+739 independent fixed predictors in one model because each site has one latitude; site and
+740 latitude models instead used the same observations and photoperiod adjustment. Site
+741 follow-up contrasts were calculated with emmeans only after a supported overall site test and
+742 compared each site with a site-average estimate, obtained by giving each included site
+743 equal weight78.
+
+744 Nonlinear photoperiod analyses fitted each of nine planned metrics separately with a
+745 generalised additive model estimated by restricted maximum likelihood, a thin-plate
+746 photoperiod smooth with basis dimension six and participant random effects nested within
+747 site. The derivative, meaning the slope of the fitted curve, was evaluated with gratia at 100
+
+    35
+

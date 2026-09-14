@@ -194,12 +194,12 @@ pilot compares the rebuilt descriptive figure with the supplied references at
 the same displayed width and checks clipping, label wrapping, panel balance,
 and readability.
 
-This is a Figure 1 descriptive pilot only. The recorded typography is approved,
-but Figure 1 remains open for detail-level QA and correction. Figures 2--5,
-hypothesis figures, and preparation figures do not automatically inherit
-`scale = 1.5`; each keeps a content-appropriate canvas and export scale. The
-earlier font-and-mark multiplier interpretation is superseded and must not be
-used or retained in an authoritative manifest.
+This is a Figure 1 descriptive pilot only. The author accepted the final
+Figure 1 detail layout on 2026-08-11. Figures 2--5, hypothesis figures, and
+preparation figures do not automatically inherit `scale = 1.5`; each keeps a
+content-appropriate canvas and export scale. The earlier font-and-mark
+multiplier interpretation is superseded and must not be used or retained in an
+authoritative manifest.
 
 ## Computation boundary
 

@@ -1,0 +1,12 @@
+--- a/notebooks/hypotheses/H06.qmd
++++ b/notebooks/hypotheses/H06.qmd
+@@ -1562,7 +1562,7 @@
+ #| tbl-cap: "Physical-size checks for all reader-facing H06 figures."
+ 
+ reader_figure_qa |>
+-  dplyr::select(
++  dplyr::transmute(
+     Figure = .data$figure_id,
+     `Native width (mm)` = .data$native_width_mm,
+     `Intended width (mm)` = .data$intended_print_display_width_mm,
+

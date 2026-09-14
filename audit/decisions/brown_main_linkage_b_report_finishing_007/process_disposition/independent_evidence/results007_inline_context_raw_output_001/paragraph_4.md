@@ -1,0 +1,9 @@
+A 10-point higher-than-usual Daytime value corresponded to
+-0.3 pp Sleep adherence
+(95% CI -1.0 pp to
++0.4 pp) and
+-1.1 pp Pre-sleep
+adherence (95% CI
+-2.7 pp to
++0.6 pp). Both
+intervals include zero.

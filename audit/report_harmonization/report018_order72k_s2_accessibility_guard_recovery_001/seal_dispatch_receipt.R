@@ -1,0 +1,20 @@
+options(warn = 2)
+stopifnot(getRversion() == "4.6.1")
+root <- normalizePath(getwd())
+rel <- "audit/report_harmonization/report018_order72k_s2_accessibility_guard_recovery_001"
+pin <- function(p) {
+  f <- if (startsWith(p, "/")) p else file.path(root, p)
+  stopifnot(file.exists(f), !dir.exists(f), Sys.readlink(f) == "")
+  data.frame(path = p, sha256 = digest::digest(file = f, algo = "sha256", serialize = FALSE), bytes = unname(file.info(f)$size))
+}
+keys <- read.csv(file.path(root, rel, "key_identities.csv"), stringsAsFactors = FALSE)
+observed <- do.call(rbind, lapply(keys$path, pin))
+stopifnot(all(observed$sha256 == keys$sha256), all(observed$bytes == keys$bytes))
+paths <- c(keys$path, file.path(rel, c("dispatch_message.md", "dispatch_result.json", "coordinator_dispatch_receipt.md", "seal_dispatch_receipt.R")))
+m <- do.call(rbind, lapply(paths, pin))
+out <- file.path(rel, "coordinator_dispatch_receipt_manifest.csv")
+stopifnot(!anyDuplicated(m$path), !out %in% m$path, !file.exists(file.path(root, out)))
+write.csv(m, file.path(root, out), row.names = FALSE)
+stopifnot(all(vapply(m$path, function(p) pin(p)$sha256, character(1)) == m$sha256))
+print(pin(out), row.names = FALSE)
+cat(sprintf("COORDINATOR_TO_HARMONIZER_RECEIPT=PASS %d/%d; Writer activation unasserted\n", nrow(m), nrow(m)))

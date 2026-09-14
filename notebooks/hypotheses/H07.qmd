@@ -1,5 +1,5 @@
 ---
-title: "H07: Photoperiod and possible plateaus in personal light exposure"
+title: "H07: Photoperiod and qualifying transitions in personal light exposure"
 subtitle: "Pooled photoperiod associations across nine personal light-exposure metrics"
 format:
   html:
@@ -160,7 +160,10 @@ target_concurvity <- pairwise_concurvity |>
     .data$target_term == "s(photoperiod_hours)"
   )
 
-placement_label <- c(near_eye = "Near eye", chest = "Chest")
+placement_label <- c(
+  near_eye = "Near eye — primary",
+  chest = "Chest — complementary"
+)
 
 fmt_number <- function(value, digits = 2L) {
   formatC(value, digits = digits, format = "f", big.mark = ",")
@@ -187,7 +190,7 @@ metric_group <- function(metric_order) {
   )
 }
 
-h07_gt <- function(table, font_size = 13) {
+h07_gt <- function(table, font_size = 12) {
   table |>
     gt::opt_row_striping() |>
     gt::sub_missing(missing_text = "—") |>
@@ -241,11 +244,11 @@ sample_table <- function(placement) {
 result_reason <- function(disposition) {
   dplyr::case_when(
     disposition == "DERIVATIVE_DEFINED_PLATEAU_PATTERN" ~
-      "Positive derivative followed by a zero-compatible tail",
+      "Detected increase followed by a sustained zero-compatible tail",
     disposition == "NO_POINTWISE_DETECTED_PRIOR_INCREASE" ~
-      "No preceding pointwise detected increase",
+      "No preceding detected increase",
     disposition == "POINTWISE_DETECTED_INCREASE_AT_RECORDED_END" ~
-      "Increase remained pointwise detected at the recorded maximum",
+      "Increase remained detected at the recorded maximum",
     TRUE ~ disposition
   )
 }
@@ -288,6 +291,11 @@ result_table <- function(placement) {
         rows = Pattern == "Yes"
       )
     ) |>
+    gt::cols_label(
+      Pattern = "Qualifying transition",
+      `Transition bracket (h)` = "Qualifying transition bracket (h)",
+      `Derivative at maximum` = "Endpoint derivative"
+    ) |>
     gt::cols_width(
       Pattern ~ gt::pct(8),
       `Transition bracket (h)` ~ gt::pct(16),
@@ -297,8 +305,13 @@ result_table <- function(placement) {
     gt::tab_source_note(
       gt::md(
         paste0(
-          "Derivatives and their 95% confidence intervals are on each ",
-          "model's linear-predictor scale, per hour of civil photoperiod."
+          "A ‘Yes’ is the formal derivative-defined classification: the ",
+          "immediately preceding point has an interval wholly above zero, ",
+          "the next contains zero, and every later interval through the ",
+          "recorded maximum remains zero-compatible. Endpoint derivatives ",
+          "and 95% confidence intervals are on each model's ",
+          "linear-predictor scale, in model-scale units per hour of civil ",
+          "photoperiod."
         )
       )
     ) |>
@@ -610,23 +623,29 @@ stopifnot(
 )
 ```
 
-## Question
+## Scientific question
 
 The preregistered hypothesis was:
 
 > “H7: There is a ceiling (nonlinear) effect of absolute latitude and photoperiod on level-, duration-, and exposure-history-based light metrics.”
 
+**Melanopic equivalent daylight illuminance (melEDI)** is an illuminance-like
+measure weighted for melanopic photoreception and expressed in lux (lx). The
+**primary near-eye sensor position** places the wearable sensor near the eyes;
+the **complementary chest sensor position** is torso-worn and is not a measure
+of ocular exposure.
+
 This report asks the part of that question that these data can address: is a
 pooled association between civil photoperiod and each planned personal
 light-exposure metric visible, and does the fitted association change from a
-pointwise detected increase to a derivative that remains statistically
-compatible with zero through the longest recorded photoperiod?
+locally supported increase to a slope that remains statistically compatible
+with zero through the longest recorded photoperiod?
 
 ::: {.callout-note title="Answer in brief"}
-A derivative-defined plateau pattern was visible for **six of nine primary
-near-eye metrics**: mean melEDI, brightest 10 h mean, darkest 10 h mean, time
-above 1,000 lx melEDI, time above 250 lx melEDI during wake, and melEDI dose.
-Their transition brackets ranged from
+A qualifying transition from increase to a sustained near-flat tail was
+visible for **six of nine primary near-eye metrics**: mean melEDI, brightest
+10 h mean, darkest 10 h mean, time above 1,000 lx melEDI, time above 250 lx
+melEDI during wake, and melEDI dose. Their transition brackets ranged from
 `r fmt_range(min(near_patterns$plateau_transition_lower), max(near_patterns$plateau_start))`
 h of civil photoperiod. The complementary chest analysis showed the pattern
 for **seven of nine metrics**: mean melEDI, darkest 10 h mean, both
@@ -634,14 +653,15 @@ above-threshold durations, time below 1 lx melEDI during sleep, the longest
 continuous period above 250 lx melEDI, and melEDI dose. Their transition
 brackets ranged from
 `r fmt_range(min(chest_patterns$plateau_transition_lower), max(chest_patterns$plateau_start))`
-h. These are visible pooled-data patterns under a pointwise derivative rule,
-not evidence that a physiological or environmental ceiling exists. Absolute
-latitude cannot be separated from site in this design, and site, collection
-period, incomplete photoperiod overlap, model form, and influential sites
-materially limit interpretation.
+h. These are visible pooled-data patterns under the qualifying-transition
+rule, not evidence that a physiological or environmental ceiling exists.
+No physiological or environmental ceiling was identified. Absolute latitude
+cannot be separated from site in this design, and site, collection period,
+incomplete photoperiod overlap, model form, and influential sites materially
+limit interpretation.
 :::
 
-## What was analysed
+## Data, sensor positions, metrics, and support
 
 All nine planned metrics were analysed independently of fitted results from
 other hypotheses. Near-eye measurements are primary because they more closely
@@ -661,12 +681,16 @@ dataset**, because it uses the timing of remaining missing observations where
 that timing is relevant to the metric. Below, it is called simply the primary
 dataset.
 
-The analysis unit was a participant-day, with one observation for each
-available metric, participant, day, and placement. Repeated days were handled
-with a participant random-effect smooth nested within site. The main near-eye
-samples span 15 August 2023 to 19 October 2025; chest samples span 14 May 2024
-to 19 October 2025. Exact metric-specific counts are reported with each
-placement below.
+A **participant-day** is one participant's available metric value on one local
+calendar date at one sensor position. Repeated days were handled with a
+participant random-effect smooth nested within site. Depending on the metric,
+the primary near-eye analysis contains 139–141 participants and 655–816
+participant-days, whereas the complementary chest analysis contains 153–154
+participants and 743–902 participant-days. The recorded civil-photoperiod
+support used by the metric-specific fits spans 10.33–20.52 h overall. The main
+near-eye samples span 15 August 2023 to 19 October 2025; chest samples span 14
+May 2024 to 19 October 2025. Exact metric-specific counts are reported with
+each placement below.
 
 ```{r}
 #| label: tbl-h07-response-specifications
@@ -704,10 +728,30 @@ metric_registry |>
   h07_gt(12)
 ```
 
-## Model and plateau rule
+Metric definitions and derivations are documented in
+[Preparation 04](../preparation/04_metric_derivation.qmd).
 
-Each metric and placement used a separate generalized additive model fitted by
-restricted maximum likelihood. The reported model was:
+## Reading guide
+
+- A **nonlinear generalized additive model (GAM) analysis** allows the
+  association between civil photoperiod and a light metric to bend rather than
+  follow a straight line. The resulting line is called the fitted curve.
+- The **derivative** is the slope of that fitted curve: how quickly the fitted
+  outcome changes for each additional hour of photoperiod at each point. Here
+  it is evaluated on the model's linear-predictor scale, in model-scale units
+  per hour; the left-hand fitted curves are displayed in the named metric
+  units.
+- A **pointwise 95% confidence interval (95% CI)** describes uncertainty at
+  one photoperiod value. It is not a simultaneous uncertainty band for the
+  whole curve.
+- **Overlap among nonlinear model terms** can make their separate
+  contributions harder to distinguish. This is reported below using the
+  technical term *concurvity*.
+
+## Nonlinear photoperiod model and qualifying-transition rule
+
+Each metric and placement used a separate nonlinear GAM fitted by restricted
+maximum likelihood. The reported model was:
 
 ```{r}
 #| label: code-h07-reported-formula
@@ -731,8 +775,8 @@ Absolute latitude is fixed within site. It is therefore structurally
 confounded with site, and a latitude-by-photoperiod surface cannot separately
 identify a latitude association while accounting for site. The planned joint
 surface was inspected as an identifiability check but is not used for
-inference or for the plateau classification. No temperature or other
-unplanned environmental predictor was added.
+inference or for the qualifying-transition classification. No temperature or
+other unplanned environmental predictor was added.
 
 For each reported smooth, the first derivative was evaluated at 100 equally
 spaced values over that metric's exact recorded photoperiod range. Central
@@ -740,13 +784,14 @@ finite differences used a step of 0.01 h, with one-sided differences at the
 two boundaries. Unconditional model-coefficient covariance produced
 pointwise 95% confidence intervals on the model's linear-predictor scale.
 
-A **derivative-defined plateau pattern** required all three conditions:
+A **qualifying transition from increase to a sustained near-flat tail**[^h07-formal-classification]
+required all three conditions:
 
-1. the lower pointwise 95% confidence limit for the derivative was above zero
-   at one or more photoperiod values;
-2. a later grid point had a 95% confidence interval containing zero; and
-3. every subsequent interval through the longest recorded photoperiod also
-   contained zero.
+1. the immediately preceding grid point had a derivative interval wholly
+   above zero;
+2. the next grid point had a derivative interval containing zero; and
+3. every later grid point through the longest recorded photoperiod also had a
+   zero-compatible derivative interval.
 
 The reported transition is the bracket from the last pointwise detected
 increase to the first point of the sustained zero-compatible tail. This is the
@@ -756,6 +801,11 @@ recorded range. The rule does not define a scientifically negligible slope,
 prove equivalence to zero, locate a true asymptote, or demonstrate a mechanism.
 The 100 pointwise checks and the nine cross-metric classifications were not
 multiplicity-adjusted; the classification is therefore descriptive.
+
+[^h07-formal-classification]: The stored formal method label is
+    **derivative-defined plateau pattern**. It denotes only the three-part
+    pointwise classification above; it is not a biological-ceiling,
+    permanent-plateau, or equivalence claim.
 
 ## Primary near-eye result
 
@@ -773,9 +823,18 @@ sample_table("near_eye")
 The exact sample counts are available as
 [source data](../../artifacts/09_tables/H07/H07_main_samples.csv).
 
+How to read the main figure: the left panel in each row shows the fitted
+quantity converted back to the displayed metric unit, and the right panel
+shows its derivative on the model scale. Grey ribbons are pointwise 95% CIs,
+not simultaneous bands. Blue derivative segments identify the qualifying
+transition and sustained zero-compatible tail; the same region is marked by
+tail shading and a dashed vertical transition line, providing non-colour
+cues. The rugs show the observed photoperiod support. These marks classify the
+fitted association; they do not identify a biological ceiling.
+
 ```{r}
 #| label: fig-h07-near-smooth-derivative-pairs
-#| fig-cap: "Primary near-eye associations with civil photoperiod. Each row pairs the fitted response-scale smooth (left) with its first derivative on the model scale (right). Grey ribbons are pointwise 95% confidence intervals; blue derivative segments mark a qualifying transition and the sustained zero-compatible tail. Rugs show observed photoperiods."
+#| fig-cap: "Primary near-eye associations with civil photoperiod. Each row pairs the fitted response-scale smooth (left) with its first derivative on the model scale (right). Grey ribbons are pointwise 95% confidence intervals; blue tail shading and a dashed transition line mark a qualifying transition and the sustained zero-compatible tail. Rugs show observed photoperiods."
 #| fig-alt: "Nine paired rows show near-eye metric values against civil photoperiod on the left and first derivatives on the right. Mean melEDI, brightest and darkest 10-hour means, time above 1,000 lx, time above 250 lx during wake, and melEDI dose change from a positive derivative to intervals containing zero through the recorded maximum. Pre-sleep and sleep low-light durations have no preceding detected increase, while the longest continuous period above 250 lx remains increasing at the recorded maximum."
 #| out-width: "100%"
 #| fig-align: center
@@ -795,7 +854,7 @@ empirical support visible.
 
 ```{r}
 #| label: tbl-h07-near-results
-#| tbl-cap: "Near-eye derivative-defined plateau classifications and derivative estimates at the longest recorded photoperiod."
+#| tbl-cap: "Primary near-eye qualifying-transition classifications and derivative estimates at the longest recorded photoperiod."
 
 result_table("near_eye")
 ```
@@ -812,13 +871,13 @@ as [smooth source data](../../artifacts/09_tables/H07/H07_main_curve_points.csv)
 [derivative source data](../../artifacts/09_tables/H07/H07_revised_derivative_points.csv),
 and [figure settings](../../artifacts/09_tables/H07/H07_revised_paired_figure_settings.csv).
 
-## Complementary chest result
+## Complementary chest evidence
 
 Depending on the metric, the chest models used 153–154 participants, 743–902
 participant-days and observations, and eight sites. The modelled
-civil-photoperiod range was again 10.33–20.52 h. Tübingen contributed near-eye
-but not chest data, which is one reason the chest result is complementary
-rather than a direct replication on an identical sample.
+civil-photoperiod range was again 10.33–20.52 h. Tübingen (DE) contributed
+near-eye but not chest data, which is one reason the chest result is
+complementary rather than a direct replication on an identical sample.
 
 ```{r}
 #| label: tbl-h07-chest-samples
@@ -829,7 +888,7 @@ sample_table("chest")
 
 ```{r}
 #| label: fig-h07-chest-smooth-derivative-pairs
-#| fig-cap: "Complementary chest associations with civil photoperiod. Each row pairs the fitted response-scale smooth (left) with its first derivative on the model scale (right). Grey ribbons are pointwise 95% confidence intervals; blue derivative segments mark a qualifying transition and the sustained zero-compatible tail. Rugs show observed photoperiods."
+#| fig-cap: "Complementary chest associations with civil photoperiod. Each row pairs the fitted response-scale smooth (left) with its first derivative on the model scale (right). Grey ribbons are pointwise 95% confidence intervals; blue tail shading and a dashed transition line mark a qualifying transition and the sustained zero-compatible tail. Rugs show observed photoperiods."
 #| fig-alt: "Nine paired rows show chest metric values against civil photoperiod on the left and first derivatives on the right. Mean melEDI, darkest 10-hour mean, time above 1,000 lx, time above 250 lx during wake, time below 1 lx during sleep, the longest continuous period above 250 lx, and melEDI dose change from a positive derivative to intervals containing zero through the recorded maximum. Brightest 10-hour mean remains increasing at the maximum, and pre-sleep low-light duration has no preceding detected increase."
 #| out-width: "100%"
 #| fig-align: center
@@ -844,7 +903,7 @@ knitr::include_graphics(file.path(
 
 ```{r}
 #| label: tbl-h07-chest-results
-#| tbl-cap: "Chest derivative-defined plateau classifications and derivative estimates at the longest recorded photoperiod."
+#| tbl-cap: "Complementary chest qualifying-transition classifications and derivative estimates at the longest recorded photoperiod."
 
 result_table("chest")
 ```
@@ -858,8 +917,10 @@ described below.
 ## Model checks
 
 All 18 reported models converged. Gradients were small and all reported
-Hessian minima were positive. Consecutive-day residual dependence was modest
-in the pooled descriptive check, with maximum absolute lag-1 correlations of
+Hessian minima were positive. **Residual autocorrelation** means that
+observations close in sequence retain more similar residuals than observations
+farther apart. Consecutive-day residual autocorrelation was modest in the
+pooled descriptive check, with maximum absolute lag-1 correlations of
 `r fmt_number(max(abs(adapted_diagnostics$pooled_consecutive_day_lag1[adapted_diagnostics$placement == "near_eye"])), 3)`
 near eye and
 `r fmt_number(max(abs(adapted_diagnostics$pooled_consecutive_day_lag1[adapted_diagnostics$placement == "chest"])), 3)`
@@ -868,7 +929,7 @@ indicate a strong residual day-to-day process after participant clustering.
 
 ```{r}
 #| label: tbl-h07-diagnostic-summary
-#| tbl-cap: "Summary of convergence, smooth-basis, temporal, concurvity, and residual diagnostics for the reported models."
+#| tbl-cap: "Summary of convergence, smooth-basis, temporal, overlap among nonlinear terms (concurvity), and residual model checks."
 
 diagnostic_summary |>
   select(
@@ -912,7 +973,7 @@ diagnostic_summary |>
     `Deviance explained` ~ gt::pct(14),
     `Normal-reference QQ correlation` ~ gt::pct(16)
   ) |>
-  h07_gt(11)
+  h07_gt(12)
 ```
 
 The basis-dimension check flagged three near-eye smooths and one chest smooth.
@@ -931,14 +992,29 @@ mismatch makes the chest sleep low-light pattern particularly weak evidence;
 no larger simulation can repair the response model's failure to reproduce the
 observed zero mass.
 
-The photoperiod smooth also had estimated concurvity of approximately 0.9985–
-0.9988 with the participant random-effect smooth. This reflects the clustered,
-repeated-day design and limits separation of between-person photoperiod
+The photoperiod smooth also had estimated overlap with the participant
+random-effect smooth (concurvity) of approximately 0.9985–0.9988. This reflects
+the clustered, repeated-day design and makes their separate contributions
+harder to distinguish. It limits separation of between-person photoperiod
 coverage from the pooled smooth. Smooth-term p-values are therefore not used
 or displayed. The derivative intervals remain conditional on the fitted model
 and should be read with this identifiability limitation.
 
 ## Sensitivity analyses
+
+Each sensitivity changed a named feature. The gap-timing-unaware dataset
+omitted the additional metric-specific adjustment based on when remaining
+gaps occurred while retaining the coverage rules. The paired/common analysis
+used only participant-days available at both sensor positions. The
+cross-dataset common-row analyses restricted the primary and
+gap-timing-unaware definitions to identical rows. The longest-period analysis
+retained only days with an exactly identified period, and the dose analysis
+compared observed and corrected melEDI dose on identical rows. Model-form
+sensitivities increased photoperiod-smooth flexibility from *k* = 6 to *k* =
+10 or represented site with fixed rather than random effects.
+Leave-one-site-out analyses omitted one named site at a time. Agreement below
+concerns the yes/no qualifying-transition classification, not an identical
+transition point.
 
 The gap-timing-unaware dataset reproduced all nine near-eye classifications
 and eight of nine chest classifications; the chest melEDI-dose pattern was the
@@ -983,7 +1059,7 @@ sensitivity_sample_summary |>
 
 ```{r}
 #| label: tbl-h07-sensitivity-classifications
-#| tbl-cap: "Agreement of sensitivity classifications with the reported pooled photoperiod analysis."
+#| tbl-cap: "Agreement of sensitivity qualifying-transition classifications with the reported pooled photoperiod analysis."
 
 sensitivity_summary |>
   select(
@@ -1001,7 +1077,7 @@ sensitivity_summary |>
   gt::tab_source_note(
     gt::md(
       paste0(
-        "Agreement concerns the yes/no derivative pattern only; transition ",
+        "Agreement concerns the yes/no qualifying-transition classification only; transition ",
         "brackets can move even when the classification agrees."
       )
     )
@@ -1019,7 +1095,7 @@ classification but removed the chest sleep low-light pattern in both variants.
 
 ```{r}
 #| label: tbl-h07-model-form-sensitivities
-#| tbl-cap: "Classification stability under broader photoperiod smooths and fixed site effects."
+#| tbl-cap: "Qualifying-transition stability under broader photoperiod smooths and fixed site effects."
 
 model_form_summary |>
   select(
@@ -1053,37 +1129,38 @@ classification boundary.
 Omitting one site at a time did not act as a new eligibility rule; it tested
 whether a pooled pattern depended strongly on one site's observations. Near-eye
 mean melEDI and both low-light metrics reproduced their main classification in
-all nine omissions. Five positive near-eye patterns changed only when Tübingen
-was omitted. The near-eye longest-period classification changed in four of
-nine omissions. Chest results were less stable for several outcomes, most
-notably time below 1 lx melEDI during sleep, which matched the main
-classification in only three of eight omissions.
+all nine omissions. Five positive near-eye patterns changed only when
+Tübingen (DE) was omitted. The near-eye longest-period classification changed
+in four of nine omissions. Chest results were less stable for several
+outcomes, most notably time below 1 lx melEDI during sleep, which matched the
+main classification in only three of eight omissions.
 
 ```{r}
 #| label: tbl-h07-near-loso
-#| tbl-cap: "Leave-one-site-out influence on near-eye derivative classifications."
+#| tbl-cap: "Leave-one-site-out influence on primary near-eye qualifying-transition classifications."
 
 loso_table("near_eye")
 ```
 
 ```{r}
 #| label: tbl-h07-chest-loso
-#| tbl-cap: "Leave-one-site-out influence on chest derivative classifications."
+#| tbl-cap: "Leave-one-site-out influence on complementary chest qualifying-transition classifications."
 
 loso_table("chest")
 ```
 
 The observed civil-photoperiod range was broad overall but uneven across
 sites. For example, near-eye observations ranged from 10.33 to 12.35 h in
-Madrid, 16.41 to 17.45 h in Munich, and 12.49 to 12.71 h in Kumasi; San José
-contributed only a narrow range around 13.47 h, while Borås covered values up
-to 20.52 h. Sites were also measured in different collection periods and, in some
-cases, different years. Thus the pooled smooth can answer whether an
-association is visible in this dataset, but it cannot separate photoperiod
-from every site-specific or collection-period difference. Leave-one-site-out
-changes show where this limitation affects the descriptive classification.
+Madrid (ES), 16.41 to 17.45 h in Munich (DE), and 12.49 to 12.71 h in
+Kumasi (GH); San José (CR) contributed only a narrow range around 13.47 h,
+while Borås (SE) covered values up to 20.52 h. Sites were also measured in
+different collection periods and, in some cases, different years. Thus the
+pooled smooth can answer whether an association is visible in this dataset,
+but it cannot separate photoperiod from every site-specific or
+collection-period difference. Leave-one-site-out changes show where this
+limitation affects the descriptive classification.
 
-## Interpretation
+## Interpretation and limitations
 
 The pooled analysis shows several fitted photoperiod associations that rise
 and then meet the prespecified pointwise rule for a sustained
@@ -1095,16 +1172,36 @@ definition and model form, and the chest sleep low-light result is undermined
 by distributional failure, common-row analyses, model-form changes, and site
 influence.
 
-The strongest defensible conclusion is therefore that **derivative-defined
-plateau patterns are visible for several personal light-exposure metrics in
-the pooled data**, subject to substantial design and model limitations. The
-results do not establish a ceiling, an equivalence region, a causal effect of
-photoperiod, a distinct latitude effect, a health or clinical consequence, or
-equivalence between near-eye and chest placement.
+The strongest defensible conclusion is therefore that **qualifying
+transitions from increase to a sustained near-flat tail are visible for
+several personal light-exposure metrics in the pooled data**, subject to
+substantial design and model limitations. The results do not establish a
+ceiling, an equivalence region, a causal effect of photoperiod, a distinct
+latitude effect, a health or clinical consequence, or equivalence between
+near-eye and chest placement.
+
+## Preregistration deviations {#h07-preregistration-deviations}
+
+- [`DEV-016`](../preregistration_deviations.qmd#dev-016): the registered
+  latitude-by-photoperiod surface is non-identifiable here, so the accepted
+  report retains all nine outcomes and presents a separately labelled
+  site-adjusted nonlinear photoperiod analysis as descriptive evidence.
+- [`DEV-033`](../preregistration_deviations.qmd#dev-033): all nine eligible
+  outcomes remain visible rather than being selected using H01 significance
+  or H07 AIC.
+- [`DEV-034`](../preregistration_deviations.qmd#dev-034): response
+  specifications and model checks are metric-specific rather than one
+  universal zero-aware log-Gaussian model.
+
+## Source data and technical provenance
 
 Exact input identities, metric-specific model frames, evaluated formulas,
-diagnostic provenance, code order, and output identities are documented in
-the [H07 analysis preparation and provenance companion](../../audit/hypotheses/H07/H07_analysis_preparation.html).
+model-check provenance, code order, and output identities are documented in
+the [H07 analysis preparation and provenance](../../audit/hypotheses/H07/H07_analysis_preparation.qmd).
+Metric definitions are available in
+[Preparation 04](../preparation/04_metric_derivation.qmd); the plotted smooth,
+derivative, and figure-setting source files are linked beside the relevant
+outputs above.
 
 Models were fitted with R `r session_record$r_version[[1]]`, mgcv
 `r session_record$mgcv_version[[1]]`, and gratia

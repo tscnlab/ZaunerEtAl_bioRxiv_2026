@@ -217,7 +217,7 @@ reader_codes <- c(
 )
 reader_labels <- c(
   "At home", "Office/home working", "Outdoors", "Vehicle/public transport",
-  "Sleeping", "Other/unspecified"
+  "Sleeping", "Other"
 )
 mundlak_within <- sensitivity |>
   filter(
@@ -469,7 +469,7 @@ required_qmd_phrases <- c(
   ),
   "0.01-to-50 ratio scale",
   "gap-timing-unaware dataset",
-  "Other/unspecified activity",
+  "Other",
   "model-based pointwise 95% CIs",
   "rather than to the whole curve simultaneously"
 )
@@ -612,7 +612,7 @@ first_table_cells <- function(table_id) {
 }
 full_reader_order <- c(
   "At home", "Office/home working", "Outdoors",
-  "Vehicle/public transport", "Sleeping", "Other/unspecified activity"
+  "Vehicle/public transport", "Sleeping", "Other"
 )
 stopifnot(
   identical(

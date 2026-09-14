@@ -161,6 +161,13 @@ build_participant_site_publication_gt <- function(
     ) |>
     site_wide_display_data(c("section", "characteristic"))
 
+  dortmund_institution <- wide$characteristic == "Institution"
+  stopifnot(
+    sum(dortmund_institution) == 1L,
+    identical(wide$BAUA[dortmund_institution], "BAUA")
+  )
+  wide$BAUA[dortmund_institution] <- "BAuA"
+
   table <- wide |>
     dplyr::select(-".display_order") |>
     gt::gt(
@@ -185,8 +192,9 @@ build_participant_site_publication_gt <- function(
   table <- add_participant_stub_footnote(
     table, present_rows,
     paste(
-      "Near-eye is the primary placement; chest is complementary; paired",
-      "means the same participant-day is available at both placements."
+      "g, near-eye glasses position; c, complementary chest position; p,",
+      "paired common sample in which the same participant-day is available",
+      "at both positions."
     ),
     c("Participants", "Participant-days", "Screened days")
   )
@@ -210,7 +218,7 @@ build_participant_site_publication_gt <- function(
     paste(
       "w: weeks; d: days; h: hours; min: minutes. Participant time and",
       "declared non-wear use eligible real minutes on screened days;",
-      "both are shown for near-eye only."
+      "both are shown for near eye only."
     ),
     c(
       "Participant time", "Declared non-wear", "Civil photoperiod",
@@ -227,7 +235,7 @@ build_participant_site_publication_gt <- function(
   table <- add_participant_stub_footnote(
     table, present_rows,
     paste(
-      "Employment categories reproduce the submitted grouping:",
+      "Employment categories:",
       "Full/studying, Part/marginal, and Not employed."
     ),
     "Employment status"
@@ -258,7 +266,8 @@ build_participant_site_publication_gt <- function(
   ) |>
     gt::tab_options(
       heading.align = "left",
-      table.font.size = gt::px(table_font_size_px)
+      table.font.size = gt::px(table_font_size_px),
+      container.overflow.x = "auto"
     )
 
   stopifnot(identical(data, input_before), inherits(table, "gt_tbl"))
@@ -270,7 +279,7 @@ build_participant_site_manuscript_publication_gt <- function(data) {
   table <- build_participant_site_publication_gt(
     participant_site_manuscript_data(data),
     table_id = "participant-site-characteristics-manuscript",
-    table_font_size_px = 14
+    table_font_size_px = 12
   )
   stopifnot(identical(data, input_before), inherits(table, "gt_tbl"))
   table
@@ -390,16 +399,28 @@ build_metric_publication_gt <- function(data, metric_values) {
   input_before <- data
   metric_input_before <- metric_values
   row_fields <- c(
-    "category", "metric_order", "metric_id", "table_name", "unit", "scaling"
+    "category", "metric_order", "metric_id", "table_name", "unit", "scaling",
+    "meaning_and_relevance"
   )
   wide <- data |>
     metric_table_markdown() |>
     site_wide_display_data(row_fields) |>
     dplyr::mutate(
-      unit = ifelse(
-        is.na(.data$unit),
-        NA_character_,
-        paste0("<span style='white-space:nowrap'>", .data$unit, "</span>")
+      unit = dplyr::case_when(
+        is.na(.data$unit) ~ NA_character_,
+        .data$unit == "HH:MM clock time" ~ paste0(
+          "<span style='white-space:nowrap'>HH:MM</span><br>",
+          "<span style='white-space:nowrap'>clock time</span>"
+        ),
+        TRUE ~ paste0(
+          "<span style='white-space:nowrap'>", .data$unit, "</span>"
+        )
+      ),
+      metric_display = paste0(
+        "<span style='font-weight:600'>", .data$table_name, "</span>",
+        "<br><span style='font-size:10.5px;line-height:1.15;",
+        "font-weight:normal;color:#4F4F4F'>",
+        .data$meaning_and_relevance, "</span>"
       ),
       distribution = ""
     ) |>
@@ -411,15 +432,16 @@ build_metric_publication_gt <- function(data, metric_values) {
 
   table <- wide |>
     dplyr::select(
-      "category", "table_name", "unit", dplyr::all_of(replica_site_levels()),
+      "category", "metric_display", "unit", dplyr::all_of(replica_site_levels()),
       "scaling", "distribution"
     ) |>
     gt::gt(
-      rowname_col = "table_name",
+      rowname_col = "metric_display",
       groupname_col = "category",
       id = "near-eye-metric-summary"
     ) |>
-    gt::tab_header(title = "Metric descriptive summary (near-eye)") |>
+    gt::tab_header(title = "Metric descriptive summary (near eye)") |>
+    gt::tab_stubhead(label = "Metric") |>
     label_registered_site_columns() |>
     gt::cols_label(
       unit = "Unit", scaling = "Scaling", distribution = "Distribution"
@@ -432,6 +454,14 @@ build_metric_publication_gt <- function(data, metric_values) {
         "<span style='color:grey'>N=participants; ",
         "d=participant-days with a finite value for that metric</span>."
       ))
+    ) |>
+    gt::tab_footnote(
+      footnote = paste(
+        "The brief meaning and relevance notes describe established",
+        "physiological constructs; this descriptive table does not estimate",
+        "individual health effects."
+      ),
+      locations = gt::cells_stubhead()
     ) |>
     gt::tab_footnote(
       footnote = paste(
@@ -461,8 +491,8 @@ build_metric_publication_gt <- function(data, metric_values) {
     ) |>
     gt::fmt_markdown() |>
     gt::cols_width(
-      gt::stub() ~ gt::px(170),
-      unit ~ gt::px(110),
+      gt::stub() ~ gt::px(240),
+      unit ~ gt::px(80),
       dplyr::all_of(replica_site_levels()) ~ gt::px(120),
       scaling ~ gt::px(100),
       distribution ~ gt::px(190)
@@ -476,6 +506,7 @@ build_metric_publication_gt <- function(data, metric_values) {
     ) |>
     gt::tab_options(
       heading.align = "left",
+      table.font.size = gt::px(12),
       data_row.padding = gt::px(3),
       table.layout = "fixed",
       container.overflow.x = "auto"
@@ -489,7 +520,9 @@ build_metric_publication_gt <- function(data, metric_values) {
   table
 }
 
-format_context_cell <- function(fraction, numerator, denominator) {
+format_context_cell <- function(
+  fraction, numerator, denominator, accessibility_label
+) {
   if (!all(is.finite(c(fraction, numerator, denominator)))) {
     return("Not estimable")
   }
@@ -499,7 +532,8 @@ format_context_cell <- function(fraction, numerator, denominator) {
   )
   paste0(
     "**", sprintf("%.1f%%", 100 * fraction), "**<br>",
-    "<span aria-label='", numerator, " within context out of ", denominator,
+    "<span aria-label='", numerator, " ", accessibility_label, " out of ",
+    denominator,
     " total' style='color:grey;font-size:9px;white-space:nowrap'>",
     numerator, " / ", denominator, "</span>"
   )
@@ -516,41 +550,57 @@ build_recommendation_publication_gt <- function(data) {
       wake_context = mapply(
         format_context_cell, .data$wake_fraction,
         .data$wake_context_numerator, .data$wake_valid_minutes,
+        MoreArgs = list(
+          accessibility_label = "within recommendation window"
+        ),
         USE.NAMES = FALSE
       ),
       pre_sleep_context = mapply(
         format_context_cell, .data$pre_sleep_fraction,
         .data$pre_sleep_context_numerator, .data$pre_sleep_valid_minutes,
+        MoreArgs = list(
+          accessibility_label = "within recommendation window"
+        ),
         USE.NAMES = FALSE
       ),
       sleep_context = mapply(
         format_context_cell, .data$sleep_fraction,
         .data$sleep_context_numerator, .data$sleep_valid_minutes,
+        MoreArgs = list(
+          accessibility_label = "within recommendation window"
+        ),
         USE.NAMES = FALSE
       ),
       combined_context = mapply(
         format_context_cell, .data$combined_fraction,
         .data$combined_context_numerator, .data$classified_valid_minutes,
+        MoreArgs = list(
+          accessibility_label = "within recommendation window"
+        ),
         USE.NAMES = FALSE
       ),
       wake_time = mapply(
         format_context_cell, .data$wake_time_fraction,
         .data$wake_time_numerator, .data$eligible_real_minutes,
+        MoreArgs = list(accessibility_label = "in displayed diary state"),
         USE.NAMES = FALSE
       ),
       pre_sleep_time = mapply(
         format_context_cell, .data$pre_sleep_time_fraction,
         .data$pre_sleep_time_numerator, .data$eligible_real_minutes,
+        MoreArgs = list(accessibility_label = "in displayed diary state"),
         USE.NAMES = FALSE
       ),
       sleep_time = mapply(
         format_context_cell, .data$sleep_time_fraction,
         .data$sleep_time_numerator, .data$eligible_real_minutes,
+        MoreArgs = list(accessibility_label = "in displayed diary state"),
         USE.NAMES = FALSE
       ),
       unclassified_time = mapply(
         format_context_cell, .data$unclassified_time_fraction,
         .data$unclassified_time_numerator, .data$eligible_real_minutes,
+        MoreArgs = list(accessibility_label = "in displayed diary state"),
         USE.NAMES = FALSE
       )
     ) |>
@@ -574,7 +624,7 @@ build_recommendation_publication_gt <- function(data) {
     gt::cols_hide(columns = c("site", "row_kind")) |>
     gt::sub_missing(missing_text = "") |>
     gt::cols_label(
-      wake_context = "Wake",
+      wake_context = "Daytime",
       pre_sleep_context = "Pre-sleep",
       sleep_context = "Sleep",
       combined_context = "Total",
@@ -611,7 +661,7 @@ build_recommendation_publication_gt <- function(data) {
     ) |>
     gt::tab_style(
       style = gt::cell_borders(
-        sides = "bottom", color = "#FFFFFF", weight = gt::px(6)
+        sides = "bottom", color = "#BEBEBE", weight = gt::px(3)
       ),
       locations = list(
         gt::cells_stub(rows = row_kind == "overall"),
@@ -650,25 +700,27 @@ build_recommendation_publication_gt <- function(data) {
     ) |>
     gt::tab_footnote(
       footnote = paste(
-        "Recommended thresholds follow Brown et al. (2022): wake ≥250 lx",
-        "melEDI, pre-sleep ≤10 lx melEDI, and sleep ≤1 lx melEDI. These are",
-        "measured environmental contexts, not adherence or compliance. Each",
-        "grey relevant / all count gives minutes within the recommended context over",
-        "all valid one-minute observations in that context."
+        "Recommended ranges follow Brown et al. (2022): Daytime ≥250 lx",
+        "melanopic EDI, Pre-sleep ≤10 lx melanopic EDI, and Sleep ≤1 lx",
+        "melanopic EDI. Daytime, Pre-sleep, and Sleep identify the",
+        "recommendation windows. Each grey numerator/denominator gives minutes",
+        "within the applicable recommendation range over all valid one-minute",
+        "observations in that window. Sleep describes the bedside sleep",
+        "environment."
       ),
       locations = gt::cells_column_spanners(spanners = "contextual-range")
     ) |>
     gt::tab_footnote(
       footnote = paste(
-        "Each grey relevant / all count gives minutes in the displayed diary state over",
-        "all eligible real minutes before classification by diary state or",
-        "measurement availability."
+        "Each grey numerator/denominator gives minutes in the displayed diary",
+        "state over all eligible real minutes before classification by diary",
+        "state or measurement availability."
       ),
       locations = gt::cells_column_spanners(spanners = "state-share")
     ) |>
     gt::tab_footnote(
       footnote = paste(
-        "Near-eye participant and participant-day sample sizes are reported",
+        "Near eye participant and participant-day sample sizes are reported",
         "in the participant table; every percentage cell gives its exact",
         "minute denominator."
       ),
@@ -700,7 +752,9 @@ build_recommendation_publication_gt <- function(data) {
       ) ~ gt::px(95)
     ) |>
     gt::tab_options(
-      heading.align = "left"
+      heading.align = "left",
+      table.font.size = gt::px(12),
+      container.overflow.x = "auto"
     )
 
   palette <- descriptive_site_palette()
@@ -741,7 +795,7 @@ publication_table_export_spec <- function() {
       "tables/tbl1.png", "assets/tbl1_red.png", "tables/tbl2.png",
       "tables/Brown_table.png"
     ),
-    viewport_width_px = c(1200L, 1200L, 1800L, 992L),
+    viewport_width_px = c(1200L, 1200L, 1900L, 992L),
     placement = c(
       "mixed_or_not_applicable", "mixed_or_not_applicable", "near_eye",
       "near_eye"

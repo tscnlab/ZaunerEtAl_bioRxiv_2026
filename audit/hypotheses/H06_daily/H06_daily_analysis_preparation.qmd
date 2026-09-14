@@ -204,31 +204,41 @@ stopifnot(
 
 This page explains how the complementary H06 participant-day analysis was
 prepared, fitted, checked, and translated into the reported tables and
-figures. A participant-day is one eligible local calendar day from one
-participant. Each admissible light-exposure metric contributes at most one row
-for that participant-day, so days are not weighted by their number of
-supported hours.
+figures. The selected [hourly H06 analysis](../../../notebooks/hypotheses/H06.qmd)
+remains the main H06 result. A participant-day is one eligible local calendar
+day from one participant. Each admissible light-exposure metric contributes at
+most one row for that participant-day, so days are not weighted by their number
+of supported hours.
 
-The [H06 daily-metric results report](../../../notebooks/hypotheses/H06_daily.html)
+The complementary [H06 daily-metric results report](../../../notebooks/hypotheses/H06_daily.qmd)
 contains the association estimates, confidence intervals, multiplicity
 decisions, site-specific patterns, complementary analyses, and the comparison
-with the selected hourly H06 analysis.
+with the selected main hourly H06 analysis.
 
 ::: {.callout-note title="Execution boundary"}
 This page verifies stored file identities and schemas and calculates only
 bounded descriptive summaries of the already fitted samples. Model estimates,
-predictions, residual correlation, p-values, false-discovery-rate adjustments,
-deletion analyses, and nonlinear clock-time functions are read from stored
-outputs. Rendering this page does not fit or refit a model, regenerate a
+predictions, residual correlation, p-values, false-discovery-rate (FDR)
+adjustments, deletion analyses, and nonlinear clock-time functions are read
+from stored outputs. FDR adjustment limits the expected proportion of false
+discoveries within each defined family. Rendering this page does not fit or
+refit a model, regenerate a
 prediction, rerun a sensitivity analysis, resample, or simulate.
 :::
 
 ## Analysis path
 
 The primary path estimates each context separately for each daily metric. The
-site-interaction path asks whether that association differs among sites. Two
-exploratory paths then examine covariate stability and 30-minute clock-time
-profiles without changing the primary participant-day estimand.
+predictor-by-site interaction path allows that association to differ among
+sites. Two exploratory paths then examine covariate stability and 30-minute
+clock-time profiles without changing the primary participant-day estimand. The
+nonlinear generalized additive mixed model (GAMM) analysis represents smooth
+clock-time variation while accounting for repeated measurements. Its working
+first-order autoregressive correlation, AR(1), allows adjacent residuals within
+a participant-day sequence to be correlated. A pointwise 95% confidence
+interval (95% CI) assesses one displayed estimate and is not a simultaneous
+band. Model checks assess fit, observed support, residual behavior, and
+sensitivity evidence.
 
 ```{mermaid}
 flowchart TD
@@ -260,7 +270,7 @@ tibble::tribble(
   "Fit or compare statistical models", "Not executed", "Stored fitted objects and results remain the source",
   "Generate predictions or contrasts", "Not executed", "Stored reader source data remain the source",
   "Calculate raw or adjusted p-values", "Not executed", "Stored complete-family results remain the source",
-  "Rerun AR, deletion, resampling, or simulation", "Not executed", "Stored diagnostic sidecars remain the source"
+  "Rerun AR(1), deletion, resampling, or simulation", "Not executed", "Stored model-check sidecars remain the source"
 ) |>
   compact_gt()
 ```
@@ -348,7 +358,11 @@ metric_registry |>
   compact_gt(font_size = 10.5)
 ```
 
-The main transformations were:
+For shifted-log outcomes, the fitted response is
+$Z = \log_{10}(Y + 0.1)$, where $Y$ remains in the metric's stated unit, such
+as lx for melEDI, h for continuous periods, or lx h for dose. The
+back-transformed quantity is geometric-mean-like for $Y + 0.1$ in that unit;
+it is not the raw arithmetic mean of $Y$. The main response treatments were:
 
 - $\log_{10}(Y + 0.1)$ for zero-containing right-skewed level, continuous-
   period, and dose outcomes selected for the shifted-log Gaussian route;
@@ -408,8 +422,13 @@ role, and dataset branch.
 #| fig-alt: !expr figure_alt$alt_text[[1L]]
 #| out-width: "100%"
 
-knitr::include_graphics(
-  "../../../artifacts/10_figures/H06_daily/H06_daily_preparation_primary_sample_support.png"
+xfun::in_dir(
+  file.path(project_root, "audit", "hypotheses", "H06_daily"),
+  knitr::include_graphics(file.path(
+    project_root,
+    "artifacts/10_figures/H06_daily",
+    "H06_daily_preparation_primary_sample_support.png"
+  ))
 )
 ```
 
@@ -446,6 +465,11 @@ not because the fitting function silently removes rows. Complete frames were
 constructed before fitting and their object identities were sealed.
 
 ### Placement and dataset roles
+
+A common sample retains the same participant-days across the models,
+placements, or dataset constructions being compared. The exploratory jointly
+adjusted near-eye analysis uses 715 participant-days from 137 participants;
+other common-sample roles use their exact metric-specific denominators.
 
 ```{r}
 #| label: tbl-h06d-prep-sample-roles
@@ -571,10 +595,11 @@ site_support |>
   compact_gt()
 ```
 
-The site table reports observed support, not equal-site analytical weighting.
-Sum-to-zero site coding and equal-site marginalization give each included site
-equal weight in the reported common association even though their observed
-sample sizes differ.
+The site table reports observed support, not site-average analytical weighting.
+Filled dots use consistent study-site colors to identify sites and do not
+encode significance. Sum-to-zero site coding and site-average marginalization
+give each included site equal weight in the reported common association even
+though their observed sample sizes differ.
 
 ## Model construction and estimands
 
@@ -582,9 +607,10 @@ sample sizes differ.
 
 For each metric and predictor, the reduced model contains site and the repeated-
 participant structure. The additive model adds the predictor and estimates the
-equal-site common association. The interaction model adds the complete
-predictor-by-site block and tests heterogeneity. Work day and Sedentary are the
-categorical references. All reported intervals are pointwise 95% confidence
+site-average common association, giving each site equal weight. The interaction
+model adds the complete predictor-by-site block and tests whether the
+association varies among sites. Work day and Sedentary are the categorical
+references. All reported intervals are pointwise 95% CIs, not simultaneous
 intervals.
 
 ```{r}
@@ -603,11 +629,11 @@ model_routes |>
     Route = .data$reader_route,
     Reduced = paste0("`", .data$reduced_formula, "`"),
     Additive = paste0("`", .data$additive_formula, "`"),
-    Heterogeneity = paste0("`", .data$heterogeneity_formula, "`"),
+    `Predictor-by-site interaction` = paste0("`", .data$heterogeneity_formula, "`"),
     Uncertainty = .data$uncertainty
   ) |>
   gt::gt() |>
-  gt::fmt_markdown(columns = c("Reduced", "Additive", "Heterogeneity")) |>
+  gt::fmt_markdown(columns = c("Reduced", "Additive", "Predictor-by-site interaction")) |>
   compact_gt(font_size = 10)
 ```
 
@@ -616,7 +642,8 @@ midpoint, L10 midpoint, first timing above 250 lx melEDI, and last timing above
 250 lx melEDI. Their fixed-site linear models use participant-cluster HC3
 covariance with finite-cluster adjustment and participant-clusters-minus-one
 degrees of freedom. Other estimable daily outcomes use their selected Gaussian
-or Tweedie mixed model with participant random intercept.
+or Tweedie mixed model with a participant random intercept, which allows
+participants to have different baseline outcome levels.
 
 The exact registered benchmark was retained without silent substitution:
 
@@ -628,8 +655,9 @@ response_value ~ predictor + (predictor | site) +
 It is a benchmark because nine sites provide limited support for a random site
 intercept, random predictor slope, and their correlation. The fixed-site route
 is the reported estimand. For categorical predictors it is the Free/Work or
-Active/Sedentary contrast averaged equally over sites. For previous sleep it is
-the association per additional hour, also averaged equally over sites. The
+Active/Sedentary site-average contrast, with every site weighted equally. For
+previous sleep it is the association per additional hour, also averaged equally
+over sites. The
 interaction route reports the complete site-specific association, not an
 interaction adjustment that must be interpreted alone.
 
@@ -649,7 +677,7 @@ multiplicity |>
     Test = recode(
       .data$test_type,
       association = "Common association",
-      site_heterogeneity = "Predictor-by-site heterogeneity"
+      site_heterogeneity = "Predictor-by-site interaction"
     )
   ) |>
   transmute(
@@ -666,8 +694,8 @@ multiplicity |>
   compact_gt(font_size = 10.5)
 ```
 
-There are 12 Benjamini–Hochberg families: two datasets × three predictors ×
-two test types. Every family retains all 15 named metric slots. Darkest 10 h
+There are 12 Benjamini–Hochberg FDR families: two datasets × three predictors
+× two test types. Every family retains all 15 named metric slots. Darkest 10 h
 mean melEDI remains the named missing slot because its joint test is
 non-estimable; the family size is not reduced to 14. The frozen MDER raw test
 occupies slot 15. Only adjusted fields that depend mathematically on the whole
@@ -675,7 +703,7 @@ family were updated when the remaining slots became available.
 
 ## Model checks, influence, and sensitivities
 
-### Three-class diagnostic architecture
+### Three-class model-check architecture
 
 Hard failure was reserved for an unavailable or non-estimable base result,
 convergence or Hessian failure, singularity, rank or covariance failure,
@@ -694,7 +722,7 @@ themselves fail an otherwise estimable result.
 
 ```{r}
 #| label: tbl-h06d-prep-diagnostics
-#| tbl-cap: "Stored diagnostic classifications and mandatory limitation sidecars"
+#| tbl-cap: "Stored model-check classifications and mandatory limitation sidecars"
 
 diagnostics |>
   transmute(
@@ -885,7 +913,7 @@ code_map |>
   compact_gt(font_size = 10)
 ```
 
-Contracts and frame construction are separated from fitting, diagnostics,
+Contracts and frame construction are separated from fitting, model checking,
 influence analysis, reader displays, and this provenance page. This separation
 allows a stored result to be traced to the exact frame and script without
 requiring the report renderer to execute scientific modeling code.
@@ -913,13 +941,14 @@ output_trace |>
 Every durable reader figure has paired source data and alt text. The daily-grid
 figures use original response units in labels. Reader-facing displays of
 zero-containing, strongly right-skewed melEDI use the predefined symmetric-log
-scale with base 10 and a 1 lx linear threshold, while the stored source values
-remain untransformed. P-values are stored numerically, displayed to three
+(symlog) display. It retains zero, is linear near zero, and uses base 10 with a
+1 lx threshold, while the stored source values remain untransformed. P-values
+are stored numerically, displayed to three
 decimals with values below 0.001 shown as `<0.001`, and emphasized only under
 their explicitly labelled raw or adjusted decision rule.
 
 The synchronized environment uses R 4.6.1. Input and output manifests record
 relative paths, SHA-256 identities, byte sizes, producing scripts, and
 consequential package versions. The complete fitted-sample registry and the
-figure source data are available as CSV files beside the model, diagnostic,
+figure source data are available as CSV files beside the model, model-check,
 table, and figure artifacts.

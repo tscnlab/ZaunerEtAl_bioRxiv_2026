@@ -71,6 +71,17 @@ production_bootstrap <- read_csv(
   show_col_types = FALSE,
   progress = FALSE
 )
+mder_production <- read_csv(
+  file.path(
+    root,
+    paste0(
+      "audit/hypotheses/H01/mder_METRIC-010/production_integration/",
+      "H01_METRIC-010_production_integration_summary.csv"
+    )
+  ),
+  show_col_types = FALSE,
+  progress = FALSE
+)
 candidate_selection <- read_report("H01_reporting_candidate_selection")
 candidate_scorecard <- read_report("H01_reporting_candidate_scorecard")
 report_provenance <- read_csv(
@@ -252,6 +263,13 @@ model was retained for darkest-10-hour mean melEDI because no common
 alternative cleared the predefined diagnostic rule in both data scenarios and
 placements.
 
+Separately, the current melanopic daylight efficacy ratio (MDER) is the
+arithmetic mean of viable one-minute melEDI-to-illuminance ratios. The
+submitted V0 result used a ratio of daily integrals, which weighted moments by
+illuminance. The two MDER rows are therefore a transparent version comparison
+between related but different estimands, not a like-for-like refit of one
+unchanged outcome.
+
 ```{r}
 #| label: tbl-h01-claim-summary
 #| tbl-cap: "Numbers of metrics supported after correction in the submitted V0 analysis and the audited main near-eye analysis."
@@ -279,11 +297,14 @@ claim_summary |>
   )
 ```
 
-The additional support relative to V0 is concentrated in time above 250 lx
-melEDI during wake for site and latitude, and in the L10 midpoint for
-photoperiod. These are model-wide results, not nine separate site contrasts.
-The hierarchical site comparisons appear only for the eight metrics whose
-overall site test is supported.
+Relative to V0, the current analysis additionally supports overall site
+associations for time above 250 lx melEDI during wake, time below 10 lx melEDI
+before sleep, and MDER; latitude associations for time above 250 lx melEDI
+during wake and MDER; and a photoperiod association for the L10 midpoint. The
+MDER comparison reflects the estimand change described above. These are
+model-wide results, not nine separate site contrasts. The hierarchical site
+comparisons appear only for the ten metrics whose overall site test is
+supported.
 
 ## Response-family decision
 
@@ -1024,16 +1045,27 @@ targets in 310.9 seconds. Of 12,000 attempted refits, 11,996 succeeded and
 reached 1,000 successful joint refits. All 120 unchanged target draw hashes
 remained unchanged.
 
+The separately approved MDER production run completed its eight affected
+targets in `r formatC(mder_production$target_wall_seconds, format = "f", digits = 1)`
+seconds. Of `r format(mder_production$total_attempted_refits, big.mark = ",")`
+attempted refits, `r format(mder_production$total_successful_refits, big.mark = ",")`
+succeeded and `r format(mder_production$total_used_refits, big.mark = ",")`
+were retained. The two failed warning attempts were excluded before every
+target reached 1,000 successful joint refits. The focused verifier passed,
+and no support disposition changed from the accepted MDER point-result gate.
+
 ## Claim consequences and unresolved items
 
 The submitted broad conclusion that site differences are concentrated in
 level- and timing-based outcomes remains recognizable, but it needs revision:
 the audited analysis additionally supports an overall site effect for time
-above 250 lx melEDI during wake. The same duration metric also gains support
-for a latitude gradient. Photoperiod remains widely associated with duration,
+above 250 lx melEDI during wake, time below 10 lx melEDI before sleep, and the
+current MDER. Time above 250 lx melEDI during wake and MDER also gain support
+for latitude gradients. Photoperiod remains widely associated with duration,
 level, dose, spectrum, and selected timing metrics, and the L10 midpoint joins
 the supported photoperiod set. First light timing above 250 lx melEDI remains
-unsupported for site.
+unsupported for site. The MDER differences must be interpreted in light of
+its changed estimand rather than as a pure implementation correction.
 
 The site-versus-latitude adequacy family is new and must not be equated with a
 separate residual site effect after latitude adjustment. Site and latitude are
@@ -1053,12 +1085,23 @@ The reporting layer reads only audited upstream R objects. It does not refit
 models during rendering. Publication tables use `gt`, Quarto owns their labels
 and captions, and every plotted figure has paired CSV source data.
 
+The bounded numerical-zero amendment for darkest-10-hour mean melEDI replaced
+only four primary L10 branches. Each branch has 1,000 retained successful joint
+bootstrap refits. The focused verifier found no change in multiplicity support,
+diagnostic disposition, sensitivity classification, or claim disposition; the
+other 16 metrics and all gap-timing-unaware L10 outputs remain preserved.
+
 - Reporting manifest: `artifacts/12_manifests/H01_reporting_artifacts.csv`
 - Model-result manifest: `artifacts/12_manifests/H01_model_results_artifacts.csv`
 - V0 extraction manifest: `artifacts/12_manifests/H01_v0_extraction_artifacts.csv`
 - Candidate-family manifest: `artifacts/12_manifests/H01_response_family_candidate_artifacts.csv`
 - Pilot manifest: `artifacts/12_manifests/H01_response_family_bootstrap_pilot_artifacts.csv`
 - Production-bootstrap manifest: `artifacts/12_manifests/H01_response_family_bootstrap_production_artifacts.csv`
+- L10 amendment production manifest: `audit/hypotheses/H01/l10_METRIC-011/bootstrap_production/H01_METRIC-011_bootstrap_production_manifest.csv`
+- L10 reporting-integration manifest: `audit/hypotheses/H01/l10_METRIC-011/production_integration/reporting/H01_METRIC-011_reporting_integration_manifest.csv`
+- MDER amendment decision: `audit/decisions/mder_mean_of_viable_ratios.md`
+- MDER production manifest: `audit/hypotheses/H01/mder_METRIC-010/bootstrap_production/H01_METRIC-010_bootstrap_production_manifest.csv`
+- MDER production-integration summary: `audit/hypotheses/H01/mder_METRIC-010/production_integration/H01_METRIC-010_production_integration_summary.csv`
 - Figure S10 observed source: `artifacts/11_source_data/H01/reporting/H01_figure_s10_observed_photoperiod_source.csv`
 - Figure S10 theoretical envelope: `artifacts/11_source_data/H01/reporting/H01_figure_s10_theoretical_bounds_source.csv`
 - Exact current/V0 test comparison: `artifacts/09_tables/H01/reporting/H01_reporting_v0_new_tests.csv`

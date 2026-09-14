@@ -72,6 +72,48 @@ preparation_source_files <- list.files(
   full.names = TRUE
 )
 
+authoring_qmd <- file.path(
+  root,
+  "audit/hypotheses/H01/H01_analysis_preparation.qmd"
+)
+build_qmd <- file.path(
+  root,
+  paste0(
+    "_build/nathealth/audit/hypotheses/H01/",
+    "H01_analysis_preparation.qmd"
+  )
+)
+if (
+  !file_test("-f", authoring_qmd) ||
+    nzchar(Sys.readlink(authoring_qmd)) ||
+    !file_test("-f", build_qmd) ||
+    nzchar(Sys.readlink(build_qmd))
+) {
+  h01_abort("H01 preparation QMD paths must be regular non-symlink files")
+}
+
+authoring_qmd_sha256 <- artifact_sha256(authoring_qmd)
+authoring_qmd_bytes <- unname(file.info(authoring_qmd)$size)
+authoring_qmd_mode <- as.character(file.info(authoring_qmd)$mode)
+qmd_copied <- file.copy(
+  from = authoring_qmd,
+  to = build_qmd,
+  overwrite = TRUE,
+  copy.mode = TRUE
+)
+if (
+  !isTRUE(qmd_copied) ||
+    !identical(artifact_sha256(authoring_qmd), authoring_qmd_sha256) ||
+    !identical(unname(file.info(authoring_qmd)$size), authoring_qmd_bytes) ||
+    !file_test("-f", build_qmd) ||
+    nzchar(Sys.readlink(build_qmd)) ||
+    !identical(artifact_sha256(build_qmd), authoring_qmd_sha256) ||
+    !identical(unname(file.info(build_qmd)$size), authoring_qmd_bytes) ||
+    !identical(as.character(file.info(build_qmd)$mode), authoring_qmd_mode)
+) {
+  h01_abort("Could not synchronize the H01 preparation QMD exactly")
+}
+
 download_dir <- file.path(preparation_asset_dir, "source-data")
 dir.create(download_dir, recursive = TRUE, showWarnings = FALSE)
 download_files <- file.path(download_dir, basename(preparation_source_files))
@@ -131,6 +173,42 @@ files <- unique(c(
   file.path(root, "artifacts/06_model_data/H01/metric_contract.csv"),
   file.path(root, "artifacts/08_diagnostics/H01/H01_model_diagnostics.csv"),
   file.path(root, "artifacts/08_diagnostics/H01/H01_r2_bootstrap_audit.csv"),
+  file.path(
+    root,
+    paste0(
+      "audit/hypotheses/H01/l10_METRIC-011/bootstrap_production/",
+      "H01_METRIC-011_bootstrap_production_manifest.csv"
+    )
+  ),
+  file.path(
+    root,
+    paste0(
+      "audit/hypotheses/H01/l10_METRIC-011/production_integration/reporting/",
+      "H01_METRIC-011_reporting_integration_manifest.csv"
+    )
+  ),
+  file.path(root, "audit/decisions/mder_mean_of_viable_ratios.md"),
+  file.path(
+    root,
+    paste0(
+      "audit/hypotheses/H01/mder_METRIC-010/bootstrap_production/",
+      "H01_METRIC-010_bootstrap_production_manifest.csv"
+    )
+  ),
+  file.path(
+    root,
+    paste0(
+      "audit/hypotheses/H01/mder_METRIC-010/production_integration/",
+      "H01_METRIC-010_production_integration_manifest.csv"
+    )
+  ),
+  file.path(
+    root,
+    paste0(
+      "audit/hypotheses/H01/mder_METRIC-010/production_integration/",
+      "H01_METRIC-010_production_integration_summary.csv"
+    )
+  ),
   file.path(root, "artifacts/09_tables/H01/H01_exact_samples_by_site.csv"),
   file.path(
     root,

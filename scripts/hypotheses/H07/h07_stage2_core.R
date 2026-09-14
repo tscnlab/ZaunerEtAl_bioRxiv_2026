@@ -44,6 +44,18 @@ if (!identical(as.character(getRversion()), "4.6.1")) {
 
 h07_stage2_version <- "H07-STAGE2-2026-08-06-A"
 h07_stage2_path <- function(...) file.path(h07_stage2_root, ...)
+h07_stage2_artifact_root <- Sys.getenv(
+  "H07_STAGE2_ARTIFACT_ROOT",
+  unset = h07_stage2_root
+)
+h07_stage2_artifact_root <- normalizePath(
+  h07_stage2_artifact_root,
+  winslash = "/",
+  mustWork = FALSE
+)
+h07_stage2_artifact_path <- function(...) {
+  file.path(h07_stage2_artifact_root, ...)
+}
 h07_stage2_abort <- function(...) stop(sprintf(...), call. = FALSE)
 h07_stage2_dir <- function(path) {
   dir.create(path, recursive = TRUE, showWarnings = FALSE)
@@ -61,9 +73,10 @@ h07_stage2_formula_text <- function(formula) {
 
 h07_stage2_paths <- list(
   root = h07_stage2_root,
-  models = h07_stage2_path("artifacts", "07_models", "H07"),
-  figures = h07_stage2_path("artifacts", "08_figures", "H07"),
-  tables = h07_stage2_path("artifacts", "09_tables", "H07"),
+  artifact_root = h07_stage2_artifact_root,
+  models = h07_stage2_artifact_path("artifacts", "07_models", "H07"),
+  figures = h07_stage2_artifact_path("artifacts", "08_figures", "H07"),
+  tables = h07_stage2_artifact_path("artifacts", "09_tables", "H07"),
   audit = h07_stage2_path("audit", "hypotheses", "H07")
 )
 invisible(lapply(h07_stage2_paths[c("models", "figures", "tables")], h07_stage2_dir))
@@ -107,6 +120,32 @@ if (
 ) {
   h07_stage2_abort("The nine-metric H07 contract could not be reconstructed")
 }
+
+h07_stage2_metric_filter <- Sys.getenv(
+  "H07_STAGE2_METRIC_FILTER",
+  unset = ""
+)
+h07_stage2_execution_metric_ids <- if (nzchar(h07_stage2_metric_filter)) {
+  requested <- trimws(strsplit(h07_stage2_metric_filter, ",", fixed = TRUE)[[1L]])
+  requested <- requested[nzchar(requested)]
+  unknown <- setdiff(requested, h07_stage2_metric_ids)
+  if (length(unknown) > 0L) {
+    h07_stage2_abort(
+      "Unknown H07 execution metric filter: %s",
+      paste(unknown, collapse = ", ")
+    )
+  }
+  h07_stage2_metric_ids[h07_stage2_metric_ids %in% requested]
+} else {
+  h07_stage2_metric_ids
+}
+if (length(h07_stage2_execution_metric_ids) < 1L) {
+  h07_stage2_abort("The H07 execution metric filter selected no metrics")
+}
+h07_stage2_partial_execution <- !identical(
+  h07_stage2_execution_metric_ids,
+  h07_stage2_metric_ids
+)
 
 h07_stage2_registered_formulas <- list(
   registered_null = stats::as.formula(

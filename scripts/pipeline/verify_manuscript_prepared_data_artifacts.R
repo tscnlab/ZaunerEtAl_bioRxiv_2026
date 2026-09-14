@@ -1,6 +1,6 @@
 # Verify the manuscript-prepared-data sensitivity inputs fail closed.
 #
-# Source paths_io.R, assertions.R, metric_display_registry.R,
+# Source paths_io.R, assertions.R, metric_display_registry.R, time_support.R,
 # manuscript_prepared_data.R, and build_manuscript_prepared_data.R first.
 
 manuscript_prepared_csv_serialization_contract <- function() {
@@ -95,6 +95,7 @@ manuscript_prepared_verify_csv_rds_pairs <- function(paths) {
   paired <- c(
     "participant_metrics",
     "participant_day_metrics",
+    "mder_support",
     "thirty_minute_data",
     "one_hour_data",
     "normalized_input_references"
@@ -135,12 +136,188 @@ manuscript_prepared_reconstruct_averaged_one_hour <- function(data) {
   dplyr::mutate(hourly, local_occurrence = 1L)
 }
 
+manuscript_prepared_verification_mean_finite <- function(value) {
+  finite <- is.finite(value)
+  if (!any(finite)) {
+    return(NA_real_)
+  }
+  mean(value[finite])
+}
+
+manuscript_prepared_independently_reconstruct_mder <- function(
+  data,
+  position
+) {
+  assert_columns(
+    data,
+    c("site", "Id", "Datetime", "Date", "MEDI", "LIGHT"),
+    object = paste(position, "verification MDER input")
+  )
+  minute_input <- data |>
+    dplyr::ungroup() |>
+    dplyr::transmute(
+      site = as.character(.data$site),
+      Id = as.character(.data$Id),
+      local_date = as.Date(.data$Date),
+      datetime_date = as.Date(format(.data$Datetime, tz = "UTC")),
+      local_clock_minute =
+        as.integer(format(.data$Datetime, "%H", tz = "UTC")) * 60L +
+          as.integer(format(.data$Datetime, "%M", tz = "UTC")),
+      medi = as.numeric(.data$MEDI),
+      light = as.numeric(.data$LIGHT)
+    )
+  if (
+    anyNA(minute_input$local_date) ||
+      anyNA(minute_input$local_clock_minute) ||
+      any(minute_input$local_date != minute_input$datetime_date)
+  ) {
+    abort_pipeline("Independent %s MDER reconstruction found invalid time keys", position)
+  }
+  collapsed <- minute_input |>
+    dplyr::group_by(
+      .data$site,
+      .data$Id,
+      .data$local_date,
+      .data$local_clock_minute
+    ) |>
+    dplyr::summarise(
+      medi = manuscript_prepared_verification_mean_finite(.data$medi),
+      light = manuscript_prepared_verification_mean_finite(.data$light),
+      source_rows = dplyr::n(),
+      .groups = "drop"
+    )
+  day_counts <- collapsed |>
+    dplyr::count(.data$site, .data$Id, .data$local_date, name = "local_minutes")
+  if (any(day_counts$local_minutes > manuscript_prepared_mder_expected_minutes())) {
+    abort_pipeline(
+      "Independent %s MDER reconstruction found more than 1,440 minutes",
+      position
+    )
+  }
+  support <- collapsed |>
+    dplyr::arrange(
+      .data$site,
+      .data$Id,
+      .data$local_date,
+      .data$local_clock_minute
+    ) |>
+    dplyr::group_by(.data$site, .data$Id, .data$local_date) |>
+    dplyr::group_modify(function(.data, .key) {
+      missing_minutes <-
+        manuscript_prepared_mder_expected_minutes() - nrow(.data)
+      medi <- c(.data$medi, rep(NA_real_, missing_minutes))
+      light <- c(.data$light, rep(NA_real_, missing_minutes))
+      finite_pair <- is.finite(medi) & is.finite(light)
+      zero_medi <- finite_pair & medi == 0
+      zero_light <- finite_pair & light == 0
+      positive_pair <- finite_pair & medi > 0 & light > 0
+      ratio <- rep(NA_real_, length(medi))
+      ratio[positive_pair] <- suppressWarnings(
+        medi[positive_pair] / light[positive_pair]
+      )
+      viable <- positive_pair & is.finite(ratio)
+      viable_minutes <- sum(viable)
+      expected_minutes <- length(medi)
+      viable_fraction <- viable_minutes / expected_minutes
+      passes <- viable_fraction >= manuscript_prepared_mder_minimum_fraction()
+      failure_reason <- if (viable_minutes == 0L) {
+        "no_viable_momentary_ratio"
+      } else if (!passes) {
+        "below_viable_ratio_fraction"
+      } else {
+        NA_character_
+      }
+      raw_source_rows <- as.integer(sum(.data$source_rows, na.rm = TRUE))
+      observed_local_minutes <- as.integer(nrow(.data))
+      duplicated_local_minutes <- as.integer(
+        sum(.data$source_rows > 1L, na.rm = TRUE)
+      )
+      duplicate_source_rows <- as.integer(
+        sum(pmax(.data$source_rows - 1L, 0L), na.rm = TRUE)
+      )
+      tibble::tibble(
+        manuscript_prepared_value = if (is.na(failure_reason)) {
+          mean(ratio[viable])
+        } else {
+          NA_real_
+        },
+        viable_ratio_minutes = viable_minutes,
+        expected_minutes = expected_minutes,
+        viable_ratio_fraction = viable_fraction,
+        raw_source_rows = raw_source_rows,
+        observed_local_minutes = observed_local_minutes,
+        duplicated_local_minutes = duplicated_local_minutes,
+        duplicate_source_rows = duplicate_source_rows,
+        excluded_nonfinite_source_minutes = sum(!finite_pair),
+        excluded_zero_either_minutes = sum(
+          finite_pair & (zero_medi | zero_light)
+        ),
+        excluded_zero_medi_minutes = sum(zero_medi),
+        excluded_zero_light_minutes = sum(zero_light),
+        excluded_both_zero_minutes = sum(zero_medi & zero_light),
+        excluded_nonfinite_ratio_minutes = sum(
+          positive_pair & !is.finite(ratio)
+        ),
+        minimum_viable_fraction =
+          manuscript_prepared_mder_minimum_fraction(),
+        passes_viable_ratio_support = passes,
+        support_threshold_enforced = TRUE,
+        ratio_scaled_or_weighted = FALSE,
+        estimable = is.na(failure_reason),
+        failure_reason = failure_reason
+      )
+    }) |>
+    dplyr::ungroup() |>
+    dplyr::mutate(
+      metric_id = manuscript_prepared_mder_metric_id(),
+      metric_decision_id = "METRIC-010",
+      duplicate_minute_rule = "channel_mean_before_ratio",
+      expected_day_rule = "complete_1440_local_wall_clock_minutes"
+    ) |>
+    manuscript_prepared_add_ids(position) |>
+    dplyr::select(
+      "scenario_id",
+      "model_implementation_id",
+      "position",
+      "position_role",
+      "site",
+      "Id",
+      "local_date",
+      "metric_id",
+      "metric_decision_id",
+      "manuscript_prepared_value",
+      "viable_ratio_minutes",
+      "expected_minutes",
+      "viable_ratio_fraction",
+      "raw_source_rows",
+      "observed_local_minutes",
+      "duplicated_local_minutes",
+      "duplicate_source_rows",
+      "excluded_nonfinite_source_minutes",
+      "excluded_zero_either_minutes",
+      "excluded_zero_medi_minutes",
+      "excluded_zero_light_minutes",
+      "excluded_both_zero_minutes",
+      "excluded_nonfinite_ratio_minutes",
+      "minimum_viable_fraction",
+      "passes_viable_ratio_support",
+      "support_threshold_enforced",
+      "ratio_scaled_or_weighted",
+      "estimable",
+      "failure_reason",
+      "duplicate_minute_rule",
+      "expected_day_rule"
+    )
+  support
+}
+
 manuscript_prepared_expected_artifact_ids <- function() {
   sort(c(
     paste0(
       c(
         "participant_metrics",
         "participant_day_metrics",
+        "mder_support",
         "thirty_minute_data",
         "one_hour_data",
         "normalized_input_references"
@@ -151,6 +328,7 @@ manuscript_prepared_expected_artifact_ids <- function() {
       c(
         "participant_metrics",
         "participant_day_metrics",
+        "mder_support",
         "thirty_minute_data",
         "one_hour_data",
         "normalized_input_references"
@@ -175,6 +353,7 @@ manuscript_prepared_expected_scenario_files <- function() {
       c(
         "participant_metrics",
         "participant_day_metrics",
+        "mder_support",
         "thirty_minute_data",
         "one_hour_data",
         "normalized_input_references"
@@ -185,6 +364,7 @@ manuscript_prepared_expected_scenario_files <- function() {
       c(
         "participant_metrics",
         "participant_day_metrics",
+        "mder_support",
         "thirty_minute_data",
         "one_hour_data",
         "normalized_input_references",
@@ -501,9 +681,11 @@ verify_manuscript_prepared_data_artifacts <- function(
   expected <- list(
     participant_metrics = list(),
     participant_day_metrics = list(),
+    mder_support = list(),
     thirty_minute_data = list(),
     one_hour_data = list()
   )
+  frozen_participant_day_expected <- list()
   for (position in manuscript_prepared_positions()) {
     nested <- sources$objects[[paste0("metrics_", position)]][[
       paste0("metrics_", position)
@@ -519,12 +701,23 @@ verify_manuscript_prepared_data_artifacts <- function(
         position,
         "participant"
       )
-    expected$participant_day_metrics[[position]] <-
+    frozen_participant_day <-
       manuscript_prepared_extract_metric_rows(
         nested,
         mapping,
         position,
         "participant_day"
+      )
+    frozen_participant_day_expected[[position]] <- frozen_participant_day
+    expected$mder_support[[position]] <-
+      manuscript_prepared_independently_reconstruct_mder(
+        preprocessed,
+        position
+      )
+    expected$participant_day_metrics[[position]] <-
+      manuscript_prepared_replace_mder(
+        frozen_participant_day,
+        expected$mder_support[[position]]
       )
     expected$thirty_minute_data[[position]] <-
       manuscript_prepared_normalize_clock_data(
@@ -547,6 +740,9 @@ verify_manuscript_prepared_data_artifacts <- function(
     function(id) readRDS(paths$rds[[id]])
   )
   names(actual) <- names(expected)
+  frozen_participant_day_expected <- dplyr::bind_rows(
+    frozen_participant_day_expected
+  )
 
   manuscript_prepared_assert_identical_frame(
     actual$participant_metrics,
@@ -567,6 +763,95 @@ verify_manuscript_prepared_data_artifacts <- function(
     ),
     "participant-day metric artifact"
   )
+  non_mder_actual <- dplyr::filter(
+    actual$participant_day_metrics,
+    .data$metric_id != manuscript_prepared_mder_metric_id()
+  )
+  non_mder_frozen <- dplyr::filter(
+    frozen_participant_day_expected,
+    .data$metric_id != manuscript_prepared_mder_metric_id()
+  )
+  manuscript_prepared_assert_identical_frame(
+    non_mder_actual,
+    non_mder_frozen,
+    c(
+      "scenario_id",
+      "position",
+      "site",
+      "Id",
+      "local_date",
+      "metric_id"
+    ),
+    "non-MDER participant-day cells"
+  )
+  manuscript_prepared_assert_identical_frame(
+    actual$mder_support,
+    expected$mder_support,
+    c(
+      "scenario_id",
+      "position",
+      "site",
+      "Id",
+      "local_date",
+      "metric_id"
+    ),
+    "MDER support artifact"
+  )
+
+  mder_summary <- actual$mder_support |>
+    dplyr::group_by(.data$position) |>
+    dplyr::summarise(
+      participant_days = dplyr::n(),
+      participants = dplyr::n_distinct(.data$site, .data$Id),
+      estimable_days = sum(.data$estimable),
+      no_viable_days = sum(
+        .data$failure_reason == "no_viable_momentary_ratio",
+        na.rm = TRUE
+      ),
+      below_support_days = sum(
+        .data$failure_reason == "below_viable_ratio_fraction",
+        na.rm = TRUE
+      ),
+      duplicate_source_rows = sum(.data$duplicate_source_rows),
+      .groups = "drop"
+    ) |>
+    dplyr::arrange(.data$position) |>
+    as.data.frame()
+  expected_mder_summary <- data.frame(
+    position = c("chest", "glasses"),
+    participant_days = c(897L, 811L),
+    participants = c(154L, 141L),
+    estimable_days = c(723L, 687L),
+    no_viable_days = c(3L, 2L),
+    below_support_days = c(171L, 122L),
+    duplicate_source_rows = c(120L, 240L),
+    stringsAsFactors = FALSE
+  )
+  impossible_day <- actual$mder_support |>
+    dplyr::filter(
+      .data$position == "chest",
+      .data$site == "THUAS",
+      .data$Id == "THUAS_S002",
+      .data$local_date == as.Date("2025-03-09")
+    )
+  if (
+    !isTRUE(all.equal(mder_summary, expected_mder_summary, tolerance = 0)) ||
+      any(actual$mder_support$expected_minutes != 1440L) ||
+      any(
+        is.finite(actual$mder_support$manuscript_prepared_value) &
+          actual$mder_support$manuscript_prepared_value <= 0
+      ) ||
+      any(
+        actual$mder_support$estimable !=
+          (actual$mder_support$viable_ratio_minutes >= 720L)
+      ) ||
+      nrow(impossible_day) != 1L ||
+      isTRUE(impossible_day$estimable[[1L]]) ||
+      !is.na(impossible_day$manuscript_prepared_value[[1L]]) ||
+      impossible_day$failure_reason[[1L]] != "no_viable_momentary_ratio"
+  ) {
+    abort_pipeline("The independently verified gap-timing-unaware MDER is invalid")
+  }
   clock_key <- c(
     "scenario_id",
     "position",
@@ -632,6 +917,9 @@ verify_manuscript_prepared_data_artifacts <- function(
     correction_ids = corrections$correction_id,
     paired_csv_rds_artifacts = csv_rds_pairs,
     csv_serialization_contract = manuscript_prepared_csv_serialization_contract(),
-    one_hour_rows = observed_one_hour_rows
+    one_hour_rows = observed_one_hour_rows,
+    mder_summary = mder_summary,
+    mder_impossible_zero_repaired = TRUE,
+    non_mder_participant_day_cells_verified = nrow(non_mder_actual)
   )
 }

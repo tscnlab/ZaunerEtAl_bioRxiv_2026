@@ -661,3 +661,101 @@ without changing any fitted model or inferential artifact.
   The audit is `H02_figure_readability_qa.csv`; the repair and review used
   rendered artifacts only and reran no model, bootstrap, simulation, or
   Shapley computation.
+
+## REPORT-014/017 order 33 source-only reader rewrite
+
+Order 33 reorganizes the accepted H02 result and preparation pair for a
+reader-first sequence without changing the scientific analysis. No model was
+fit or refit, no prediction was calculated, no bootstrap or simulation was
+run, no Shapley allocation was recomputed, and no figure or source-data file
+was regenerated. The existing conditional Shapley analysis remains the
+component-level allocation of in-sample R-squared. It is not an independent
+term R-squared, a causal effect, or cross-validated predictive importance.
+
+### Revised source identities
+
+| Source | SHA-256 | Bytes |
+|---|---|---:|
+| `notebooks/hypotheses/H02.qmd` | `4f431eaba1fd449837186497dc988f95c30a9ece7ae83d57b2f0c377690f0f6d` | 57,148 |
+| `audit/hypotheses/H02/H02_analysis_preparation.qmd` | `92424e41a7f54d05b816ff79144850a27aabc8181aa705384b22f4c7cdc3b9a1` | 55,146 |
+| `tests/hypotheses/H02/test_h02_reader_report.R` | `a78625dfa4ce50135d488fc273bc7c023fb646782dbf1d619906dc3043923a8f` | 14,857 |
+| `tests/hypotheses/H02/test_h02_preparation_report.R` | `8e111af709ba482ab677f04ed19e443b8420c0144de1d981cd7c9017bb0970d8` | 13,464 |
+| `tests/hypotheses/H02/test_h02_paired_placement_display.R` | `e6d907140256a3710c633a0c215fbe5e1c5c7b37caecdab999c59c53d5b4af9f` | 3,592 |
+
+The result now proceeds from the question and brief answer through the model,
+primary near-eye evidence, complementary chest evidence, matched placement
+comparison, visible model-check conclusions, sensitivities, and
+interpretation. Exact fitted-sample tables and the complete anchored
+registration record remain present in a late detailed analysis record. The
+main near-eye daily-pattern figure is the first figure endpoint, and the
+near-eye fitted-curve variation table is the first table endpoint. Detailed
+near-eye and chest model-check figures and tables are available in labelled
+disclosures. Both pages enable figure lightboxes.
+
+The preparation page now defines a model frame at first use, distinguishes
+render-time descriptive summaries from externally produced analysis results,
+uses reader-facing table labels and verification states, and contains no
+project-side write call. Its response-distribution display remains calculated
+in memory from the accepted model frames, while the two frozen source-data
+CSVs are linked rather than rewritten.
+
+### Multiplicity, links, and endpoint contracts
+
+Reader-facing text uses FDR and plain language for the single confirmatory
+near-eye omnibus site-pattern test. The full Benjamini-Hochberg method name is
+retained once in subordinate technical provenance. The internal family ID is
+not displayed. The result retains exactly 15 table and five figure endpoints;
+the companion retains exactly 16 table and four figure endpoints. All 22
+registration-link occurrences, 18 unique central anchors, visible stable IDs,
+and topic-to-ID mappings are unchanged. Reciprocal report links remain
+relative QMD links for Quarto to resolve.
+
+### Historical render boundary
+
+The following files are deliberately unchanged historical Aug-1 evidence:
+
+- `artifacts/12_manifests/H02/H02_preparation_report_manifest.csv`, SHA-256
+  `c2e8c5a3b4fcebe53f3f813aa75fac6d3d960384333f59dd1b1501d90b08aaf7`;
+- `artifacts/12_manifests/H02/H02_worker_output_hashes.csv`, SHA-256
+  `0f3a96ab08f7fed2b59eb4a45f203297483919b3067bee560c9e239693242331`;
+- `_build/nathealth/notebooks/hypotheses/H02.html`, SHA-256
+  `df73f2f87d6d3bdc9acd44493a113e18b510884f0ecb8e2214b39dc3d71cb164`;
+- `_build/nathealth/audit/hypotheses/H02/H02_analysis_preparation.html`,
+  SHA-256
+  `d02a0963d657ab5044ef30b5c081d627f8cb64d5781c7edc1d95d2d58c055dfa`.
+
+The preparation manifest has exactly three known historical-to-live
+mismatches: `_quarto-nathealth.yml`, the preparation QMD, and the result QMD.
+The worker inventory also has exactly three: the H02 shared-change request,
+the preparation QMD, and the result QMD. These sets must not expand during the
+source-only gate. The two existing HTML pages are stale render context and do
+not correspond to the revised authoring sources.
+
+### Source-only verification and evidence
+
+The bounded verifier is
+`audit/hypotheses/H02/report017_order33_source_rewrite/run_h02_order33_source_audit.R`.
+It is run once under R 4.6.1 with:
+
+```bash
+NATHEALTH_PROJECT_ROOT=<project-root> Rscript --vanilla \
+  audit/hypotheses/H02/report017_order33_source_rewrite/run_h02_order33_source_audit.R \
+  <temporary-pre-edit-baseline> \
+  audit/hypotheses/H02/report017_order33_source_rewrite
+```
+
+The verifier runs the result and preparation tests with
+`H02_REPORT_SOURCE_ONLY=true`, runs the unchanged matched-placement numerical
+contract test, parses every R chunk without execution, compares pre/post
+chunks, assignments, formulas, inline R, endpoints, artifact references, and
+numeric tokens, checks the exact registration mapping and reciprocal links,
+confirms that no QMD project-side write remains, verifies protected artifacts
+and historical inventories, and runs scoped `git diff --check`. Exact
+commands, runtimes, package versions, current identities, source diff,
+reverse evidence, protected inventory, mismatch sets, and the execution result
+are stored beside the verifier. The final
+`H02_order33_source_manifest.csv` is non-circular and excludes itself.
+
+This order stops after source-only evidence for independent harmonizer
+acceptance. A fresh result render, companion render, and combined semantic and
+visual review require the later coordinator gate.

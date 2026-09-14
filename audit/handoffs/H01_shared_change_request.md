@@ -1,8 +1,131 @@
 # H01 shared-change requests
 
-Current overall status: **resolved — the coordinator repaired the shared
-Quarto project cache and the H01 Stage 3 Nature Health profile render and
-H01-owned verification now pass.**
+Current overall status: **resolved — the coordinator rebuilt the
+gap-timing-unaware MDER from pinned one-minute inputs, reason-coded the
+construct-impossible zero as missing, proved all non-MDER cells unchanged,
+and repinned the H01 inputs.**
+
+## Resolved request: construct-impossible zero in gap-timing-unaware MDER
+
+Date identified: 2026-08-11
+Resolved: 2026-08-11
+Status: **resolved by the coordinating task; H01 post-repair point gate rerun**
+Requester: H01 hypothesis worker
+Owner for repair and repinning: coordinating Nature Health retargeting task
+
+### Resolution
+
+The shared gap-timing-unaware producer had relabelled the historical stored
+MDER without recalculating the approved momentary-ratio estimand. The
+coordinator rebuilt every comparator participant-day from a complete 1,440
+local-wall-clock-minute grid, independently reproduced the calculation,
+verified deterministic output and tamper rejection, and promoted only the
+repaired MDER values.
+
+The THUAS_S002 chest day on 2025-03-09 now has zero viable minute ratios,
+missing MDER, and reason `no_viable_momentary_ratio`. Corrected availability
+is 687/811 near-eye participant-days and 723/897 chest participant-days.
+All 25,620 non-MDER participant-day cells are exactly unchanged.
+
+Final identities supplied by the coordinator:
+
+- gap preparation manifest:
+  `4ed62fbe58de65a6d05d8cfc6b5d870d7c74a3c83fe89bcd72bd1dd838698935`;
+- H01 gap RDS:
+  `24948e6b138c80bf236a7c9b2b005760206d34a7318a45594ac541482408830e`;
+- H01 gap prepared-input manifest:
+  `79ee4818d7f3967827a6412f8537196e84ee7a6ccc1b8d2c5e9dd3124ed44b47`;
+- H01 primary RDS:
+  `2d226a48d92eec7f419e66f4011e8294557034abb4e1a6af6c055d4a0cbc7621`;
+- H01 primary prepared-input manifest:
+  `5aa19326b2de468efb177af0d8f193253db63aade2d607f9570f5c3337e39c74`;
+- current base manifest:
+  `b6fa22836faee5243bb6ce1cc9dceab5d5403f94d688f8f74472a19dbf6e3e09`;
+- current base input bundle:
+  `168f25e18b6e494aa7a0272923041ad8249e25adb9ff3742d22e2f4cacf1bdf8`;
+- gap repair evidence manifest:
+  `81e3aa9439b88cf239d6669dc4343cfb146cd2f45790bae412ab837156315018`;
+  and
+- preanalysis manifest:
+  `f90ea36334b59821101ef36de50d5d84dcfc6e8bee23f1f918be10fb2247724e`.
+
+H01 subsequently refitted only MDER in its eight registered targets,
+reconstructed all affected complete 17-test BH vectors, verified zero
+remaining construct-impossible rows, and retained the separate material-
+inference author gate. No bootstrap was started.
+
+### Controlling construct
+
+Decision `METRIC-010` requires daily MDER to be the arithmetic mean of
+one-minute `MEDI / LIGHT` ratios for minutes where both channels are finite
+and strictly positive. A retained daily mean must therefore be strictly
+positive. A day with no viable ratios or fewer than 720 viable ratios must
+have MDER missing. The decision explicitly scopes both the primary and the
+gap-timing-unaware preparation.
+
+### Exact contradiction
+
+The current gap-timing-unaware H01 artifact retains the following value:
+
+| Placement | Site | Participant | Local date | MDER | Affected H01 frames |
+|---|---|---|---|---:|---|
+| Chest | THUAS | THUAS_S002 | 2025-03-09 | 0 | all available; paired/common sample |
+
+The zero occurs at full double precision, not only after display rounding.
+It is present in:
+
+- `artifacts/06_model_data/scenarios/manuscript_prepared_data/participant_day_metrics.csv`
+  at the `mder_mean_of_viable_ratios` row for this participant-day;
+- `artifacts/06_model_data/H01/scenarios/manuscript_prepared_data/H01.rds`;
+  and
+- both isolated H01 gap-timing-unaware chest model frames.
+
+The H01-owned evidence is
+`audit/hypotheses/H01/mder_METRIC-010/author_gate/H01_METRIC-010_construct_impossible_gap_rows.csv`.
+The current shared source CSV has SHA-256
+`9f0469c29faccb157cace577201f4cbd1185a866dd7a2cbe2681fa93859e07d3`;
+the H01 gap RDS has SHA-256
+`93eaceee5008ee54ebae9977782048470dce30bb8f0515db83ad77e92a496a92`.
+
+The primary H01 MDER model frames contain no non-positive retained values.
+This request concerns the gap-timing-unaware comparator, not the verified
+primary METRIC-010 values.
+
+### Requested shared repair
+
+1. Reconstruct this gap-timing-unaware participant-day under the exact
+   METRIC-010 positive-pair and 720-minute rules.
+2. If no viable positive-pair MDER can be computed, mark MDER missing for this
+   day without changing any other metric.
+3. Re-audit all gap-timing-unaware MDER values for the invariant that every
+   retained value is finite and strictly positive.
+4. Rebuild and repin the affected shared gap-timing-unaware artifacts and H01
+   prepared-data manifest; demonstrate that non-MDER cells are unchanged.
+5. Notify every MDER-dependent downstream task of the new identities and the
+   exact affected rows.
+
+### Affected downstream work
+
+The shared METRIC-010 decision identifies the full downstream set:
+
+- Preparation and Descriptives MDER displays/provenance;
+- H01;
+- H05;
+- the daily-metric H06 variant (not the frozen hourly H06 analysis); and
+- H10.
+
+H01 specifically must replace the gap-timing-unaware chest all-available and
+paired/common MDER point fits after repair, then recompute the complete
+17-test BH families. No H01 bootstrap pilot, production bootstrap, report
+update, or claim update will proceed from the current invalid gap rows.
+
+### Worker disposition at discovery
+
+The H01 worker did not edit shared preparation code, shared data, central
+ledgers, Quarto configuration, or manuscript files. The isolated primary and
+other provisional point fits remain preserved for audit, but the current
+METRIC-010 review is gated until the coordinator repairs and repins the shared
+input.
 
 ## Resolved request: pre-sleep analytical-day definition
 

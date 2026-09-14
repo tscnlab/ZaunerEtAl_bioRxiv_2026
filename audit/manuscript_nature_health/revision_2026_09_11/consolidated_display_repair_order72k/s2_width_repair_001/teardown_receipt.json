@@ -1,0 +1,36 @@
+{
+  "server_pid": 40429,
+  "host": "127.0.0.1",
+  "port": 58005,
+  "verified_command": "/Users/zauner/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3 audit/manuscript_nature_health/revision_2026_09_11/consolidated_display_repair_order72k/s2_width_repair_001/restart_preview.py",
+  "pre_teardown_process_check": {
+    "permission": "require_escalated granted",
+    "command": "ps -p 40429 -o pid=,ppid=,etime=,command=",
+    "exit_code": 0,
+    "matched_exact_task_command": true
+  },
+  "shutdown": {
+    "permission": "require_escalated granted",
+    "command": "kill -INT 40429",
+    "exit_code": 0,
+    "server_recorded_end_utc": "2026-09-11T20:28:53Z"
+  },
+  "post_teardown_checks": {
+    "listener_command": "lsof -nP -iTCP:58005 -sTCP:LISTEN",
+    "listener_output": "",
+    "process_command": "ps -p 40429 -o pid=,ppid=,etime=,command=",
+    "process_output": "",
+    "task_capture_process_command": "pgrep -alf 'order72k_3ok569jd|order72k.*playwright|playwright.*order72k'",
+    "task_capture_process_output": "",
+    "process_checks_permission": "require_escalated granted",
+    "combined_process_checks_exit_code": 1,
+    "exit_interpretation": "No matching PID or task-profile process; empty outputs are expected for absence."
+  },
+  "capture_exit_code": 1,
+  "browser_teardown": "The sealed capture helper awaits browser.close() in finally; no closure error was reported. No process matched the task-specific temporary-profile pattern after capture. A browser PID was not exposed and is not asserted.",
+  "native_surfaces_opened_this_recovery": 0,
+  "native_word_qa": "Not performed; author unlock confirmation remains outstanding. No current locked-surface probe or automatic unlock was attempted.",
+  "unrelated_processes_signalled": 0,
+  "lease": "ORDER72K-VISUAL-LEASE-003",
+  "lease_state": "Released with consolidated stopped return. No task capture or preview surface remains reserved."
+}

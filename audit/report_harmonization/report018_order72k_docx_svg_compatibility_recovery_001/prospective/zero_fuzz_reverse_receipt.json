@@ -1,0 +1,21 @@
+{
+  "command": [
+    "/usr/bin/patch",
+    "--batch",
+    "--fuzz=0",
+    "--reverse",
+    "-p1",
+    "--directory",
+    "/private/tmp/order72k-svg-compat.AEdbYh/zero_fuzz_reverse",
+    "--input",
+    "/private/tmp/order72k-svg-compat.AEdbYh/forward.diff"
+  ],
+  "exit_code": 0,
+  "stdout": "patching file embed_accepted_svg_figures.py\n",
+  "stderr": "",
+  "exact_reversal": true,
+  "pre_sha256": "23cf9ee0f46fc9b79962b76c19c6bc3af03d70af6fe580e0120294c2b5b726fe",
+  "post_sha256": "75432be9c10f042b9f46a0207c8fc898db274f483fd4065ab3a823bf6416c38b",
+  "live_source_unchanged": true,
+  "reverse_sha256": "23cf9ee0f46fc9b79962b76c19c6bc3af03d70af6fe580e0120294c2b5b726fe"
+}

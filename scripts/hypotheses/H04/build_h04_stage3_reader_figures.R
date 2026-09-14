@@ -64,10 +64,10 @@ save_reader(
       "H04_reader_heterogeneity_category_figure.csv"
     ),
     mean_title = "Heterogeneity-model standardized one-hour melEDI",
-    ratio_title = "Heterogeneity-model ratios versus At home",
+    ratio_title = "Activity-by-site ratios versus At home",
     caption_extra = paste(
-      "The five named categories come from the site-heterogeneity model.",
-      "Other/unspecified activity is an additive-model display-only estimate."
+      "The five named categories come from the activity-by-site interaction model.",
+      "Other is an additive-model display-only estimate."
     )
   ),
   "H04_reader_heterogeneity_category_estimates",

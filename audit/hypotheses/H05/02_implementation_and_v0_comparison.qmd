@@ -101,6 +101,39 @@ v0_to_new <- read_h05(
 diagnostic_plot_data <- read_h05(
   "11_source_data", "H05", "H05_primary_diagnostic_plot_data.csv"
 )
+mder_upper_tail <- read_h05(
+  "08_diagnostics", "H05", "H05_mder_metric010_upper_tail_summary.csv"
+)
+mder_influence <- read_h05(
+  "08_diagnostics", "H05", "H05_mder_metric010_influence_refits.csv"
+)
+mder_gap_influence <- read_h05(
+  "08_diagnostics", "H05",
+  "H05_mder_metric010_gap_influence_refits.csv"
+)
+mder_gap_paired <- read_h05(
+  "09_tables", "H05",
+  "H05_mder_metric010_gap_paired_placement_comparison.csv"
+)
+mder_reconciliation <- read_h05(
+  "12_manifests", "H05", "H05_metric010_reconciliation.csv"
+)
+mder_gap_reconciliation <- read_h05(
+  "12_manifests", "H05",
+  "H05_metric010_gap_reseal_reconciliation.csv"
+)
+l10_reconciliation <- read_h05(
+  "12_manifests", "H05", "H05_metric011_reconciliation.csv"
+)
+l10_frame_audit <- read_h05(
+  "12_manifests", "H05", "H05_metric011_primary_l10_frame_audit.csv"
+)
+l10_bh_audit <- read_h05(
+  "12_manifests", "H05", "H05_metric011_bh_change_audit.csv"
+)
+l10_result_change <- read_h05(
+  "12_manifests", "H05", "H05_metric011_l10_result_change_audit.csv"
+)
 
 primary <- master |>
   dplyr::filter(.data$run_id == "main__glasses__all_available")
@@ -122,6 +155,18 @@ dose_f2 <- primary |>
     .data$metric_id == "dose_time_sensitive_corrected_medi",
     .data$factor_id == "leba_f2"
   )
+mder_id <- "mder_mean_of_viable_ratios"
+mder_primary <- primary |>
+  dplyr::filter(.data$metric_id == mder_id)
+mder_chest <- chest |>
+  dplyr::filter(.data$metric_id == mder_id)
+mder_all_runs <- master |>
+  dplyr::filter(.data$metric_id == mder_id)
+l10_id <- "l10_mean_medi"
+l10_primary <- primary |>
+  dplyr::filter(.data$metric_id == l10_id)
+l10_chest <- chest |>
+  dplyr::filter(.data$metric_id == l10_id)
 
 format_p <- function(value) {
   nh_format_p_value(value)
@@ -224,7 +269,43 @@ stopifnot(
   all(family_audit$registry_rows == 68L),
   all(family_audit$vector_bh_verified),
   sum(primary$p_adjusted <= 0.05) == 0L,
-  sum(primary$model_adequacy == "not_acceptable") == 0L
+  sum(primary$model_adequacy == "not_acceptable") == 0L,
+  nrow(mder_primary) == 4L,
+  nrow(mder_chest) == 4L,
+  nrow(mder_all_runs) == 32L,
+  nrow(mder_upper_tail) == 8L,
+  nrow(mder_influence) == 44L,
+  all(mder_influence$refit_status == "PASS"),
+  sum(mder_influence$sensitivity_interval_contains_zero) == 40L,
+  all(
+    mder_influence$sensitivity_interval_contains_zero[
+      mder_influence$run_id == "main__chest__all_available"
+    ]
+  ),
+  nrow(mder_gap_influence) == 44L,
+  all(mder_gap_influence$refit_status == "PASS"),
+  sum(mder_gap_influence$sensitivity_interval_contains_zero) == 40L,
+  nrow(mder_gap_paired) == 4L,
+  all(mder_gap_paired$exact_sample_match),
+  all(mder_gap_paired$sign_concordant),
+  all(mder_gap_paired$component_intervals_overlap),
+  nrow(mder_reconciliation) == 20L,
+  all(mder_reconciliation$invariant_verified),
+  nrow(mder_gap_reconciliation) == 16L,
+  all(mder_gap_reconciliation$invariant_verified),
+  nrow(l10_primary) == 4L,
+  nrow(l10_chest) == 4L,
+  nrow(l10_reconciliation) == 22L,
+  all(l10_reconciliation$invariant_verified),
+  nrow(l10_frame_audit) == 4L,
+  sum(l10_frame_audit$changed_l10_cells) == 16L,
+  all(l10_frame_audit$non_value_fields_identical),
+  nrow(l10_bh_audit) == 204L,
+  sum(l10_bh_audit$raw_p_changed) == 7L,
+  sum(l10_bh_audit$adjusted_p_changed) == 2L,
+  sum(l10_bh_audit$family_rank_changed) == 0L,
+  nrow(l10_result_change) == 16L,
+  !any(l10_result_change$bh_retained_after, na.rm = TRUE)
 )
 ```
 
@@ -269,6 +350,288 @@ duration model is acceptable. The dose model is acceptable with an ordinary
 Gaussian residual warning. Both directions are stable in the registered
 random-site, leave-one-site-out, paired-placement, and
   gap-timing-unaware dataset.
+
+## METRIC-010 bounded MDER amendment
+
+The author-approved MDER estimand is now the arithmetic mean of viable
+one-minute MEDI/LIGHT ratios. A minute is viable only when both channels are
+finite and strictly positive. The channels are placed on a complete
+1,440-minute local wall-clock grid; fall-back duplicate local minutes are
+averaged channel-wise before forming the ratio and spring-forward absent
+minutes remain missing. MDER is retained with at least 720 viable minute
+ratios. It is not weighted by a time profile and is not a ratio of daily
+integrals.
+
+Only the 32 MDER model cells across the eight accepted H05 run scenarios were
+rebuilt. The three complete 68-test BH vectors were then recalculated from the
+unchanged 64 non-MDER raw p-values plus the four current MDER p-values in each
+inferential family. The other 16 metric frames, model objects, estimates,
+intervals, raw tests, diagnostics, and sensitivities remain byte- or
+value-identical as applicable. The 20-row reconciliation record verifies each
+preservation boundary.
+
+```{r}
+#| label: metric010-primary-table
+
+dplyr::bind_rows(
+  mder_primary |> dplyr::mutate(Placement = "Primary near eye"),
+  mder_chest |> dplyr::mutate(Placement = "Complementary chest")
+) |>
+  dplyr::rowwise() |>
+  dplyr::mutate(
+    Factor = toupper(sub("leba_", "", .data$factor_id)),
+    `MDER difference per LEBA SD (95% CI)` = format_effect(
+      .data$estimate_practical_per_sd,
+      .data$conf_low_practical_per_sd,
+      .data$conf_high_practical_per_sd,
+      .data$effect_type
+    ),
+    `Raw p` = format_p_cell(.data$p_raw, FALSE),
+    `BH-adjusted p` = format_p_cell(
+      .data$p_adjusted,
+      .data$p_adjusted <= 0.05
+    ),
+    `Exact fitted sample` = paste0(
+      .data$participants, " participants; ",
+      .data$participant_days, " participant-days; ",
+      .data$sites, " sites"
+    )
+  ) |>
+  dplyr::ungroup() |>
+  dplyr::select(
+    .data$Placement, .data$Factor,
+    .data$`MDER difference per LEBA SD (95% CI)`,
+    .data$`Raw p`, .data$`BH-adjusted p`, .data$`Exact fitted sample`
+  ) |>
+  gt::gt(groupname_col = "Placement", rowname_col = "Factor") |>
+  gt::fmt_markdown(columns = c(`Raw p`, `BH-adjusted p`)) |>
+  gt::tab_source_note(
+    "Each placement uses its separately declared complete 68-test BH family."
+  ) |>
+  gt::tab_options(table.font.size = gt::px(11))
+```
+
+The primary near-eye MDER sample contains 702 participant-days from 137
+participants at nine sites; the complementary chest sample contains 732
+participant-days from 152 participants at eight sites. No MDER association is
+BH-retained. The current primary near-eye F5 interval excludes zero before
+multiplicity adjustment, but its Raw *p* =
+`r format_p(mder_primary$p_raw[mder_primary$factor_id == "leba_f5"])` and
+BH-adjusted *p* =
+`r format_p(mder_primary$p_adjusted[mder_primary$factor_id == "leba_f5"])`
+do not support a multiplicity-retained claim.
+
+The accepted common-sample comparison contains 489 matched participant-days
+from 107 participants at eight sites for MDER; all four near-eye and chest
+directions agree and component 95% confidence intervals overlap. The
+gap-timing-unaware all-available MDER samples contain 687 near-eye
+participant-days from 137 participants and 723 chest participant-days from
+152 participants. Its exact paired/common comparison contains 478 days from
+107 participants at eight sites. Its near-eye 68-test family retains zero MDER
+associations; all four near-eye directions agree with the primary analysis,
+and all four paired near-eye and chest directions agree with overlapping
+component confidence intervals.
+
+```{r}
+#| label: metric010-upper-tail-table
+
+mder_upper_tail |>
+  dplyr::filter(
+    .data$run_id %in% c(
+      "main__glasses__all_available",
+      "main__chest__all_available"
+    )
+  ) |>
+  dplyr::transmute(
+    Placement = dplyr::recode(
+      .data$placement,
+      glasses = "Near eye",
+      chest = "Chest"
+    ),
+    Observations = .data$observations,
+    Participants = .data$participants,
+    Median = .data$median,
+    `Outer fence` = .data$tukey_outer_fence,
+    Maximum = .data$maximum,
+    `Days above outer fence` = .data$outer_tail_days
+  ) |>
+  audit_gt(
+    "Current-estimand MDER upper-tail screen",
+    "Tukey Q3 + 3 × IQR identifies candidate influence cases; it is not an exclusion rule"
+  ) |>
+  gt::fmt_integer(
+    columns = c(Observations, Participants, `Days above outer fence`)
+  ) |>
+  gt::fmt_number(columns = c(Median, `Outer fence`, Maximum), decimals = 3)
+```
+
+One near-eye day and three chest days exceed the current-estimand outer fence.
+The maximum is 1.857 near eye and 3.574 at the chest. Candidate day- and
+participant-deletion refits changed the four near-eye coefficients by at most
+0.234 full-model standard errors, without sign reversal. At the chest, the
+maximum changes for F2 and F4 were 0.823 and 0.828 standard errors; the very
+small F2 coefficient reversed direction in one deletion. All 44 influence
+refits passed. All chest sensitivity intervals contain zero; the four
+near-eye F5 deletion intervals remain below zero, as does its unadjusted
+primary interval. The complementary chest MDER coefficients are therefore
+upper-tail-sensitive, while the F5 near-eye direction is stable to these
+deletions. Neither pattern is multiplicity-retained, so the family-wide
+conclusion does not change.
+
+The repaired gap-timing-unaware all-available MDER branch underwent the same
+bounded upper-tail and deletion-influence assessment. All 44 refits passed;
+40 sensitivity intervals contained zero. The four near-eye coefficients
+changed by at most 0.233 full-model standard errors without reversing
+direction. At the chest, the maximum changes were 0.823 standard errors for F2
+and 0.841 for F4; the very small F2 coefficient reversed direction in two
+deletions, and every chest interval contained zero. These diagnostics qualify
+the complementary chest magnitudes but do not alter the zero-retained H05-F3
+conclusion.
+
+```{r}
+#| label: metric010-reconciliation-table
+
+mder_reconciliation |>
+  dplyr::transmute(
+    Artifact = .data$artifact_id,
+    `Invariant scope` = .data$invariant_scope,
+    `Non-MDER rows or objects` = .data$non_mder_rows,
+    Verified = .data$invariant_verified
+  ) |>
+  audit_gt(
+    "METRIC-010 preservation reconciliation",
+    "Non-MDER raw scientific content remains frozen; only complete-family BH-derived fields may change"
+  ) |>
+  gt::fmt_integer(columns = `Non-MDER rows or objects`)
+```
+
+```{r}
+#| label: metric010-gap-reseal-table
+
+mder_gap_reconciliation |>
+  dplyr::transmute(
+    Check = .data$check_id,
+    Scope = .data$scope,
+    `Allowed change` = .data$allowed_change,
+    `Changed rows` = .data$changed_rows,
+    Verified = .data$invariant_verified
+  ) |>
+  audit_gt(
+    "Repaired gap-timing-unaware MDER reseal",
+    paste0(
+      "Only four gap MDER frames and four H05-F3 MDER bundles were replaced; ",
+      "27 non-MDER adjusted p-values and 26 ranks changed as BH derivatives"
+    )
+  ) |>
+  gt::fmt_integer(columns = `Changed rows`)
+```
+
+The former profile-support and preselected anomalous-device-day batteries were
+defined for a different MDER estimand and were not imported into this
+amendment. The current-estimand upper-tail and influence checks above replace
+those non-transferable obligations. No full 17-metric rerun, bootstrap, or
+simulation was performed.
+
+## METRIC-011 bounded L10-mean amendment
+
+The approved numerical-zero rule is applied before modelling to offset
+geometric means such as darkest-10-hour mean melEDI. A back-transformed value
+within the unit-aware floating-point tolerance is set to exact zero only when
+every finite source minute in that window is exactly zero. Missing minutes
+remain missing and are never imputed as zero. For the affected L10 windows the
+tolerance is (2.220446049250313\times10^{-14}) lx.
+
+The shared rebuild changed eight primary L10-mean cells from
+(4.163336342344337\times10^{-17}) lx to exact zero: three near-eye and five
+chest participant-days. Because every changed day belongs to both its
+all-available and paired/common sample, four primary L10 frames and 16
+factor-model cells were rebuilt. The registered random-site sensitivities and
+near-eye leave-one-site-out analyses for those cells were also refit. Fitted
+sample sizes did not change. The gap-timing-unaware L10 frames already
+contained exact zeros and were repinned without a model refit.
+
+```{r}
+#| label: metric011-l10-results-table
+#| tbl-cap: "L10-mean results after numerical-zero normalization."
+
+dplyr::bind_rows(
+  l10_primary |> dplyr::mutate(Placement = "Primary near eye"),
+  l10_chest |> dplyr::mutate(Placement = "Complementary chest")
+) |>
+  dplyr::rowwise() |>
+  dplyr::mutate(
+    Factor = toupper(sub("leba_", "", .data$factor_id)),
+    `Ratio per LEBA SD (95% CI)` = format_effect(
+      .data$estimate_practical_per_sd,
+      .data$conf_low_practical_per_sd,
+      .data$conf_high_practical_per_sd,
+      .data$effect_type
+    ),
+    `Raw p` = format_p_cell(.data$p_raw, FALSE),
+    `BH-adjusted p` = format_p_cell(
+      .data$p_adjusted,
+      .data$p_adjusted <= 0.05
+    ),
+    `Exact fitted sample` = paste0(
+      .data$participants, " participants; ",
+      .data$participant_days, " participant-days; ",
+      .data$sites, " sites"
+    )
+  ) |>
+  dplyr::ungroup() |>
+  dplyr::select(
+    .data$Placement,
+    .data$Factor,
+    .data$`Ratio per LEBA SD (95% CI)`,
+    .data$`Raw p`,
+    .data$`BH-adjusted p`,
+    .data$`Exact fitted sample`
+  ) |>
+  gt::gt(groupname_col = "Placement", rowname_col = "Factor") |>
+  gt::fmt_markdown(columns = c(`Raw p`, `BH-adjusted p`)) |>
+  gt::tab_source_note(
+    "Each placement uses its separately declared complete 68-test BH family."
+  ) |>
+  gt::tab_options(table.font.size = gt::px(11))
+```
+
+Across the 16 rebuilt primary L10 cells, the largest absolute coefficient
+change was
+`r format(max(abs(l10_result_change$estimate_change_per_point)), scientific = TRUE, digits = 3)`
+on the model scale per LEBA point. Seven of the eight inferential raw p-values
+changed at full precision; two primary-family adjusted p-values changed below
+the required three-decimal display precision, and no family rank changed. The
+near-eye L10 diagnostics remain acceptable with specified Gaussian
+limitations; the chest and paired/common L10 diagnostics retain their stronger
+Gaussian-misfit warnings. No L10 association is BH-retained, and all three
+complete 68-test families still retain zero associations.
+
+```{r}
+#| label: metric011-preservation-table
+#| tbl-cap: "METRIC-011 frozen-result reconciliation."
+
+l10_reconciliation |>
+  dplyr::transmute(
+    Artifact = .data$artifact_id,
+    `Invariant scope` = .data$invariant_scope,
+    `Frozen rows or objects` = .data$frozen_rows,
+    Verified = .data$invariant_verified
+  ) |>
+  audit_gt(
+    "METRIC-011 preservation reconciliation",
+    paste0(
+      "All non-L10 fits and all gap-timing-unaware L10 fits remain frozen; ",
+      "only complete-family BH-derived fields may update"
+    )
+  ) |>
+  gt::fmt_integer(columns = `Frozen rows or objects`)
+```
+
+The 22 reconciliation checks cover every result table plus the stored model
+frames and inferential bundles. They confirm that all 16 non-L10 fits and all
+accepted MDER outputs remain frozen apart from any mathematically dependent
+BH display fields. No full 17-metric rerun, bootstrap, simulation, or other
+resampling was performed.
 
 ## Author decisions implemented
 
@@ -364,6 +727,34 @@ R_LIBS=renv/library/macos/R-4.6/aarch64-apple-darwin23 \
 NATHEALTH_PROJECT_ROOT=<project-root> \
 H05_STAGE=fit H05_RUN_LOO=true \
 Rscript --vanilla scripts/hypotheses/H05/run_h05_stage2.R
+```
+
+The later METRIC-010 amendment used the bounded H05 updater below. It refits
+only MDER and stops if any non-MDER scientific field or stored object changes.
+
+```text
+R_LIBS=renv/library/macos/R-4.6/aarch64-apple-darwin23 \
+NATHEALTH_PROJECT_ROOT=<project-root> \
+Rscript --vanilla scripts/hypotheses/H05/refresh_h05_mder_metric010.R
+```
+
+After the shared gap-timing-unaware reconstruction was repaired, the following
+bounded reseal refit only its four MDER runs (16 factor-model cells), rebuilt
+the exact matched comparison, and recomputed only the H05-F3 BH-derived fields.
+
+```text
+NATHEALTH_PROJECT_ROOT=<project-root> \
+Rscript --vanilla scripts/hypotheses/H05/reseal_h05_gap_mder_metric010.R
+```
+
+The METRIC-011 reseal then rebuilt only the four primary L10 frames, 16 core
+factor-model cells, eight registered random-site sensitivities, and 36
+near-eye leave-one-site-out refits. It stopped unless every non-L10 fit and
+every gap-timing-unaware L10 fit retained its accepted identity.
+
+```text
+NATHEALTH_PROJECT_ROOT=<project-root> \
+Rscript --vanilla scripts/hypotheses/H05/reseal_h05_l10_metric011.R
 ```
 
 ### LEBA and model-frame contract
@@ -841,8 +1232,8 @@ random_site |>
 ### Leave one site out
 
 All 612 primary leave-one-site-out refits pass fit checks. Across all 68
-associations, 21 meet the conservative stable classification, 27 preserve
-direction but change magnitude by more than 50%, and 20 change sign in at
+associations, 20 meet the conservative stable classification, 27 preserve
+direction but change magnitude by more than 50%, and 21 change sign in at
 least one omitted-site refit. Most sign changes concern weak, null-compatible
 effects. Both leading F2 results preserve direction in all nine omissions;
 their maximum relative changes are 22.8% and 22.9%.
@@ -873,7 +1264,7 @@ loo_summary |>
 
 Fifty-nine of 68 paired/common cells preserve direction and have overlapping
 near-eye and chest component intervals; nine change direction. The exact
-matched samples contain 110--112 participants and 505--643 participant-days
+matched samples contain 107--112 participants and 489--643 participant-days
 across eight sites for participant-day metrics; IS and IV use the same 112
 participant rows at eight sites. Both
 leading F2 estimates are concordant between placements. A valid interval for
@@ -883,8 +1274,8 @@ than approximated as independent.
 
 ```{r}
 #| label: paired-figure
-#| fig-cap: "Exact common-sample model-scale effects with near eye on x and chest on y. The dashed 45-degree identity line describes concordance, grey lines mark the null, and equal x/y geometry is used. Samples contain 110–112 participants, 505–643 matched participant-days, and eight sites; IS and IV use 112 participant rows. Closeness to identity is not evidence of equivalence."
-#| fig-alt: "Four equal-axis scatterplot panels compare 17 matched near-eye and chest estimands for each LEBA factor. Near eye is horizontal, chest is vertical, a dashed identity line and horizontal and vertical null lines are visible, and nine points cross an axis. The exact matched samples contain 110 to 112 participants, 505 to 643 participant-days, and eight sites; IS and IV use 112 participant rows."
+#| fig-cap: "Exact common-sample model-scale effects with near eye on x and chest on y. The dashed 45-degree identity line describes concordance, grey lines mark the null, and equal x/y geometry is used. Samples contain 107–112 participants, 489–643 matched participant-days, and eight sites; IS and IV use 112 participant rows. Closeness to identity is not evidence of equivalence."
+#| fig-alt: "Four equal-axis scatterplot panels compare 17 matched near-eye and chest estimands for each LEBA factor. Near eye is horizontal, chest is vertical, a dashed identity line and horizontal and vertical null lines are visible, and nine points cross an axis. The exact matched samples contain 107 to 112 participants, 489 to 643 participant-days, and eight sites; IS and IV use 112 participant rows."
 
 knitr::include_graphics(artifact(
   "10_figures", "H05", "H05_paired_placement_effects.png"
@@ -1012,10 +1403,13 @@ tibble::tribble(
   "Deferred",
   "Alternative prepared inputs are not present in the frozen H05 model-data package",
   "Could refine robustness, but cannot create an undeclared primary screen",
-  "All-zero-inclusive and MDER/state-support threshold batteries",
-  "Deferred",
-  "Require upstream scenario production and are computationally broader",
-  "No primary association is multiplicity-retained",
+  "Former MDER profile-support and preselected device-day batteries",
+  "Superseded for current MDER",
+  paste0(
+    "They were defined for a different estimand; the current mean-of-viable-",
+    "ratios upper-tail and influence checks are complete"
+  ),
+  "No full 17-metric rerun or additional production computation is required",
   "Alternative response-family fits",
   "Not repeated",
   paste0(
@@ -1083,11 +1477,13 @@ or claim.
 
 ## Reproducibility checks
 
-The independent clean-session test verifies 544 fixed-site cells, three
-complete 68-test families, identical full/reduced frames, 204 stored
-inferential model bundles, 612 successful primary leave-one-site-out refits,
-four exactly-identified longest-bout fits, exact paired IS/IV support, all V0
-flag counts and coefficients, and all required figures.
+The independent clean-session test verifies the complete 544-cell artifact
+structure, three 68-test families, identical full/reduced frames, 204 stored
+inferential model bundles, and all sensitivity and display contracts. Its
+METRIC-011 checks additionally verify the eight approved source-cell changes,
+four rebuilt primary L10 frames, 16 updated L10 result cells, 22 frozen-result
+reconciliations, unchanged samples, zero gap L10 refits, zero non-L10 refits,
+and zero BH-retained associations in every family.
 
 ```text
 R_LIBS=renv/library/macos/R-4.6/aarch64-apple-darwin23 \

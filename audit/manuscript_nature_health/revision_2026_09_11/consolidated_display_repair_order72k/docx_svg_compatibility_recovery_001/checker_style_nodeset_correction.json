@@ -1,0 +1,13 @@
+{
+  "failed_checker": "verify_document_verified.R",
+  "execution": {
+    "chunk_id": "6289c9",
+    "wall_time_seconds": 0.141006041,
+    "exit_code": 1,
+    "original_token_count": 42,
+    "output": "Error in xml_nodeset(NextMethod()) : \n  Expecting an external pointer: [type=NULL]\nCalls: attr_ns -> <Anonymous> -> [ -> [.xml_nodeset -> xml_nodeset\nExecution halted\n"
+  },
+  "cause": "Styles without w:name generated NA entries in a logical xml_nodeset subscript. xml2 rejects that subscript.",
+  "exact_correction": "style_nodes[which(tolower(style_names) == \"heading 1\")]",
+  "test_preserved": "The single named heading 1 style must still resolve exactly. No document or helper mutation. New verification output prefix final_."
+}

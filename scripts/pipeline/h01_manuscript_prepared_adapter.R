@@ -196,16 +196,17 @@ h01_manuscript_prepared_contract <- function(
   validate_h01_metric_contract(scenario_contract)
   expected_variants <- c(
     dose_time_sensitive_corrected_medi = "Uncorrected manuscript-prepared dose",
-    mder_ratio_of_integrals = "Mean of epoch-wise melEDI/illuminance ratios"
+    mder_mean_of_viable_ratios =
+      "Gap-timing-unaware mean of viable one-minute melEDI/illuminance ratios"
   )
   expected_definitions <- c(
     dose_time_sensitive_corrected_medi = paste(
       "Manuscript-prepared melEDI dose without the new",
       "time-sensitive coverage correction"
     ),
-    mder_ratio_of_integrals = paste(
-      "Manuscript-prepared mean of epoch-wise MEDI/LIGHT ratios,",
-      "not the new ratio of integrals"
+    mder_mean_of_viable_ratios = paste(
+      "Gap-timing-unaware arithmetic mean of viable positive finite",
+      "one-minute melEDI/illuminance ratios"
     )
   )
   observed_variants <- stats::setNames(

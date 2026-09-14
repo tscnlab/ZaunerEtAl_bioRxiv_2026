@@ -2,10 +2,29 @@
 
 descriptive_required_packages <- function() {
   c(
-    "dplyr", "tidyr", "readr", "ggplot2", "patchwork", "ragg",
-    "svglite", "scales", "gt", "knitr", "rnaturalearth", "sf",
-    "rvest", "openssl", "forcats", "lubridate", "ggridges", "cowplot",
-    "ggtext", "png", "legendry", "ggrepel", "LightLogR"
+    "dplyr",
+    "tidyr",
+    "readr",
+    "ggplot2",
+    "patchwork",
+    "ragg",
+    "svglite",
+    "scales",
+    "gt",
+    "knitr",
+    "rnaturalearth",
+    "sf",
+    "rvest",
+    "openssl",
+    "forcats",
+    "lubridate",
+    "ggridges",
+    "cowplot",
+    "ggtext",
+    "png",
+    "legendry",
+    "ggrepel",
+    "LightLogR"
   )
 }
 
@@ -25,15 +44,24 @@ check_descriptive_packages <- function() {
 descriptive_expected_manifests <- function(root) {
   data.frame(
     manifest_id = c(
-      "import_alignment", "coverage", "reference_profiles",
-      "state_intervals", "state_support_gate", "mder_support_gate",
-      "metric_artifacts", "base_model_data", "normalized_inputs",
-      "site_solar_context", "preanalysis_comparison",
-      "prepared_day_showcase"
+      "import_alignment",
+      "coverage",
+      "reference_profiles",
+      "state_intervals",
+      "state_support_gate",
+      "mder_support_gate",
+      "metric_artifacts",
+      "base_model_data",
+      "normalized_inputs",
+      "site_solar_context",
+      "preanalysis_comparison",
+      "prepared_day_showcase",
+      "manuscript_prepared_data"
     ),
     path = file.path(
       root,
-      "artifacts", "12_manifests",
+      "artifacts",
+      "12_manifests",
       c(
         "import_alignment_artifacts.csv",
         "coverage_artifacts.csv",
@@ -46,7 +74,8 @@ descriptive_expected_manifests <- function(root) {
         "model_input_normalization.csv",
         "site_solar_context_artifacts.csv",
         "preanalysis_comparison_artifacts.csv",
-        "prepared_day_showcase_artifacts.csv"
+        "prepared_day_showcase_artifacts.csv",
+        "manuscript_prepared_data_artifacts.csv"
       )
     ),
     expected_sha256 = c(
@@ -56,12 +85,13 @@ descriptive_expected_manifests <- function(root) {
       "216392d001ac92a3f7313200bae0354b21315a70d7017309d022fb4d1fc6903a",
       "755508076e42ed74ce0d40f48de192b69ea81b04532db2d5a950c451236e2619",
       "9ca9b97dac5efd9ec4e7b43a1fb2227b7a13cf98ac4b92318606c4874f9e460b",
-      "6ec3185620d921e1f81b8464e850249613deb823988187d58794b3471303f4e8",
-      "142d1044dd7e6a566e45e3a5c56033b1e8251e100c0d7c7523564c824950a0e4",
+      "028bce108339c1277df4a070597430ea20b49c34c2888f4eef42741c1fe76a5e",
+      "8344bdc0339a53079bf9eeb7d86de1ad7c15373641c3a0a5a01d040b418895ce",
       "e3d484711abb54f69d63ff302e5a0329efda3fd0a8c85feaf9cc4f850005c9ab",
-      "e641560c444259cbe03606e30ebd2abc1d3d048052303e421f462255e8387fbe",
-      "1119940d2c564f464d7fd09e37b65c1815d0e6f22e5c6051f682eab22c6a97dd",
-      "c5ca66b2a6ec4fabbe57d08135db7f365bcd123365caab6c987bcb2b62f7a322"
+      "c0c6d7f97782c0d880a213050f576213f5d56b3204a02732f6399e7e4aeb8518",
+      "f3c4bfbf120d2023c045b44e3c7c04c58bce1f8d11621956bca1e5ede90c5623",
+      "c5ca66b2a6ec4fabbe57d08135db7f365bcd123365caab6c987bcb2b62f7a322",
+      "4ed62fbe58de65a6d05d8cfc6b5d870d7c74a3c83fe89bcd72bd1dd838698935"
     ),
     stringsAsFactors = FALSE
   )
@@ -74,7 +104,10 @@ descriptive_paths <- function(root) {
     table_dir = file.path(root, "artifacts", "09_tables", "descriptives"),
     figure_dir = file.path(root, "artifacts", "10_figures", "descriptives"),
     diagnostic_dir = file.path(
-      root, "artifacts", "08_diagnostics", "descriptives"
+      root,
+      "artifacts",
+      "08_diagnostics",
+      "descriptives"
     ),
     source_dir = file.path(root, "artifacts", "11_source_data", "descriptives"),
     manifest_dir = file.path(root, "artifacts", "12_manifests", "descriptives"),
@@ -86,8 +119,14 @@ descriptive_paths <- function(root) {
 
 ensure_descriptive_directories <- function(paths) {
   directories <- unname(unlist(paths[c(
-    "table_dir", "figure_dir", "diagnostic_dir", "source_dir", "manifest_dir",
-    "audit_dir", "handoff_dir", "test_dir"
+    "table_dir",
+    "figure_dir",
+    "diagnostic_dir",
+    "source_dir",
+    "manifest_dir",
+    "audit_dir",
+    "handoff_dir",
+    "test_dir"
   )]))
   invisible(vapply(
     directories,
@@ -104,8 +143,7 @@ gap_timing_unaware_near_eye_contract <- function(root) {
     reader_label = "Gap-timing-unaware near-eye dataset",
     path = file.path(root, "data", "metrics_separate_glasses.RData"),
     object = "metric_glasses_participanthour",
-    expected_sha256 =
-      "f4b8ddfdbd4ee2e577957ed6a89f65a7b44581bba916e786147dcd40c94a234b",
+    expected_sha256 = "f4b8ddfdbd4ee2e577957ed6a89f65a7b44581bba916e786147dcd40c94a234b",
     aggregation = "Stored floor-aligned 30-minute arithmetic mean",
     stringsAsFactors = FALSE
   )
@@ -113,7 +151,10 @@ gap_timing_unaware_near_eye_contract <- function(root) {
 
 write_descriptive_change_request <- function(root, checks, message) {
   path <- file.path(
-    root, "audit", "handoffs", "descriptives_shared_change_request.md"
+    root,
+    "audit",
+    "handoffs",
+    "descriptives_shared_change_request.md"
   )
   dir.create(dirname(path), recursive = TRUE, showWarnings = FALSE)
   lines <- c(
@@ -129,8 +170,15 @@ write_descriptive_change_request <- function(root, checks, message) {
     "|---|---|---|---|",
     apply(checks, 1L, function(row) {
       paste0(
-        "| ", row[["manifest_id"]], " | `", row[["expected_sha256"]],
-        "` | `", row[["observed_sha256"]], "` | ", row[["status"]], " |"
+        "| ",
+        row[["manifest_id"]],
+        " | `",
+        row[["expected_sha256"]],
+        "` | `",
+        row[["observed_sha256"]],
+        "` | ",
+        row[["status"]],
+        " |"
       )
     }),
     "",
@@ -168,7 +216,8 @@ verify_descriptive_manifests <- function(root) {
       "At least one required shared manifest is missing or has changed."
     )
     stop(
-      "Shared manifest verification failed. See ", request,
+      "Shared manifest verification failed. See ",
+      request,
       call. = FALSE
     )
   }
@@ -178,7 +227,9 @@ verify_descriptive_manifests <- function(root) {
     expected$path,
     function(path) {
       normalized_path <- normalizePath(
-        path, winslash = "/", mustWork = FALSE
+        path,
+        winslash = "/",
+        mustWork = FALSE
       )
       if (startsWith(normalized_path, root_prefix)) {
         substring(normalized_path, nchar(root_prefix) + 1L)
@@ -194,16 +245,28 @@ verify_descriptive_manifests <- function(root) {
 descriptive_input_spec <- function(root) {
   data.frame(
     input_id = c(
-      "near_eye_coverage", "chest_coverage",
-      "near_eye_daily_coverage", "chest_daily_coverage",
-      "near_eye_30_minute_metrics", "chest_30_minute_metrics",
-      "near_eye_one_hour_metrics", "chest_one_hour_metrics",
-      "near_eye_metric_values_long", "chest_metric_values_long",
-      "near_eye_participant_day_metrics", "chest_participant_day_metrics",
-      "near_eye_participant_metrics", "chest_participant_metrics",
-      "normalized_demographics", "normalized_chronotype",
-      "normalized_sleepdiaries", "site_solar_context",
-      "prepared_day_showcase", "selected_showcase_days"
+      "near_eye_coverage",
+      "chest_coverage",
+      "near_eye_daily_coverage",
+      "chest_daily_coverage",
+      "near_eye_30_minute_metrics",
+      "chest_30_minute_metrics",
+      "near_eye_one_hour_metrics",
+      "chest_one_hour_metrics",
+      "near_eye_metric_values_long",
+      "chest_metric_values_long",
+      "near_eye_participant_day_metrics",
+      "chest_participant_day_metrics",
+      "near_eye_participant_metrics",
+      "chest_participant_metrics",
+      "normalized_demographics",
+      "normalized_chronotype",
+      "normalized_sleepdiaries",
+      "site_solar_context",
+      "prepared_day_showcase",
+      "selected_showcase_days",
+      "gap_mder_participant_day_metrics",
+      "gap_mder_support"
     ),
     path = file.path(
       root,
@@ -227,7 +290,15 @@ descriptive_input_spec <- function(root) {
         "artifacts/06_model_data/normalized_inputs/sleepdiaries.rds",
         "artifacts/06_model_data/context/site_solar_context.rds",
         "artifacts/11_source_data/prepared_day_showcase.csv",
-        "artifacts/08_diagnostics/prepared_day_showcase/selected_days.csv"
+        "artifacts/08_diagnostics/prepared_day_showcase/selected_days.csv",
+        paste0(
+          "artifacts/06_model_data/scenarios/manuscript_prepared_data/",
+          "participant_day_metrics.rds"
+        ),
+        paste0(
+          "artifacts/06_model_data/scenarios/manuscript_prepared_data/",
+          "mder_support.rds"
+        )
       )
     ),
     manifest_id = c(
@@ -235,7 +306,8 @@ descriptive_input_spec <- function(root) {
       rep("metric_artifacts", 10L),
       rep("normalized_inputs", 3L),
       "site_solar_context",
-      rep("prepared_day_showcase", 2L)
+      rep("prepared_day_showcase", 2L),
+      rep("manuscript_prepared_data", 2L)
     ),
     stringsAsFactors = FALSE
   )
@@ -279,7 +351,9 @@ verify_descriptive_inputs <- function(root) {
     )
     indexed_paths <- manifest_artifact_paths(manifest, root)
     target <- normalizePath(
-      specs$path[[i]], winslash = "/", mustWork = FALSE
+      specs$path[[i]],
+      winslash = "/",
+      mustWork = FALSE
     )
     index <- match(target, indexed_paths)
     if (is.na(index) || !"sha256" %in% names(manifest)) {
@@ -290,7 +364,8 @@ verify_descriptive_inputs <- function(root) {
     specs$observed_sha256[[i]] <- artifact_sha256(specs$path[[i]])
     specs$status[[i]] <- if (
       identical(specs$expected_sha256[[i]], specs$observed_sha256[[i]])
-    ) "PASS" else "HASH_MISMATCH"
+    )
+      "PASS" else "HASH_MISMATCH"
   }
   if (!all(specs$status == "PASS")) {
     stop(
@@ -308,7 +383,9 @@ verify_descriptive_inputs <- function(root) {
     specs$path,
     function(path) {
       normalized_path <- normalizePath(
-        path, winslash = "/", mustWork = FALSE
+        path,
+        winslash = "/",
+        mustWork = FALSE
       )
       if (startsWith(normalized_path, root_prefix)) {
         substring(normalized_path, nchar(root_prefix) + 1L)
@@ -370,7 +447,10 @@ circular_descriptive_summary <- function(minutes, period = 1440) {
   n <- length(minutes)
   if (n == 0L) {
     return(c(
-      mean = NA_real_, q1 = NA_real_, median = NA_real_, q3 = NA_real_,
+      mean = NA_real_,
+      q1 = NA_real_,
+      median = NA_real_,
+      q3 = NA_real_,
       resultant = NA_real_
     ))
   }
@@ -384,7 +464,10 @@ circular_descriptive_summary <- function(minutes, period = 1440) {
   }
   if (!is.finite(center)) {
     return(c(
-      mean = NA_real_, q1 = NA_real_, median = NA_real_, q3 = NA_real_,
+      mean = NA_real_,
+      q1 = NA_real_,
+      median = NA_real_,
+      q3 = NA_real_,
       resultant = resultant
     ))
   }
@@ -468,8 +551,11 @@ configure_descriptive_site_display <- function(root = NULL) {
   }
   registry$display_order <- as.integer(registry$display_order)
   if (
-    !nrow(registry) || anyNA(registry) || anyDuplicated(registry$site) ||
-      anyDuplicated(registry$display_order) || anyDuplicated(registry$display_name) ||
+    !nrow(registry) ||
+      anyNA(registry) ||
+      anyDuplicated(registry$site) ||
+      anyDuplicated(registry$display_order) ||
+      anyDuplicated(registry$display_name) ||
       !identical(sort(registry$display_order), seq_len(nrow(registry))) ||
       any(!grepl("^#[[:xdigit:]]{6}$", registry$color_hex))
   ) {
@@ -479,13 +565,21 @@ configure_descriptive_site_display <- function(root = NULL) {
   rownames(registry) <- NULL
   .descriptive_site_display_cache$registry <- registry
   .descriptive_site_display_cache$path <- normalizePath(
-    path, winslash = "/", mustWork = TRUE
+    path,
+    winslash = "/",
+    mustWork = TRUE
   )
   invisible(registry)
 }
 
 descriptive_site_display_registry <- function() {
-  if (!exists("registry", envir = .descriptive_site_display_cache, inherits = FALSE)) {
+  if (
+    !exists(
+      "registry",
+      envir = .descriptive_site_display_cache,
+      inherits = FALSE
+    )
+  ) {
     configure_descriptive_site_display()
   }
   .descriptive_site_display_cache$registry
@@ -573,11 +667,14 @@ save_descriptive_pdf_from_png <- function(
     timestamp = FALSE
   )
   device_id <- grDevices::dev.cur()
-  on.exit({
-    if (device_id %in% grDevices::dev.list()) {
-      grDevices::dev.off(device_id)
-    }
-  }, add = TRUE)
+  on.exit(
+    {
+      if (device_id %in% grDevices::dev.list()) {
+        grDevices::dev.off(device_id)
+      }
+    },
+    add = TRUE
+  )
   grid::grid.newpage()
   grid::grid.raster(
     raster,
@@ -592,11 +689,15 @@ save_descriptive_pdf_from_png <- function(
 }
 
 save_descriptive_figure <- function(
-  plot, stem, width, height, dpi = 300, scale = 1
+  plot,
+  stem,
+  width,
+  height,
+  dpi = 300,
+  scale = 1
 ) {
   if (
-    length(scale) != 1L || !is.numeric(scale) || !is.finite(scale) ||
-      scale <= 0
+    length(scale) != 1L || !is.numeric(scale) || !is.finite(scale) || scale <= 0
   ) {
     stop("`scale` must be one positive finite number.", call. = FALSE)
   }
@@ -680,9 +781,12 @@ save_descriptive_a4_mockup <- function(
     background = "white"
   )
   device_id <- grDevices::dev.cur()
-  on.exit({
-    if (device_id %in% grDevices::dev.list()) grDevices::dev.off(device_id)
-  }, add = TRUE)
+  on.exit(
+    {
+      if (device_id %in% grDevices::dev.list()) grDevices::dev.off(device_id)
+    },
+    add = TRUE
+  )
   grid::grid.newpage()
   grid::grid.raster(
     raster,

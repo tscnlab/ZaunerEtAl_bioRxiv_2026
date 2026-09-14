@@ -1,0 +1,12 @@
+check,status,observed,expected,detail
+Controlling decision identity,PASS,23b9f70d1d16f7fd3ebbdbc57aaf78c0a701fe1f9d22bd667d926cd320d40797,23b9f70d1d16f7fd3ebbdbc57aaf78c0a701fe1f9d22bd667d926cd320d40797,METRIC-011 approved and implemented.
+Evidence manifest identity,PASS,a37efd3449a8d1a6065d0eb8964bd6cf8b241f1683a26c065ea1a946e23214fb,a37efd3449a8d1a6065d0eb8964bd6cf8b241f1683a26c065ea1a946e23214fb,All seven evidence members independently match their sealed hashes and byte counts.
+Current shared/base pins,PASS,10 identities,10 identities,"Decision, evidence, metric, site/context, base, bundle, two context RDS, and two enriched RDS identities verified."
+Primary scientific cell changes,PASS,"8 L10 mean cells: 3 near-eye, 5 chest",8 L10 mean cells only,Every changed value is outside the H09 metric registry.
+H09 registered L10 estimand,PASS,l10_midpoint / l10_hour,l10_midpoint / l10_hour,H09 uses midpoint timing and contains no L10 mean response.
+Stored primary L10 frames,PASS,12 frames; 9378 stored rows; maximum difference 0 h,Exact current midpoint and row-key matches,"Both MCTQ and MEQ, all-available, paired-common, and gap-common primary frames are unchanged."
+Stored scientific artifact identities,PASS,65 / 65,All identities match,"Model frames, model objects, results, diagnostics, sensitivities, figures, and source data remain byte-identical."
+Unrelated shared drift excluded,PASS,gap_timing_unaware_metrics; gap_manifest; metric_display_registry,3 non-METRIC-011 roles not repinned,The gap preparation manifest did not change under METRIC-011; older gap and current display-registry drift remain outside this bounded reseal.
+Inferential model fitting,NOT_RUN,0 fits,0 fits,Provenance-only reseal; existing 540 model objects retained.
+Diagnostics and sensitivities,NOT_RUN,0 reruns,0 reruns,Existing diagnostic and sensitivity artifacts retained.
+H09 result and claim status,PASS,scientifically unchanged,scientifically unchanged,METRIC-011 is an upstream numerical-zero normalization outside H09's scientific estimand.

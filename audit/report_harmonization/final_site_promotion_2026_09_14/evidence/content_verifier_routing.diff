@@ -1,0 +1,24 @@
+--- Accepted011 verifier
++++ Production013 verifier
+@@ -1,11 +1,11 @@
+-# Order011 exact reported-content reconciliation. No results are recomputed.
++# Order013 production exact reported-content reconciliation. No results are recomputed.
+ stopifnot(getRversion() == numeric_version("4.6.1"))
+ suppressPackageStartupMessages(library(xml2))
+ suppressPackageStartupMessages(library(digest))
+ root <- "/Users/zauner/Documents/Arbeit/12-TUM/MeLiDos/WP2.2.5_Data_Analysis/ZaunerEtAl_bioRxiv_2026"
+-out <- file.path(root, "audit/report_harmonization/final_site_integration_2026_09_14")
++out <- file.path(root, "audit/report_harmonization/final_site_promotion_2026_09_14")
+ accepted <- file.path(root, "audit/manuscript_nature_health/final_format_completion_2026_09_14/project/html_round2/ZaunerEtAl2026_NatHealth_phase3_brown.html")
+-candidate <- file.path(out, "candidate_build")
++candidate <- file.path(root, "_build/nathealth")
+ options(warn=2)
+ checks <- list()
+ check <- function(name, condition, detail="") {
+@@ -65,5 +65,5 @@
+ }
+ write.csv(do.call(rbind,checks),file.path(out,"evidence/content_reconciliation_R.csv"),row.names=FALSE)
+ capture.output(sessionInfo(),file=file.path(out,"evidence/content_R_sessionInfo.txt"))
+-writeLines(c("No scientific estimates were calculated, reinterpreted or refitted.",paste("Command: Rscript --vanilla",file.path(out,"helpers/verify_content.R")),paste("Accepted HTML:",accepted),paste("Accepted SHA256:",digest(file=accepted,algo="sha256")),paste("Candidate SHA256:",digest(file=file.path(candidate,"index.html"),algo="sha256"))),file.path(out,"evidence/content_R_provenance.txt"))
++writeLines(c("No scientific estimates were calculated, reinterpreted or refitted.",paste("Command: Rscript --vanilla",file.path(out,"helpers/verify_content.R")),paste("Accepted HTML:",accepted),paste("Accepted SHA256:",digest(file=accepted,algo="sha256")),paste("Live SHA256:",digest(file=file.path(candidate,"index.html"),algo="sha256"))),file.path(out,"evidence/content_R_provenance.txt"))
+ cat("PASS",length(checks),"exact reported-content checks in R",as.character(getRversion()),"\n")

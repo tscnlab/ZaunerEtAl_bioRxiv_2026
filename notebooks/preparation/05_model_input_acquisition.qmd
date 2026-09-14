@@ -90,6 +90,16 @@ wrap_hash <- function(value) {
   gsub("(.{8})", "\\1\u200b", value, perl = TRUE)
 }
 
+use_reader_site_names <- function(data) {
+  data |>
+    dplyr::mutate(
+      dplyr::across(
+        where(is.character),
+        ~ gsub("\\bTUM\\b", "Munich (DE)", .x, perl = TRUE)
+      )
+    )
+}
+
 modality_labels <- c(
   demographics = "Demographics",
   chronotype = "Chronotype",
@@ -689,19 +699,20 @@ verification_evidence <- tibble::tibble(
 Preparation 05 obtains the fixed questionnaire and diary files needed for
 participant characteristics, chronotype, habitual light-exposure behaviour,
 visual light sensitivity, exercise, self-reported lighting context, and
-sleep. Each site's data release is identified by its repository, complete
-commit identifier, and DOI. The result is a local, checksummed copy of every
-expected file, plus stored descriptions of each object's rows and columns.
+sleep. Each site's files come from a fixed data release. The result is a local,
+verified copy of every expected file, plus stored descriptions of each
+object's rows and columns. Exact repository, release, and file-identity details
+are collected in the technical provenance section.
 
 This step does not clean variables, calculate scores, harmonize factor levels,
 interpret timestamps, join participants to light metrics, or filter a model
-sample. Preparation 06 performs those operations from the fixed files recorded
-here. The light-exposure metrics from Preparation 04 form a separate input
-branch into Preparation 06.
+sample. [Preparation 06](06_model_ready_datasets.qmd) performs those operations
+from the fixed files recorded here. The light-exposure metrics from Preparation
+04 form a separate input branch into Preparation 06.
 
 ```{mermaid}
 flowchart LR
-  S["Nine fixed site releases<br/>and one modality-specific pin"] --> A["Preparation 05<br/>acquire and fingerprint files"]
+  S["Fixed questionnaire<br/>and diary releases"] --> A["Preparation 05<br/>acquire and verify files"]
   P1["Preparation 01<br/>nine verified sleep diaries"] --> A
   A --> L["63 local questionnaire<br/>and diary objects"]
   A --> U["Object and column audits"]
@@ -710,90 +721,14 @@ flowchart LR
   P4["Preparation 04<br/>light-exposure metrics"] --> P6
 ```
 
-::: {.callout-note title="What is calculated during this render?"}
-Rendering reads the stored registries, acquisition manifest, object audit, and
-column audit. It checks their schemas, hashes the 63 already local files,
-compares the nine sleep diaries with the Preparation 01 inventory, and
-calculates compact row and file totals. It does **not** connect to the network,
-open raw questionnaire values, run the acquisition builder or verifier,
-normalize a variable, construct a model input, or overwrite any stored
-artifact.
-:::
+## Files acquired and why
 
-## Exact inputs that fix the acquisition
-
-```{r}
-#| label: tbl-preparation05-inputs
-#| tbl-cap: "Stored registries that fix which questionnaire and diary files Preparation 05 acquires."
-
-prep_gt(
-  input_display,
-  source_note = paste(
-    "All four registries are read during rendering; none is modified."
-  )
-) |>
-  gt::fmt_markdown(columns = gt::everything()) |>
-  gt::cols_width(
-    `Stored input registry` ~ gt::pct(38),
-    `What it fixes before acquisition` ~ gt::pct(62)
-  )
-```
-
-The availability registry contains all 63 combinations of nine sites and
+The availability record contains all 63 combinations of nine sites and
 seven modalities. Its explicit grid matters because a missing download cannot
-be mistaken for an intentionally unavailable questionnaire. The registry can
+be mistaken for an intentionally unavailable questionnaire. The record can
 carry a reason for an expected absence, although no current entry is absent.
 
-## Fixed source releases by site
-
-```{r}
-#| label: tbl-site-releases
-#| tbl-cap: "Site data releases in submitted-manuscript order and colours."
-
-prep_gt(
-  site_release_display,
-  source_note = paste(
-    "Every default release uses a complete 40-character commit identifier.",
-    "The TUM exercise-diary exception is shown separately below."
-  )
-) |>
-  gt::fmt_markdown(columns = gt::everything()) |>
-  gt::cols_width(
-    Site ~ gt::pct(32),
-    `Fixed release and acquired files` ~ gt::pct(68)
-  )
-```
-
-All download addresses embed the recorded commit. None contains `/main/` or
-another moving branch label. Consequently, revisiting the same address refers
-to the same repository state rather than whatever happens to be current at a
-later date.
-
-### Corrected TUM exercise source
-
-One file deliberately uses a modality-specific commit instead of the default
-TUM release. The upstream exercise diary corrects the participant identity at
-the source; Preparation 05 does not rewrite that identifier locally.
-
-```{r}
-#| label: tbl-tum-exercise-pin
-#| tbl-cap: "Exact fixed release for the corrected TUM exercise diary."
-
-prep_gt(
-  tum_pin,
-  source_note = paste(
-    "The release exception is restricted to one site and one modality; all",
-    "other TUM files retain the site-wide release shown above."
-  )
-) |>
-  gt::fmt_markdown(columns = gt::everything()) |>
-  gt::cols_width(
-    Item ~ gt::pct(38),
-    Value ~ gt::pct(62)
-  )
-```
-
-## What the acquired objects contain
+## Access, privacy, and acquired contents
 
 The acquisition audit records structure rather than displaying participant
 responses. Row counts below describe the unchanged objects across all nine
@@ -831,13 +766,98 @@ audit, not a claim that all columns are suitable for analysis. In particular,
 raw free-text fields remain in the untouched source objects but are not shown
 here; Preparation 06 explicitly excludes them from analytical outputs.
 
-## How files were obtained in the recorded run
+## Technical provenance
+
+::: {.callout-note title="What is calculated during this render?"}
+Rendering reads the stored registries, acquisition manifest, object audit, and
+column audit. It checks their schemas, hashes the 63 already local files,
+compares the nine sleep diaries with the Preparation 01 inventory, and
+calculates compact row and file totals. It does **not** connect to the network,
+open raw questionnaire values, run the acquisition builder or verifier,
+normalize a variable, construct a model input, or overwrite any stored
+artifact.
+:::
+
+### Input specification records
+
+```{r}
+#| label: tbl-preparation05-inputs
+#| tbl-cap: "Stored records that fix which questionnaire and diary files Preparation 05 acquires."
+
+prep_gt(
+  use_reader_site_names(input_display),
+  source_note = paste(
+    "All four registries are read during rendering; none is modified."
+  )
+) |>
+  gt::fmt_markdown(columns = gt::everything()) |>
+  gt::cols_label(
+    `Stored input registry` = "Input record",
+    `What it fixes before acquisition` = "Role before acquisition"
+  ) |>
+  gt::cols_width(
+    `Stored input registry` ~ gt::pct(38),
+    `What it fixes before acquisition` ~ gt::pct(62)
+  )
+```
+
+### Fixed source releases
+
+```{r}
+#| label: tbl-site-releases
+#| tbl-cap: "Site data releases in submitted-manuscript order and colours."
+
+prep_gt(
+  site_release_display,
+  source_note = paste(
+    "Every default release uses a complete 40-character commit identifier.",
+    "The Munich (DE) exercise-diary exception is shown separately below."
+  )
+) |>
+  gt::fmt_markdown(columns = gt::everything()) |>
+  gt::cols_width(
+    Site ~ gt::pct(32),
+    `Fixed release and acquired files` ~ gt::pct(68)
+  )
+```
+
+All download addresses embed the recorded commit. None contains `/main/` or
+another moving branch label. Consequently, revisiting the same address refers
+to the same repository state rather than whatever happens to be current at a
+later date.
+
+#### Corrected Munich (DE) exercise source
+
+One file deliberately uses a modality-specific commit instead of the default
+Munich (DE) release. The upstream exercise diary corrects the participant
+identity at the source; Preparation 05 does not rewrite that identifier
+locally.
+
+```{r}
+#| label: tbl-tum-exercise-pin
+#| tbl-cap: "Exact fixed release for the corrected Munich (DE) exercise diary."
+
+prep_gt(
+  use_reader_site_names(tum_pin),
+  source_note = paste(
+    "The release exception is restricted to one site and one modality; all",
+    "other Munich (DE) files retain the site-wide release shown above."
+  )
+) |>
+  gt::fmt_markdown(columns = gt::everything()) |>
+  gt::cols_width(
+    Item ~ gt::pct(38),
+    Value ~ gt::pct(62)
+  )
+```
+
+### How files were obtained in the recorded run
 
 ```{r}
 #| label: tbl-acquisition-outcomes
 #| tbl-cap: "How the 63 exact local files were obtained without changing their scientific contents."
 
-prep_gt(acquisition_outcomes) |>
+prep_gt(use_reader_site_names(acquisition_outcomes)) |>
   gt::fmt_number(columns = .data$Files, decimals = 0) |>
   gt::cols_width(
     `How the exact local file was obtained` ~ gt::pct(32),
@@ -853,7 +873,7 @@ local path, byte size, and SHA-256 must all agree. A SHA-256 is a digital
 fingerprint; changing even one byte changes the fingerprint with overwhelming
 probability.
 
-## Production sequence
+### Production sequence
 
 ```{r}
 #| label: tbl-script-execution-map
@@ -878,14 +898,14 @@ prevents local availability from defining the scientific input. Separating
 object/column inspection from later normalization likewise ensures that a
 changed upstream schema is visible before values are interpreted or joined.
 
-## Exact stored artifacts passed to Preparation 06
+### Exact stored artifacts passed to Preparation 06
 
 ```{r}
 #| label: tbl-acquisition-artifacts
 #| tbl-cap: "Stored Preparation 05 artifacts and their role in the next preparation step."
 
 prep_gt(
-  artifact_display,
+  use_reader_site_names(artifact_display),
   source_note = paste(
     "The acquisition manifest lists every exact local path, source release,",
     "object name, SHA-256, and byte size."
@@ -905,14 +925,14 @@ select categories, or discard incomplete intervals. The manifest and audits
 allow Preparation 06 to perform those operations against known, immutable
 inputs.
 
-## Checks tied to the current stored files
+### Checks tied to the current stored files
 
 ```{r}
 #| label: tbl-current-acquisition-validation
 #| tbl-cap: "Bounded checks of the current acquisition manifest, files, and stored structural audits."
 
 prep_gt(
-  validation_display,
+  use_reader_site_names(validation_display),
   source_note = paste(
     "File-identity and schema checks are performed during rendering from",
     "already stored outputs; raw response values are not opened."
@@ -935,14 +955,14 @@ All 63 local files match the acquisition manifest with SHA-256
 The nine sleep diaries also match the Preparation 01 inventory independently
 on repository, commit, DOI, address, local path, fingerprint, and bytes.
 
-### Stored independent verification
+#### Stored independent verification
 
 ```{r}
 #| label: tbl-stored-acquisition-verification
 #| tbl-cap: "Stored verification evidence associated with the current acquisition manifest."
 
 prep_gt(
-  verification_evidence,
+  use_reader_site_names(verification_evidence),
   source_note = paste(
     "The verification results are read from the Preparation 05 provenance",
     "finding and the Preparation 06 normalization gate. They are not rerun",
@@ -956,9 +976,9 @@ prep_gt(
 ```
 
 The exact-current verification record is documented in the
-[Preparation 05 input-provenance finding](../../audit/findings/preparation05_input_provenance_gaps.md)
+[detailed input-provenance record](../../audit/findings/preparation05_input_provenance_gaps.md)
 and the
-[Preparation 06 normalization gate](../../audit/reconciliation/preparation06/normalization_gate.md).
+[normalization verification record](../../audit/reconciliation/preparation06/normalization_gate.md).
 The verifier is not rerun during this reader-facing render.
 It establishes that the fixed source objects reached normalization without an
 unrecorded release or schema change. It does not establish a hypothesis

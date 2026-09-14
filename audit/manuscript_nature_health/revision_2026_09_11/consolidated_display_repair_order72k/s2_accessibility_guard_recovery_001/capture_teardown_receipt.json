@@ -1,0 +1,23 @@
+{
+  "server_pid": 45047,
+  "server_command": "/Users/zauner/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3 audit/manuscript_nature_health/revision_2026_09_11/consolidated_display_repair_order72k/s2_accessibility_guard_recovery_001/restart_preview.py",
+  "host": "127.0.0.1",
+  "port": 58005,
+  "started_utc": "2026-09-11T21:19:08Z",
+  "closed_utc": "2026-09-11T21:21:17Z",
+  "pre_teardown_exact_pid_and_command_verified": true,
+  "shutdown_command": "kill -INT 45047",
+  "shutdown_permission": "require_escalated granted",
+  "shutdown_exit_code": 0,
+  "listener_after": "lsof -nP -iTCP:58005 -sTCP:LISTEN returned no matching listener",
+  "pid_after": "ps -p 45047 -o pid=,ppid=,etime=,command= returned no match",
+  "task_profile_after": "pgrep -alf 'order72k_3ok569jd|order72k.*playwright|playwright.*order72k' returned no match",
+  "post_process_checks_permission": "require_escalated granted",
+  "post_process_combined_exit_code": 1,
+  "capture_exit_code": 0,
+  "browser_closure": "Sealed helper awaited browser.close() in finally and exited successfully; no task capture process found afterward",
+  "native_app_actions": 0,
+  "unrelated_processes_signalled": 0,
+  "lease": "ORDER72K-VISUAL-LEASE-004",
+  "lease_disposition": "Retained only for authorized serial candidate completion after S2 PASS; capture server and contexts are closed"
+}

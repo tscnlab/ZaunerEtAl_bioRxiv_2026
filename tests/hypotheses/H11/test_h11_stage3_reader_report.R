@@ -398,8 +398,8 @@ required_text <- c(
   "H11: Diurnal exposure patterns differ by sex.",
   "Answer in brief",
   "biological sex",
-  "Gender is a distinct construct",
-  "pointwise 95% intervals",
+  "Gender identity is a distinct construct",
+  "pointwise 95% confidence intervals",
   "not simultaneous",
   "gap-timing-unaware dataset",
   "50%-per-hour and 80%-per-day coverage rules",
@@ -411,7 +411,7 @@ required_text <- c(
   "Same sample, activity-adjusted",
   "sample restriction precedes it",
   "does not make the global result invalid",
-  "0.050214",
+  "displayed as FDR-adjusted p = 0.050",
   "linear from 0 to 1 lx",
   "acceptable with specified limitations"
 )

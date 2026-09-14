@@ -11,6 +11,19 @@ format:
 
 ## Purpose
 
+This document retains the substantive comparison requirements shared across
+the hypothesis audits. H01 and H02 keep the review structure already in use.
+H03 through H11 use the staged workflow in
+[`H03-H11_gated_workflow.qmd`](H03-H11_gated_workflow.qmd), which distributes
+these requirements across separate audit, implementation-comparison,
+standalone reader-facing, and pipeline-provenance documents, with an optional
+production-computation gate between implementation and reader-facing results.
+The descriptive analysis is outside that workflow.
+
+In H03--H11 audit documents, **V0 analysis** is the short name for the
+analysis that produced the submitted manuscript. The final reader-facing
+hypothesis documents do not use that term.
+
 The main question for each hypothesis is:
 
 > How do the analysis method, numerical results, and defensible claim after
@@ -20,23 +33,48 @@ Comparison with the preregistration remains mandatory, but is reported in a
 separate section. The submitted analysis, rather than the preregistration, is
 the reference for the direct audit discussion.
 
-A separate **manuscript-prepared-data sensitivity** applies the same new
-H01--H11 implementation to the newly prepared data and to the dataset prepared
-for the manuscript, with only objectively demonstrable data errors corrected.
+A separate **gap-timing-unaware dataset sensitivity** applies the same new
+H01--H11 implementation to the primary dataset and to the predefined
+comparison dataset, with only objectively demonstrable data errors corrected.
 It isolates data-preparation changes and does not rerun the submitted modelling
 implementation. Its rules are fixed in
 [`manuscript_prepared_data_sensitivity.md`](../decisions/manuscript_prepared_data_sensitivity.md).
 
-## Comparison order
+At first reader-facing use, explain that the gap-timing-unaware dataset still
+passed the general 50%-per-hour and 80%-per-day coverage rules, but the timing
+of the remaining missing observations is not used for an additional
+metric-specific adjustment. For contrast in that first explanation only, the
+primary dataset may be described as something that could be interpreted as a
+time-sensitive primary metric dataset. It is called simply **the primary
+dataset** thereafter. Internal identifiers may retain historical names for
+provenance; visible Stage 3 and Stage 4 labels follow `REPORT-010`.
 
-Every H01--H11 review and its HTML page must use this order:
+## Site names, order and colours
+
+Every hypothesis uses the submitted manuscript's site names, ordering and
+colour mapping in visible prose, tables, legends, facets and figures. The
+authoritative mapping is `config/site_display_registry.csv` and its full rules
+are recorded in
+[`site_display_conventions.md`](../decisions/site_display_conventions.md).
+
+Missing sites are omitted without changing the order or colours of the sites
+that remain. Internal data codes and model reference coding are unaffected.
+When the shared German colour would make a figure ambiguous, use direct
+labels, shapes or line types in addition to—not instead of—the registered
+colour.
+
+## Required comparison content
+
+H01 and H02 retain the comparison order already in use. For H03--H11, the
+following content is distributed across the gated documents rather than
+forced into one page:
 
 1. the question and exact comparison being estimated;
 2. what the manuscript reported;
 3. the main analysis;
 4. a direct submitted-versus-main table covering magnitude, direction,
    uncertainty, statistical conclusion, analytical sample, and claim;
-5. the manuscript-prepared-data sensitivity using the same new implementation
+5. the gap-timing-unaware dataset sensitivity using the same new implementation
    for both datasets;
 6. the reason for every method or data-preparation change;
 7. diagnostics and other registered sensitivities;
@@ -53,7 +91,7 @@ manuscript merely because the two differ.
 records one row for each hypothesis, comparison being estimated, analytical
 role, sensor placement, and analysis scenario. It identifies the submitted and
 main-analysis code and output files and records why the method stayed the same
-or changed. The manuscript-prepared-data scenario points to the same new model
+or changed. The gap-timing-unaware scenario points to the same new model
 implementation as the main scenario and to a different prepared-data artifact.
 
 [`hypothesis_result_comparisons.csv`](../ledgers/hypothesis_result_comparisons.csv)
@@ -62,8 +100,8 @@ about a fitted curve. It retains the numerical values rather than relying only
 on qualitative summaries.
 
 [`hypothesis_data_sensitivity_comparisons.csv`](../ledgers/hypothesis_data_sensitivity_comparisons.csv)
-records the same new implementation fitted to the main and
-manuscript-prepared datasets, including both exact model samples, their common
+records the same new implementation fitted to the primary and
+gap-timing-unaware datasets, including both exact model samples, their common
 sample, intervals, multiplicity fields, diagnostics, and stability
 classification.
 
@@ -99,9 +137,9 @@ The method comparison explicitly covers:
 - code, fitted-model file, result table, figure, and the exact data used to
   produce the figure.
 
-The manuscript-prepared-data sensitivity must use the same new analysis
+The gap-timing-unaware dataset sensitivity must use the same new analysis
 implementation as the main analysis. Only its prepared-data input differs.
-Each correction made to the manuscript-prepared dataset has an identifier and
+Each correction made to the gap-timing-unaware dataset has an identifier and
 evidence locator. A model cannot be simplified only for this sensitivity.
 
 For every multiple-testing correction, the hypothesis page must state which
@@ -131,6 +169,21 @@ shown immediately beside the formula output and remain in the model manifest.
 The formula cell and manifest must agree exactly before a hypothesis audit can
 be marked complete.
 
+### Pilot before a computation-heavy bootstrap
+
+Every computation-heavy bootstrap or simulation must first run a separate
+50- or 100-replicate pilot with the proposed production code. The pilot is
+used to verify failure handling, checkpointing, output tables and figures, and
+to estimate the duration and resource needs of the full run. It is labelled
+as non-inferential and cannot supply manuscript values or claims.
+
+Before the full run starts, the hypothesis task must show the pilot output,
+report successful and failed replicates, provide a reasoned full-runtime range
+and expected completion time, and obtain explicit author confirmation. Any
+code, diagnostic or display repair requires another pilot. The complete rule
+and the exception for the H01 run already underway are recorded in
+[`bootstrap_execution_policy.md`](../decisions/bootstrap_execution_policy.md).
+
 Each difference is assigned a `change_class`. `none` is an affirmative result
 and means that the submitted method was reproduced and retained. A change is
 not called a repair unless the evidence and verification justify that
@@ -158,14 +211,72 @@ The direct submitted-versus-main table records, where applicable:
 - links to the exact submitted and main-analysis code and output files.
 
 The accompanying data-sensitivity table repeats the result using the same new
-H01--H11 implementation on the manuscript-prepared dataset. It reports both
+H01--H11 implementation on the gap-timing-unaware dataset. It reports both
 model samples, their exact common sample, estimates and 95% confidence
 intervals, raw and adjusted \(p\)-values, diagnostics, and a stability
 classification.
 
+### P-value display
+
+Every displayed raw or adjusted p-value follows `REPORT-008`: use a leading
+zero and exactly three decimal places, show values strictly below 0.001 as
+`<0.001`, and use bold type only when that displayed value meets its explicitly
+labelled significance rule. Raw and adjusted values are labelled separately.
+Full numeric precision remains in CSV and model artifacts; display rounding is
+never used to decide significance. The shared helper is
+`scripts/pipeline/p_value_display.R`.
+
 The numerical values take precedence over a qualitative label. A difference is described as
 `negligible` or `material` only when a practical margin was declared before
 the comparison. Otherwise it is `not_classified_no_margin`.
+
+### Paired near-eye and chest comparison
+
+Each Stage 3 report applies `REPORT-009`. When separately fitted near-eye and
+chest estimates exist for the identical paired/common sample, outcome,
+predictor, contrast, model structure, transformation, and scale, show their
+relationship with near-eye on the horizontal axis, chest on the vertical axis,
+an identity line, null lines, and equal axis geometry. Component intervals may
+appear in an adjacent table when including them in the plot would be illegible.
+
+Do not compare unmatched all-available samples in this display or treat
+closeness to the identity line as equivalence. When a scalar comparison would
+be invalid, state why and use a matched curve, contrast plot, coefficient plot,
+or concise table instead. Retain paired source data, an informative caption,
+and alt text.
+
+### Figure readability and layout
+
+Every figure follows `REPORT-011`. Judge text at the final rendered size, not
+in an enlarged plotting window. Unless a narrower placement is specified,
+assess the figure at a 170-mm display width. An A4 page may be used only as a
+QA simulation of that width; final assets are tightly bounded to the figure
+and are not saved on an A4 canvas.
+
+Main axis, tick, legend, facet, direct-label, and annotation text is normally
+approximately 5--7 pt; only minor non-essential text may be approximately
+3.5--5 pt. Match canvas dimensions and panel layout to the amount of content
+rather than shrinking all labels.
+
+Record the base design width and height, literal export-scale multiplier,
+exported dimensions, intended display width, display reduction factor,
+smallest essential nominal text, and effective final text. The `ggsave()`
+scale argument changes the device dimensions and is not implemented by
+enlarging theme fonts or graphical marks. Browser pixels or an enlarged native
+canvas alone do not establish a pass.
+
+After changing text size, wording, wrapping, dimensions, or layout, inspect
+the final output for clipping, overlap, distorted or unusually wide/narrow
+text, undesirable line breaks, overly long unwrapped labels, compressed data
+regions, and marks that become illegible after scaling. A successful render is
+not a visual-QA pass. Display-only repairs consume stored outputs and do not
+rerun scientific computation.
+
+For non-negative, strongly right-skewed values containing meaningful exact
+zeros—melEDI in particular—reader-facing plots follow `REPORT-013` and use
+`LightLogR::symlog_trans(base = 10, thr = 1, scale = 1)`. Labels and breaks
+remain in the original unit and paired source data retain untransformed values.
+This is a display rule only and does not alter a fitted response or estimand.
 
 ## Preregistration section
 
@@ -184,9 +295,9 @@ claim. A hypothesis review cannot be completed until:
 
 - its submitted method and result are recoverable or explicitly
   marked otherwise;
-- its main-analysis and manuscript-prepared-data sensitivity code and output
+- its primary and gap-timing-unaware sensitivity code and output
   pass a run in a fresh R session;
-- every correction to the manuscript-prepared dataset passes the data-fidelity
+- every correction to the gap-timing-unaware dataset passes the data-fidelity
   rule or is removed;
 - method and result rows are complete and linked;
 - relevant diagnostics and sensitivities are classified;

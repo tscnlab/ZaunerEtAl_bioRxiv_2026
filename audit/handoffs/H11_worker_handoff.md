@@ -21,6 +21,36 @@ biological sex; gender is treated as a distinct, unmeasured construct. The H11
 models retain the finalized H02 temporal basis, participant/day hierarchy,
 site constraint, clock-time provenance, AR boundaries, and diagnostic rules.
 
+## REPORT-016 / RH-SCI-002 disposition
+
+**Disposition: (c), outside/superseded by the accepted H11 analysis.** The
+registered hourly geometric-mean outcome remains part of the preregistration
+provenance, but it is not an outstanding H11 sensitivity requirement.
+
+This disposition reconciles the full accepted record:
+
+- the signed preregistration specified the hourly geometric mean;
+- the historical Stage 1 proposal named an hourly sensitivity, and the frozen
+  Stage 2 deferred-analysis registry records that it was not fitted;
+- the author-approved H11 analysis deliberately inherits the accepted H02
+  zero-aware transformed arithmetic mean in supported 30-minute bins;
+- the accepted Stage 3 report and Stage 4 transition closed H11 scientific
+  computation, and this handoff already records that no further H11 scientific
+  computation is required; and
+- the authoritative REPORT-016 reader-disposition overlay classifies
+  `DEV-042` as `approved_implemented_verified`, while `DEV-003` is the current
+  open qualification.
+
+The stale “unresolved sensitivity” wording has therefore been corrected only
+in the current H11 result source and preparation/provenance companion. The
+historical Stage 1 plan, author decision, Stage 2 report, and frozen deferred-
+analysis registry remain unchanged. No model, frame, prediction, estimate,
+interval, p-value, multiplicity decision, diagnostic, sensitivity output, or
+scientific result was recomputed or changed. The row-level reconciliation and
+identity evidence are recorded in
+`audit/hypotheses/H11/06_report016_hourly_outcome_disposition.md` and its paired
+CSV.
+
 The worker did not edit central ledgers, shared Quarto configuration,
 manuscript files, the bibliography, or `renv.lock`, and did not push.
 

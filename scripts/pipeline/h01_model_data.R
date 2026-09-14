@@ -123,7 +123,7 @@ h01_metric_contract <- function(root = project_root()) {
     "dose_corrected_medi_lx_h",
     "lx_h",
     17L,
-    "mder_ratio_of_integrals",
+    "mder_mean_of_viable_ratios",
     "participant_day",
     "mder",
     "dimensionless"

@@ -1,0 +1,14 @@
+check,observed,expected,status,scope
+R version,4.6.1,4.6.1,PASS,independent audit runtime
+order48c owner manifest,22/22 exact,22/22 exact,PASS,sealed stopped state
+current display manifest,28/29 exact with sole verifier transition,28 unchanged plus one exact authorized verifier transition,PASS,current historical manifest
+current result HTML,74a63bd09b266709630e92241a17735298dffd5fc6d1746887621eb6288f2e6c,74a63bd09b266709630e92241a17735298dffd5fc6d1746887621eb6288f2e6c,PASS,preserved endpoint
+prospective verifier SHA-256,06abb903f7de51792d1dbb57d8ffcfd26ddf02ebd2455f646ae3f12db6ee6109,06abb903f7de51792d1dbb57d8ffcfd26ddf02ebd2455f646ae3f12db6ee6109,PASS,prospective postimage
+prospective verifier bytes,66973,66973,PASS,prospective postimage
+R parse,TRUE,TRUE,PASS,prospective postimage
+Air format check,TRUE,TRUE,PASS,prospective postimage
+authorized evidence additions,17/17 exact unique and resolving,17/17 exact unique and resolving,PASS,relative to protected prerender inventory
+postrender simulation,tables=14 figures=5 links=7 build_delta=8 protected=3386,complete postrender PASS,PASS,project outputs read-only and evidence redirected to /private/tmp
+postqa bookkeeping simulation,build=846 protected=3386 manifest=111,complete structural postqa PASS,PASS,synthetic temporary QA fixtures only and not visual acceptance
+remaining live self-pins,none beyond classified historical display-manifest row,none,PASS,repository-wide current-manifest search
+real browser QA,not run,required after live postrender PASS,PENDING,owner continuation

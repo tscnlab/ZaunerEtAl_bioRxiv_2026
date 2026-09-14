@@ -1,0 +1,56 @@
+<script>
+(() => {
+  const addMobileToc = () => {
+    const sourceToc = document.querySelector("#TOC");
+    const main = document.querySelector("#quarto-document-content");
+
+    if (!sourceToc || !main || main.querySelector(".nathealth-mobile-toc")) {
+      return;
+    }
+
+    const sourceList = [...sourceToc.children].find(
+      (element) => element.tagName === "UL"
+    );
+
+    if (!sourceList) {
+      return;
+    }
+
+    const title = document.querySelector("#toc-title")?.textContent.trim()
+      || "On this page";
+    const mobileToc = document.createElement("details");
+    const summary = document.createElement("summary");
+    const navigation = document.createElement("nav");
+    const list = sourceList.cloneNode(true);
+
+    list.classList.remove("collapse");
+    list.querySelectorAll(".collapse").forEach((element) => {
+      element.classList.remove("collapse");
+    });
+
+    mobileToc.className = "nathealth-mobile-toc";
+    summary.textContent = title;
+    navigation.setAttribute("aria-label", title);
+
+    list.querySelectorAll("[id]").forEach((element) => {
+      element.removeAttribute("id");
+    });
+
+    list.addEventListener("click", (event) => {
+      if (event.target.closest("a")) {
+        mobileToc.open = false;
+      }
+    });
+
+    navigation.append(list);
+    mobileToc.append(summary, navigation);
+    main.prepend(mobileToc);
+  };
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", addMobileToc, { once: true });
+  } else {
+    addMobileToc();
+  }
+})();
+</script>

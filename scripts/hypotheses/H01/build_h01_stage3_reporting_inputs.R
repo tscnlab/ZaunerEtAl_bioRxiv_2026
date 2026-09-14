@@ -151,6 +151,12 @@ latitude_loo <- read_required(
 marginalization <- read_required(
   "artifacts/09_tables/H01/H01_marginalization_comparison.csv"
 )
+descriptive_metric_summary <- read_required(
+  "artifacts/09_tables/descriptives/metric_descriptive_summary_replica.csv"
+)
+descriptive_metric_values <- read_required(
+  "artifacts/11_source_data/descriptives/metric_plot_values.csv"
+)
 
 if (
   nrow(bootstrap_audit) != 128L ||
@@ -515,6 +521,103 @@ r2_table_grand <- r2_table_metrics |>
 r2_table <- bind_rows(r2_table_grand, r2_table_metrics) |>
   arrange(.data$run_order, .data$metric_order, .data$measure)
 
+synthesis_r2_measures <- c(
+  "marginal_r2", "conditional_r2", "participant_associated_share",
+  "site_part_r2", "photoperiod_part_r2", "latitude_part_r2"
+)
+synthesis_r2 <- r2_stage3 |>
+  filter(
+    .data$run_id == primary_run,
+    .data$measure %in% synthesis_r2_measures
+  ) |>
+  select(
+    "metric_id", "measure", "estimate", "conf_low", "conf_high",
+    "bootstrap_successful_used", "term_supported"
+  ) |>
+  pivot_wider(
+    names_from = "measure",
+    values_from = c(
+      "estimate", "conf_low", "conf_high", "bootstrap_successful_used",
+      "term_supported"
+    ),
+    names_glue = "{.value}_{measure}"
+  )
+
+descriptive_overall <- descriptive_metric_summary |>
+  filter(.data$placement == "near_eye", .data$site == "Overall") |>
+  transmute(
+    .data$metric_id,
+    descriptive_metric_order = as.integer(.data$metric_order),
+    descriptive_name = .data$manuscript_name,
+    metric_description = .data$meaning_and_relevance,
+    descriptive_analysis_unit = .data$analysis_unit,
+    descriptive_unit = .data$unit,
+    descriptive_scaling = .data$scaling,
+    descriptive_median = .data$median,
+    descriptive_q1 = .data$q1,
+    descriptive_q3 = .data$q3,
+    descriptive_median_display = .data$median_formatted,
+    descriptive_q1_display = .data$q1_formatted,
+    descriptive_q3_display = .data$q3_formatted,
+    descriptive_participants = as.integer(.data$n_participants),
+    descriptive_participant_days = as.integer(.data$n_participant_days),
+    descriptive_observations = as.integer(.data$n_observations)
+  )
+
+primary_metric_synthesis <- primary_publication_summary |>
+  left_join(
+    descriptive_overall,
+    by = "metric_id",
+    relationship = "one-to-one"
+  ) |>
+  left_join(synthesis_r2, by = "metric_id", relationship = "one-to-one") |>
+  mutate(
+    density_artifact_path = paste0(
+      "artifacts/10_figures/H01/stage3/metric_density/",
+      "H01_stage3_metric_density_", .data$metric_id, ".png"
+    ),
+    site_supported = !is.na(.data$site_p_adjusted) &
+      .data$site_p_adjusted < 0.05,
+    photoperiod_supported = !is.na(.data$photoperiod_p_adjusted) &
+      .data$photoperiod_p_adjusted < 0.05,
+    latitude_supported = !is.na(.data$latitude_p_adjusted) &
+      .data$latitude_p_adjusted < 0.05
+  ) |>
+  arrange(.data$metric_order)
+
+if (
+  nrow(descriptive_overall) != 17L ||
+    nrow(primary_metric_synthesis) != 17L ||
+    anyDuplicated(primary_metric_synthesis$metric_id) ||
+    !setequal(primary_metric_synthesis$metric_id, metric_registry$metric_id) ||
+    anyNA(primary_metric_synthesis[c(
+      "metric_description", "descriptive_analysis_unit", "descriptive_unit",
+      "descriptive_scaling",
+      "descriptive_median", "descriptive_q1", "descriptive_q3",
+      "descriptive_median_display", "descriptive_q1_display",
+      "descriptive_q3_display", "descriptive_participants",
+      "descriptive_participant_days", "descriptive_observations"
+    )]) ||
+    any(primary_metric_synthesis$sites != 9L) ||
+    any(
+      primary_metric_synthesis$bootstrap_successful_used_marginal_r2 < 1000L |
+        primary_metric_synthesis$bootstrap_successful_used_conditional_r2 < 1000L |
+        primary_metric_synthesis$bootstrap_successful_used_site_part_r2 < 1000L |
+        primary_metric_synthesis$bootstrap_successful_used_photoperiod_part_r2 < 1000L |
+        primary_metric_synthesis$bootstrap_successful_used_latitude_part_r2 < 1000L
+    ) ||
+    any(
+      primary_metric_synthesis$site_supported !=
+        primary_metric_synthesis$term_supported_site_part_r2 |
+        primary_metric_synthesis$photoperiod_supported !=
+          primary_metric_synthesis$term_supported_photoperiod_part_r2 |
+        primary_metric_synthesis$latitude_supported !=
+          primary_metric_synthesis$term_supported_latitude_part_r2
+    )
+) {
+  stop("The H01 primary metric synthesis failed its source contract", call. = FALSE)
+}
+
 exact_samples <- samples |>
   left_join(metric_registry, by = c("metric_order", "metric_id")) |>
   left_join(run_registry, by = "run_id", relationship = "many-to-one") |>
@@ -810,34 +913,34 @@ deviations <- tibble::tribble(
   "The approved metric is the mean melEDI during the darkest 10 hours.",
   "DEV-008; DEV-054", "Threshold timing",
   "The timing outcome was the midpoint of the longest period above 250 lx.",
-  "The package includes first, last, and mean timing above 250 lx; period construction follows verified continuity and support rules.",
+  "The registered midpoint of the longest qualifying period is retained. Mean timing above 250 lx melEDI is a distinct circular duration-weighted metric and is labelled as an adapted sensitivity; period construction follows verified continuity and support rules.",
   "DEV-009", "Site and latitude",
   "One model included both site and latitude.",
   "Because each site has one latitude, fixed-site and linear-latitude models are fitted separately on identical rows and compared for adequacy.",
   "DEV-017", "Photoperiod scope",
   "Photoperiod adjustment was specified for duration metrics.",
   "Photoperiod is included in the common model implementation for all 17 metrics.",
-  "DEV-018; H01-005", "Response models",
+  "DEV-018", "Response models",
   "Linear mixed models were specified generically.",
   "Each metric uses its approved Gaussian transformation or Tweedie log-link response model.",
-  "IMP-001; H01-001; H01-006", "Multiplicity",
+  "IMP-001; DEV-009", "Multiplicity",
   "False-discovery-rate control was required within H1 but the exact vectors were not specified.",
   "Four separate complete 17-test Benjamini–Hochberg families are used for site, photoperiod, latitude, and site-versus-latitude adequacy.",
-  "H01-002", "Site follow-ups",
+  "DEV-009", "Site follow-ups",
   "Site coefficients were reported without a fixed hierarchical follow-up rule.",
   "Only after a supported overall site test, each site is compared with the equally weighted overall site mean and the site contrasts are adjusted within metric.",
-  "IMP-004; H01-003; H01-004", "Variation and uncertainty",
-  "Conditional R² and significance-dependent component summaries were used without joint interval estimation.",
-  "Marginal and conditional R², participant-associated share, and non-overlapping term part-R² summaries use 1,000 successful joint bootstrap refits and 95% intervals.",
+  "IMP-003; IMP-004", "Variation, uncertainty, and exact samples",
+  "Conditional R² and significance-dependent component summaries were used without joint interval estimation or exact model-specific sample reporting.",
+  "Marginal and conditional R², participant-associated share, and non-overlapping term part-R² summaries use 1,000 successful joint bootstrap refits and 95% intervals; exact model-specific samples are reported.",
   "IMP-010", "Model comparison",
   "Fixed-effect structures had been compared using REML-derived criteria.",
   "Gaussian fixed-effect comparisons use maximum likelihood; final Gaussian estimation uses REML where applicable.",
   "IMP-012", "Full-day construct",
   "The intended relation between worn exposure and sleep-period environmental measurement was implicit.",
   "The 24-hour record retains both constructs but keeps their interpretations distinct.",
-  "IMP-013; DEV-051", "Melanopic daylight efficacy ratio",
-  "The previous ratio calculation averaged instantaneous ratios.",
-  "The metric is the ratio of integrated melanopic to photopic exposure over verified common support.",
+  "DEV-058", "Melanopic daylight efficacy ratio",
+  "The submitted implementation averaged available momentary melEDI-to-photopic-illuminance ratios; the preregistration did not specify a ratio-of-integrals replacement.",
+  "MDER is the arithmetic mean of viable one-minute melEDI-to-photopic-illuminance ratios. Both channels must be finite and strictly positive, and at least 720 viable minutes are required on the complete 1,440-minute local wall-clock grid.",
   "IMP-014; DEV-053", "Interdaily stability and intradaily variability",
   "Incomplete repeated-day support could enter the dynamics metrics.",
   "Dynamics metrics use verified temporal support and report participant-level model rows plus contributing participant-days.",
@@ -854,12 +957,12 @@ deviations <- tibble::tribble(
   "R 4.5 and earlier LightLogR/API versions were named.",
   "The analysis uses the verified R 4.6.1 project library and pinned contemporary package APIs.",
   "DEV-057", "Participant-day plausibility",
-  "Coverage relied on recorded valid minutes without a hard calendar-day plausibility check.",
-  "Participant-days with more than 1,440 valid light-signal minutes are excluded before metric modelling.",
-  "H01-007; IMP-024", "Pre-sleep duration",
+  "The preregistration and submitted implementation use coverage and signal-validity rules but do not specify exclusion of an otherwise eligible complete exact-zero melEDI day.",
+  "An otherwise eligible participant-day is excluded only when every finite one-minute melEDI value is exactly 0 lx; individual zeros remain valid and the former inclusion is retained as a fixed data sensitivity.",
+  "IMP-024", "Pre-sleep duration",
   "The label implied a single three-hour window before sleep.",
   "The outcome is calendar-day cumulative time below 10 lx melEDI across every diary-defined pre-sleep interval; values strictly above six hours trigger an audit warning but are not capped.",
-  "H01-008; IMP-023", "Darkest-10-hour midpoint",
+  "IMP-023", "Darkest-10-hour midpoint",
   "The clock response was linearized around noon.",
   "The primary conversion subtracts 24 hours only for values strictly after 16:00; the noon cut is a registered same-row sensitivity."
 )
@@ -1073,6 +1176,7 @@ if (
 
 table_root <- file.path(root, "artifacts/09_tables/H01/stage3")
 figure_root <- file.path(root, "artifacts/10_figures/H01/stage3")
+density_root <- file.path(figure_root, "metric_density")
 source_root <- file.path(root, "artifacts/11_source_data/H01/stage3")
 diagnostic_root <- file.path(root, "artifacts/08_diagnostics/H01/stage3")
 manifest_path <- file.path(
@@ -1081,8 +1185,131 @@ manifest_path <- file.path(
 )
 dir.create(table_root, recursive = TRUE, showWarnings = FALSE)
 dir.create(figure_root, recursive = TRUE, showWarnings = FALSE)
+dir.create(density_root, recursive = TRUE, showWarnings = FALSE)
 dir.create(source_root, recursive = TRUE, showWarnings = FALSE)
 dir.create(diagnostic_root, recursive = TRUE, showWarnings = FALSE)
+
+unwrap_density_clock <- function(value, metric_id) {
+  centers <- c(
+    m10_midpoint = 840,
+    l10_midpoint = 180,
+    first_timing_above_250 = 540,
+    last_timing_above_250 = 1080,
+    mean_timing_above_250 = 810
+  )
+  center <- unname(centers[[metric_id]])
+  if (is.null(center) || !is.finite(center)) {
+    stop("No density-display clock centre for ", metric_id, call. = FALSE)
+  }
+  (value - center + 720) %% 1440 - 720 + center
+}
+
+make_metric_density_plot <- function(metric_id, scaling) {
+  density_data <- descriptive_metric_values |>
+    filter(
+      .data$placement == "near_eye",
+      .data$metric_id == .env$metric_id,
+      .data$finite,
+      is.finite(.data$value)
+    ) |>
+    transmute(
+      site = factor(.data$site, levels = rev(site_registry$site)),
+      display_value = .data$value
+    )
+  if (
+    nrow(density_data) == 0L ||
+      anyNA(density_data$site) ||
+      dplyr::n_distinct(density_data$site) != nrow(site_registry)
+  ) {
+    stop("Incomplete density-display data for ", metric_id, call. = FALSE)
+  }
+  if (identical(scaling, "Circular clock")) {
+    density_data$display_value <- unwrap_density_clock(
+      density_data$display_value,
+      metric_id
+    )
+  } else if (identical(scaling, "Symlog")) {
+    density_data$display_value <- LightLogR::symlog_trans(
+      base = 10,
+      thr = 1,
+      scale = 1
+    )$transform(density_data$display_value)
+  }
+
+  site_palette <- stats::setNames(
+    site_registry$color_hex,
+    site_registry$site
+  )
+  site_labels <- stats::setNames(
+    site_registry$display_name,
+    site_registry$site
+  )
+  ggplot(
+    density_data,
+    aes(
+      x = .data$display_value,
+      y = .data$site,
+      fill = .data$site,
+      colour = .data$site
+    )
+  ) +
+    ggridges::geom_density_ridges(
+      alpha = 0.42,
+      linewidth = 0.42,
+      scale = 0.82,
+      rel_min_height = 0.008,
+      show.legend = FALSE
+    ) +
+    scale_fill_manual(values = site_palette, drop = FALSE) +
+    scale_colour_manual(values = site_palette, drop = FALSE) +
+    scale_y_discrete(labels = site_labels, drop = FALSE) +
+    scale_x_continuous(expand = expansion(mult = c(0.025, 0.025))) +
+    labs(x = NULL, y = NULL) +
+    ggridges::theme_ridges(font_size = 9, grid = FALSE) +
+    theme(
+      axis.text.x = element_blank(),
+      axis.ticks.x = element_blank(),
+      axis.text.y = element_text(size = 7.2, lineheight = 0.9),
+      panel.grid = element_blank(),
+      plot.margin = margin(2, 2, 2, 2)
+    )
+}
+
+density_figure_paths <- vapply(
+  seq_len(nrow(primary_metric_synthesis)),
+  function(index) {
+    row <- primary_metric_synthesis[index, , drop = FALSE]
+    path <- file.path(
+      density_root,
+      paste0("H01_stage3_metric_density_", row$metric_id[[1]], ".png")
+    )
+    ggsave(
+      path,
+      make_metric_density_plot(
+        row$metric_id[[1]],
+        row$descriptive_scaling[[1]]
+      ),
+      width = 2.7,
+      height = 1.5,
+      units = "in",
+      dpi = 320,
+      bg = "white"
+    )
+    path
+  },
+  character(1)
+)
+if (
+  length(density_figure_paths) != 17L ||
+    any(!file.exists(density_figure_paths)) ||
+    any(file.info(density_figure_paths)$size <= 0L) ||
+    !identical(
+      substring(density_figure_paths, nchar(root) + 2L),
+      primary_metric_synthesis$density_artifact_path
+    )
+) {
+  stop("The H01 metric-density thumbnails are incomplete", call. = FALSE)
+}
 
 representative_diagnostic_relative_paths <- c(
   "artifacts/08_diagnostics/H01/main/glasses/all_available/daily_geometric_mean_medi_diagnostics.png",
@@ -1131,6 +1358,7 @@ tables <- list(
   H01_stage3_metric_registry = metric_registry,
   H01_stage3_model_results = model_results,
   H01_stage3_primary_publication_summary = primary_publication_summary,
+  H01_stage3_primary_metric_synthesis = primary_metric_synthesis,
   H01_stage3_site_contrasts = site_contrasts,
   H01_stage3_r2 = r2_stage3,
   H01_stage3_r2_table = r2_table,
@@ -1198,7 +1426,7 @@ support_plot <- support_matrix |>
   ) |>
   ggplot(aes(x = .data$question_label, y = .data$manuscript_name)) +
   geom_tile(aes(fill = .data$support_status), colour = "white", linewidth = 0.35) +
-  geom_text(aes(label = .data$support_symbol), size = 3.2, colour = "#111111") +
+  geom_text(aes(label = .data$support_symbol), size = 4.0, colour = "#111111") +
   facet_wrap(vars(.data$placement_label), ncol = 2) +
   scale_fill_manual(
     values = c(
@@ -1208,12 +1436,15 @@ support_plot <- support_matrix |>
     ),
     drop = FALSE
   ) +
-  labs(x = NULL, y = NULL, fill = "BH-adjusted result") +
+  labs(x = NULL, y = NULL, fill = "FDR-adjusted result") +
   theme_minimal(base_size = 9) +
   theme(
     panel.grid = element_blank(),
-    axis.text.x = element_text(angle = 28, hjust = 1),
-    strip.text = element_text(face = "bold"),
+    axis.text.x = element_text(size = 11.2, angle = 28, hjust = 1),
+    axis.text.y = element_text(size = 11.2),
+    strip.text = element_text(size = 11.2, face = "bold"),
+    legend.text = element_text(size = 11.2),
+    legend.title = element_text(size = 11.2),
     legend.position = "bottom"
   )
 
@@ -1452,7 +1683,7 @@ diagnostic_plot <- diagnostic_matrix |>
   ) |>
   ggplot(aes(x = .data$diagnostic_check, y = .data$manuscript_name)) +
   geom_tile(aes(fill = .data$check_status), colour = "white", linewidth = 0.35) +
-  geom_text(aes(label = .data$check_symbol), size = 3.0) +
+  geom_text(aes(label = .data$check_symbol), size = 4.3) +
   facet_wrap(vars(.data$placement_label), ncol = 2) +
   scale_fill_manual(
     values = c(
@@ -1467,8 +1698,11 @@ diagnostic_plot <- diagnostic_matrix |>
   theme_minimal(base_size = 9.5) +
   theme(
     panel.grid = element_blank(),
-    axis.text.x = element_text(angle = 28, hjust = 1),
-    strip.text = element_text(face = "bold"),
+    axis.text.x = element_text(size = 12.2, angle = 28, hjust = 1),
+    axis.text.y = element_text(size = 12.2),
+    strip.text = element_text(size = 12.2, face = "bold"),
+    legend.text = element_text(size = 12.2),
+    legend.title = element_text(size = 12.2),
     legend.position = "bottom"
   )
 
@@ -1645,8 +1879,12 @@ make_paired_placement_panel <- function(data, scale_name) {
       size = 3.1,
       seed = 20260801,
       min.segment.length = 0,
-      box.padding = 0.22,
-      point.padding = 0.14,
+      box.padding = 0.55,
+      point.padding = 0.32,
+      force = 8,
+      force_pull = 0.05,
+      max.iter = 100000,
+      max.time = 10,
       max.overlaps = Inf,
       show.legend = FALSE
     ) +
@@ -1692,7 +1930,7 @@ figure_specs <- list(
   H01_stage3_photoperiod_latitude_near_eye = list(plot = photoperiod_near_plot, width = 6, height = 6, bg = "black"),
   H01_stage3_photoperiod_latitude_chest = list(plot = photoperiod_chest_plot, width = 6, height = 6, bg = "black")
 )
-figure_paths <- character()
+figure_paths <- density_figure_paths
 for (name in names(figure_specs)) {
   spec <- figure_specs[[name]]
   png_path <- file.path(figure_root, paste0(name, ".png"))
@@ -1745,6 +1983,24 @@ provenance <- tibble::tibble(
     root,
     "artifacts/12_manifests/H01_response_family_bootstrap_production_artifacts.csv"
   )),
+  mder_decision_sha256 = artifact_sha256(file.path(
+    root,
+    "audit/decisions/mder_mean_of_viable_ratios.md"
+  )),
+  mder_production_manifest_sha256 = artifact_sha256(file.path(
+    root,
+    paste0(
+      "audit/hypotheses/H01/mder_METRIC-010/bootstrap_production/",
+      "H01_METRIC-010_bootstrap_production_manifest.csv"
+    )
+  )),
+  mder_integration_summary_sha256 = artifact_sha256(file.path(
+    root,
+    paste0(
+      "audit/hypotheses/H01/mder_METRIC-010/production_integration/",
+      "H01_METRIC-010_production_integration_summary.csv"
+    )
+  )),
   stage2_archive_manifest_sha256 = artifact_sha256(file.path(
     root,
     paste0(
@@ -1786,9 +2042,20 @@ input_paths <- c(
       "artifacts/09_tables/H01/H01_exactly_identified_period_sensitivity.csv",
       "artifacts/09_tables/H01/H01_preregistered_scope_sensitivity.csv",
       "artifacts/09_tables/H01/H01_marginalization_comparison.csv",
+      "artifacts/09_tables/descriptives/metric_descriptive_summary_replica.csv",
+      "artifacts/11_source_data/descriptives/metric_plot_values.csv",
       "artifacts/11_source_data/descriptives/latitude_photoperiod.csv",
       "artifacts/11_source_data/H01/reporting/H01_figure_s10_theoretical_bounds_source.csv",
       "config/site_display_registry.csv",
+      "audit/decisions/mder_mean_of_viable_ratios.md",
+      paste0(
+        "audit/hypotheses/H01/mder_METRIC-010/bootstrap_production/",
+        "H01_METRIC-010_bootstrap_production_manifest.csv"
+      ),
+      paste0(
+        "audit/hypotheses/H01/mder_METRIC-010/production_integration/",
+        "H01_METRIC-010_production_integration_summary.csv"
+      ),
       "audit/hypotheses/H01/02_implementation_and_v0_comparison_archive_manifest.csv",
       producer
     )
@@ -1804,12 +2071,20 @@ all_manifest_files <- sort(unique(c(
   input_paths
 )))
 manifest <- bind_rows(lapply(all_manifest_files, function(path) {
+  artifact_path <- path
+  relative_path <- substring(artifact_path, nchar(root) + 2L)
+  is_reporting_output <- artifact_path %in% c(
+    table_paths,
+    source_paths,
+    figure_paths,
+    provenance_path
+  )
   tibble::tibble(
-    path = substring(path, nchar(root) + 2L),
-    sha256 = artifact_sha256(path),
-    bytes = as.numeric(file.info(path)$size),
+    path = relative_path,
+    sha256 = artifact_sha256(artifact_path),
+    bytes = as.numeric(file.info(artifact_path)$size),
     role = if_else(
-      path %in% c(table_paths, source_paths, figure_paths, provenance_path),
+      is_reporting_output,
       "H01 Stage 3 reporting output",
       "H01 Stage 3 reporting input"
     ),

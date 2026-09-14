@@ -1,0 +1,3 @@
+# H09 S15B order 010a execution command
+
+RENV_CONFIG_AUTOLOADER_ENABLED=FALSE R_LIBS='/Users/zauner/Documents/Arbeit/12-TUM/MeLiDos/WP2.2.5_Data_Analysis/ZaunerEtAl_bioRxiv_2026/renv/library/macos/R-4.6/aarch64-apple-darwin23' H09_S15B_ORDER010A_PROJECT_ROOT='/Users/zauner/Documents/Arbeit/12-TUM/MeLiDos/WP2.2.5_Data_Analysis/ZaunerEtAl_bioRxiv_2026' H09_S15B_ORDER010A_OWNER_ROOT='/Users/zauner/Documents/Arbeit/12-TUM/MeLiDos/WP2.2.5_Data_Analysis/ZaunerEtAl_bioRxiv_2026/audit/hypotheses/H09/manuscript_s15b_strip_layout_2026_09_14' Rscript --vanilla audit/hypotheses/H09/manuscript_s15b_strip_layout_2026_09_14/code/build_and_check_h09_s15b_strip_candidate.R

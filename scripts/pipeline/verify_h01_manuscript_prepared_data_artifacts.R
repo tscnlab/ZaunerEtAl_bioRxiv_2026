@@ -22,7 +22,7 @@ h01_manuscript_prepared_expected_model_samples <- function(contract) {
         rep(811L, 3L),
         rep(778L, 3L),
         811L,
-        725L
+        687L
       ),
       participants = c(
         141L,
@@ -34,7 +34,7 @@ h01_manuscript_prepared_expected_model_samples <- function(contract) {
         rep(141L, 3L),
         rep(141L, 3L),
         141L,
-        140L
+        137L
       ),
       participant_days = c(
         NA_integer_,
@@ -46,7 +46,7 @@ h01_manuscript_prepared_expected_model_samples <- function(contract) {
         rep(811L, 3L),
         rep(778L, 3L),
         811L,
-        725L
+        687L
       ),
       contributing_participant_days = c(
         811L,
@@ -58,7 +58,7 @@ h01_manuscript_prepared_expected_model_samples <- function(contract) {
         rep(811L, 3L),
         rep(778L, 3L),
         811L,
-        725L
+        687L
       ),
       sites = 9L
     ),
@@ -76,7 +76,7 @@ h01_manuscript_prepared_expected_model_samples <- function(contract) {
         rep(897L, 3L),
         rep(867L, 3L),
         897L,
-        729L
+        723L
       ),
       participants = c(
         154L,
@@ -88,7 +88,7 @@ h01_manuscript_prepared_expected_model_samples <- function(contract) {
         rep(154L, 3L),
         rep(154L, 3L),
         154L,
-        154L
+        152L
       ),
       participant_days = c(
         NA_integer_,
@@ -100,7 +100,7 @@ h01_manuscript_prepared_expected_model_samples <- function(contract) {
         rep(897L, 3L),
         rep(867L, 3L),
         897L,
-        729L
+        723L
       ),
       contributing_participant_days = c(
         897L,
@@ -112,7 +112,7 @@ h01_manuscript_prepared_expected_model_samples <- function(contract) {
         rep(897L, 3L),
         rep(867L, 3L),
         897L,
-        729L
+        723L
       ),
       sites = 8L
     )
@@ -132,7 +132,7 @@ h01_manuscript_prepared_expected_model_samples <- function(contract) {
     "mean_timing_above_250",
     "first_timing_above_250",
     "last_timing_above_250",
-    "mder_ratio_of_integrals"
+    "mder_mean_of_viable_ratios"
   )
   paired_observations[paired_special_metrics] <- c(
     592L,
@@ -141,12 +141,12 @@ h01_manuscript_prepared_expected_model_samples <- function(contract) {
     603L,
     603L,
     603L,
-    476L
+    478L
   )
   paired_participants[c(
     "duration_above_250_wake",
-    "mder_ratio_of_integrals"
-  )] <- c(111L, 111L)
+    "mder_mean_of_viable_ratios"
+  )] <- c(111L, 107L)
   paired <- tidyr::crossing(
     placement = h01_placements(),
     scenario = "paired_common_sample",

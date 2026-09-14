@@ -1,0 +1,29 @@
+stopifnot(as.character(getRversion())=="4.6.1")
+suppressPackageStartupMessages({library(digest);library(jsonlite)})
+root<-normalizePath(getwd())
+n<-file.path(root,"audit/manuscript_nature_health/final_pagination_completion_2026_09_14")
+c<-file.path(root,"audit/manuscript_nature_health/final_format_completion_2026_09_14")
+sha<-function(p)digest(p,file=TRUE,algo="sha256")
+render<-fromJSON(file.path(n,"evidence/render_execution.json"))
+stopifnot(render$status=="complete",render$exit_code==0L,render$input_unchanged_after_render)
+files<-list.files(file.path(n,"qa/main"),pattern="^page-[0-9]+[.]png$",full.names=TRUE)
+pn<-as.integer(sub("^page-([0-9]+)[.]png$","\\1",basename(files)))
+o<-order(pn);files<-files[o];pn<-pn[o]
+stopifnot(identical(pn,seq_along(pn)))
+old<-read.csv(file.path(c,"evidence/full_page_review_103.csv"))
+hashes<-unname(vapply(files,sha,character(1)))
+idx<-match(hashes,old$image_sha256)
+map<-data.frame(page=pn,image=substring(files,nchar(n)+2L),sha256=hashes,
+                exact_prior_page=old$page[idx],prior_status=old$status[idx],
+                final_visual_review="PENDING_ACTUAL_PAGE_INSPECTION")
+write.csv(map,file.path(n,"evidence/final_page_identity_map.csv"),row.names=FALSE)
+pdf<-file.path(n,"qa/main/Nature_Health_manuscript.pdf")
+info<-system2("/opt/homebrew/bin/pdfinfo",pdf,stdout=TRUE)
+pdf_pages<-as.integer(sub("^Pages:[[:space:]]*","",info[grepl("^Pages:",info)]))
+stopifnot(pdf_pages==length(files))
+writeLines(info,file.path(n,"evidence/pdfinfo.txt"))
+write_json(list(pages=length(files),exact_prior_page_images=sum(!is.na(idx)),new_page_images=pn[is.na(idx)],
+                pdf_sha256=sha(pdf),main_sha256=sha(file.path(n,"deliverables/Nature_Health_manuscript.docx")),
+                comparison_is_structural_not_a_substitute_for_final_visual_review=TRUE),
+           file.path(n,"evidence/page_index_summary.json"),pretty=TRUE,auto_unbox=TRUE)
+print(map[is.na(map$exact_prior_page),]);cat(length(files),"pages indexed;",sum(!is.na(idx)),"images are byte-exact to previously reviewed pages.\n")

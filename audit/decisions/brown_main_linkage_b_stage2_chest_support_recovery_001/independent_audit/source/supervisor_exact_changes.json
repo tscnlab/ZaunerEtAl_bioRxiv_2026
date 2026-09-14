@@ -1,0 +1,34 @@
+[
+  {
+    "before": "\"14_fit_registered_deletion.R\"},",
+    "after": "\"14_fit_registered_deletion.R\", \"18_construct_chest_b.R\"},"
+  },
+  {
+    "before": "frozen_continuation_inputs = {",
+    "after": "# Exact eight-site chest support recovery, with unchanged original count payloads.\nchest_recovery_job = \"CONSTRUCT-CHEST-B-SUPPORT-RECOVERY-001\"\nchest_recovery_driver = \"18_construct_chest_b_v2.R\"\nchest_recovery_sha = \"23f002ae17fc7e83a68fc777aa054bd279ad08f13845b8dbc9f3be467bc7a5d1\"\nif job_id == chest_recovery_job:\n    assert driver_path.name == chest_recovery_driver and not driver_args\n    assert hashlib.sha256(driver_path.read_bytes()).hexdigest() == chest_recovery_sha\nelse:\n    assert not job_id.startswith(\"CONSTRUCT-CHEST-B\"), \"No chest reconstruction alias.\"\n    assert driver_path.name != chest_recovery_driver, \"The corrected chest constructor has one registered job.\"\n    assert (jobs_root / chest_recovery_job / \"finish.json\").is_file(), \"Require corrected chest support before remaining jobs.\"\nfrozen_continuation_inputs = {"
+  },
+  {
+    "before": "}\nfor frozen_path, expected_hash in frozen_continuation_inputs.items():",
+    "after": "    '/Users/zauner/.codex/worktrees/82ab/ZaunerEtAl_bioRxiv_2026/audit/analyses/brown_adherence/main_linkage_b_amendment/stage2/completion_v2/continued_final_package_006/final_manifest.csv': 'b70906505f0f7951abadaa8b4d813cae3508ab68e10f49e6bca3942c65ac8d19',\n    '/Users/zauner/.codex/worktrees/82ab/ZaunerEtAl_bioRxiv_2026/audit/analyses/brown_adherence/main_linkage_b_amendment/stage2/placement/chest_b_frames/manifest.csv': '4b3d81f60a6ade6f522a13dd0e558a3f4fd3f752fda3e23c73768094688becbb',\n    '/Users/zauner/.codex/worktrees/82ab/ZaunerEtAl_bioRxiv_2026/audit/analyses/brown_adherence/main_linkage_b_amendment/stage2/code/18_construct_chest_b.R': '16469066db046eb3150b1433026922f2562b1960756258d75512924da1117c7c',\n    '/Users/zauner/Documents/Arbeit/12-TUM/MeLiDos/WP2.2.5_Data_Analysis/ZaunerEtAl_bioRxiv_2026/audit/decisions/brown_main_linkage_b_stage2_chest_support_recovery_001/audit_compute_accounting.csv': '14a6c02a4c1685e82d05a5f54ade0c5ed84d6d469c9f1d9b26794cd4abc60175',\n    '/Users/zauner/.codex/worktrees/82ab/ZaunerEtAl_bioRxiv_2026/audit/analyses/brown_adherence/main_linkage_b_amendment/stage2/preflight/execution_jobs/CONSTRUCT-CHEST-B/start.json': '57ece1000c826c8d752f371203c902d5e82315bc88e98ea994c5e0353c750ae5',\n    '/Users/zauner/.codex/worktrees/82ab/ZaunerEtAl_bioRxiv_2026/audit/analyses/brown_adherence/main_linkage_b_amendment/stage2/preflight/execution_jobs/CONSTRUCT-CHEST-B/finish.json': 'ade20223777186d297a760d549424ba7f0696edf8877d9ca639dd215306d4260',\n    '/Users/zauner/.codex/worktrees/82ab/ZaunerEtAl_bioRxiv_2026/audit/analyses/brown_adherence/main_linkage_b_amendment/stage2/preflight/execution_jobs/CONSTRUCT-CHEST-B/execution.log': 'c4bb915a86061a0736d785fa8adecd1e358b567a11790c4c7a9e2100def68a82',\n}\nfor frozen_path, expected_hash in frozen_continuation_inputs.items():"
+  },
+  {
+    "before": "\"DIAGNOSTICS-PRIMARY-ANY\", \"DERIVE-SENSITIVITY-SIMPLE-FRAMES\"):",
+    "after": "\"DIAGNOSTICS-PRIMARY-ANY\", \"DERIVE-SENSITIVITY-SIMPLE-FRAMES\", \"CONSTRUCT-CHEST-B\"):"
+  },
+  {
+    "before": "\"All four preserved failed jobs must remain in the accumulator.\"",
+    "after": "\"All five preserved failed jobs must remain in the accumulator.\""
+  },
+  {
+    "before": "independent_audit_seconds = 15.252081125009806",
+    "after": "independent_audit_seconds = 35.4437246250119"
+  },
+  {
+    "before": "    elif previous.name in deletion_drivers:",
+    "after": "    elif previous.name == \"CONSTRUCT-CHEST-B\":\n        historical_pins = {'start.json': '57ece1000c826c8d752f371203c902d5e82315bc88e98ea994c5e0353c750ae5', 'finish.json': 'ade20223777186d297a760d549424ba7f0696edf8877d9ca639dd215306d4260', 'execution.log': 'c4bb915a86061a0736d785fa8adecd1e358b567a11790c4c7a9e2100def68a82'}\n        for name, expected_sha256 in historical_pins.items():\n            assert hashlib.sha256((previous / name).read_bytes()).hexdigest() == expected_sha256\n        assert record[\"job_id\"] == previous.name\n        assert record[\"driver_sha256\"] == \"16469066db046eb3150b1433026922f2562b1960756258d75512924da1117c7c\"\n        assert record[\"supervisor_sha256\"] == \"675443a89be0b07821ebad7c309c665f4ec3f70f4e6dc2fcac8b9692fcb00669\"\n        assert record[\"exit_code\"] == 1 and not record[\"timed_out\"] and record[\"child_reaped\"]\n        assert record[\"elapsed_seconds\"] == 9.94224474998191\n    elif previous.name == chest_recovery_job:\n        assert record[\"job_id\"] == chest_recovery_job and record[\"driver_sha256\"] == chest_recovery_sha\n        assert Path(record[\"command\"][2]).name == chest_recovery_driver and len(record[\"command\"]) == 3\n        assert record[\"exit_code\"] == 0 and not record[\"timed_out\"] and record[\"child_reaped\"], \"New chest recovery failure needs a stopped disposition.\"\n    elif previous.name in deletion_drivers:"
+  },
+  {
+    "before": "\"construction_recovery_authority\": \"BA-018-DELETION-TARGET-RECOVERY-001\",",
+    "after": "\"construction_recovery_authority\": \"BA-018-CHEST-SUPPORT-RECOVERY-001\","
+  }
+]

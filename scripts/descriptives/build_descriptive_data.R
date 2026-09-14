@@ -8,74 +8,93 @@ load_descriptive_inputs <- function(root) {
   list(
     coverage = list(
       near_eye = readRDS(file.path(
-        root, "artifacts/03_coverage/light_glasses_coverage.rds"
+        root,
+        "artifacts/03_coverage/light_glasses_coverage.rds"
       )),
       chest = readRDS(file.path(
-        root, "artifacts/03_coverage/light_chest_coverage.rds"
+        root,
+        "artifacts/03_coverage/light_chest_coverage.rds"
       ))
     ),
     daily_coverage = list(
       near_eye = read_csv(file.path(
-        root, "artifacts/03_coverage/light_glasses_daily_coverage.csv"
+        root,
+        "artifacts/03_coverage/light_glasses_daily_coverage.csv"
       )),
       chest = read_csv(file.path(
-        root, "artifacts/03_coverage/light_chest_daily_coverage.csv"
+        root,
+        "artifacts/03_coverage/light_chest_daily_coverage.csv"
       ))
     ),
     metrics_30 = list(
       near_eye = read_csv(file.path(
-        root, "artifacts/05_metrics/metrics_glasses_30_minute.csv"
+        root,
+        "artifacts/05_metrics/metrics_glasses_30_minute.csv"
       )),
       chest = read_csv(file.path(
-        root, "artifacts/05_metrics/metrics_chest_30_minute.csv"
+        root,
+        "artifacts/05_metrics/metrics_chest_30_minute.csv"
       ))
     ),
     metrics_hour = list(
       near_eye = read_csv(file.path(
-        root, "artifacts/05_metrics/metrics_glasses_one_hour.csv"
+        root,
+        "artifacts/05_metrics/metrics_glasses_one_hour.csv"
       )),
       chest = read_csv(file.path(
-        root, "artifacts/05_metrics/metrics_chest_one_hour.csv"
+        root,
+        "artifacts/05_metrics/metrics_chest_one_hour.csv"
       ))
     ),
     metrics_long = list(
       near_eye = read_csv(file.path(
-        root, "artifacts/05_metrics/metrics_glasses_values_long.csv"
+        root,
+        "artifacts/05_metrics/metrics_glasses_values_long.csv"
       )),
       chest = read_csv(file.path(
-        root, "artifacts/05_metrics/metrics_chest_values_long.csv"
+        root,
+        "artifacts/05_metrics/metrics_chest_values_long.csv"
       ))
     ),
     participant_day = list(
       near_eye = read_csv(file.path(
-        root, "artifacts/05_metrics/metrics_glasses_participant_day.csv"
+        root,
+        "artifacts/05_metrics/metrics_glasses_participant_day.csv"
       )),
       chest = read_csv(file.path(
-        root, "artifacts/05_metrics/metrics_chest_participant_day.csv"
+        root,
+        "artifacts/05_metrics/metrics_chest_participant_day.csv"
       ))
     ),
     participant = list(
       near_eye = read_csv(file.path(
-        root, "artifacts/05_metrics/metrics_glasses_participant.csv"
+        root,
+        "artifacts/05_metrics/metrics_glasses_participant.csv"
       )),
       chest = read_csv(file.path(
-        root, "artifacts/05_metrics/metrics_chest_participant.csv"
+        root,
+        "artifacts/05_metrics/metrics_chest_participant.csv"
       ))
     ),
     demographics = readRDS(file.path(
-      root, "artifacts/06_model_data/normalized_inputs/demographics.rds"
+      root,
+      "artifacts/06_model_data/normalized_inputs/demographics.rds"
     )),
     chronotype = readRDS(file.path(
-      root, "artifacts/06_model_data/normalized_inputs/chronotype.rds"
+      root,
+      "artifacts/06_model_data/normalized_inputs/chronotype.rds"
     )),
     sleepdiaries = readRDS(file.path(
-      root, "artifacts/06_model_data/normalized_inputs/sleepdiaries.rds"
+      root,
+      "artifacts/06_model_data/normalized_inputs/sleepdiaries.rds"
     )),
     solar = readRDS(file.path(
-      root, "artifacts/06_model_data/context/site_solar_context.rds"
+      root,
+      "artifacts/06_model_data/context/site_solar_context.rds"
     )),
     showcase = read_csv(file.path(
-      root, "artifacts/11_source_data/prepared_day_showcase.csv"
+      root,
+      "artifacts/11_source_data/prepared_day_showcase.csv"
     )),
     selected_showcase = read_csv(file.path(
       root,
@@ -88,8 +107,131 @@ load_descriptive_inputs <- function(root) {
         "H01_stage3_photoperiod_latitude_bounds.csv"
       )
     )),
+    gap_mder = list(
+      participant_day = readRDS(file.path(
+        root,
+        paste0(
+          "artifacts/06_model_data/scenarios/manuscript_prepared_data/",
+          "participant_day_metrics.rds"
+        )
+      )),
+      support = readRDS(file.path(
+        root,
+        paste0(
+          "artifacts/06_model_data/scenarios/manuscript_prepared_data/",
+          "mder_support.rds"
+        )
+      ))
+    ),
     registry = read_csv(file.path(root, "config/metric_display_registry.csv"))
   )
+}
+
+prepare_gap_mder_values <- function(inputs) {
+  metric_id <- "mder_mean_of_viable_ratios"
+  position_to_placement <- c(glasses = "near_eye", chest = "chest")
+  key <- c("placement", "site", "Id", "local_date", "metric_id")
+
+  participant_day <- inputs$gap_mder$participant_day |>
+    dplyr::filter(.data$metric_id == .env$metric_id) |>
+    dplyr::mutate(
+      placement = unname(
+        .env$position_to_placement[as.character(.data$position)]
+      ),
+      local_date = as.Date(.data$local_date),
+      value = as.numeric(.data$manuscript_prepared_value)
+    ) |>
+    dplyr::select(dplyr::all_of(key), "value") |>
+    dplyr::arrange(
+      match(.data$placement, c("near_eye", "chest")),
+      .data$site,
+      .data$Id,
+      .data$local_date
+    )
+  support <- inputs$gap_mder$support |>
+    dplyr::filter(.data$metric_id == .env$metric_id) |>
+    dplyr::mutate(
+      placement = unname(
+        .env$position_to_placement[as.character(.data$position)]
+      ),
+      local_date = as.Date(.data$local_date),
+      value = as.numeric(.data$manuscript_prepared_value)
+    ) |>
+    dplyr::arrange(
+      match(.data$placement, c("near_eye", "chest")),
+      .data$site,
+      .data$Id,
+      .data$local_date
+    )
+
+  if (
+    nrow(participant_day) != 1708L ||
+      nrow(support) != 1708L ||
+      anyNA(participant_day$placement) ||
+      anyNA(support$placement)
+  ) {
+    stop(
+      "The repaired gap MDER source has an unexpected row domain",
+      call. = FALSE
+    )
+  }
+  assert_unique_descriptive_key(
+    participant_day,
+    key,
+    "Repaired gap MDER participant-day values"
+  )
+  assert_unique_descriptive_key(
+    support,
+    key,
+    "Repaired gap MDER support"
+  )
+  if (
+    !identical(
+      as.data.frame(participant_day[key]),
+      as.data.frame(support[key])
+    ) ||
+      !identical(participant_day$value, support$value)
+  ) {
+    stop("Repaired gap MDER values and support are not aligned", call. = FALSE)
+  }
+  expected_estimable <- is.finite(participant_day$value)
+  if (
+    !identical(as.logical(support$estimable), expected_estimable) ||
+      any(support$expected_minutes != 1440L) ||
+      any(support$minimum_viable_fraction != 0.5) ||
+      any(!support$support_threshold_enforced) ||
+      any(support$ratio_scaled_or_weighted) ||
+      any(
+        as.logical(support$passes_viable_ratio_support) !=
+          (support$viable_ratio_minutes >= 720L)
+      )
+  ) {
+    stop(
+      "The repaired gap MDER support contract is inconsistent",
+      call. = FALSE
+    )
+  }
+
+  participant_day |>
+    dplyr::mutate(
+      analysis_unit = "participant-day",
+      possible = TRUE,
+      finite = .env$expected_estimable,
+      underlying_days = NA_real_,
+      .before = "metric_id"
+    ) |>
+    dplyr::select(
+      placement,
+      site,
+      Id,
+      local_date,
+      analysis_unit,
+      metric_id,
+      value,
+      possible,
+      finite,
+      underlying_days
+    )
 }
 
 validate_descriptive_inputs <- function(inputs) {
@@ -116,6 +258,27 @@ validate_descriptive_inputs <- function(inputs) {
   if (dplyr::n_distinct(inputs$participant_day$chest$Id) != 154L) {
     stop("Expected 154 chest participants", call. = FALSE)
   }
+  gap_mder <- prepare_gap_mder_values(inputs)
+  gap_mder_summary <- gap_mder |>
+    dplyr::group_by(.data$placement) |>
+    dplyr::summarise(
+      total_days = dplyr::n(),
+      participants = dplyr::n_distinct(.data$Id[.data$finite]),
+      participant_days = sum(.data$finite),
+      mean = mean(.data$value[.data$finite]),
+      median = stats::median(.data$value[.data$finite]),
+      .groups = "drop"
+    ) |>
+    dplyr::arrange(match(.data$placement, c("near_eye", "chest")))
+  if (
+    !identical(gap_mder_summary$total_days, c(811L, 897L)) ||
+      !identical(gap_mder_summary$participants, c(137L, 152L)) ||
+      !identical(gap_mder_summary$participant_days, c(687L, 723L)) ||
+      max(abs(gap_mder_summary$mean - c(0.7242573, 0.7567377))) > 5e-8 ||
+      max(abs(gap_mder_summary$median - c(0.7238676, 0.7495175))) > 5e-8
+  ) {
+    stop("The repaired gap MDER summary differs from METRIC-010", call. = FALSE)
+  }
   paired <- dplyr::inner_join(
     dplyr::select(inputs$participant_day$near_eye, dplyr::all_of(day_key)),
     dplyr::select(inputs$participant_day$chest, dplyr::all_of(day_key)),
@@ -126,11 +289,23 @@ validate_descriptive_inputs <- function(inputs) {
   }
   expected_rows <- c(near_eye = 816L, chest = 902L)
   for (placement in names(expected_rows)) {
-    if (nrow(inputs$metrics_30[[placement]]) != expected_rows[[placement]] * 48L) {
-      stop("The 30-minute metric grid is incomplete for ", placement, call. = FALSE)
+    if (
+      nrow(inputs$metrics_30[[placement]]) != expected_rows[[placement]] * 48L
+    ) {
+      stop(
+        "The 30-minute metric grid is incomplete for ",
+        placement,
+        call. = FALSE
+      )
     }
-    if (nrow(inputs$metrics_hour[[placement]]) != expected_rows[[placement]] * 24L) {
-      stop("The hourly metric grid is incomplete for ", placement, call. = FALSE)
+    if (
+      nrow(inputs$metrics_hour[[placement]]) != expected_rows[[placement]] * 24L
+    ) {
+      stop(
+        "The hourly metric grid is incomplete for ",
+        placement,
+        call. = FALSE
+      )
     }
     coverage_keys <- inputs$coverage[[placement]] |>
       dplyr::filter(.data$day_eligible) |>
@@ -159,7 +334,10 @@ validate_descriptive_inputs <- function(inputs) {
     integer(1)
   )
   if (!identical(unname(all_zero_counts), c(2L, 3L))) {
-    stop("Expected two near-eye and three chest all-zero exclusions", call. = FALSE)
+    stop(
+      "Expected two near-eye and three chest all-zero exclusions",
+      call. = FALSE
+    )
   }
   assert_unique_descriptive_key(
     inputs$solar,
@@ -167,19 +345,29 @@ validate_descriptive_inputs <- function(inputs) {
     "Site solar context"
   )
   required_bound_columns <- c(
-    "absolute_latitude_deg", "minimum_possible_photoperiod_hours",
-    "maximum_possible_photoperiod_hours", "calendar_year",
+    "absolute_latitude_deg",
+    "minimum_possible_photoperiod_hours",
+    "maximum_possible_photoperiod_hours",
+    "calendar_year",
     "solar_depression_deg"
   )
   if (!all(required_bound_columns %in% names(inputs$photoperiod_bounds))) {
-    stop("The verified H1 photoperiod-bound source is incomplete", call. = FALSE)
+    stop(
+      "The verified H1 photoperiod-bound source is incomplete",
+      call. = FALSE
+    )
   }
-  if (any(
-    inputs$photoperiod_bounds$minimum_possible_photoperiod_hours >
-      inputs$photoperiod_bounds$maximum_possible_photoperiod_hours,
-    na.rm = TRUE
-  )) {
-    stop("The verified H1 photoperiod bounds are internally inconsistent", call. = FALSE)
+  if (
+    any(
+      inputs$photoperiod_bounds$minimum_possible_photoperiod_hours >
+        inputs$photoperiod_bounds$maximum_possible_photoperiod_hours,
+      na.rm = TRUE
+    )
+  ) {
+    stop(
+      "The verified H1 photoperiod bounds are internally inconsistent",
+      call. = FALSE
+    )
   }
   invisible(inputs)
 }
@@ -203,15 +391,28 @@ build_collection_days <- function(inputs) {
     dplyr::mutate(paired_day = TRUE)
   solar <- inputs$solar |>
     dplyr::select(
-      site, local_date, city, country, location, timezone, latitude_deg,
-      longitude_deg, photoperiod_hours, civil_dawn_wall_minute,
+      site,
+      local_date,
+      city,
+      country,
+      location,
+      timezone,
+      latitude_deg,
+      longitude_deg,
+      photoperiod_hours,
+      civil_dawn_wall_minute,
       civil_dusk_wall_minute
     )
   make_days <- function(data, placement) {
     data |>
       dplyr::select(
-        site, Id, local_date, valid_medi_real_minutes, expected_real_minutes,
-        daily_ordinary_support, measurement_construct
+        site,
+        Id,
+        local_date,
+        valid_medi_real_minutes,
+        expected_real_minutes,
+        daily_ordinary_support,
+        measurement_construct
       ) |>
       dplyr::mutate(
         local_date = as.Date(.data$local_date),
@@ -276,10 +477,12 @@ build_available_collection_days <- function(inputs) {
       function(site_code) {
         calculate_site_solar_context(
           site_dates = dplyr::filter(
-            missing_date_domain, .data$site == .env$site_code
+            missing_date_domain,
+            .data$site == .env$site_code
           ),
           site_metadata_row = dplyr::filter(
-            site_metadata, .data$site == .env$site_code
+            site_metadata,
+            .data$site == .env$site_code
           ),
           solar_depression_deg = 6
         )
@@ -306,7 +509,9 @@ build_available_collection_days <- function(inputs) {
       sep = "\r"
     )
     observed_keys <- paste(
-      extension$site, as.Date(extension$local_date), sep = "\r"
+      extension$site,
+      as.Date(extension$local_date),
+      sep = "\r"
     )
     if (!setequal(expected_keys, observed_keys)) {
       stop(
@@ -316,8 +521,7 @@ build_available_collection_days <- function(inputs) {
     }
     extension |>
       dplyr::mutate(
-        solar_context_origin =
-          "canonical extension for available non-all-zero day"
+        solar_context_origin = "canonical extension for available non-all-zero day"
       )
   } else {
     inputs$solar[0, ] |>
@@ -331,14 +535,26 @@ build_available_collection_days <- function(inputs) {
     extended_solar
   ) |>
     dplyr::semi_join(
-      available_date_domain, by = c("site", "local_date")
+      available_date_domain,
+      by = c("site", "local_date")
     ) |>
     dplyr::select(
-      site, local_date, city, country, location, timezone, latitude_deg,
-      longitude_deg, photoperiod_hours, civil_dawn_wall_minute,
-      civil_dusk_wall_minute, solar_context_origin,
-      solar_context_algorithm, solar_depression_deg,
-      coordinate_source, coordinate_source_version
+      site,
+      local_date,
+      city,
+      country,
+      location,
+      timezone,
+      latitude_deg,
+      longitude_deg,
+      photoperiod_hours,
+      civil_dawn_wall_minute,
+      civil_dusk_wall_minute,
+      solar_context_origin,
+      solar_context_algorithm,
+      solar_depression_deg,
+      coordinate_source,
+      coordinate_source_version
     )
   make_days <- function(data, placement) {
     data |>
@@ -363,16 +579,20 @@ build_available_collection_days <- function(inputs) {
   paired <- days |>
     dplyr::count(.data$site, .data$Id, .data$local_date, name = "placements") |>
     dplyr::mutate(paired_available = .data$placements == 2L) |>
-      dplyr::select(dplyr::all_of(day_key), "paired_available")
+    dplyr::select(dplyr::all_of(day_key), "paired_available")
   days <- days |>
     dplyr::left_join(paired, by = day_key) |>
     dplyr::arrange(
       factor(.data$placement, levels = c("near_eye", "chest")),
       factor(.data$site, levels = descriptive_site_order()),
-      .data$Id, .data$local_date
+      .data$Id,
+      .data$local_date
     )
   if (anyNA(days$photoperiod_hours)) {
-    stop("An available participant-day has no verified solar context", call. = FALSE)
+    stop(
+      "An available participant-day has no verified solar context",
+      call. = FALSE
+    )
   }
   assert_unique_descriptive_key(
     days,
@@ -390,12 +610,18 @@ add_overall_rows <- function(data, summarise_function) {
 }
 
 build_site_sample_characteristics <- function(
-  inputs, collection_days, available_collection_days
+  inputs,
+  collection_days,
+  available_collection_days
 ) {
   sites <- inputs$solar |>
     dplyr::distinct(
-      .data$site, .data$city, .data$country, .data$location,
-      .data$latitude_deg, .data$longitude_deg
+      .data$site,
+      .data$city,
+      .data$country,
+      .data$location,
+      .data$latitude_deg,
+      .data$longitude_deg
     )
   roster <- inputs$demographics |>
     dplyr::count(.data$site, name = "roster_participants")
@@ -432,9 +658,15 @@ build_site_sample_characteristics <- function(
     tidyr::pivot_wider(
       names_from = "placement",
       values_from = c(
-        "participants", "participant_days", "weekdays", "weekends",
-        "first_date", "last_date", "photoperiod_median_h",
-        "photoperiod_q1_h", "photoperiod_q3_h"
+        "participants",
+        "participant_days",
+        "weekdays",
+        "weekends",
+        "first_date",
+        "last_date",
+        "photoperiod_median_h",
+        "photoperiod_q1_h",
+        "photoperiod_q3_h"
       ),
       names_glue = "{placement}_{.value}"
     )
@@ -449,16 +681,25 @@ build_site_sample_characteristics <- function(
     tidyr::pivot_wider(
       names_from = "placement",
       values_from = c(
-        "participants", "participant_days", "weekdays", "weekends",
-        "first_date", "last_date", "photoperiod_median_h",
-        "photoperiod_q1_h", "photoperiod_q3_h"
+        "participants",
+        "participant_days",
+        "weekdays",
+        "weekends",
+        "first_date",
+        "last_date",
+        "photoperiod_median_h",
+        "photoperiod_q1_h",
+        "photoperiod_q3_h"
       ),
       names_glue = "{placement}_available_{.value}"
     )
 
   available_union <- available_collection_days |>
     dplyr::distinct(
-      .data$site, .data$Id, .data$local_date, .data$weekend,
+      .data$site,
+      .data$Id,
+      .data$local_date,
+      .data$weekend,
       .data$photoperiod_hours
     )
   union_summary <- function(data) {
@@ -475,10 +716,12 @@ build_site_sample_characteristics <- function(
           .data$photoperiod_hours
         ),
         available_union_photoperiod_p05_h = finite_quantile(
-          .data$photoperiod_hours, 0.05
+          .data$photoperiod_hours,
+          0.05
         ),
         available_union_photoperiod_p95_h = finite_quantile(
-          .data$photoperiod_hours, 0.95
+          .data$photoperiod_hours,
+          0.95
         ),
         .groups = "drop"
       )
@@ -508,7 +751,8 @@ build_site_sample_characteristics <- function(
       )
     ) |>
       dplyr::mutate(
-        declared_nonwear_percent = 100 * .data$declared_nonwear_minutes /
+        declared_nonwear_percent = 100 *
+          .data$declared_nonwear_minutes /
           .data$real_minutes,
         placement = placement
       )
@@ -520,7 +764,8 @@ build_site_sample_characteristics <- function(
     tidyr::pivot_wider(
       names_from = "placement",
       values_from = c(
-        "real_minutes", "declared_nonwear_minutes",
+        "real_minutes",
+        "declared_nonwear_minutes",
         "declared_nonwear_percent"
       ),
       names_glue = "{placement}_{.value}"
@@ -555,7 +800,8 @@ build_site_sample_characteristics <- function(
     tidyr::pivot_wider(
       names_from = "placement",
       values_from = c(
-        "complete_before_all_zero_screen", "all_zero_days_excluded"
+        "complete_before_all_zero_screen",
+        "all_zero_days_excluded"
       ),
       names_glue = "{placement}_{.value}"
     )
@@ -598,9 +844,13 @@ build_site_sample_characteristics <- function(
   result <- dplyr::bind_rows(
     sites,
     data.frame(
-      site = "Overall", city = "", country = "",
-      location = "All nine sites", latitude_deg = NA_real_,
-      longitude_deg = NA_real_, stringsAsFactors = FALSE
+      site = "Overall",
+      city = "",
+      country = "",
+      location = "All nine sites",
+      latitude_deg = NA_real_,
+      longitude_deg = NA_real_,
+      stringsAsFactors = FALSE
     )
   ) |>
     dplyr::left_join(roster, by = "site") |>
@@ -641,9 +891,12 @@ continuous_characteristic_row <- function(
   if (circular) {
     summary <- circular_descriptive_summary(values)
     display <- paste0(
-      format_clock_minute(summary[["median"]]), " [",
-      format_clock_minute(summary[["q1"]]), ", ",
-      format_clock_minute(summary[["q3"]]), "]"
+      format_clock_minute(summary[["median"]]),
+      " [",
+      format_clock_minute(summary[["q1"]]),
+      ", ",
+      format_clock_minute(summary[["q3"]]),
+      "]"
     )
     minimum <- maximum <- NA_real_
   } else {
@@ -657,9 +910,12 @@ continuous_characteristic_row <- function(
     minimum <- if (length(values)) min(values) else NA_real_
     maximum <- if (length(values)) max(values) else NA_real_
     display <- paste0(
-      format_number_compact(summary[["median"]], 3L), " [",
-      format_number_compact(summary[["q1"]], 3L), ", ",
-      format_number_compact(summary[["q3"]], 3L), "]"
+      format_number_compact(summary[["median"]], 3L),
+      " [",
+      format_number_compact(summary[["q1"]], 3L),
+      ", ",
+      format_number_compact(summary[["q3"]], 3L),
+      "]"
     )
   }
   data.frame(
@@ -717,14 +973,33 @@ categorical_characteristic_rows <- function(
       unit = "n (%)",
       n_available = denominator,
       n_denominator = denominator,
-      mean = NA_real_, q1 = NA_real_, median = NA_real_, q3 = NA_real_,
-      minimum = NA_real_, maximum = NA_real_, circular_resultant = NA_real_,
+      mean = NA_real_,
+      q1 = NA_real_,
+      median = NA_real_,
+      q3 = NA_real_,
+      minimum = NA_real_,
+      maximum = NA_real_,
+      circular_resultant = NA_real_,
       display = .data$display
     ) |>
     dplyr::select(
-      section, characteristic, level, analysis_unit, unit, n_available,
-      n_denominator, count, percent, mean, q1, median, q3, minimum, maximum,
-      circular_resultant, display
+      section,
+      characteristic,
+      level,
+      analysis_unit,
+      unit,
+      n_available,
+      n_denominator,
+      count,
+      percent,
+      mean,
+      q1,
+      median,
+      q3,
+      minimum,
+      maximum,
+      circular_resultant,
+      display
     )
 }
 
@@ -734,14 +1009,23 @@ build_participant_characteristics <- function(inputs) {
     dplyr::left_join(
       inputs$demographics |>
         dplyr::select(
-          site, Id, age, sex, gender, employment_status
+          site,
+          Id,
+          age,
+          sex,
+          gender,
+          employment_status
         ),
       by = c("site", "Id")
     ) |>
     dplyr::left_join(
       inputs$chronotype |>
         dplyr::select(
-          Id, meq_type, meq, msf_sc, sjl
+          Id,
+          meq_type,
+          meq,
+          msf_sc,
+          sjl
         ),
       by = "Id"
     ) |>
@@ -772,54 +1056,97 @@ build_participant_characteristics <- function(inputs) {
     participant_count <- nrow(participant_data)
     rows <- list(
       data.frame(
-        section = "Sample", characteristic = "Participants",
-        level = "Main near-eye dataset", analysis_unit = "participant",
-        unit = "n", n_available = participant_count,
-        n_denominator = participant_count, count = participant_count,
-        percent = 100, mean = NA_real_, q1 = NA_real_, median = NA_real_,
-        q3 = NA_real_, minimum = NA_real_, maximum = NA_real_,
-        circular_resultant = NA_real_, display = as.character(participant_count),
+        section = "Sample",
+        characteristic = "Participants",
+        level = "Main near-eye dataset",
+        analysis_unit = "participant",
+        unit = "n",
+        n_available = participant_count,
+        n_denominator = participant_count,
+        count = participant_count,
+        percent = 100,
+        mean = NA_real_,
+        q1 = NA_real_,
+        median = NA_real_,
+        q3 = NA_real_,
+        minimum = NA_real_,
+        maximum = NA_real_,
+        circular_resultant = NA_real_,
+        display = as.character(participant_count),
         stringsAsFactors = FALSE
       ),
       continuous_characteristic_row(
-        participant_data, "age", "Age", "Demographics", "years"
+        participant_data,
+        "age",
+        "Age",
+        "Demographics",
+        "years"
       ),
       categorical_characteristic_rows(
-        participant_data, "sex", "Sex", "Demographics"
+        participant_data,
+        "sex",
+        "Sex",
+        "Demographics"
       ),
       categorical_characteristic_rows(
-        participant_data, "gender", "Gender", "Demographics"
+        participant_data,
+        "gender",
+        "Gender",
+        "Demographics"
       ),
       categorical_characteristic_rows(
-        participant_data, "employment_status", "Employment status",
+        participant_data,
+        "employment_status",
+        "Employment status",
         "Demographics"
       ),
       continuous_characteristic_row(
-        participant_data, "meq", "Morningness–Eveningness Questionnaire score",
-        "Chronotype", "score"
+        participant_data,
+        "meq",
+        "Morningness–Eveningness Questionnaire score",
+        "Chronotype",
+        "score"
       ),
       categorical_characteristic_rows(
-        participant_data, "meq_group", "Chronotype group", "Chronotype"
+        participant_data,
+        "meq_group",
+        "Chronotype group",
+        "Chronotype"
       ),
       continuous_characteristic_row(
-        participant_data, "msf_sc", "Sleep-corrected midsleep on free days",
-        "Chronotype", "clock time",
+        participant_data,
+        "msf_sc",
+        "Sleep-corrected midsleep on free days",
+        "Chronotype",
+        "clock time",
         transform = function(x) as.numeric(x) / 60,
         circular = TRUE
       ),
       continuous_characteristic_row(
-        participant_data, "sjl", "Social jetlag", "Chronotype", "hours",
+        participant_data,
+        "sjl",
+        "Social jetlag",
+        "Chronotype",
+        "hours",
         transform = function(x) as.numeric(x, units = "hours")
       ),
       data.frame(
-        section = "Sleep diary", characteristic = "Participants with eligible sleep diary",
-        level = "", analysis_unit = "participant", unit = "n",
+        section = "Sleep diary",
+        characteristic = "Participants with eligible sleep diary",
+        level = "",
+        analysis_unit = "participant",
+        unit = "n",
         n_available = dplyr::n_distinct(sleep_data$Id),
         n_denominator = participant_count,
         count = dplyr::n_distinct(sleep_data$Id),
         percent = 100 * dplyr::n_distinct(sleep_data$Id) / participant_count,
-        mean = NA_real_, q1 = NA_real_, median = NA_real_, q3 = NA_real_,
-        minimum = NA_real_, maximum = NA_real_, circular_resultant = NA_real_,
+        mean = NA_real_,
+        q1 = NA_real_,
+        median = NA_real_,
+        q3 = NA_real_,
+        minimum = NA_real_,
+        maximum = NA_real_,
+        circular_resultant = NA_real_,
         display = sprintf(
           "%d (%.1f%%)",
           dplyr::n_distinct(sleep_data$Id),
@@ -828,16 +1155,31 @@ build_participant_characteristics <- function(inputs) {
         stringsAsFactors = FALSE
       ),
       data.frame(
-        section = "Sleep diary", characteristic = "Eligible sleep diary records",
-        level = "", analysis_unit = "diary record", unit = "n",
-        n_available = nrow(sleep_data), n_denominator = nrow(sleep_data),
-        count = nrow(sleep_data), percent = 100,
-        mean = NA_real_, q1 = NA_real_, median = NA_real_, q3 = NA_real_,
-        minimum = NA_real_, maximum = NA_real_, circular_resultant = NA_real_,
-        display = as.character(nrow(sleep_data)), stringsAsFactors = FALSE
+        section = "Sleep diary",
+        characteristic = "Eligible sleep diary records",
+        level = "",
+        analysis_unit = "diary record",
+        unit = "n",
+        n_available = nrow(sleep_data),
+        n_denominator = nrow(sleep_data),
+        count = nrow(sleep_data),
+        percent = 100,
+        mean = NA_real_,
+        q1 = NA_real_,
+        median = NA_real_,
+        q3 = NA_real_,
+        minimum = NA_real_,
+        maximum = NA_real_,
+        circular_resultant = NA_real_,
+        display = as.character(nrow(sleep_data)),
+        stringsAsFactors = FALSE
       ),
       continuous_characteristic_row(
-        sleep_data, "sleep_duration", "Sleep duration", "Sleep diary", "hours",
+        sleep_data,
+        "sleep_duration",
+        "Sleep duration",
+        "Sleep diary",
+        "hours",
         transform = function(x) as.numeric(x, units = "hours"),
         analysis_unit = "diary record"
       )
@@ -869,7 +1211,10 @@ build_metric_values <- function(inputs) {
     )
   make_long <- function(data, participant, placement) {
     data |>
-      dplyr::filter(.data$metric %in% registry$metric_id) |>
+      dplyr::filter(
+        .data$metric %in% registry$metric_id,
+        .data$metric != "mder_mean_of_viable_ratios"
+      ) |>
       dplyr::rename(metric_id = metric) |>
       dplyr::left_join(
         dplyr::select(participant, Id, underlying_days = days),
@@ -882,8 +1227,16 @@ build_metric_values <- function(inputs) {
         finite = .data$estimable & is.finite(.data$value)
       ) |>
       dplyr::select(
-        placement, site, Id, local_date, analysis_unit, metric_id, value,
-        possible, finite, underlying_days
+        placement,
+        site,
+        Id,
+        local_date,
+        analysis_unit,
+        metric_id,
+        value,
+        possible,
+        finite,
+        underlying_days
       )
   }
   make_grid <- function(data, placement, metric_id, analysis_unit) {
@@ -935,7 +1288,8 @@ build_metric_values <- function(inputs) {
       "chest",
       "one_hour_geometric_mean_medi",
       "participant-hour"
-    )
+    ),
+    prepare_gap_mder_values(inputs)
   ) |>
     dplyr::left_join(
       dplyr::select(registry, -dplyr::all_of("analysis_unit")),
@@ -950,7 +1304,10 @@ build_metric_values <- function(inputs) {
     ) |>
     dplyr::arrange(
       factor(.data$placement, levels = c("near_eye", "chest")),
-      .data$metric_id, .data$site, .data$Id, .data$local_date
+      .data$metric_id,
+      .data$site,
+      .data$Id,
+      .data$local_date
     ) |>
     dplyr::mutate(
       site = as.character(.data$site),
@@ -971,9 +1328,12 @@ summarise_one_metric_group <- function(data, group_key) {
     )
     display_mean <- format_clock_minute(stats[["mean"]])
     display_middle <- paste0(
-      format_clock_minute(stats[["median"]]), " [",
-      format_clock_minute(stats[["q1"]]), ", ",
-      format_clock_minute(stats[["q3"]]), "]"
+      format_clock_minute(stats[["median"]]),
+      " [",
+      format_clock_minute(stats[["q1"]]),
+      ", ",
+      format_clock_minute(stats[["q3"]]),
+      "]"
     )
   } else {
     stats <- c(
@@ -986,9 +1346,12 @@ summarise_one_metric_group <- function(data, group_key) {
     )
     display_mean <- format_number_compact(stats[["mean"]], 4L)
     display_middle <- paste0(
-      format_number_compact(stats[["median"]], 4L), " [",
-      format_number_compact(stats[["q1"]], 4L), ", ",
-      format_number_compact(stats[["q3"]], 4L), "]"
+      format_number_compact(stats[["median"]], 4L),
+      " [",
+      format_number_compact(stats[["q1"]], 4L),
+      ", ",
+      format_number_compact(stats[["q3"]], 4L),
+      "]"
     )
   }
   analysis_unit <- group_key$analysis_unit[[1L]]
@@ -997,7 +1360,9 @@ summarise_one_metric_group <- function(data, group_key) {
   } else {
     dplyr::n_distinct(
       paste(
-        group_key$site[[1L]], data$Id[finite], data$local_date[finite],
+        group_key$site[[1L]],
+        data$Id[finite],
+        data$local_date[finite],
         sep = "|"
       )
     )
@@ -1021,9 +1386,18 @@ summarise_one_metric_group <- function(data, group_key) {
 
 build_metric_summary <- function(metric_values) {
   grouping <- c(
-    "placement", "placement_label", "site", "metric_id", "manuscript_name",
-    "metric_label", "abbreviation", "manuscript_category", "analysis_unit",
-    "display_unit", "analytical_role", "variant_label"
+    "placement",
+    "placement_label",
+    "site",
+    "metric_id",
+    "manuscript_name",
+    "metric_label",
+    "abbreviation",
+    "manuscript_category",
+    "analysis_unit",
+    "display_unit",
+    "analytical_role",
+    "variant_label"
   )
   by_site <- metric_values |>
     dplyr::group_by(dplyr::across(dplyr::all_of(grouping))) |>
@@ -1099,6 +1473,8 @@ aggregate_profile_values <- function(data, by_site) {
     value_upper_67_lx = finite_quantile(MEDI, 0.835),
     value_lower_75_lx = finite_quantile(MEDI, 0.125),
     value_upper_75_lx = finite_quantile(MEDI, 0.875),
+    value_lower_90_lx = finite_quantile(MEDI, 0.05),
+    value_upper_90_lx = finite_quantile(MEDI, 0.95),
     value_lower_95_lx = finite_quantile(MEDI, 0.025),
     value_upper_95_lx = finite_quantile(MEDI, 0.975),
     n_participants = dplyr::n_distinct(
@@ -1114,7 +1490,8 @@ aggregate_profile_values <- function(data, by_site) {
   aggregated |>
     dplyr::transmute(
       site = as.character(.data$site),
-      clock_minute = lubridate::hour(.data$Datetime) * 60 +
+      clock_minute = lubridate::hour(.data$Datetime) *
+        60 +
         lubridate::minute(.data$Datetime),
       median_lx = .data$MEDI,
       value_lower_50_lx = .data$value_lower_50_lx,
@@ -1123,6 +1500,8 @@ aggregate_profile_values <- function(data, by_site) {
       value_upper_67_lx = .data$value_upper_67_lx,
       value_lower_75_lx = .data$value_lower_75_lx,
       value_upper_75_lx = .data$value_upper_75_lx,
+      value_lower_90_lx = .data$value_lower_90_lx,
+      value_upper_90_lx = .data$value_upper_90_lx,
       value_lower_95_lx = .data$value_lower_95_lx,
       value_upper_95_lx = .data$value_upper_95_lx,
       n_participants = as.integer(.data$n_participants),
@@ -1164,7 +1543,8 @@ aggregate_profile_states <- function(data, by_site) {
   aggregated |>
     dplyr::transmute(
       site = as.character(.data$site),
-      clock_minute = lubridate::hour(.data$Datetime) * 60 +
+      clock_minute = lubridate::hour(.data$Datetime) *
+        60 +
         lubridate::minute(.data$Datetime),
       wake = .data$wake,
       pre_sleep = .data$pre_sleep,
@@ -1183,14 +1563,14 @@ build_aggregated_profile_sources <- function(coverage, placement) {
     dplyr::mutate(
       placement = placement,
       placement_label = placement_reader_label(placement),
-      interval_levels = "0.50;0.67;0.75;0.95",
+      interval_levels = "0.50;0.67;0.75;0.90;0.95",
       aggregation_minutes = 15L,
       aggregation_method = paste(
         "LightLogR::aggregate_Datetime with type = floor after removing",
         "participant grouping; numeric handler = median with na.rm = TRUE."
       ),
       uncertainty_definition = paste(
-        "Pointwise central 50%, 67%, 75%, and 95% value intervals across",
+        "Pointwise central 50%, 67%, 75%, 90%, and 95% value intervals across",
         "eligible one-minute melEDI values in each 15-minute bin."
       ),
       .before = 1L
@@ -1202,7 +1582,9 @@ build_aggregated_profile_sources <- function(coverage, placement) {
     sleep = "Sleep"
   )
   state_colours <- c(
-    wake = "#0072B2", pre_sleep = "#E69F00", sleep = "#D73027"
+    wake = "#0072B2",
+    pre_sleep = "#E69F00",
+    sleep = "#D73027"
   )
   band_geometry <- data.frame(
     context = names(state_columns),
@@ -1279,16 +1661,20 @@ mean_profile_periods <- function(daily_clock, placement, bin_minutes = 1L) {
     dplyr::summarise(
       mean_sleep_start_minute = round(
         finite_mean(.data$sleep_start_minute) / 15
-      ) * 15,
+      ) *
+        15,
       mean_sleep_end_minute = round(
         finite_mean(.data$sleep_end_minute) / 15
-      ) * 15,
+      ) *
+        15,
       mean_civil_dawn_minute = round(
         finite_mean(.data$civil_dawn_wall_minute) / 15
-      ) * 15,
+      ) *
+        15,
       mean_civil_dusk_minute = round(
         finite_mean(.data$civil_dusk_wall_minute) / 15
-      ) * 15,
+      ) *
+        15,
       n_participants = dplyr::n_distinct(.data$Id),
       participant_days = sum(.data$n_days),
       .groups = "drop"
@@ -1309,12 +1695,19 @@ mean_profile_periods <- function(daily_clock, placement, bin_minutes = 1L) {
 build_profile_sources_one_placement <- function(coverage, solar, placement) {
   solar_small <- solar |>
     dplyr::select(
-      site, local_date, civil_dawn_wall_minute, civil_dusk_wall_minute
+      site,
+      local_date,
+      civil_dawn_wall_minute,
+      civil_dusk_wall_minute
     )
   daily_clock <- coverage |>
     dplyr::filter(.data$day_eligible) |>
     dplyr::select(
-      site, Id, local_date, clock_minute, State.Brown
+      site,
+      Id,
+      local_date,
+      clock_minute,
+      State.Brown
     ) |>
     dplyr::left_join(solar_small, by = c("site", "local_date")) |>
     dplyr::mutate(sleep = .data$State.Brown == "sleep")
@@ -1323,17 +1716,23 @@ build_profile_sources_one_placement <- function(coverage, solar, placement) {
   }
   profile_sources <- build_aggregated_profile_sources(coverage, placement)
   profile_sources$period <- mean_profile_periods(
-    daily_clock, placement, bin_minutes = 1L
+    daily_clock,
+    placement,
+    bin_minutes = 1L
   )
   profile_sources
 }
 
 build_profile_sources <- function(inputs) {
   near_eye <- build_profile_sources_one_placement(
-    inputs$coverage$near_eye, inputs$solar, "near_eye"
+    inputs$coverage$near_eye,
+    inputs$solar,
+    "near_eye"
   )
   chest <- build_profile_sources_one_placement(
-    inputs$coverage$chest, inputs$solar, "chest"
+    inputs$coverage$chest,
+    inputs$solar,
+    "chest"
   )
   list(
     profile = dplyr::bind_rows(near_eye$profile, chest$profile) |>
@@ -1399,19 +1798,30 @@ build_recommendation_context <- function(inputs) {
     )
   all_day_minutes <- inputs$coverage$near_eye |>
     dplyr::filter(.data$day_eligible) |>
-    dplyr::count(.data$site, .data$Id, .data$local_date, name = "all_real_minutes")
+    dplyr::count(
+      .data$site,
+      .data$Id,
+      .data$local_date,
+      name = "all_real_minutes"
+    )
   observed_day_state <- minute_data |>
     dplyr::filter(.data$brown_state %in% contract$brown_state) |>
     dplyr::group_by(
-      .data$site, .data$Id, .data$local_date, .data$brown_state,
-      .data$period, .data$comparator, .data$threshold_lx,
+      .data$site,
+      .data$Id,
+      .data$local_date,
+      .data$brown_state,
+      .data$period,
+      .data$comparator,
+      .data$threshold_lx,
       .data$measurement_interpretation
     ) |>
     dplyr::summarise(
       state_real_minutes = dplyr::n(),
       valid_one_minute_observations = sum(.data$valid),
       minutes_in_contextual_range = sum(
-        .data$in_contextual_range, na.rm = TRUE
+        .data$in_contextual_range,
+        na.rm = TRUE
       ),
       .groups = "drop"
     )
@@ -1424,8 +1834,14 @@ build_recommendation_context <- function(inputs) {
     dplyr::left_join(
       observed_day_state,
       by = c(
-        "site", "Id", "local_date", "brown_state", "period",
-        "comparator", "threshold_lx", "measurement_interpretation"
+        "site",
+        "Id",
+        "local_date",
+        "brown_state",
+        "period",
+        "comparator",
+        "threshold_lx",
+        "measurement_interpretation"
       )
     ) |>
     dplyr::mutate(
@@ -1445,7 +1861,11 @@ build_recommendation_context <- function(inputs) {
       )
     )
   grouping <- c(
-    "site", "brown_state", "period", "comparator", "threshold_lx",
+    "site",
+    "brown_state",
+    "period",
+    "comparator",
+    "threshold_lx",
     "measurement_interpretation"
   )
   summarise_context <- function(data) {
@@ -1465,19 +1885,20 @@ build_recommendation_context <- function(inputs) {
           .data$minutes_in_contextual_range
         ),
         n_all_eligible_real_minutes = sum(.data$all_real_minutes),
-        pooled_fraction_in_contextual_range =
-          .data$n_minutes_in_contextual_range /
+        pooled_fraction_in_contextual_range = .data$n_minutes_in_contextual_range /
           .data$n_valid_one_minute_observations,
-        state_fraction_of_eligible_minutes =
-          .data$n_state_real_minutes / .data$n_all_eligible_real_minutes,
+        state_fraction_of_eligible_minutes = .data$n_state_real_minutes /
+          .data$n_all_eligible_real_minutes,
         participant_day_q1 = finite_quantile(
-          .data$participant_day_fraction, 0.25
+          .data$participant_day_fraction,
+          0.25
         ),
         participant_day_median = finite_median(
           .data$participant_day_fraction
         ),
         participant_day_q3 = finite_quantile(
-          .data$participant_day_fraction, 0.75
+          .data$participant_day_fraction,
+          0.75
         ),
         .groups = "drop"
       )
@@ -1506,7 +1927,10 @@ build_time_series_sources <- function(inputs) {
     dplyr::left_join(
       inputs$participant_day$near_eye |>
         dplyr::select(
-          site, participant = Id, local_date, duration_above_250_wake_h
+          site,
+          participant = Id,
+          local_date,
+          duration_above_250_wake_h
         ),
       by = c("site", "participant", "local_date")
     ) |>
@@ -1532,7 +1956,10 @@ build_time_series_sources <- function(inputs) {
       )
     )
   if (nrow(series) != 1440L) {
-    stop("The selected showcase day must contain 1,440 wall-clock minutes", call. = FALSE)
+    stop(
+      "The selected showcase day must contain 1,440 wall-clock minutes",
+      call. = FALSE
+    )
   }
   metrics <- inputs$participant_day$near_eye |>
     dplyr::filter(
@@ -1541,22 +1968,36 @@ build_time_series_sources <- function(inputs) {
       as.Date(.data$local_date) == as.Date(selected$local_date[[1L]])
     )
   if (nrow(metrics) != 1L) {
-    stop("The showcase day did not match one verified metric row", call. = FALSE)
+    stop(
+      "The showcase day did not match one verified metric row",
+      call. = FALSE
+    )
   }
   annotation_spec <- data.frame(
     metric_id = c(
-      "daily_geometric_mean_medi", "m10_mean_medi", "m10_midpoint",
-      "l10_mean_medi", "l10_midpoint", "duration_above_250_wake",
-      "longest_bout_above_250", "first_timing_above_250",
-      "last_timing_above_250", "dose_time_sensitive_corrected_medi",
-      "mder_ratio_of_integrals"
+      "daily_geometric_mean_medi",
+      "m10_mean_medi",
+      "m10_midpoint",
+      "l10_mean_medi",
+      "l10_midpoint",
+      "duration_above_250_wake",
+      "longest_bout_above_250",
+      "first_timing_above_250",
+      "last_timing_above_250",
+      "dose_time_sensitive_corrected_medi",
+      "mder_mean_of_viable_ratios"
     ),
     source_column = c(
-      "daily_geometric_mean_medi_lx", "m10_mean_medi_lx",
-      "m10_midpoint_clock_minute", "l10_mean_medi_lx",
-      "l10_midpoint_clock_minute", "duration_above_250_wake_h",
-      "longest_bout_above_250_h", "first_timing_above_250_clock_minute",
-      "last_timing_above_250_clock_minute", "dose_corrected_medi_lx_h",
+      "daily_geometric_mean_medi_lx",
+      "m10_mean_medi_lx",
+      "m10_midpoint_clock_minute",
+      "l10_mean_medi_lx",
+      "l10_midpoint_clock_minute",
+      "duration_above_250_wake_h",
+      "longest_bout_above_250_h",
+      "first_timing_above_250_clock_minute",
+      "last_timing_above_250_clock_minute",
+      "dose_corrected_medi_lx_h",
       "mder"
     ),
     stringsAsFactors = FALSE
@@ -1590,27 +2031,37 @@ build_latitude_photoperiod_source <- function(collection_days) {
     dplyr::filter(.data$placement == "near_eye") |>
     dplyr::arrange(
       factor(.data$site, levels = descriptive_site_order()),
-      .data$local_date, .data$Id
+      .data$local_date,
+      .data$Id
     ) |>
     dplyr::group_by(.data$site) |>
     dplyr::mutate(
       absolute_latitude_deg = abs(.data$latitude_deg),
-      deterministic_plot_offset_deg =
-        ((dplyr::row_number() - 1L) %% 17L - 8L) * 0.025,
+      deterministic_plot_offset_deg = ((dplyr::row_number() - 1L) %% 17L - 8L) *
+        0.025,
       plot_latitude_deg = .data$absolute_latitude_deg +
         .data$deterministic_plot_offset_deg
     ) |>
     dplyr::ungroup() |>
     dplyr::select(
-      site, location, Id, local_date, photoperiod_hours,
-      absolute_latitude_deg, deterministic_plot_offset_deg, plot_latitude_deg
+      site,
+      location,
+      Id,
+      local_date,
+      photoperiod_hours,
+      absolute_latitude_deg,
+      deterministic_plot_offset_deg,
+      plot_latitude_deg
     )
 }
 
 build_collection_date_counts <- function(collection_days) {
   collection_days |>
     dplyr::distinct(
-      .data$site, .data$Id, .data$local_date, .keep_all = TRUE
+      .data$site,
+      .data$Id,
+      .data$local_date,
+      .keep_all = TRUE
     ) |>
     dplyr::group_by(.data$site, .data$local_date) |>
     dplyr::summarise(
@@ -1649,7 +2100,8 @@ build_collection_intervals <- function(collection_days, pause_days = 6L) {
       interval_end = max(.data$local_date),
       collection_dates = dplyr::n(),
       interruption_rule = paste0(
-        "New interval after at least ", pause_days,
+        "New interval after at least ",
+        pause_days,
         " consecutive dates without any available site data"
       ),
       .groups = "drop"
@@ -1675,8 +2127,12 @@ build_protocol_flow <- function(inputs, collection_days) {
   )
   nodes <- data.frame(
     node_id = c(
-      "roster", "near_complete", "chest_complete", "near_main",
-      "chest_main", "paired"
+      "roster",
+      "near_complete",
+      "chest_complete",
+      "near_main",
+      "chest_main",
+      "paired"
     ),
     x = c(1, 2, 2, 3, 3, 4),
     y = c(1.5, 2.25, 0.75, 2.25, 0.75, 1.5),
@@ -1704,7 +2160,12 @@ build_protocol_flow <- function(inputs, collection_days) {
       "Paired subset\n112 participants • 643 paired days"
     ),
     placement = c(
-      "not_applicable", "near_eye", "chest", "near_eye", "chest", "paired"
+      "not_applicable",
+      "near_eye",
+      "chest",
+      "near_eye",
+      "chest",
+      "paired"
     ),
     row_type = "node",
     xend = NA_real_,
@@ -1727,16 +2188,31 @@ build_protocol_flow <- function(inputs, collection_days) {
 
 build_site_location_source <- function(inputs) {
   offsets <- data.frame(
-    site = c("RISE", "THUAS", "BAUA", "MPI", "TUM", "FUSPCEU", "IZTECH", "UCR", "KNUST"),
+    site = c(
+      "RISE",
+      "THUAS",
+      "BAUA",
+      "MPI",
+      "TUM",
+      "FUSPCEU",
+      "IZTECH",
+      "UCR",
+      "KNUST"
+    ),
     label_longitude = c(42, -75, -55, 42, 80, -55, 55, -125, 20),
     label_latitude = c(68, 50, 63, 56, 44, 35, 31, 18, -5),
     stringsAsFactors = FALSE
   )
   inputs$solar |>
     dplyr::distinct(
-      .data$site, .data$city, .data$country, .data$location,
-      .data$latitude_deg, .data$longitude_deg,
-      .data$coordinate_source, .data$coordinate_source_version
+      .data$site,
+      .data$city,
+      .data$country,
+      .data$location,
+      .data$latitude_deg,
+      .data$longitude_deg,
+      .data$coordinate_source,
+      .data$coordinate_source_version
     ) |>
     dplyr::left_join(offsets, by = "site") |>
     dplyr::arrange(match(.data$site, descriptive_site_order()))
@@ -1762,12 +2238,15 @@ build_figure_alt_text <- function(
   selected <- time_series$series[1L, ]
   data.frame(
     figure_id = c(
-      "descriptive_overview", "near_eye_site_profiles",
-      "chest_site_profiles", "near_eye_metric_distributions_level",
+      "descriptive_overview",
+      "near_eye_site_profiles",
+      "chest_site_profiles",
+      "near_eye_metric_distributions_level",
       "near_eye_metric_distributions_duration",
       "near_eye_metric_distributions_timing",
       "near_eye_metric_distributions_exposure_history",
-      "near_eye_metric_distributions_other", "time_series_to_metrics",
+      "near_eye_metric_distributions_other",
+      "time_series_to_metrics",
       "latitude_photoperiod_diagnostic"
     ),
     short_alt = c(
@@ -1799,8 +2278,11 @@ build_figure_alt_text <- function(
         "intradaily variability."
       ),
       paste0(
-        "One deterministic near-eye day for ", selected$participant,
-        " at ", selected$site, " with diary periods, civil daylight, ",
+        "One deterministic near-eye day for ",
+        selected$participant,
+        " at ",
+        selected$site,
+        " with diary periods, civil daylight, ",
         "threshold guides, and verified daily metric annotations."
       ),
       paste0(
@@ -1811,12 +2293,17 @@ build_figure_alt_text <- function(
     long_description = c(
       paste0(
         "The flow panel separates near-eye and chest measurements. The main ",
-        "near-eye dataset contains ", overall$near_eye_participants,
-        " participants and ", overall$near_eye_participant_days,
+        "near-eye dataset contains ",
+        overall$near_eye_participants,
+        " participants and ",
+        overall$near_eye_participant_days,
         " participant-days; the complementary chest dataset contains ",
-        overall$chest_participants, " participants and ",
-        overall$chest_participant_days, " participant-days; ",
-        overall$paired_participant_days, " days are paired. The map locates ",
+        overall$chest_participants,
+        " participants and ",
+        overall$chest_participant_days,
+        " participant-days; ",
+        overall$paired_participant_days,
+        " days are paired. The map locates ",
         "nine sites. Collection-date bubbles encode participant-day counts ",
         "and verified civil photoperiod. The profile line is the pooled median ",
         "after 15-minute LightLogR aggregation, with a pointwise central 67% ",
@@ -1856,13 +2343,15 @@ build_figure_alt_text <- function(
       "Site-labelled violins and boxes summarize verified participant-day MDER and participant-level interdaily stability and intradaily variability. Each panel has its own numeric scale and states its analysis unit.",
       paste0(
         "The upper panel shows all 1,440 prepared wall-clock minutes on ",
-        selected$local_date, ". Opaque strips identify wake, the three hours ",
+        selected$local_date,
+        ". Opaque strips identify wake, the three hours ",
         "before sleep, sleep, unavailable minutes, and declared non-wear; a ",
         "translucent rectangle marks civil daylight. The lower panel lists ",
         "metric values joined from the verified participant-day artifact."
       ),
       paste0(
-        "Each point is one of ", nrow(latitude_source),
+        "Each point is one of ",
+        nrow(latitude_source),
         " near-eye participant-days. Small deterministic vertical offsets ",
         "prevent exact overlap at a site's fixed latitude. Site medians and ",
         "middle 50% photoperiod ranges are overlaid; no theoretical photoperiod ",

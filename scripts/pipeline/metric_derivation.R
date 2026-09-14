@@ -3,14 +3,17 @@
 metric_day_key <- c("site", "Id", "position", "local_date")
 metric_participant_key <- c("site", "Id", "position")
 state_support_candidate_cutoffs <- c(0.70, 0.80, 0.90)
-mder_metric_support_candidate_cutoffs <- c(0.70, 0.80, 0.90)
+mder_primary_viable_fraction <- 0.50
 mder_metric_failure_reasons <- c(
-  "unknown_paired_support",
-  "no_paired_observation",
-  "nonpositive_paired_light_integral",
-  "below_ordinary_paired_support",
-  "below_medi_profile_support",
-  "below_light_profile_support"
+  "no_viable_momentary_ratio",
+  "below_viable_ratio_fraction"
+)
+numerical_zero_decision_id <- "METRIC-011"
+numerical_zero_rule <- paste0(
+  "normalize_to_zero_only_if_abs(raw_backtransform)<=",
+  "100*.Machine$double.eps*max(1,abs(shifted_mean),abs(zero_offset))",
+  "_and_source_values_are_all_exact_zero;",
+  "within-tolerance_negative_domain_roundoff_is_also_zero"
 )
 
 validate_state_support_candidate_cutoffs <- function(
@@ -42,28 +45,20 @@ validate_state_support_candidate_cutoffs <- function(
   candidate_cutoffs
 }
 
-validate_mder_metric_support_cutoff <- function(minimum_mder_support) {
-  validate_fraction(minimum_mder_support, "minimum_mder_support")
-  registered <- vapply(
-    mder_metric_support_candidate_cutoffs,
-    function(candidate) {
-      isTRUE(all.equal(
-        as.numeric(minimum_mder_support),
-        candidate,
-        tolerance = 1e-12
-      ))
-    },
-    logical(1)
+validate_mder_viable_fraction <- function(minimum_mder_viable_fraction) {
+  validate_fraction(
+    minimum_mder_viable_fraction,
+    "minimum_mder_viable_fraction"
   )
-  if (!any(registered)) {
+  if (
+    length(minimum_mder_viable_fraction) != 1L ||
+      is.na(minimum_mder_viable_fraction)
+  ) {
     abort_pipeline(
-      paste0(
-        "`minimum_mder_support` must be one of the fixed registered ",
-        "cutoffs: 0.70, 0.80, or 0.90"
-      )
+      "`minimum_mder_viable_fraction` must be one value in [0, 1]"
     )
   }
-  as.numeric(minimum_mder_support)
+  as.numeric(minimum_mder_viable_fraction)
 }
 
 measurement_construct_for_placement <- function(placement) {
@@ -138,6 +133,72 @@ finite_quantile_metric <- function(value, probability) {
     names = FALSE,
     type = 7
   ))
+}
+
+new_numerical_zero_audit_record <- function(
+  key,
+  metric,
+  analysis_unit,
+  backtransform,
+  zero_offset,
+  source_valid_minutes,
+  source_zero_minutes,
+  source_positive_minutes,
+  source_missing_minutes,
+  source_real_minutes = source_valid_minutes + source_missing_minutes,
+  source_valid_real_minutes = source_valid_minutes,
+  clock_hour = NA_integer_,
+  window_start_clock_minute = NA_integer_,
+  window_end_clock_minute = NA_integer_,
+  window_wraps_midnight = NA
+) {
+  if (!is.data.frame(key) || nrow(key) != 1L) {
+    abort_pipeline("Numerical-zero audit keys must contain exactly one row")
+  }
+  required_details <- c(
+    "value",
+    "raw_value",
+    "shifted_mean",
+    "tolerance",
+    "source_all_zero",
+    "numerical_zero_reclassified",
+    "numerical_zero_reason"
+  )
+  if (!all(required_details %in% names(backtransform))) {
+    abort_pipeline("Numerical-zero backtransform details are incomplete")
+  }
+  out <- dplyr::bind_cols(
+    key,
+    tibble::tibble(
+      metric = metric,
+      analysis_unit = analysis_unit,
+      units = "lx",
+      clock_hour = as.integer(clock_hour),
+      window_start_clock_minute = as.integer(window_start_clock_minute),
+      window_end_clock_minute = as.integer(window_end_clock_minute),
+      window_wraps_midnight = as.logical(window_wraps_midnight),
+      raw_backtransformed_value_lx = backtransform$raw_value,
+      normalized_value_lx = backtransform$value,
+      shifted_mean_lx = backtransform$shifted_mean,
+      numerical_zero_tolerance_lx = backtransform$tolerance,
+      zero_offset_lx = zero_offset,
+      source_all_zero = backtransform$source_all_zero,
+      source_valid_minutes = as.integer(source_valid_minutes),
+      source_zero_minutes = as.integer(source_zero_minutes),
+      source_positive_minutes = as.integer(source_positive_minutes),
+      source_missing_minutes = as.integer(source_missing_minutes),
+      source_real_minutes = as.integer(source_real_minutes),
+      source_valid_real_minutes = as.integer(source_valid_real_minutes),
+      numerical_zero_decision_id = numerical_zero_decision_id,
+      numerical_zero_rule = numerical_zero_rule,
+      numerical_zero_reason = backtransform$numerical_zero_reason,
+      raw_value_preserved = TRUE
+    )
+  )
+  if (!isTRUE(backtransform$numerical_zero_reclassified)) {
+    out <- out[FALSE, , drop = FALSE]
+  }
+  out
 }
 
 validate_metric_coverage_input <- function(
@@ -808,6 +869,12 @@ aggregate_clock_outcome <- function(
       source_observed_real_minutes = sum(.data$source_observed_real_minutes),
       dst_fold_wall_minutes = sum(.data$dst_fold),
       valid_medi_wall_minutes = sum(is.finite(.data$MEDI)),
+      zero_medi_wall_minutes = sum(
+        is.finite(.data$MEDI) & .data$MEDI == 0
+      ),
+      positive_medi_wall_minutes = sum(
+        is.finite(.data$MEDI) & .data$MEDI > 0
+      ),
       valid_light_wall_minutes = sum(is.finite(.data$LIGHT)),
       diary_state_composition = single_character_or_mixed(.data$diary_state),
       diary_state_categories = dplyr::n_distinct(
@@ -823,14 +890,55 @@ aggregate_clock_outcome <- function(
         na.rm = TRUE
       ),
       arithmetic_mean_medi_lx = finite_mean_metric(.data$MEDI),
-      zero_aware_geometric_mean_medi_lx = if (any(is.finite(.data$MEDI))) {
-        10^mean(log10(.data$MEDI[is.finite(.data$MEDI)] + zero_offset)) -
-          zero_offset
+      zero_aware_log_mean_medi = if (any(is.finite(.data$MEDI))) {
+        mean(log10(.data$MEDI[is.finite(.data$MEDI)] + zero_offset))
       } else {
         NA_real_
       },
+      zero_aware_source_all_zero = any(is.finite(.data$MEDI)) &&
+        all(.data$MEDI[is.finite(.data$MEDI)] == 0),
       .groups = "drop"
-    ) |>
+    )
+  geometric_details <- purrr::map2(
+    grouped$zero_aware_log_mean_medi,
+    grouped$zero_aware_source_all_zero,
+    function(log_mean, source_all_zero) {
+      if (!is.finite(log_mean)) {
+        return(NULL)
+      }
+      geometric_mean_backtransform_details(
+        log_mean = log_mean,
+        zero_offset = zero_offset,
+        source_all_zero = source_all_zero
+      )
+    }
+  )
+  detail_value <- function(name, default = NA_real_) {
+    vapply(
+      geometric_details,
+      function(details) {
+        if (is.null(details)) default else details[[name]]
+      },
+      if (is.logical(default)) logical(1) else if (is.character(default)) {
+        character(1)
+      } else {
+        numeric(1)
+      }
+    )
+  }
+  grouped$zero_aware_geometric_mean_medi_lx <- detail_value("value")
+  grouped$.numerical_zero_raw_value_lx <- detail_value("raw_value")
+  grouped$.numerical_zero_shifted_mean_lx <- detail_value("shifted_mean")
+  grouped$.numerical_zero_tolerance_lx <- detail_value("tolerance")
+  grouped$.numerical_zero_reclassified <- detail_value(
+    "numerical_zero_reclassified",
+    FALSE
+  )
+  grouped$.numerical_zero_reason <- detail_value(
+    "numerical_zero_reason",
+    NA_character_
+  )
+  grouped <- grouped |>
     dplyr::mutate(
       ordinary_support = .data$valid_medi_wall_minutes /
         .data$expected_wall_minutes,
@@ -1187,7 +1295,7 @@ derive_one_participant_day <- function(
   minimum_window_support,
   minimum_relevance_support,
   minimum_state_support,
-  minimum_mder_support,
+  minimum_mder_viable_fraction,
   minimum_circular_resultant
 ) {
   key <- day_grid[1L, metric_day_key, drop = FALSE]
@@ -1275,14 +1383,6 @@ derive_one_participant_day <- function(
     ),
     "relevance_weight"
   )
-  paired_medi_weight <- get_map_weight(
-    "MEDI",
-    "paired_channel_coverage"
-  )
-  paired_light_weight <- get_map_weight(
-    "LIGHT",
-    "paired_channel_coverage"
-  )
 
   state_weight <- function(state) {
     profile <- select_fixed_profile(
@@ -1300,11 +1400,21 @@ derive_one_participant_day <- function(
     )
   }
 
-  daily_geometric_mean <- if (any(valid_medi)) {
-    10^mean(log10(day_grid$MEDI_eligible[valid_medi] + zero_offset)) -
-      zero_offset
+  daily_geometric_backtransform <- if (any(valid_medi)) {
+    geometric_mean_backtransform_details(
+      log_mean = mean(log10(
+        day_grid$MEDI_eligible[valid_medi] + zero_offset
+      )),
+      zero_offset = zero_offset,
+      source_all_zero = all(day_grid$MEDI_eligible[valid_medi] == 0)
+    )
   } else {
+    NULL
+  }
+  daily_geometric_mean <- if (is.null(daily_geometric_backtransform)) {
     NA_real_
+  } else {
+    daily_geometric_backtransform$value
   }
   m10 <- rolling_window_summary(
     value = wall_grid$MEDI,
@@ -1424,14 +1534,10 @@ derive_one_participant_day <- function(
     minimum_coverage = minimum_relevance_support,
     warning_coverage = minimum_relevance_support
   )
-  mder_result <- mder_ratio_of_integrals(
-    medi = day_grid$MEDI_eligible,
-    light = day_grid$LIGHT_eligible,
-    minimum_support = minimum_mder_support,
-    interval_seconds = 60,
-    observed_fraction = as.numeric(valid_medi & valid_light),
-    medi_reference_weight = paired_medi_weight,
-    light_reference_weight = paired_light_weight
+  mder_result <- mder_mean_of_viable_ratios(
+    medi = wall_grid$MEDI,
+    light = wall_grid$LIGHT,
+    minimum_viable_fraction = minimum_mder_viable_fraction
   )
 
   wide <- dplyr::bind_cols(
@@ -1514,15 +1620,24 @@ derive_one_participant_day <- function(
       dose_correction_factor = dose$correction_factor,
       dose_relevance_coverage = dose$relevance_coverage,
       mder = mder_result$MDER,
-      mder_medi_integral_lx_h = mder_result$medi_integral_lx_h,
-      mder_light_integral_lx_h = mder_result$light_integral_lx_h,
-      mder_ordinary_paired_coverage = mder_result$ordinary_paired_coverage,
-      mder_medi_profile_coverage = mder_result$medi_profile_coverage,
-      mder_light_profile_coverage = mder_result$light_profile_coverage,
-      mder_minimum_support = mder_result$minimum_support,
-      mder_passes_ordinary_paired_support = mder_result$passes_ordinary_paired_support,
-      mder_passes_medi_profile_support = mder_result$passes_medi_profile_support,
-      mder_passes_light_profile_support = mder_result$passes_light_profile_support,
+      mder_viable_ratio_minutes = mder_result$viable_ratio_minutes,
+      mder_expected_minutes = mder_result$expected_minutes,
+      mder_viable_ratio_fraction = mder_result$viable_ratio_fraction,
+      mder_excluded_nonfinite_source_minutes =
+        mder_result$excluded_nonfinite_source_minutes,
+      mder_excluded_zero_either_minutes =
+        mder_result$excluded_zero_either_minutes,
+      mder_excluded_zero_medi_minutes =
+        mder_result$excluded_zero_medi_minutes,
+      mder_excluded_zero_light_minutes =
+        mder_result$excluded_zero_light_minutes,
+      mder_excluded_both_zero_minutes =
+        mder_result$excluded_both_zero_minutes,
+      mder_excluded_nonfinite_ratio_minutes =
+        mder_result$excluded_nonfinite_ratio_minutes,
+      mder_minimum_viable_fraction = mder_result$minimum_viable_fraction,
+      mder_passes_viable_ratio_support =
+        mder_result$passes_viable_ratio_support,
       mder_support_threshold_enforced = mder_result$support_threshold_enforced,
       mder_ratio_scaled_or_weighted = mder_result$ratio_scaled_or_weighted,
       mder_estimable = mder_result$estimable,
@@ -1747,25 +1862,18 @@ derive_one_participant_day <- function(
       expected_real_minutes
     ),
     new_daily_metric_record(
-      "mder_ratio_of_integrals",
+      "mder_mean_of_viable_ratios",
       mder_result$MDER,
       "dimensionless",
-      "full_day_paired_channels",
+      "full_day_positive_paired_minutes",
       mder_result$estimable,
       mder_result$failure_reason,
-      mder_result$ordinary_paired_coverage,
-      finite_min_metric(c(
-        mder_result$medi_profile_coverage,
-        mder_result$light_profile_coverage
-      )),
-      mder_result$paired_epochs,
-      expected_real_minutes,
-      medi_profile_support = mder_result$medi_profile_coverage,
-      light_profile_support = mder_result$light_profile_coverage,
-      minimum_support = mder_result$minimum_support,
-      passes_ordinary_support = mder_result$passes_ordinary_paired_support,
-      passes_medi_profile_support = mder_result$passes_medi_profile_support,
-      passes_light_profile_support = mder_result$passes_light_profile_support,
+      mder_result$viable_ratio_fraction,
+      NA_real_,
+      mder_result$viable_ratio_minutes,
+      mder_result$expected_minutes,
+      minimum_support = mder_result$minimum_viable_fraction,
+      passes_ordinary_support = mder_result$passes_viable_ratio_support,
       support_threshold_enforced = mder_result$support_threshold_enforced,
       ratio_scaled_or_weighted = mder_result$ratio_scaled_or_weighted
     ),
@@ -1887,12 +1995,77 @@ derive_one_participant_day <- function(
   )
   gap <- dplyr::bind_cols(key, metric_gap_diagnostics(day_grid))
 
+  window_backtransform <- function(window) {
+    list(
+      value = window$window_mean[[1L]],
+      raw_value = window$window_raw_backtransformed_mean[[1L]],
+      shifted_mean = window$window_shifted_mean[[1L]],
+      tolerance = window$numerical_zero_tolerance[[1L]],
+      source_all_zero = isTRUE(
+        window$selected_window_valid_wall_minutes[[1L]] > 0L &&
+          window$selected_window_zero_wall_minutes[[1L]] ==
+            window$selected_window_valid_wall_minutes[[1L]]
+      ),
+      numerical_zero_reclassified = isTRUE(
+        window$numerical_zero_reclassified[[1L]]
+      ),
+      numerical_zero_reason = window$numerical_zero_reason[[1L]]
+    )
+  }
+  window_audit_record <- function(window, metric) {
+    new_numerical_zero_audit_record(
+      key = key,
+      metric = metric,
+      analysis_unit = "participant_day_window",
+      backtransform = window_backtransform(window),
+      zero_offset = zero_offset,
+      source_valid_minutes = window$selected_window_valid_wall_minutes,
+      source_zero_minutes = window$selected_window_zero_wall_minutes,
+      source_positive_minutes = window$selected_window_positive_wall_minutes,
+      source_missing_minutes = window$selected_window_missing_wall_minutes,
+      source_real_minutes = window$selected_window_source_real_minutes,
+      source_valid_real_minutes =
+        window$selected_window_valid_source_real_minutes,
+      window_start_clock_minute =
+        window$selected_window_start_clock_minute,
+      window_end_clock_minute = window$selected_window_end_clock_minute,
+      window_wraps_midnight = window$selected_window_wraps_midnight
+    )
+  }
+  daily_audit_record <- if (is.null(daily_geometric_backtransform)) {
+    window_audit_record(m10, "m10_mean_medi")[FALSE, , drop = FALSE]
+  } else {
+    new_numerical_zero_audit_record(
+      key = key,
+      metric = "daily_geometric_mean_medi",
+      analysis_unit = "participant_day",
+      backtransform = daily_geometric_backtransform,
+      zero_offset = zero_offset,
+      source_valid_minutes = sum(valid_medi),
+      source_zero_minutes = sum(
+        valid_medi & day_grid$MEDI_eligible == 0
+      ),
+      source_positive_minutes = sum(
+        valid_medi & day_grid$MEDI_eligible > 0
+      ),
+      source_missing_minutes = sum(!valid_medi),
+      source_real_minutes = nrow(day_grid),
+      source_valid_real_minutes = sum(valid_medi)
+    )
+  }
+  numerical_zero_audit <- dplyr::bind_rows(
+    daily_audit_record,
+    window_audit_record(m10, "m10_mean_medi"),
+    window_audit_record(l10, "l10_mean_medi")
+  )
+
   list(
     wide = wide,
     values = records,
     support = support,
     censoring = censoring,
-    gap = gap
+    gap = gap,
+    numerical_zero_audit = numerical_zero_audit
   )
 }
 
@@ -2405,7 +2578,7 @@ derive_metric_set <- function(
   minimum_window_support = 0.8,
   minimum_relevance_support = 0.8,
   minimum_state_support = NULL,
-  minimum_mder_support = 0.8,
+  minimum_mder_viable_fraction = mder_primary_viable_fraction,
   minimum_circular_resultant = 0.1
 ) {
   if (is.null(minimum_state_support)) {
@@ -2421,8 +2594,8 @@ derive_metric_set <- function(
   validate_fraction(minimum_window_support, "minimum_window_support")
   validate_fraction(minimum_relevance_support, "minimum_relevance_support")
   validate_fraction(minimum_state_support, "minimum_state_support")
-  minimum_mder_support <- validate_mder_metric_support_cutoff(
-    minimum_mder_support
+  minimum_mder_viable_fraction <- validate_mder_viable_fraction(
+    minimum_mder_viable_fraction
   )
   validate_fraction(minimum_circular_resultant, "minimum_circular_resultant")
   validate_positive_scalar(zero_offset, "zero_offset")
@@ -2456,7 +2629,7 @@ derive_metric_set <- function(
       minimum_window_support = minimum_window_support,
       minimum_relevance_support = minimum_relevance_support,
       minimum_state_support = minimum_state_support,
-      minimum_mder_support = minimum_mder_support,
+      minimum_mder_viable_fraction = minimum_mder_viable_fraction,
       minimum_circular_resultant = minimum_circular_resultant
     )
   })
@@ -2498,6 +2671,10 @@ derive_metric_set <- function(
       .data$position,
       .data$local_date
     )
+  daily_numerical_zero_audit <- purrr::map_dfr(
+    daily_results,
+    "numerical_zero_audit"
+  )
 
   wall_grids <- purrr::map(day_groups, function(index) {
     collapse_metric_wall_minutes(
@@ -2520,8 +2697,15 @@ derive_metric_set <- function(
       .data$position,
       .data$local_date,
       .data$clock_bin
+    ) |>
+    dplyr::select(
+      -"zero_medi_wall_minutes",
+      -"positive_medi_wall_minutes",
+      -"zero_aware_log_mean_medi",
+      -"zero_aware_source_all_zero",
+      -dplyr::starts_with(".numerical_zero_")
     )
-  hourly <- purrr::map_dfr(
+  hourly_with_audit <- purrr::map_dfr(
     wall_grids,
     aggregate_clock_outcome,
     bin_minutes = 60L,
@@ -2536,6 +2720,55 @@ derive_metric_set <- function(
       .data$Id,
       .data$position,
       .data$local_date,
+      .data$clock_hour
+    )
+  hourly_numerical_zero_audit <- hourly_with_audit |>
+    dplyr::filter(.data$.numerical_zero_reclassified) |>
+    dplyr::transmute(
+      dplyr::across(dplyr::all_of(metric_day_key)),
+      metric = "one_hour_zero_aware_geometric_mean_medi",
+      analysis_unit = "participant_hour",
+      units = "lx",
+      clock_hour = .data$clock_hour,
+      window_start_clock_minute = .data$clock_minute,
+      window_end_clock_minute = (.data$clock_minute + 60L) %% 1440L,
+      window_wraps_midnight = .data$clock_minute + 60L > 1440L,
+      raw_backtransformed_value_lx = .data$.numerical_zero_raw_value_lx,
+      normalized_value_lx = .data$zero_aware_geometric_mean_medi_lx,
+      shifted_mean_lx = .data$.numerical_zero_shifted_mean_lx,
+      numerical_zero_tolerance_lx = .data$.numerical_zero_tolerance_lx,
+      zero_offset_lx = zero_offset,
+      source_all_zero = .data$zero_aware_source_all_zero,
+      source_valid_minutes = .data$valid_medi_wall_minutes,
+      source_zero_minutes = .data$zero_medi_wall_minutes,
+      source_positive_minutes = .data$positive_medi_wall_minutes,
+      source_missing_minutes = .data$expected_wall_minutes -
+        .data$valid_medi_wall_minutes,
+      source_real_minutes = .data$source_real_minutes,
+      source_valid_real_minutes = .data$source_observed_real_minutes,
+      numerical_zero_decision_id = numerical_zero_decision_id,
+      numerical_zero_rule = numerical_zero_rule,
+      numerical_zero_reason = .data$.numerical_zero_reason,
+      raw_value_preserved = TRUE
+    )
+  hourly <- hourly_with_audit |>
+    dplyr::select(
+      -"zero_medi_wall_minutes",
+      -"positive_medi_wall_minutes",
+      -"zero_aware_log_mean_medi",
+      -"zero_aware_source_all_zero",
+      -dplyr::starts_with(".numerical_zero_")
+    )
+  numerical_zero_audit <- dplyr::bind_rows(
+    daily_numerical_zero_audit,
+    hourly_numerical_zero_audit
+  ) |>
+    dplyr::arrange(
+      .data$site,
+      .data$Id,
+      .data$position,
+      .data$local_date,
+      .data$metric,
       .data$clock_hour
     )
 
@@ -2582,10 +2815,13 @@ derive_metric_set <- function(
     )
   }
   mder_support <- support |>
-    dplyr::filter(.data$metric == "mder_ratio_of_integrals")
+    dplyr::filter(.data$metric == "mder_mean_of_viable_ratios")
   if (
     nrow(mder_support) != expected_days ||
-      any(mder_support$minimum_support != minimum_mder_support) ||
+      any(
+        mder_support$minimum_support !=
+          minimum_mder_viable_fraction
+      ) ||
       anyNA(mder_support$support_threshold_enforced) ||
       !all(mder_support$support_threshold_enforced) ||
       anyNA(mder_support$ratio_scaled_or_weighted) ||
@@ -2597,8 +2833,6 @@ derive_metric_set <- function(
       any(
         mder_support$estimable !=
           (mder_support$passes_ordinary_support &
-            mder_support$passes_medi_profile_support &
-            mder_support$passes_light_profile_support &
             is.na(mder_support$failure_reason))
       )
   ) {
@@ -2628,6 +2862,7 @@ derive_metric_set <- function(
     state_support_candidates = state_support_candidates,
     censoring = censoring,
     gap = gap,
+    numerical_zero_audit = numerical_zero_audit,
     true_grid = true_grid
   )
 }

@@ -1,0 +1,44 @@
+{
+  "timestamp": "2026-09-14T15:37:09.166Z",
+  "call_id": "call_3NcRDJMPed78fYcxeomNZyuR",
+  "source_kind": "existing_CUA_tool_output",
+  "tool_arguments": {
+    "code": "await recoveryTab.goto('http://127.0.0.1:56572/index.html'); await recoveryNative.getAXState({emit:false}); await recoveryTab.playwright.locator('summary').click(); await capture015a('I390-Contents','details[open]'); nodeRepl.write(await recoveryTab.playwright.evaluate(()=>[...document.querySelectorAll('details[open] a')].filter(a=>a.textContent.includes('Person-level')).map(a=>({text:a.textContent.trim(),href:a.href})))); await recoveryTab.playwright.locator('details[open]').getByRole('link',{name:'Person-level correlates are selective',exact:true}).click(); await recoveryNative.getAXState({emit:false}); nodeRepl.write({contentsDestination:await recoveryTab.url()}); await recoveryTab.goto('http://127.0.0.1:56572/supplementary_information.html#fig-s15'); await capture015a('S390-S15','#fig-s15');",
+    "title": "Test mobile Contents and standalone SVG route"
+  },
+  "text_blocks": [
+    "Wall time: 6.8972 seconds\nOutput:",
+    "{\n  id: 'I390-Contents',\n  allLoaded: true,\n  box: { height: 554.796875, width: 324, x: 25.5, y: 86 },\n  clientWidth: 375,\n  images: 0,\n  pageWidth: 375,\n  scroll: { client: 320, left: 0, width: 320 },\n  svg: 0,\n  target: 'details[open]',\n  url: 'http://127.0.0.1:56572/index.html',\n  viewport: [ 390, 844 ]\n}[\n  {\n    href: 'http://127.0.0.1:56572/#person-level-correlates-are-selective',\n    text: 'Person-level correlates are selective'\n  },\n  {\n    href: 'http://127.0.0.1:56572/#person-level-analyses',\n    text: 'Person-level analyses'\n  },\n  {\n    href: 'http://127.0.0.1:56572/#person-level-findings',\n    text: 'Person-level findings'\n  }\n]{\n  contentsDestination: 'http://127.0.0.1:56572/#person-level-correlates-are-selective'\n}{\n  id: 'S390-S15',\n  allLoaded: true,\n  box: { height: 461.46875, width: 324, x: 25.5, y: -11.8203125 },\n  clientWidth: 375,\n  images: 1,\n  pageWidth: 375,\n  scroll: { client: 324, left: 0, width: 324 },\n  svg: 1,\n  target: '#fig-s15',\n  url: 'http://127.0.0.1:56572/supplementary_information.html#fig-s15',\n  viewport: [ 390, 844 ]\n}"
+  ],
+  "image_count": 2,
+  "observation_ids_in_text": [
+    "I390-Contents",
+    "S390-S15"
+  ],
+  "images": [
+    {
+      "ordinal": 110,
+      "timestamp": "2026-09-14T15:37:09.166Z",
+      "call_id": "call_3NcRDJMPed78fYcxeomNZyuR",
+      "within_call_index": 1,
+      "observation_id_if_unambiguous": "I390-Contents",
+      "image_path": "browser_captures/2026-09-14T153709166Z_call_3NcRDJMPed78fYcxeomNZyuR_1.jpg",
+      "metadata_path": "browser_captures/2026-09-14T153709166Z_call_3NcRDJMPed78fYcxeomNZyuR.json",
+      "bytes": 36015,
+      "sha256": "3f32c5a0598a94c9da59dd6b73f9e16ce2cdaffd0f9bdf3a49e37a9a58f48e4a",
+      "mime_type": "image/jpeg"
+    },
+    {
+      "ordinal": 111,
+      "timestamp": "2026-09-14T15:37:09.166Z",
+      "call_id": "call_3NcRDJMPed78fYcxeomNZyuR",
+      "within_call_index": 2,
+      "observation_id_if_unambiguous": "S390-S15",
+      "image_path": "browser_captures/2026-09-14T153709166Z_call_3NcRDJMPed78fYcxeomNZyuR_2.jpg",
+      "metadata_path": "browser_captures/2026-09-14T153709166Z_call_3NcRDJMPed78fYcxeomNZyuR.json",
+      "bytes": 50326,
+      "sha256": "fcb9d73130d3fd9ae4a8ee8012aa55c6a688e9c76b69c12b1e03cfc7bf737f91",
+      "mime_type": "image/jpeg"
+    }
+  ]
+}

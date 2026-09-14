@@ -1,0 +1,40 @@
+614 outdoor time, device use in bed, ambient light before bed and morning or daytime light use62.
+615 Biological sex and gender were recorded as separate variables. Models analysed biological
+616 sex, coded Female or Male, but did not analyse gender; its recorded category matched
+617 biological sex in all but one case.
+
+618 Time, sleep/wake status and coverage preparation
+
+619 Processing preserved both actual time in Coordinated Universal Time and local wall-clock
+620 time. Actual time ordered observations and measured elapsed gaps; local time aligned daily
+621 patterns across sites. Repeated local minutes during autumn clock changes remained
+622 distinct in actual time, and structurally absent spring minutes remained missing. Melanopic
+623 EDI values at or above the validated 100,000-lx operating boundary were unavailable
+624 analytically but retained in the raw channel with a flag.
+
+625 Diary-defined sleep began at reported sleep preparation and ended at reported wake. Sleep
+626 values were retained as the intended bedside record. Declared waking non-wear made the
+627 analytical light value unavailable; missing wear labels were not treated as non-wear.
+628 Complete 1,440-minute local participant-day grids preserved unsupported periods as
+629 missing rather than deleting rows or replacing them with zero. A day was eligible when at
+630 least 80% of this combined waking and bedside-sleep record had valid melanopic EDI.
+631 Hourly summaries required at least 50% valid minutes in that hour, but an unsupported hour
+632 did not erase valid minutes from the daily decision or minute-based metrics. Two otherwise
+633 eligible near-eye days and three chest days with finite but entirely zero melanopic EDI were
+634 excluded by the defined exact-all-zero screen.
+
+635 Exposure metrics
+
+636 Metrics were derived in R63 with LightLogR64,65. The 17 outcomes represented
+637 complementary properties of the daily pattern. Three level metrics described the daily
+638 geometric mean melanopic EDI and the mean melanopic EDI in the brightest and darkest
+639 10-hour windows. Five duration metrics quantified time above 1,000 lx, waking time above
+640 250 lx, pre-sleep time below 10 lx, sleep-environment time below 1 lx and the longest
+641 continuous period above 250 lx. Five timing metrics located the brightest and darkest
+642 windows and the first, last and mean timing above 250 lx. Melanopic EDI dose integrated
+643 exposure over time, melanopic daylight efficacy ratio characterised spectral composition
+644 relative to visual illuminance, and interdaily stability and intradaily variability characterised
+645 regularity and fragmentation. Geometric means were calculated from log10(melanopic EDI +
+646 0.1 lx), followed by inverse transformation and removal of the same offset66. All-observed-
+     35
+

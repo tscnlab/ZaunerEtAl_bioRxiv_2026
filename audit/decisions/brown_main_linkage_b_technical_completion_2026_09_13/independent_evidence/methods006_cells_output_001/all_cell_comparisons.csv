@@ -1,0 +1,926 @@
+"endpoint","table_id","row","column","expected","actual","exact_value"
+"tbl-stage4-measurement-contract","measurement",1,"Aspect","Daytime","Daytime",TRUE
+"tbl-stage4-measurement-contract","measurement",1,"Construction","melEDI at least 250 lx, outside the three-hour Pre-sleep window","melEDI at least 250 lx, outside the three-hour Pre-sleep window",TRUE
+"tbl-stage4-measurement-contract","measurement",1,"Interpretation","Near-eye primary measurement","Near-eye primary measurement",TRUE
+"tbl-stage4-measurement-contract","measurement",2,"Aspect","Pre-sleep","Pre-sleep",TRUE
+"tbl-stage4-measurement-contract","measurement",2,"Construction","melEDI at most 10 lx, in the three hours before sleep","melEDI at most 10 lx, in the three hours before sleep",TRUE
+"tbl-stage4-measurement-contract","measurement",2,"Interpretation","Near-eye primary measurement","Near-eye primary measurement",TRUE
+"tbl-stage4-measurement-contract","measurement",3,"Aspect","Sleep","Sleep",TRUE
+"tbl-stage4-measurement-contract","measurement",3,"Construction","melEDI at most 1 lx during recorded Sleep","melEDI at most 1 lx during recorded Sleep",TRUE
+"tbl-stage4-measurement-contract","measurement",3,"Interpretation","Bedside measurement, not ocular or whole-bedroom exposure","Bedside measurement, not ocular or whole-bedroom exposure",TRUE
+"tbl-stage4-measurement-contract","measurement",4,"Aspect","Numerator","Numerator",TRUE
+"tbl-stage4-measurement-contract","measurement",4,"Construction","Number of valid minutes meeting the inclusive window-specific threshold","Number of valid minutes meeting the inclusive window-specific threshold",TRUE
+"tbl-stage4-measurement-contract","measurement",4,"Interpretation","Threshold equality counts as adherence","Threshold equality counts as adherence",TRUE
+"tbl-stage4-measurement-contract","measurement",5,"Aspect","Denominator","Denominator",TRUE
+"tbl-stage4-measurement-contract","measurement",5,"Construction","All valid minutes in that window, adherent plus non-adherent","All valid minutes in that window, adherent plus non-adherent",TRUE
+"tbl-stage4-measurement-contract","measurement",5,"Interpretation","Missing minutes are not imputed; exact zero and one proportions are retained","Missing minutes are not imputed; exact zero and one proportions are retained",TRUE
+"tbl-stage4-measurement-contract","measurement",6,"Aspect","Coverage","Coverage",TRUE
+"tbl-stage4-measurement-contract","measurement",6,"Construction","Valid minutes divided by the exact expected interval duration","Valid minutes divided by the exact expected interval duration",TRUE
+"tbl-stage4-measurement-contract","measurement",6,"Interpretation","Expected minutes define coverage, not the model denominator","Expected minutes define coverage, not the model denominator",TRUE
+"tbl-stage4-measurement-contract","measurement",7,"Aspect","Independent eligibility","Independent eligibility",TRUE
+"tbl-stage4-measurement-contract","measurement",7,"Construction","Any valid period is primary; at least 80% is the coverage sensitivity","Any valid period is primary; at least 80% is the coverage sensitivity",TRUE
+"tbl-stage4-measurement-contract","measurement",7,"Interpretation","One window may contribute while another is missing","One window may contribute while another is missing",TRUE
+"tbl-stage4-measurement-contract","measurement",8,"Aspect","Day ownership","Day ownership",TRUE
+"tbl-stage4-measurement-contract","measurement",8,"Construction","Work or Free day of the wake-start calendar date","Work or Free day of the wake-start calendar date",TRUE
+"tbl-stage4-measurement-contract","measurement",8,"Interpretation","Preceding Sleep, Daytime and following Pre-sleep form one cycle; midnight does not split it","Preceding Sleep, Daytime and following Pre-sleep form one cycle; midnight does not split it",TRUE
+"tbl-stage4-chronology","chronology",1,"Sample","Any-valid primary","Any-valid primary",TRUE
+"tbl-stage4-chronology","chronology",1,"Target","Sleep","Sleep",TRUE
+"tbl-stage4-chronology","chronology",1,"Rows","758","758",TRUE
+"tbl-stage4-chronology","chronology",1,"Participants","140","140",TRUE
+"tbl-stage4-chronology","chronology",1,"Date-gap range, days","1 to 1","1 to 1",TRUE
+"tbl-stage4-chronology","chronology",1,"Source-row delta range","-6 to 7","-6 to 7",TRUE
+"tbl-stage4-chronology","chronology",1,"Mapping failures","0","0",TRUE
+"tbl-stage4-chronology","chronology",2,"Sample","Any-valid primary","Any-valid primary",TRUE
+"tbl-stage4-chronology","chronology",2,"Target","Pre-sleep","Pre-sleep",TRUE
+"tbl-stage4-chronology","chronology",2,"Rows","618","618",TRUE
+"tbl-stage4-chronology","chronology",2,"Participants","139","139",TRUE
+"tbl-stage4-chronology","chronology",2,"Date-gap range, days","1 to 1","1 to 1",TRUE
+"tbl-stage4-chronology","chronology",2,"Source-row delta range","-6 to 7","-6 to 7",TRUE
+"tbl-stage4-chronology","chronology",2,"Mapping failures","0","0",TRUE
+"tbl-stage4-chronology","chronology",3,"Sample","At least 80% coverage","At least 80% coverage",TRUE
+"tbl-stage4-chronology","chronology",3,"Target","Sleep","Sleep",TRUE
+"tbl-stage4-chronology","chronology",3,"Rows","697","697",TRUE
+"tbl-stage4-chronology","chronology",3,"Participants","140","140",TRUE
+"tbl-stage4-chronology","chronology",3,"Date-gap range, days","1 to 1","1 to 1",TRUE
+"tbl-stage4-chronology","chronology",3,"Source-row delta range","-6 to 7","-6 to 7",TRUE
+"tbl-stage4-chronology","chronology",3,"Mapping failures","0","0",TRUE
+"tbl-stage4-chronology","chronology",4,"Sample","At least 80% coverage","At least 80% coverage",TRUE
+"tbl-stage4-chronology","chronology",4,"Target","Pre-sleep","Pre-sleep",TRUE
+"tbl-stage4-chronology","chronology",4,"Rows","502","502",TRUE
+"tbl-stage4-chronology","chronology",4,"Participants","137","137",TRUE
+"tbl-stage4-chronology","chronology",4,"Date-gap range, days","1 to 1","1 to 1",TRUE
+"tbl-stage4-chronology","chronology",4,"Source-row delta range","-6 to 7","-6 to 7",TRUE
+"tbl-stage4-chronology","chronology",4,"Mapping failures","0","0",TRUE
+"tbl-stage4-main-sample","samples",1,"Sample","Any valid period","Any valid period",TRUE
+"tbl-stage4-main-sample","samples",1,"Window periods","2298","2298",TRUE
+"tbl-stage4-main-sample","samples",1,"Participants","140","140",TRUE
+"tbl-stage4-main-sample","samples",1,"Wake-anchored cycles","794","794",TRUE
+"tbl-stage4-main-sample","samples",1,"Valid minutes","1043192","1043192",TRUE
+"tbl-stage4-main-sample","samples",2,"Sample","At least 80% coverage","At least 80% coverage",TRUE
+"tbl-stage4-main-sample","samples",2,"Window periods","2069","2069",TRUE
+"tbl-stage4-main-sample","samples",2,"Participants","140","140",TRUE
+"tbl-stage4-main-sample","samples",2,"Wake-anchored cycles","762","762",TRUE
+"tbl-stage4-main-sample","samples",2,"Valid minutes","996868","996868",TRUE
+"tbl-stage4-association-sample","association_sample",1,"Sample","Any-valid primary","Any-valid primary",TRUE
+"tbl-stage4-association-sample","association_sample",1,"Target","Sleep","Sleep",TRUE
+"tbl-stage4-association-sample","association_sample",1,"Paired state rows","758","758",TRUE
+"tbl-stage4-association-sample","association_sample",1,"Participants","140","140",TRUE
+"tbl-stage4-association-sample","association_sample",1,"Association cycles","758","758",TRUE
+"tbl-stage4-association-sample","association_sample",1,"Complete target cycles","615","615",TRUE
+"tbl-stage4-association-sample","association_sample",1,"Sites","9","9",TRUE
+"tbl-stage4-association-sample","association_sample",1,"Target valid minutes","364575","364575",TRUE
+"tbl-stage4-association-sample","association_sample",1,"Exact-zero rows","6","6",TRUE
+"tbl-stage4-association-sample","association_sample",1,"Exact-one rows","298","298",TRUE
+"tbl-stage4-association-sample","association_sample",2,"Sample","Any-valid primary","Any-valid primary",TRUE
+"tbl-stage4-association-sample","association_sample",2,"Target","Pre-sleep","Pre-sleep",TRUE
+"tbl-stage4-association-sample","association_sample",2,"Paired state rows","618","618",TRUE
+"tbl-stage4-association-sample","association_sample",2,"Participants","139","139",TRUE
+"tbl-stage4-association-sample","association_sample",2,"Association cycles","618","618",TRUE
+"tbl-stage4-association-sample","association_sample",2,"Complete target cycles","615","615",TRUE
+"tbl-stage4-association-sample","association_sample",2,"Sites","9","9",TRUE
+"tbl-stage4-association-sample","association_sample",2,"Target valid minutes","103322","103322",TRUE
+"tbl-stage4-association-sample","association_sample",2,"Exact-zero rows","11","11",TRUE
+"tbl-stage4-association-sample","association_sample",2,"Exact-one rows","66","66",TRUE
+"tbl-stage4-association-sample","association_sample",3,"Sample","At least 80% coverage","At least 80% coverage",TRUE
+"tbl-stage4-association-sample","association_sample",3,"Target","Sleep","Sleep",TRUE
+"tbl-stage4-association-sample","association_sample",3,"Paired state rows","697","697",TRUE
+"tbl-stage4-association-sample","association_sample",3,"Participants","140","140",TRUE
+"tbl-stage4-association-sample","association_sample",3,"Association cycles","697","697",TRUE
+"tbl-stage4-association-sample","association_sample",3,"Complete target cycles","486","486",TRUE
+"tbl-stage4-association-sample","association_sample",3,"Sites","9","9",TRUE
+"tbl-stage4-association-sample","association_sample",3,"Target valid minutes","336581","336581",TRUE
+"tbl-stage4-association-sample","association_sample",3,"Exact-zero rows","6","6",TRUE
+"tbl-stage4-association-sample","association_sample",3,"Exact-one rows","269","269",TRUE
+"tbl-stage4-association-sample","association_sample",4,"Sample","At least 80% coverage","At least 80% coverage",TRUE
+"tbl-stage4-association-sample","association_sample",4,"Target","Pre-sleep","Pre-sleep",TRUE
+"tbl-stage4-association-sample","association_sample",4,"Paired state rows","502","502",TRUE
+"tbl-stage4-association-sample","association_sample",4,"Participants","137","137",TRUE
+"tbl-stage4-association-sample","association_sample",4,"Association cycles","502","502",TRUE
+"tbl-stage4-association-sample","association_sample",4,"Complete target cycles","486","486",TRUE
+"tbl-stage4-association-sample","association_sample",4,"Sites","9","9",TRUE
+"tbl-stage4-association-sample","association_sample",4,"Target valid minutes","89084","89084",TRUE
+"tbl-stage4-association-sample","association_sample",4,"Exact-zero rows","8","8",TRUE
+"tbl-stage4-association-sample","association_sample",4,"Exact-one rows","49","49",TRUE
+"tbl-stage4-pair-eligibility","pair_eligibility",1,"Sample","Any valid period","Any valid period",TRUE
+"tbl-stage4-pair-eligibility","pair_eligibility",1,"Target","Sleep","Sleep",TRUE
+"tbl-stage4-pair-eligibility","pair_eligibility",1,"Eligible pairs used","758","758",TRUE
+"tbl-stage4-pair-eligibility","pair_eligibility",1,"Potential main-model pairs","758","758",TRUE
+"tbl-stage4-pair-eligibility","pair_eligibility",1,"Dates and counts match","Yes","Yes",TRUE
+"tbl-stage4-pair-eligibility","pair_eligibility",2,"Sample","Any valid period","Any valid period",TRUE
+"tbl-stage4-pair-eligibility","pair_eligibility",2,"Target","Pre-sleep","Pre-sleep",TRUE
+"tbl-stage4-pair-eligibility","pair_eligibility",2,"Eligible pairs used","618","618",TRUE
+"tbl-stage4-pair-eligibility","pair_eligibility",2,"Potential main-model pairs","743","743",TRUE
+"tbl-stage4-pair-eligibility","pair_eligibility",2,"Dates and counts match","Yes","Yes",TRUE
+"tbl-stage4-pair-eligibility","pair_eligibility",3,"Sample","At least 80% coverage","At least 80% coverage",TRUE
+"tbl-stage4-pair-eligibility","pair_eligibility",3,"Target","Sleep","Sleep",TRUE
+"tbl-stage4-pair-eligibility","pair_eligibility",3,"Eligible pairs used","697","697",TRUE
+"tbl-stage4-pair-eligibility","pair_eligibility",3,"Potential main-model pairs","697","697",TRUE
+"tbl-stage4-pair-eligibility","pair_eligibility",3,"Dates and counts match","Yes","Yes",TRUE
+"tbl-stage4-pair-eligibility","pair_eligibility",4,"Sample","At least 80% coverage","At least 80% coverage",TRUE
+"tbl-stage4-pair-eligibility","pair_eligibility",4,"Target","Pre-sleep","Pre-sleep",TRUE
+"tbl-stage4-pair-eligibility","pair_eligibility",4,"Eligible pairs used","502","502",TRUE
+"tbl-stage4-pair-eligibility","pair_eligibility",4,"Potential main-model pairs","581","581",TRUE
+"tbl-stage4-pair-eligibility","pair_eligibility",4,"Dates and counts match","Yes","Yes",TRUE
+"tbl-stage4-profile-flow","profile_flow",1,"stage","Any-valid association frame","Any-valid association frame",TRUE
+"tbl-stage4-profile-flow","profile_flow",1,"count","140","140",TRUE
+"tbl-stage4-profile-flow","profile_flow",1,"unit","participants","participants",TRUE
+"tbl-stage4-profile-flow","profile_flow",2,"stage","Participants represented in Sleep","Participants represented in Sleep",TRUE
+"tbl-stage4-profile-flow","profile_flow",2,"count","140","140",TRUE
+"tbl-stage4-profile-flow","profile_flow",2,"unit","participants","participants",TRUE
+"tbl-stage4-profile-flow","profile_flow",3,"stage","Participants represented in Wake","Participants represented in Wake",TRUE
+"tbl-stage4-profile-flow","profile_flow",3,"count","140","140",TRUE
+"tbl-stage4-profile-flow","profile_flow",3,"unit","participants","participants",TRUE
+"tbl-stage4-profile-flow","profile_flow",4,"stage","Participants represented in Pre-sleep","Participants represented in Pre-sleep",TRUE
+"tbl-stage4-profile-flow","profile_flow",4,"count","139","139",TRUE
+"tbl-stage4-profile-flow","profile_flow",4,"unit","participants","participants",TRUE
+"tbl-stage4-profile-flow","profile_flow",5,"stage","Complete three-state profile display","Complete three-state profile display",TRUE
+"tbl-stage4-profile-flow","profile_flow",5,"count","139","139",TRUE
+"tbl-stage4-profile-flow","profile_flow",5,"unit","participants","participants",TRUE
+"tbl-stage4-profile-flow","profile_flow",6,"stage","Anonymous participant-state points","Anonymous participant-state points",TRUE
+"tbl-stage4-profile-flow","profile_flow",6,"count","417","417",TRUE
+"tbl-stage4-profile-flow","profile_flow",6,"unit","points","points",TRUE
+"tbl-stage4-privacy","privacy",1,"Check","Complete anonymous profiles","Complete anonymous profiles",TRUE
+"tbl-stage4-privacy","privacy",1,"Observed","139","139",TRUE
+"tbl-stage4-privacy","privacy",1,"Status","PASS","PASS",TRUE
+"tbl-stage4-privacy","privacy",1,"Detail","Participants with all three displayed state summaries","Participants with all three displayed state summaries",TRUE
+"tbl-stage4-privacy","privacy",2,"Check","Participant-state points","Participant-state points",TRUE
+"tbl-stage4-privacy","privacy",2,"Observed","417","417",TRUE
+"tbl-stage4-privacy","privacy",2,"Status","PASS","PASS",TRUE
+"tbl-stage4-privacy","privacy",2,"Detail","Exactly three state summaries per complete anonymous profile","Exactly three state summaries per complete anonymous profile",TRUE
+"tbl-stage4-privacy","privacy",3,"Check","Identifier columns","Identifier columns",TRUE
+"tbl-stage4-privacy","privacy",3,"Observed","0","0",TRUE
+"tbl-stage4-privacy","privacy",3,"Status","PASS","PASS",TRUE
+"tbl-stage4-privacy","privacy",3,"Detail","No raw or hashed participant identifier","No raw or hashed participant identifier",TRUE
+"tbl-stage4-privacy","privacy",4,"Check","Site-linked columns","Site-linked columns",TRUE
+"tbl-stage4-privacy","privacy",4,"Observed","0","0",TRUE
+"tbl-stage4-privacy","privacy",4,"Status","PASS","PASS",TRUE
+"tbl-stage4-privacy","privacy",4,"Detail","No site or country field in the profile source","No site or country field in the profile source",TRUE
+"tbl-stage4-privacy","privacy",5,"Check","Rank or tertile columns","Rank or tertile columns",TRUE
+"tbl-stage4-privacy","privacy",5,"Observed","0","0",TRUE
+"tbl-stage4-privacy","privacy",5,"Status","PASS","PASS",TRUE
+"tbl-stage4-privacy","privacy",5,"Detail","No participant ranking, tertile, or membership output","No participant ranking, tertile, or membership output",TRUE
+"tbl-stage4-privacy","privacy",6,"Check","Permitted profile key","Permitted profile key",TRUE
+"tbl-stage4-privacy","privacy",6,"Observed","1","1",TRUE
+"tbl-stage4-privacy","privacy",6,"Status","PASS","PASS",TRUE
+"tbl-stage4-privacy","privacy",6,"Detail","Sequential non-identifying profile_key only","Sequential non-identifying profile_key only",TRUE
+"tbl-stage4-model-components","model_components",1,"Analysis","Main analysis","Main analysis",TRUE
+"tbl-stage4-model-components","model_components",1,"Component","Beta-binomial mean","Beta-binomial mean",TRUE
+"tbl-stage4-model-components","model_components",1,"Definition","Window * Site * Day type, plus one participant intercept","Window * Site * Day type, plus one participant intercept",TRUE
+"tbl-stage4-model-components","model_components",1,"Implementation","Logit mean link; Laplace likelihood","Logit mean link; Laplace likelihood",TRUE
+"tbl-stage4-model-components","model_components",2,"Analysis","Main analysis","Main analysis",TRUE
+"tbl-stage4-model-components","model_components",2,"Component","Extra all-no mass","Extra all-no mass",TRUE
+"tbl-stage4-model-components","model_components",2,"Definition","Window + Day type","Window + Day type",TRUE
+"tbl-stage4-model-components","model_components",2,"Implementation","Multinomial mixture weights; no retained process-specific intercept","Multinomial mixture weights; no retained process-specific intercept",TRUE
+"tbl-stage4-model-components","model_components",3,"Analysis","Main analysis","Main analysis",TRUE
+"tbl-stage4-model-components","model_components",3,"Component","Extra all-yes mass","Extra all-yes mass",TRUE
+"tbl-stage4-model-components","model_components",3,"Definition","Supported window * Day type; Daytime extra all-yes mass fixed at zero","Supported window * Day type; Daytime extra all-yes mass fixed at zero",TRUE
+"tbl-stage4-model-components","model_components",3,"Implementation","Multinomial mixture weights; no retained process-specific intercept","Multinomial mixture weights; no retained process-specific intercept",TRUE
+"tbl-stage4-model-components","model_components",4,"Analysis","Main analysis","Main analysis",TRUE
+"tbl-stage4-model-components","model_components",4,"Component","Dispersion","Dispersion",TRUE
+"tbl-stage4-model-components","model_components",4,"Definition","Window-specific beta-binomial precision","Window-specific beta-binomial precision",TRUE
+"tbl-stage4-model-components","model_components",4,"Implementation","Log link; not an independent-minute binomial model","Log link; not an independent-minute binomial model",TRUE
+"tbl-stage4-model-components","model_components",5,"Analysis","Exploratory extension","Exploratory extension",TRUE
+"tbl-stage4-model-components","model_components",5,"Component","Mean adjustment","Mean adjustment",TRUE
+"tbl-stage4-model-components","model_components",5,"Definition","Full window/site/day-type adjustment plus within- and between-Daytime adherence and centered Free-Daytime fraction","Full window/site/day-type adjustment plus within- and between-Daytime adherence and centered Free-Daytime fraction",TRUE
+"tbl-stage4-model-components","model_components",5,"Implementation","The two association levels are fitted simultaneously","The two association levels are fitted simultaneously",TRUE
+"tbl-stage4-model-components","model_components",6,"Analysis","Exploratory extension","Exploratory extension",TRUE
+"tbl-stage4-model-components","model_components",6,"Component","Participant variation","Participant variation",TRUE
+"tbl-stage4-model-components","model_components",6,"Definition","A participant intercept; no retained association-cycle intercept","A participant intercept; no retained association-cycle intercept",TRUE
+"tbl-stage4-model-components","model_components",6,"Implementation","Serial dependence assessed separately","Serial dependence assessed separately",TRUE
+"tbl-stage4-main-transitions","routes",1,"Model / sensitivity","Calendar-day chunks","Calendar-day chunks",TRUE
+"tbl-stage4-main-transitions","routes",1,"Stored disposition","acceptable with limitations","acceptable with limitations",TRUE
+"tbl-stage4-main-transitions","routes",1,"Structural failure","Not available","Not available",TRUE
+"tbl-stage4-main-transitions","routes",1,"Hard failure","FALSE","FALSE",TRUE
+"tbl-stage4-main-transitions","routes",1,"Recorded reason","","",TRUE
+"tbl-stage4-main-transitions","routes",2,"Model / sensitivity","Complementary chest","Complementary chest",TRUE
+"tbl-stage4-main-transitions","routes",2,"Stored disposition","acceptable with cautions","acceptable with cautions",TRUE
+"tbl-stage4-main-transitions","routes",2,"Structural failure","FALSE","FALSE",TRUE
+"tbl-stage4-main-transitions","routes",2,"Hard failure","Not available","Not available",TRUE
+"tbl-stage4-main-transitions","routes",2,"Recorded reason","","",TRUE
+"tbl-stage4-main-transitions","routes",3,"Model / sensitivity","Ordinary-binomial diagnostic","Ordinary-binomial diagnostic",TRUE
+"tbl-stage4-main-transitions","routes",3,"Stored disposition","not acceptable","not acceptable",TRUE
+"tbl-stage4-main-transitions","routes",3,"Structural failure","Not available","Not available",TRUE
+"tbl-stage4-main-transitions","routes",3,"Hard failure","TRUE","TRUE",TRUE
+"tbl-stage4-main-transitions","routes",3,"Recorded reason","","",TRUE
+"tbl-stage4-main-transitions","routes",4,"Model / sensitivity","Fractional model, equal periods","Fractional model, equal periods",TRUE
+"tbl-stage4-main-transitions","routes",4,"Stored disposition","acceptable","acceptable",TRUE
+"tbl-stage4-main-transitions","routes",4,"Structural failure","Not available","Not available",TRUE
+"tbl-stage4-main-transitions","routes",4,"Hard failure","FALSE","FALSE",TRUE
+"tbl-stage4-main-transitions","routes",4,"Recorded reason","","",TRUE
+"tbl-stage4-main-transitions","routes",5,"Model / sensitivity","Fractional model, minute weighting","Fractional model, minute weighting",TRUE
+"tbl-stage4-main-transitions","routes",5,"Stored disposition","acceptable","acceptable",TRUE
+"tbl-stage4-main-transitions","routes",5,"Structural failure","Not available","Not available",TRUE
+"tbl-stage4-main-transitions","routes",5,"Hard failure","FALSE","FALSE",TRUE
+"tbl-stage4-main-transitions","routes",5,"Recorded reason","","",TRUE
+"tbl-stage4-main-transitions","routes",6,"Model / sensitivity","Participant deletion 1","Participant deletion 1",TRUE
+"tbl-stage4-main-transitions","routes",6,"Stored disposition","acceptable with cautions","acceptable with cautions",TRUE
+"tbl-stage4-main-transitions","routes",6,"Structural failure","FALSE","FALSE",TRUE
+"tbl-stage4-main-transitions","routes",6,"Hard failure","Not available","Not available",TRUE
+"tbl-stage4-main-transitions","routes",6,"Recorded reason","","",TRUE
+"tbl-stage4-main-transitions","routes",7,"Model / sensitivity","Participant deletion 2","Participant deletion 2",TRUE
+"tbl-stage4-main-transitions","routes",7,"Stored disposition","acceptable with cautions","acceptable with cautions",TRUE
+"tbl-stage4-main-transitions","routes",7,"Structural failure","FALSE","FALSE",TRUE
+"tbl-stage4-main-transitions","routes",7,"Hard failure","Not available","Not available",TRUE
+"tbl-stage4-main-transitions","routes",7,"Recorded reason","","",TRUE
+"tbl-stage4-main-transitions","routes",8,"Model / sensitivity","Participant deletion 3","Participant deletion 3",TRUE
+"tbl-stage4-main-transitions","routes",8,"Stored disposition","acceptable with cautions","acceptable with cautions",TRUE
+"tbl-stage4-main-transitions","routes",8,"Structural failure","FALSE","FALSE",TRUE
+"tbl-stage4-main-transitions","routes",8,"Hard failure","Not available","Not available",TRUE
+"tbl-stage4-main-transitions","routes",8,"Recorded reason","","",TRUE
+"tbl-stage4-main-transitions","routes",9,"Model / sensitivity","Participant deletion 4","Participant deletion 4",TRUE
+"tbl-stage4-main-transitions","routes",9,"Stored disposition","structural failure","structural failure",TRUE
+"tbl-stage4-main-transitions","routes",9,"Structural failure","TRUE","TRUE",TRUE
+"tbl-stage4-main-transitions","routes",9,"Hard failure","Not available","Not available",TRUE
+"tbl-stage4-main-transitions","routes",9,"Recorded reason","hard_fit_gate","hard_fit_gate",TRUE
+"tbl-stage4-main-transitions","routes",10,"Model / sensitivity","Participant deletion 5","Participant deletion 5",TRUE
+"tbl-stage4-main-transitions","routes",10,"Stored disposition","acceptable with cautions","acceptable with cautions",TRUE
+"tbl-stage4-main-transitions","routes",10,"Structural failure","FALSE","FALSE",TRUE
+"tbl-stage4-main-transitions","routes",10,"Hard failure","Not available","Not available",TRUE
+"tbl-stage4-main-transitions","routes",10,"Recorded reason","","",TRUE
+"tbl-stage4-main-transitions","routes",11,"Model / sensitivity","Omit Dortmund (DE)","Omit Dortmund (DE)",TRUE
+"tbl-stage4-main-transitions","routes",11,"Stored disposition","acceptable with cautions","acceptable with cautions",TRUE
+"tbl-stage4-main-transitions","routes",11,"Structural failure","FALSE","FALSE",TRUE
+"tbl-stage4-main-transitions","routes",11,"Hard failure","Not available","Not available",TRUE
+"tbl-stage4-main-transitions","routes",11,"Recorded reason","","",TRUE
+"tbl-stage4-main-transitions","routes",12,"Model / sensitivity","Omit Madrid (ES)","Omit Madrid (ES)",TRUE
+"tbl-stage4-main-transitions","routes",12,"Stored disposition","acceptable with cautions","acceptable with cautions",TRUE
+"tbl-stage4-main-transitions","routes",12,"Structural failure","FALSE","FALSE",TRUE
+"tbl-stage4-main-transitions","routes",12,"Hard failure","Not available","Not available",TRUE
+"tbl-stage4-main-transitions","routes",12,"Recorded reason","","",TRUE
+"tbl-stage4-main-transitions","routes",13,"Model / sensitivity","Omit Izmir (TR)","Omit Izmir (TR)",TRUE
+"tbl-stage4-main-transitions","routes",13,"Stored disposition","acceptable with cautions","acceptable with cautions",TRUE
+"tbl-stage4-main-transitions","routes",13,"Structural failure","FALSE","FALSE",TRUE
+"tbl-stage4-main-transitions","routes",13,"Hard failure","Not available","Not available",TRUE
+"tbl-stage4-main-transitions","routes",13,"Recorded reason","","",TRUE
+"tbl-stage4-main-transitions","routes",14,"Model / sensitivity","Omit Kumasi (GH)","Omit Kumasi (GH)",TRUE
+"tbl-stage4-main-transitions","routes",14,"Stored disposition","acceptable with cautions","acceptable with cautions",TRUE
+"tbl-stage4-main-transitions","routes",14,"Structural failure","FALSE","FALSE",TRUE
+"tbl-stage4-main-transitions","routes",14,"Hard failure","Not available","Not available",TRUE
+"tbl-stage4-main-transitions","routes",14,"Recorded reason","","",TRUE
+"tbl-stage4-main-transitions","routes",15,"Model / sensitivity","Omit Tübingen (DE)","Omit Tübingen (DE)",TRUE
+"tbl-stage4-main-transitions","routes",15,"Stored disposition","acceptable with cautions","acceptable with cautions",TRUE
+"tbl-stage4-main-transitions","routes",15,"Structural failure","FALSE","FALSE",TRUE
+"tbl-stage4-main-transitions","routes",15,"Hard failure","Not available","Not available",TRUE
+"tbl-stage4-main-transitions","routes",15,"Recorded reason","","",TRUE
+"tbl-stage4-main-transitions","routes",16,"Model / sensitivity","Omit Borås (SE)","Omit Borås (SE)",TRUE
+"tbl-stage4-main-transitions","routes",16,"Stored disposition","acceptable with cautions","acceptable with cautions",TRUE
+"tbl-stage4-main-transitions","routes",16,"Structural failure","FALSE","FALSE",TRUE
+"tbl-stage4-main-transitions","routes",16,"Hard failure","Not available","Not available",TRUE
+"tbl-stage4-main-transitions","routes",16,"Recorded reason","","",TRUE
+"tbl-stage4-main-transitions","routes",17,"Model / sensitivity","Omit Delft (NL)","Omit Delft (NL)",TRUE
+"tbl-stage4-main-transitions","routes",17,"Stored disposition","acceptable with cautions","acceptable with cautions",TRUE
+"tbl-stage4-main-transitions","routes",17,"Structural failure","FALSE","FALSE",TRUE
+"tbl-stage4-main-transitions","routes",17,"Hard failure","Not available","Not available",TRUE
+"tbl-stage4-main-transitions","routes",17,"Recorded reason","","",TRUE
+"tbl-stage4-main-transitions","routes",18,"Model / sensitivity","Omit Munich (DE)","Omit Munich (DE)",TRUE
+"tbl-stage4-main-transitions","routes",18,"Stored disposition","acceptable with cautions","acceptable with cautions",TRUE
+"tbl-stage4-main-transitions","routes",18,"Structural failure","FALSE","FALSE",TRUE
+"tbl-stage4-main-transitions","routes",18,"Hard failure","Not available","Not available",TRUE
+"tbl-stage4-main-transitions","routes",18,"Recorded reason","","",TRUE
+"tbl-stage4-main-transitions","routes",19,"Model / sensitivity","Omit San José (CR)","Omit San José (CR)",TRUE
+"tbl-stage4-main-transitions","routes",19,"Stored disposition","acceptable with cautions","acceptable with cautions",TRUE
+"tbl-stage4-main-transitions","routes",19,"Structural failure","FALSE","FALSE",TRUE
+"tbl-stage4-main-transitions","routes",19,"Hard failure","Not available","Not available",TRUE
+"tbl-stage4-main-transitions","routes",19,"Recorded reason","","",TRUE
+"tbl-stage4-main-transitions","routes",20,"Model / sensitivity","Primary, at least 80% coverage","Primary, at least 80% coverage",TRUE
+"tbl-stage4-main-transitions","routes",20,"Stored disposition","acceptable with cautions","acceptable with cautions",TRUE
+"tbl-stage4-main-transitions","routes",20,"Structural failure","FALSE","FALSE",TRUE
+"tbl-stage4-main-transitions","routes",20,"Hard failure","Not available","Not available",TRUE
+"tbl-stage4-main-transitions","routes",20,"Recorded reason","","",TRUE
+"tbl-stage4-main-transitions","routes",21,"Model / sensitivity","Primary, any valid period","Primary, any valid period",TRUE
+"tbl-stage4-main-transitions","routes",21,"Stored disposition","acceptable with cautions","acceptable with cautions",TRUE
+"tbl-stage4-main-transitions","routes",21,"Structural failure","FALSE","FALSE",TRUE
+"tbl-stage4-main-transitions","routes",21,"Hard failure","Not available","Not available",TRUE
+"tbl-stage4-main-transitions","routes",21,"Recorded reason","","",TRUE
+"tbl-stage4-main-transitions","routes",22,"Model / sensitivity","Both day types observed","Both day types observed",TRUE
+"tbl-stage4-main-transitions","routes",22,"Stored disposition","acceptable with cautions","acceptable with cautions",TRUE
+"tbl-stage4-main-transitions","routes",22,"Structural failure","FALSE","FALSE",TRUE
+"tbl-stage4-main-transitions","routes",22,"Hard failure","Not available","Not available",TRUE
+"tbl-stage4-main-transitions","routes",22,"Recorded reason","","",TRUE
+"tbl-stage4-main-transitions","routes",23,"Model / sensitivity","Complete three-window cycles","Complete three-window cycles",TRUE
+"tbl-stage4-main-transitions","routes",23,"Stored disposition","acceptable with cautions","acceptable with cautions",TRUE
+"tbl-stage4-main-transitions","routes",23,"Structural failure","FALSE","FALSE",TRUE
+"tbl-stage4-main-transitions","routes",23,"Hard failure","Not available","Not available",TRUE
+"tbl-stage4-main-transitions","routes",23,"Recorded reason","","",TRUE
+"tbl-stage4-main-transitions","routes",24,"Model / sensitivity","Common dispersion","Common dispersion",TRUE
+"tbl-stage4-main-transitions","routes",24,"Stored disposition","acceptable with cautions","acceptable with cautions",TRUE
+"tbl-stage4-main-transitions","routes",24,"Structural failure","FALSE","FALSE",TRUE
+"tbl-stage4-main-transitions","routes",24,"Hard failure","Not available","Not available",TRUE
+"tbl-stage4-main-transitions","routes",24,"Recorded reason","","",TRUE
+"tbl-stage4-main-transitions","routes",25,"Model / sensitivity","Exclude zero periods, endpoint route","Exclude zero periods, endpoint route",TRUE
+"tbl-stage4-main-transitions","routes",25,"Stored disposition","structural failure","structural failure",TRUE
+"tbl-stage4-main-transitions","routes",25,"Structural failure","TRUE","TRUE",TRUE
+"tbl-stage4-main-transitions","routes",25,"Hard failure","Not available","Not available",TRUE
+"tbl-stage4-main-transitions","routes",25,"Recorded reason","endpoint_separation","endpoint_separation",TRUE
+"tbl-stage4-main-transitions","routes",26,"Model / sensitivity","Exclude zero periods, conditional route","Exclude zero periods, conditional route",TRUE
+"tbl-stage4-main-transitions","routes",26,"Stored disposition","acceptable with cautions","acceptable with cautions",TRUE
+"tbl-stage4-main-transitions","routes",26,"Structural failure","FALSE","FALSE",TRUE
+"tbl-stage4-main-transitions","routes",26,"Hard failure","Not available","Not available",TRUE
+"tbl-stage4-main-transitions","routes",26,"Recorded reason","","",TRUE
+"tbl-stage4-main-transitions","routes",27,"Model / sensitivity","Strict rather than inclusive thresholds","Strict rather than inclusive thresholds",TRUE
+"tbl-stage4-main-transitions","routes",27,"Stored disposition","acceptable with cautions","acceptable with cautions",TRUE
+"tbl-stage4-main-transitions","routes",27,"Structural failure","FALSE","FALSE",TRUE
+"tbl-stage4-main-transitions","routes",27,"Hard failure","Not available","Not available",TRUE
+"tbl-stage4-main-transitions","routes",27,"Recorded reason","","",TRUE
+"tbl-stage4-main-transitions","routes",28,"Model / sensitivity","At least 70% coverage","At least 70% coverage",TRUE
+"tbl-stage4-main-transitions","routes",28,"Stored disposition","acceptable with cautions","acceptable with cautions",TRUE
+"tbl-stage4-main-transitions","routes",28,"Structural failure","FALSE","FALSE",TRUE
+"tbl-stage4-main-transitions","routes",28,"Hard failure","Not available","Not available",TRUE
+"tbl-stage4-main-transitions","routes",28,"Recorded reason","","",TRUE
+"tbl-stage4-main-transitions","routes",29,"Model / sensitivity","At least 90% coverage","At least 90% coverage",TRUE
+"tbl-stage4-main-transitions","routes",29,"Stored disposition","acceptable with cautions","acceptable with cautions",TRUE
+"tbl-stage4-main-transitions","routes",29,"Structural failure","FALSE","FALSE",TRUE
+"tbl-stage4-main-transitions","routes",29,"Hard failure","Not available","Not available",TRUE
+"tbl-stage4-main-transitions","routes",29,"Recorded reason","","",TRUE
+"tbl-stage4-main-transitions","routes",30,"Model / sensitivity","More than 30 valid minutes","More than 30 valid minutes",TRUE
+"tbl-stage4-main-transitions","routes",30,"Stored disposition","acceptable with cautions","acceptable with cautions",TRUE
+"tbl-stage4-main-transitions","routes",30,"Structural failure","FALSE","FALSE",TRUE
+"tbl-stage4-main-transitions","routes",30,"Hard failure","Not available","Not available",TRUE
+"tbl-stage4-main-transitions","routes",30,"Recorded reason","","",TRUE
+"tbl-stage4-main-transitions","routes",31,"Model / sensitivity","More than 5 valid minutes","More than 5 valid minutes",TRUE
+"tbl-stage4-main-transitions","routes",31,"Stored disposition","acceptable with cautions","acceptable with cautions",TRUE
+"tbl-stage4-main-transitions","routes",31,"Structural failure","FALSE","FALSE",TRUE
+"tbl-stage4-main-transitions","routes",31,"Hard failure","Not available","Not available",TRUE
+"tbl-stage4-main-transitions","routes",31,"Recorded reason","","",TRUE
+"tbl-stage4-main-transitions","routes",32,"Model / sensitivity","Any-valid temporal endpoint model","Any-valid temporal endpoint model",TRUE
+"tbl-stage4-main-transitions","routes",32,"Stored disposition","structural failure","structural failure",TRUE
+"tbl-stage4-main-transitions","routes",32,"Structural failure","TRUE","TRUE",TRUE
+"tbl-stage4-main-transitions","routes",32,"Hard failure","Not available","Not available",TRUE
+"tbl-stage4-main-transitions","routes",32,"Recorded reason","convergence;gradient;hessian;covariance;endpoint_uncertainty","convergence;gradient;hessian;covariance;endpoint_uncertainty",TRUE
+"tbl-stage4-main-transitions","routes",33,"Model / sensitivity","Any-valid temporal beta-binomial fallback","Any-valid temporal beta-binomial fallback",TRUE
+"tbl-stage4-main-transitions","routes",33,"Stored disposition","acceptable with limitations","acceptable with limitations",TRUE
+"tbl-stage4-main-transitions","routes",33,"Structural failure","FALSE","FALSE",TRUE
+"tbl-stage4-main-transitions","routes",33,"Hard failure","Not available","Not available",TRUE
+"tbl-stage4-main-transitions","routes",33,"Recorded reason","","",TRUE
+"tbl-stage4-main-transitions","routes",34,"Model / sensitivity","80% temporal endpoint model","80% temporal endpoint model",TRUE
+"tbl-stage4-main-transitions","routes",34,"Stored disposition","structural failure","structural failure",TRUE
+"tbl-stage4-main-transitions","routes",34,"Structural failure","TRUE","TRUE",TRUE
+"tbl-stage4-main-transitions","routes",34,"Hard failure","Not available","Not available",TRUE
+"tbl-stage4-main-transitions","routes",34,"Recorded reason","convergence;gradient;hessian;covariance;endpoint_uncertainty","convergence;gradient;hessian;covariance;endpoint_uncertainty",TRUE
+"tbl-stage4-main-transitions","routes",35,"Model / sensitivity","80% temporal beta-binomial fallback","80% temporal beta-binomial fallback",TRUE
+"tbl-stage4-main-transitions","routes",35,"Stored disposition","acceptable with limitations","acceptable with limitations",TRUE
+"tbl-stage4-main-transitions","routes",35,"Structural failure","FALSE","FALSE",TRUE
+"tbl-stage4-main-transitions","routes",35,"Hard failure","Not available","Not available",TRUE
+"tbl-stage4-main-transitions","routes",35,"Recorded reason","","",TRUE
+"tbl-stage4-cross-transitions","cross_transitions",1,"Analysis","Exploratory cross-state extension","Exploratory cross-state extension",TRUE
+"tbl-stage4-cross-transitions","cross_transitions",1,"Step","1","1",TRUE
+"tbl-stage4-cross-transitions","cross_transitions",1,"Model","CS-ANY-F3-R0-Q2-Q1-D0","CS-ANY-F3-R0-Q2-Q1-D0",TRUE
+"tbl-stage4-cross-transitions","cross_transitions",1,"Rung","F3/R0","F3/R0",TRUE
+"tbl-stage4-cross-transitions","cross_transitions",1,"Outcome","structural_failure","structural_failure",TRUE
+"tbl-stage4-cross-transitions","cross_transitions",1,"Reason","initial_prespecified_candidate","initial_prespecified_candidate",TRUE
+"tbl-stage4-cross-transitions","cross_transitions",2,"Analysis","Exploratory cross-state extension","Exploratory cross-state extension",TRUE
+"tbl-stage4-cross-transitions","cross_transitions",2,"Step","2","2",TRUE
+"tbl-stage4-cross-transitions","cross_transitions",2,"Model","CS-ANY-F3-R3-Q2-Q1-D0","CS-ANY-F3-R3-Q2-Q1-D0",TRUE
+"tbl-stage4-cross-transitions","cross_transitions",2,"Rung","F3/R3","F3/R3",TRUE
+"tbl-stage4-cross-transitions","cross_transitions",2,"Outcome","acceptable_with_cautions","acceptable_with_cautions",TRUE
+"tbl-stage4-cross-transitions","cross_transitions",2,"Reason","association_cycle_random_nonidentifiable","association_cycle_random_nonidentifiable",TRUE
+"tbl-stage4-cross-transitions","cross_transitions",3,"Analysis","Exploratory cross-state extension","Exploratory cross-state extension",TRUE
+"tbl-stage4-cross-transitions","cross_transitions",3,"Step","3","3",TRUE
+"tbl-stage4-cross-transitions","cross_transitions",3,"Model","CS-80-F3-R3-Q2-Q1-D0","CS-80-F3-R3-Q2-Q1-D0",TRUE
+"tbl-stage4-cross-transitions","cross_transitions",3,"Rung","F3/R3","F3/R3",TRUE
+"tbl-stage4-cross-transitions","cross_transitions",3,"Outcome","acceptable_with_cautions","acceptable_with_cautions",TRUE
+"tbl-stage4-cross-transitions","cross_transitions",3,"Reason","mandatory_identical_80_percent_claim_gate","mandatory_identical_80_percent_claim_gate",TRUE
+"tbl-stage4-cross-transitions","cross_transitions",4,"Analysis","Exploratory cross-state extension","Exploratory cross-state extension",TRUE
+"tbl-stage4-cross-transitions","cross_transitions",4,"Step","4","4",TRUE
+"tbl-stage4-cross-transitions","cross_transitions",4,"Model","CS-ANY-F3-R3-COMPLETE","CS-ANY-F3-R3-COMPLETE",TRUE
+"tbl-stage4-cross-transitions","cross_transitions",4,"Rung","F3/R3","F3/R3",TRUE
+"tbl-stage4-cross-transitions","cross_transitions",4,"Outcome","structural_failure","structural_failure",TRUE
+"tbl-stage4-cross-transitions","cross_transitions",4,"Reason","prespecified_complete_target_pair_sensitivity","prespecified_complete_target_pair_sensitivity",TRUE
+"tbl-stage4-cross-transitions","cross_transitions",5,"Analysis","Exploratory cross-state extension","Exploratory cross-state extension",TRUE
+"tbl-stage4-cross-transitions","cross_transitions",5,"Step","5","5",TRUE
+"tbl-stage4-cross-transitions","cross_transitions",5,"Model","CS-80-F3-R3-COMPLETE","CS-80-F3-R3-COMPLETE",TRUE
+"tbl-stage4-cross-transitions","cross_transitions",5,"Rung","F3/R3","F3/R3",TRUE
+"tbl-stage4-cross-transitions","cross_transitions",5,"Outcome","acceptable_with_cautions","acceptable_with_cautions",TRUE
+"tbl-stage4-cross-transitions","cross_transitions",5,"Reason","prespecified_complete_target_pair_sensitivity","prespecified_complete_target_pair_sensitivity",TRUE
+"tbl-stage4-cross-transitions","cross_transitions",6,"Analysis","Exploratory cross-state extension","Exploratory cross-state extension",TRUE
+"tbl-stage4-cross-transitions","cross_transitions",6,"Step","6","6",TRUE
+"tbl-stage4-cross-transitions","cross_transitions",6,"Model","CS-ANY-F3-R3-EQUALDAY","CS-ANY-F3-R3-EQUALDAY",TRUE
+"tbl-stage4-cross-transitions","cross_transitions",6,"Rung","F3/R3","F3/R3",TRUE
+"tbl-stage4-cross-transitions","cross_transitions",6,"Outcome","acceptable_with_cautions","acceptable_with_cautions",TRUE
+"tbl-stage4-cross-transitions","cross_transitions",6,"Reason","prespecified_equal_daytype_between_construction","prespecified_equal_daytype_between_construction",TRUE
+"tbl-stage4-cross-transitions","cross_transitions",7,"Analysis","Exploratory cross-state extension","Exploratory cross-state extension",TRUE
+"tbl-stage4-cross-transitions","cross_transitions",7,"Step","7","7",TRUE
+"tbl-stage4-cross-transitions","cross_transitions",7,"Model","CS-80-F3-R3-EQUALDAY","CS-80-F3-R3-EQUALDAY",TRUE
+"tbl-stage4-cross-transitions","cross_transitions",7,"Rung","F3/R3","F3/R3",TRUE
+"tbl-stage4-cross-transitions","cross_transitions",7,"Outcome","acceptable_with_cautions","acceptable_with_cautions",TRUE
+"tbl-stage4-cross-transitions","cross_transitions",7,"Reason","prespecified_equal_daytype_between_construction","prespecified_equal_daytype_between_construction",TRUE
+"tbl-stage4-cross-transitions","cross_transitions",8,"Analysis","Exploratory cross-state extension","Exploratory cross-state extension",TRUE
+"tbl-stage4-cross-transitions","cross_transitions",8,"Step","8","8",TRUE
+"tbl-stage4-cross-transitions","cross_transitions",8,"Model","CS-ANY-F3-R3-THIN2","CS-ANY-F3-R3-THIN2",TRUE
+"tbl-stage4-cross-transitions","cross_transitions",8,"Rung","F3/R3","F3/R3",TRUE
+"tbl-stage4-cross-transitions","cross_transitions",8,"Outcome","acceptable_with_cautions","acceptable_with_cautions",TRUE
+"tbl-stage4-cross-transitions","cross_transitions",8,"Reason","registered_temporal_trigger_two_day_thinning_cold_start","registered_temporal_trigger_two_day_thinning_cold_start",TRUE
+"tbl-stage4-cross-transitions","cross_transitions",9,"Analysis","Exploratory cross-state extension","Exploratory cross-state extension",TRUE
+"tbl-stage4-cross-transitions","cross_transitions",9,"Step","9","9",TRUE
+"tbl-stage4-cross-transitions","cross_transitions",9,"Model","CS-ANY-F3DATE-R3","CS-ANY-F3DATE-R3",TRUE
+"tbl-stage4-cross-transitions","cross_transitions",9,"Rung","F3_DATE/R3","F3_DATE/R3",TRUE
+"tbl-stage4-cross-transitions","cross_transitions",9,"Outcome","structural_failure","structural_failure",TRUE
+"tbl-stage4-cross-transitions","cross_transitions",9,"Reason","registered_temporal_trigger_target_specific_date_trend_cold_start","registered_temporal_trigger_target_specific_date_trend_cold_start",TRUE
+"tbl-stage4-cross-transitions","cross_transitions",10,"Analysis","Exploratory cross-state extension","Exploratory cross-state extension",TRUE
+"tbl-stage4-cross-transitions","cross_transitions",10,"Step","10","10",TRUE
+"tbl-stage4-cross-transitions","cross_transitions",10,"Model","CS-80-F3-R3-THIN2","CS-80-F3-R3-THIN2",TRUE
+"tbl-stage4-cross-transitions","cross_transitions",10,"Rung","F3/R3","F3/R3",TRUE
+"tbl-stage4-cross-transitions","cross_transitions",10,"Outcome","structural_failure","structural_failure",TRUE
+"tbl-stage4-cross-transitions","cross_transitions",10,"Reason","registered_temporal_trigger_two_day_thinning_warm_start","registered_temporal_trigger_two_day_thinning_warm_start",TRUE
+"tbl-stage4-cross-transitions","cross_transitions",11,"Analysis","Exploratory cross-state extension","Exploratory cross-state extension",TRUE
+"tbl-stage4-cross-transitions","cross_transitions",11,"Step","11","11",TRUE
+"tbl-stage4-cross-transitions","cross_transitions",11,"Model","CS-80-F3DATE-R3","CS-80-F3DATE-R3",TRUE
+"tbl-stage4-cross-transitions","cross_transitions",11,"Rung","F3_DATE/R3","F3_DATE/R3",TRUE
+"tbl-stage4-cross-transitions","cross_transitions",11,"Outcome","structural_failure","structural_failure",TRUE
+"tbl-stage4-cross-transitions","cross_transitions",11,"Reason","registered_temporal_trigger_target_specific_date_trend_cold_start","registered_temporal_trigger_target_specific_date_trend_cold_start",TRUE
+"tbl-stage4-main-diagnostics","diagnostics",1,"Sample","Any valid period","Any valid period",TRUE
+"tbl-stage4-main-diagnostics","diagnostics",1,"Check","overall adherence","overall adherence",TRUE
+"tbl-stage4-main-diagnostics","diagnostics",1,"Assessment","acceptable with limitations","acceptable with limitations",TRUE
+"tbl-stage4-main-diagnostics","diagnostics",1,"Detail","maximum absolute state-site-day-type adherence calibration difference 0.055","maximum absolute state-site-day-type adherence calibration difference 0.055",TRUE
+"tbl-stage4-main-diagnostics","diagnostics",2,"Sample","Any valid period","Any valid period",TRUE
+"tbl-stage4-main-diagnostics","diagnostics",2,"Check","endpoint probabilities","endpoint probabilities",TRUE
+"tbl-stage4-main-diagnostics","diagnostics",2,"Assessment","acceptable","acceptable",TRUE
+"tbl-stage4-main-diagnostics","diagnostics",2,"Detail","5 of 5 applicable state endpoint envelopes passed","5 of 5 applicable state endpoint envelopes passed",TRUE
+"tbl-stage4-main-diagnostics","diagnostics",3,"Sample","Any valid period","Any valid period",TRUE
+"tbl-stage4-main-diagnostics","diagnostics",3,"Check","actual date temporal dependence","actual date temporal dependence",TRUE
+"tbl-stage4-main-diagnostics","diagnostics",3,"Assessment","triggered","triggered",TRUE
+"tbl-stage4-main-diagnostics","diagnostics",3,"Detail","3 state residual series reached the temporal trigger","3 state residual series reached the temporal trigger",TRUE
+"tbl-stage4-main-diagnostics","diagnostics",4,"Sample","Any valid period","Any valid period",TRUE
+"tbl-stage4-main-diagnostics","diagnostics",4,"Check","frozen primary numerical fit","frozen primary numerical fit",TRUE
+"tbl-stage4-main-diagnostics","diagnostics",4,"Assessment","acceptable with cautions","acceptable with cautions",TRUE
+"tbl-stage4-main-diagnostics","diagnostics",4,"Detail","Stored numerical status; primary model was not refitted","Stored numerical status; primary model was not refitted",TRUE
+"tbl-stage4-main-diagnostics","diagnostics",5,"Sample","At least 80% coverage","At least 80% coverage",TRUE
+"tbl-stage4-main-diagnostics","diagnostics",5,"Check","overall adherence","overall adherence",TRUE
+"tbl-stage4-main-diagnostics","diagnostics",5,"Assessment","acceptable with limitations","acceptable with limitations",TRUE
+"tbl-stage4-main-diagnostics","diagnostics",5,"Detail","maximum absolute state-site-day-type adherence calibration difference 0.088","maximum absolute state-site-day-type adherence calibration difference 0.088",TRUE
+"tbl-stage4-main-diagnostics","diagnostics",6,"Sample","At least 80% coverage","At least 80% coverage",TRUE
+"tbl-stage4-main-diagnostics","diagnostics",6,"Check","endpoint probabilities","endpoint probabilities",TRUE
+"tbl-stage4-main-diagnostics","diagnostics",6,"Assessment","acceptable","acceptable",TRUE
+"tbl-stage4-main-diagnostics","diagnostics",6,"Detail","5 of 5 applicable state endpoint envelopes passed","5 of 5 applicable state endpoint envelopes passed",TRUE
+"tbl-stage4-main-diagnostics","diagnostics",7,"Sample","At least 80% coverage","At least 80% coverage",TRUE
+"tbl-stage4-main-diagnostics","diagnostics",7,"Check","actual date temporal dependence","actual date temporal dependence",TRUE
+"tbl-stage4-main-diagnostics","diagnostics",7,"Assessment","triggered","triggered",TRUE
+"tbl-stage4-main-diagnostics","diagnostics",7,"Detail","3 state residual series reached the temporal trigger","3 state residual series reached the temporal trigger",TRUE
+"tbl-stage4-main-diagnostics","diagnostics",8,"Sample","At least 80% coverage","At least 80% coverage",TRUE
+"tbl-stage4-main-diagnostics","diagnostics",8,"Check","frozen primary numerical fit","frozen primary numerical fit",TRUE
+"tbl-stage4-main-diagnostics","diagnostics",8,"Assessment","acceptable with cautions","acceptable with cautions",TRUE
+"tbl-stage4-main-diagnostics","diagnostics",8,"Detail","Stored numerical status; primary model was not refitted","Stored numerical status; primary model was not refitted",TRUE
+"tbl-stage4-main-diagnostics","diagnostics",9,"Sample","Complementary chest","Complementary chest",TRUE
+"tbl-stage4-main-diagnostics","diagnostics",9,"Check","overall adherence","overall adherence",TRUE
+"tbl-stage4-main-diagnostics","diagnostics",9,"Assessment","acceptable with limitations","acceptable with limitations",TRUE
+"tbl-stage4-main-diagnostics","diagnostics",9,"Detail","maximum absolute state-site-day-type adherence calibration difference 0.074","maximum absolute state-site-day-type adherence calibration difference 0.074",TRUE
+"tbl-stage4-main-diagnostics","diagnostics",10,"Sample","Complementary chest","Complementary chest",TRUE
+"tbl-stage4-main-diagnostics","diagnostics",10,"Check","endpoint probabilities","endpoint probabilities",TRUE
+"tbl-stage4-main-diagnostics","diagnostics",10,"Assessment","acceptable","acceptable",TRUE
+"tbl-stage4-main-diagnostics","diagnostics",10,"Detail","3 of 3 applicable state endpoint envelopes passed","3 of 3 applicable state endpoint envelopes passed",TRUE
+"tbl-stage4-main-diagnostics","diagnostics",11,"Sample","Complementary chest","Complementary chest",TRUE
+"tbl-stage4-main-diagnostics","diagnostics",11,"Check","actual date temporal dependence","actual date temporal dependence",TRUE
+"tbl-stage4-main-diagnostics","diagnostics",11,"Assessment","triggered","triggered",TRUE
+"tbl-stage4-main-diagnostics","diagnostics",11,"Detail","1 state residual series reached the temporal trigger","1 state residual series reached the temporal trigger",TRUE
+"tbl-stage4-main-diagnostics","diagnostics",12,"Sample","Complementary chest","Complementary chest",TRUE
+"tbl-stage4-main-diagnostics","diagnostics",12,"Check","frozen numerical fit","frozen numerical fit",TRUE
+"tbl-stage4-main-diagnostics","diagnostics",12,"Assessment","acceptable with cautions","acceptable with cautions",TRUE
+"tbl-stage4-main-diagnostics","diagnostics",12,"Detail","Separate two-window eight-site chest sensitivity; not a placement comparison test","Separate two-window eight-site chest sensitivity; not a placement comparison test",TRUE
+"tbl-stage4-main-diagnostics","diagnostics",13,"Sample","Any-valid temporal fallback","Any-valid temporal fallback",TRUE
+"tbl-stage4-main-diagnostics","diagnostics",13,"Check","overall adherence","overall adherence",TRUE
+"tbl-stage4-main-diagnostics","diagnostics",13,"Assessment","acceptable with limitations","acceptable with limitations",TRUE
+"tbl-stage4-main-diagnostics","diagnostics",13,"Detail","maximum absolute state-site-day-type adherence calibration difference 0.057","maximum absolute state-site-day-type adherence calibration difference 0.057",TRUE
+"tbl-stage4-main-diagnostics","diagnostics",14,"Sample","Any-valid temporal fallback","Any-valid temporal fallback",TRUE
+"tbl-stage4-main-diagnostics","diagnostics",14,"Check","endpoint probabilities","endpoint probabilities",TRUE
+"tbl-stage4-main-diagnostics","diagnostics",14,"Assessment","not acceptable","not acceptable",TRUE
+"tbl-stage4-main-diagnostics","diagnostics",14,"Detail","0 of 5 applicable state endpoint envelopes passed","0 of 5 applicable state endpoint envelopes passed",TRUE
+"tbl-stage4-main-diagnostics","diagnostics",15,"Sample","Any-valid temporal fallback","Any-valid temporal fallback",TRUE
+"tbl-stage4-main-diagnostics","diagnostics",15,"Check","actual date temporal dependence","actual date temporal dependence",TRUE
+"tbl-stage4-main-diagnostics","diagnostics",15,"Assessment","triggered","triggered",TRUE
+"tbl-stage4-main-diagnostics","diagnostics",15,"Detail","1 state residual series reached the temporal trigger","1 state residual series reached the temporal trigger",TRUE
+"tbl-stage4-main-diagnostics","diagnostics",16,"Sample","Any-valid temporal fallback","Any-valid temporal fallback",TRUE
+"tbl-stage4-main-diagnostics","diagnostics",16,"Check","temporal numerical fit","temporal numerical fit",TRUE
+"tbl-stage4-main-diagnostics","diagnostics",16,"Assessment","acceptable with limitations","acceptable with limitations",TRUE
+"tbl-stage4-main-diagnostics","diagnostics",16,"Detail","Selected sensitivity route BB-R0 ; not a primary replacement","Selected sensitivity route BB-R0 ; not a primary replacement",TRUE
+"tbl-stage4-main-diagnostics","diagnostics",17,"Sample","80% temporal fallback","80% temporal fallback",TRUE
+"tbl-stage4-main-diagnostics","diagnostics",17,"Check","overall adherence","overall adherence",TRUE
+"tbl-stage4-main-diagnostics","diagnostics",17,"Assessment","acceptable","acceptable",TRUE
+"tbl-stage4-main-diagnostics","diagnostics",17,"Detail","maximum absolute state-site-day-type adherence calibration difference 0.050","maximum absolute state-site-day-type adherence calibration difference 0.050",TRUE
+"tbl-stage4-main-diagnostics","diagnostics",18,"Sample","80% temporal fallback","80% temporal fallback",TRUE
+"tbl-stage4-main-diagnostics","diagnostics",18,"Check","endpoint probabilities","endpoint probabilities",TRUE
+"tbl-stage4-main-diagnostics","diagnostics",18,"Assessment","not acceptable","not acceptable",TRUE
+"tbl-stage4-main-diagnostics","diagnostics",18,"Detail","0 of 5 applicable state endpoint envelopes passed","0 of 5 applicable state endpoint envelopes passed",TRUE
+"tbl-stage4-main-diagnostics","diagnostics",19,"Sample","80% temporal fallback","80% temporal fallback",TRUE
+"tbl-stage4-main-diagnostics","diagnostics",19,"Check","actual date temporal dependence","actual date temporal dependence",TRUE
+"tbl-stage4-main-diagnostics","diagnostics",19,"Assessment","acceptable","acceptable",TRUE
+"tbl-stage4-main-diagnostics","diagnostics",19,"Detail","0 state residual series reached the temporal trigger","0 state residual series reached the temporal trigger",TRUE
+"tbl-stage4-main-diagnostics","diagnostics",20,"Sample","80% temporal fallback","80% temporal fallback",TRUE
+"tbl-stage4-main-diagnostics","diagnostics",20,"Check","temporal numerical fit","temporal numerical fit",TRUE
+"tbl-stage4-main-diagnostics","diagnostics",20,"Assessment","acceptable with limitations","acceptable with limitations",TRUE
+"tbl-stage4-main-diagnostics","diagnostics",20,"Detail","Selected sensitivity route BB-R0 ; not a primary replacement","Selected sensitivity route BB-R0 ; not a primary replacement",TRUE
+"tbl-stage4-temporal-routes","temporal_routes",1,"Sample","Any valid period","Any valid period",TRUE
+"tbl-stage4-temporal-routes","temporal_routes",1,"Route","ENDPOINT-R3","ENDPOINT-R3",TRUE
+"tbl-stage4-temporal-routes","temporal_routes",1,"Disposition","structural failure","structural failure",TRUE
+"tbl-stage4-temporal-routes","temporal_routes",1,"Structural failure","Yes","Yes",TRUE
+"tbl-stage4-temporal-routes","temporal_routes",1,"Recorded reason","convergence;gradient;hessian;covariance;endpoint_uncertainty","convergence;gradient;hessian;covariance;endpoint_uncertainty",TRUE
+"tbl-stage4-temporal-routes","temporal_routes",2,"Sample","Any valid period","Any valid period",TRUE
+"tbl-stage4-temporal-routes","temporal_routes",2,"Route","BB-R0","BB-R0",TRUE
+"tbl-stage4-temporal-routes","temporal_routes",2,"Disposition","acceptable with limitations","acceptable with limitations",TRUE
+"tbl-stage4-temporal-routes","temporal_routes",2,"Structural failure","No","No",TRUE
+"tbl-stage4-temporal-routes","temporal_routes",2,"Recorded reason","","",TRUE
+"tbl-stage4-temporal-routes","temporal_routes",3,"Sample","At least 80% coverage","At least 80% coverage",TRUE
+"tbl-stage4-temporal-routes","temporal_routes",3,"Route","ENDPOINT-R3","ENDPOINT-R3",TRUE
+"tbl-stage4-temporal-routes","temporal_routes",3,"Disposition","structural failure","structural failure",TRUE
+"tbl-stage4-temporal-routes","temporal_routes",3,"Structural failure","Yes","Yes",TRUE
+"tbl-stage4-temporal-routes","temporal_routes",3,"Recorded reason","convergence;gradient;hessian;covariance;endpoint_uncertainty","convergence;gradient;hessian;covariance;endpoint_uncertainty",TRUE
+"tbl-stage4-temporal-routes","temporal_routes",4,"Sample","At least 80% coverage","At least 80% coverage",TRUE
+"tbl-stage4-temporal-routes","temporal_routes",4,"Route","BB-R0","BB-R0",TRUE
+"tbl-stage4-temporal-routes","temporal_routes",4,"Disposition","acceptable with limitations","acceptable with limitations",TRUE
+"tbl-stage4-temporal-routes","temporal_routes",4,"Structural failure","No","No",TRUE
+"tbl-stage4-temporal-routes","temporal_routes",4,"Recorded reason","","",TRUE
+"tbl-stage4-cross-diagnostics","cross_diagnostics",1,"Sample","Any valid period","Any valid period",TRUE
+"tbl-stage4-cross-diagnostics","cross_diagnostics",1,"Check","overall adherence","overall adherence",TRUE
+"tbl-stage4-cross-diagnostics","cross_diagnostics",1,"Assessment","acceptable with limitations","acceptable with limitations",TRUE
+"tbl-stage4-cross-diagnostics","cross_diagnostics",1,"Detail","maximum absolute target-site-day-type calibration difference among cells with at least 10 rows: 0.063","maximum absolute target-site-day-type calibration difference among cells with at least 10 rows: 0.063",TRUE
+"tbl-stage4-cross-diagnostics","cross_diagnostics",2,"Sample","Any valid period","Any valid period",TRUE
+"tbl-stage4-cross-diagnostics","cross_diagnostics",2,"Check","endpoint probabilities","endpoint probabilities",TRUE
+"tbl-stage4-cross-diagnostics","cross_diagnostics",2,"Assessment","acceptable","acceptable",TRUE
+"tbl-stage4-cross-diagnostics","cross_diagnostics",2,"Detail","6 of 6 target-level endpoint envelopes passed","6 of 6 target-level endpoint envelopes passed",TRUE
+"tbl-stage4-cross-diagnostics","cross_diagnostics",3,"Sample","Any valid period","Any valid period",TRUE
+"tbl-stage4-cross-diagnostics","cross_diagnostics",3,"Check","actual date temporal dependence","actual date temporal dependence",TRUE
+"tbl-stage4-cross-diagnostics","cross_diagnostics",3,"Assessment","triggered","triggered",TRUE
+"tbl-stage4-cross-diagnostics","cross_diagnostics",3,"Detail","2 target Pearson series reached the registered trigger","2 target Pearson series reached the registered trigger",TRUE
+"tbl-stage4-cross-diagnostics","cross_diagnostics",4,"Sample","At least 80% coverage","At least 80% coverage",TRUE
+"tbl-stage4-cross-diagnostics","cross_diagnostics",4,"Check","overall adherence","overall adherence",TRUE
+"tbl-stage4-cross-diagnostics","cross_diagnostics",4,"Assessment","acceptable with limitations","acceptable with limitations",TRUE
+"tbl-stage4-cross-diagnostics","cross_diagnostics",4,"Detail","maximum absolute target-site-day-type calibration difference among cells with at least 10 rows: 0.064","maximum absolute target-site-day-type calibration difference among cells with at least 10 rows: 0.064",TRUE
+"tbl-stage4-cross-diagnostics","cross_diagnostics",5,"Sample","At least 80% coverage","At least 80% coverage",TRUE
+"tbl-stage4-cross-diagnostics","cross_diagnostics",5,"Check","endpoint probabilities","endpoint probabilities",TRUE
+"tbl-stage4-cross-diagnostics","cross_diagnostics",5,"Assessment","acceptable","acceptable",TRUE
+"tbl-stage4-cross-diagnostics","cross_diagnostics",5,"Detail","6 of 6 target-level endpoint envelopes passed","6 of 6 target-level endpoint envelopes passed",TRUE
+"tbl-stage4-cross-diagnostics","cross_diagnostics",6,"Sample","At least 80% coverage","At least 80% coverage",TRUE
+"tbl-stage4-cross-diagnostics","cross_diagnostics",6,"Check","actual date temporal dependence","actual date temporal dependence",TRUE
+"tbl-stage4-cross-diagnostics","cross_diagnostics",6,"Assessment","triggered","triggered",TRUE
+"tbl-stage4-cross-diagnostics","cross_diagnostics",6,"Detail","2 target Pearson series reached the registered trigger","2 target Pearson series reached the registered trigger",TRUE
+"tbl-stage4-multiplicity","multiplicity",1,"Question","Equal-site Free-minus-Work differences","Equal-site Free-minus-Work differences",TRUE
+"tbl-stage4-multiplicity","multiplicity",1,"Primary tests","3","3",TRUE
+"tbl-stage4-multiplicity","multiplicity",1,"Primary adjustment","Benjamini-Hochberg within this family","Benjamini-Hochberg within this family",TRUE
+"tbl-stage4-multiplicity","multiplicity",1,"Coverage-sensitivity role","Complete family repeated with a separate adjustment within the 80% sample","Complete family repeated with a separate adjustment within the 80% sample",TRUE
+"tbl-stage4-multiplicity","multiplicity",2,"Question","Window-specific site heterogeneity","Window-specific site heterogeneity",TRUE
+"tbl-stage4-multiplicity","multiplicity",2,"Primary tests","3","3",TRUE
+"tbl-stage4-multiplicity","multiplicity",2,"Primary adjustment","Benjamini-Hochberg within this family","Benjamini-Hochberg within this family",TRUE
+"tbl-stage4-multiplicity","multiplicity",2,"Coverage-sensitivity role","Complete family repeated with a separate adjustment within the 80% sample","Complete family repeated with a separate adjustment within the 80% sample",TRUE
+"tbl-stage4-multiplicity","multiplicity",3,"Question","Global window by site by day-type interaction","Global window by site by day-type interaction",TRUE
+"tbl-stage4-multiplicity","multiplicity",3,"Primary tests","1","1",TRUE
+"tbl-stage4-multiplicity","multiplicity",3,"Primary adjustment","Benjamini-Hochberg within this family","Benjamini-Hochberg within this family",TRUE
+"tbl-stage4-multiplicity","multiplicity",3,"Coverage-sensitivity role","Complete family repeated with a separate adjustment within the 80% sample","Complete family repeated with a separate adjustment within the 80% sample",TRUE
+"tbl-stage4-multiplicity","multiplicity",4,"Question","Site-specific Free-minus-Work differences from zero","Site-specific Free-minus-Work differences from zero",TRUE
+"tbl-stage4-multiplicity","multiplicity",4,"Primary tests","27","27",TRUE
+"tbl-stage4-multiplicity","multiplicity",4,"Primary adjustment","Benjamini-Hochberg within this family","Benjamini-Hochberg within this family",TRUE
+"tbl-stage4-multiplicity","multiplicity",4,"Coverage-sensitivity role","Complete family repeated with a separate adjustment within the 80% sample","Complete family repeated with a separate adjustment within the 80% sample",TRUE
+"tbl-stage4-multiplicity","multiplicity",5,"Question","Site minus equal-site adherence on each day type","Site minus equal-site adherence on each day type",TRUE
+"tbl-stage4-multiplicity","multiplicity",5,"Primary tests","54","54",TRUE
+"tbl-stage4-multiplicity","multiplicity",5,"Primary adjustment","Benjamini-Hochberg within this family","Benjamini-Hochberg within this family",TRUE
+"tbl-stage4-multiplicity","multiplicity",5,"Coverage-sensitivity role","Complete family repeated with a separate adjustment within the 80% sample","Complete family repeated with a separate adjustment within the 80% sample",TRUE
+"tbl-stage4-multiplicity","multiplicity",6,"Question","Site Free-minus-Work effect minus equal-site effect","Site Free-minus-Work effect minus equal-site effect",TRUE
+"tbl-stage4-multiplicity","multiplicity",6,"Primary tests","27","27",TRUE
+"tbl-stage4-multiplicity","multiplicity",6,"Primary adjustment","Benjamini-Hochberg within this family","Benjamini-Hochberg within this family",TRUE
+"tbl-stage4-multiplicity","multiplicity",6,"Coverage-sensitivity role","Identical 27 contrasts, without a second FDR family; estimability, direction and interval checks","Identical 27 contrasts, without a second FDR family; estimability, direction and interval checks",TRUE
+"tbl-stage4-multiplicity","multiplicity",7,"Question","Within- and between-participant cross-state associations","Within- and between-participant cross-state associations",TRUE
+"tbl-stage4-multiplicity","multiplicity",7,"Primary tests","4","4",TRUE
+"tbl-stage4-multiplicity","multiplicity",7,"Primary adjustment","Benjamini-Hochberg within this family","Benjamini-Hochberg within this family",TRUE
+"tbl-stage4-multiplicity","multiplicity",7,"Coverage-sensitivity role","Identical four-effect stability check; no merging with a main-analysis family","Identical four-effect stability check; no merging with a main-analysis family",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",1,"Window","Daytime","Daytime",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",1,"Site","Borås (SE)","Borås (SE)",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",1,"Both component identities agree","Yes","Yes",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",1,"Stored window sum","0.00e+00","0.00e+00",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",2,"Window","Daytime","Daytime",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",2,"Site","Delft (NL)","Delft (NL)",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",2,"Both component identities agree","Yes","Yes",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",2,"Stored window sum","0.00e+00","0.00e+00",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",3,"Window","Daytime","Daytime",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",3,"Site","Dortmund (DE)","Dortmund (DE)",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",3,"Both component identities agree","Yes","Yes",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",3,"Stored window sum","0.00e+00","0.00e+00",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",4,"Window","Daytime","Daytime",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",4,"Site","Tübingen (DE)","Tübingen (DE)",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",4,"Both component identities agree","Yes","Yes",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",4,"Stored window sum","0.00e+00","0.00e+00",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",5,"Window","Daytime","Daytime",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",5,"Site","Munich (DE)","Munich (DE)",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",5,"Both component identities agree","Yes","Yes",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",5,"Stored window sum","0.00e+00","0.00e+00",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",6,"Window","Daytime","Daytime",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",6,"Site","Madrid (ES)","Madrid (ES)",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",6,"Both component identities agree","Yes","Yes",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",6,"Stored window sum","0.00e+00","0.00e+00",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",7,"Window","Daytime","Daytime",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",7,"Site","Izmir (TR)","Izmir (TR)",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",7,"Both component identities agree","Yes","Yes",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",7,"Stored window sum","0.00e+00","0.00e+00",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",8,"Window","Daytime","Daytime",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",8,"Site","San José (CR)","San José (CR)",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",8,"Both component identities agree","Yes","Yes",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",8,"Stored window sum","0.00e+00","0.00e+00",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",9,"Window","Daytime","Daytime",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",9,"Site","Kumasi (GH)","Kumasi (GH)",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",9,"Both component identities agree","Yes","Yes",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",9,"Stored window sum","0.00e+00","0.00e+00",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",10,"Window","Pre-sleep","Pre-sleep",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",10,"Site","Borås (SE)","Borås (SE)",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",10,"Both component identities agree","Yes","Yes",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",10,"Stored window sum","3.47e-17","3.47e-17",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",11,"Window","Pre-sleep","Pre-sleep",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",11,"Site","Delft (NL)","Delft (NL)",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",11,"Both component identities agree","Yes","Yes",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",11,"Stored window sum","3.47e-17","3.47e-17",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",12,"Window","Pre-sleep","Pre-sleep",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",12,"Site","Dortmund (DE)","Dortmund (DE)",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",12,"Both component identities agree","Yes","Yes",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",12,"Stored window sum","3.47e-17","3.47e-17",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",13,"Window","Pre-sleep","Pre-sleep",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",13,"Site","Tübingen (DE)","Tübingen (DE)",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",13,"Both component identities agree","Yes","Yes",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",13,"Stored window sum","3.47e-17","3.47e-17",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",14,"Window","Pre-sleep","Pre-sleep",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",14,"Site","Munich (DE)","Munich (DE)",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",14,"Both component identities agree","Yes","Yes",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",14,"Stored window sum","3.47e-17","3.47e-17",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",15,"Window","Pre-sleep","Pre-sleep",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",15,"Site","Madrid (ES)","Madrid (ES)",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",15,"Both component identities agree","Yes","Yes",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",15,"Stored window sum","3.47e-17","3.47e-17",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",16,"Window","Pre-sleep","Pre-sleep",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",16,"Site","Izmir (TR)","Izmir (TR)",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",16,"Both component identities agree","Yes","Yes",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",16,"Stored window sum","3.47e-17","3.47e-17",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",17,"Window","Pre-sleep","Pre-sleep",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",17,"Site","San José (CR)","San José (CR)",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",17,"Both component identities agree","Yes","Yes",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",17,"Stored window sum","3.47e-17","3.47e-17",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",18,"Window","Pre-sleep","Pre-sleep",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",18,"Site","Kumasi (GH)","Kumasi (GH)",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",18,"Both component identities agree","Yes","Yes",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",18,"Stored window sum","3.47e-17","3.47e-17",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",19,"Window","Sleep","Sleep",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",19,"Site","Borås (SE)","Borås (SE)",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",19,"Both component identities agree","Yes","Yes",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",19,"Stored window sum","4.44e-16","4.44e-16",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",20,"Window","Sleep","Sleep",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",20,"Site","Delft (NL)","Delft (NL)",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",20,"Both component identities agree","Yes","Yes",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",20,"Stored window sum","4.44e-16","4.44e-16",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",21,"Window","Sleep","Sleep",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",21,"Site","Dortmund (DE)","Dortmund (DE)",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",21,"Both component identities agree","Yes","Yes",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",21,"Stored window sum","4.44e-16","4.44e-16",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",22,"Window","Sleep","Sleep",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",22,"Site","Tübingen (DE)","Tübingen (DE)",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",22,"Both component identities agree","Yes","Yes",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",22,"Stored window sum","4.44e-16","4.44e-16",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",23,"Window","Sleep","Sleep",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",23,"Site","Munich (DE)","Munich (DE)",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",23,"Both component identities agree","Yes","Yes",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",23,"Stored window sum","4.44e-16","4.44e-16",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",24,"Window","Sleep","Sleep",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",24,"Site","Madrid (ES)","Madrid (ES)",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",24,"Both component identities agree","Yes","Yes",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",24,"Stored window sum","4.44e-16","4.44e-16",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",25,"Window","Sleep","Sleep",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",25,"Site","Izmir (TR)","Izmir (TR)",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",25,"Both component identities agree","Yes","Yes",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",25,"Stored window sum","4.44e-16","4.44e-16",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",26,"Window","Sleep","Sleep",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",26,"Site","San José (CR)","San José (CR)",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",26,"Both component identities agree","Yes","Yes",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",26,"Stored window sum","4.44e-16","4.44e-16",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",27,"Window","Sleep","Sleep",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",27,"Site","Kumasi (GH)","Kumasi (GH)",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",27,"Both component identities agree","Yes","Yes",TRUE
+"tbl-stage4-ba-m6-derivation","derivation",27,"Stored window sum","4.44e-16","4.44e-16",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",1,"Window","Daytime","Daytime",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",1,"Site","Borås (SE)","Borås (SE)",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",1,"Site effect minus equal-site effect (95% CI)","-0.1 pp (-8.1 pp to +8.0 pp)","-0.1 pp (-8.1 pp to +8.0 pp)",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",1,"Primary FDR-adjusted p","0.986","0.986",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",1,"At least 80% (95% CI)","-0.0 pp (-8.4 pp to +8.3 pp)","-0.0 pp (-8.4 pp to +8.3 pp)",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",1,"Direction retained","Yes","Yes",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",1,"CI conclusion retained","Yes","Yes",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",2,"Window","Daytime","Daytime",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",2,"Site","Delft (NL)","Delft (NL)",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",2,"Site effect minus equal-site effect (95% CI)","+3.0 pp (-5.8 pp to +11.8 pp)","+3.0 pp (-5.8 pp to +11.8 pp)",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",2,"Primary FDR-adjusted p","0.691","0.691",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",2,"At least 80% (95% CI)","+3.0 pp (-6.4 pp to +12.3 pp)","+3.0 pp (-6.4 pp to +12.3 pp)",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",2,"Direction retained","Yes","Yes",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",2,"CI conclusion retained","Yes","Yes",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",3,"Window","Daytime","Daytime",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",3,"Site","Dortmund (DE)","Dortmund (DE)",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",3,"Site effect minus equal-site effect (95% CI)","+14.8 pp (+6.7 pp to +22.9 pp)","+14.8 pp (+6.7 pp to +22.9 pp)",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",3,"Primary FDR-adjusted p","0.004","0.004",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",3,"At least 80% (95% CI)","+14.4 pp (+6.0 pp to +22.7 pp)","+14.4 pp (+6.0 pp to +22.7 pp)",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",3,"Direction retained","Yes","Yes",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",3,"CI conclusion retained","Yes","Yes",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",4,"Window","Daytime","Daytime",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",4,"Site","Tübingen (DE)","Tübingen (DE)",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",4,"Site effect minus equal-site effect (95% CI)","-1.8 pp (-7.0 pp to +3.3 pp)","-1.8 pp (-7.0 pp to +3.3 pp)",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",4,"Primary FDR-adjusted p","0.691","0.691",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",4,"At least 80% (95% CI)","-1.7 pp (-7.1 pp to +3.7 pp)","-1.7 pp (-7.1 pp to +3.7 pp)",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",4,"Direction retained","Yes","Yes",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",4,"CI conclusion retained","Yes","Yes",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",5,"Window","Daytime","Daytime",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",5,"Site","Munich (DE)","Munich (DE)",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",5,"Site effect minus equal-site effect (95% CI)","-6.9 pp (-15.0 pp to +1.3 pp)","-6.9 pp (-15.0 pp to +1.3 pp)",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",5,"Primary FDR-adjusted p","0.444","0.444",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",5,"At least 80% (95% CI)","-6.0 pp (-14.6 pp to +2.6 pp)","-6.0 pp (-14.6 pp to +2.6 pp)",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",5,"Direction retained","Yes","Yes",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",5,"CI conclusion retained","Yes","Yes",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",6,"Window","Daytime","Daytime",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",6,"Site","Madrid (ES)","Madrid (ES)",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",6,"Site effect minus equal-site effect (95% CI)","-9.2 pp (-15.6 pp to -2.8 pp)","-9.2 pp (-15.6 pp to -2.8 pp)",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",6,"Primary FDR-adjusted p","0.044","0.044",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",6,"At least 80% (95% CI)","-9.2 pp (-15.6 pp to -2.7 pp)","-9.2 pp (-15.6 pp to -2.7 pp)",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",6,"Direction retained","Yes","Yes",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",6,"CI conclusion retained","Yes","Yes",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",7,"Window","Daytime","Daytime",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",7,"Site","Izmir (TR)","Izmir (TR)",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",7,"Site effect minus equal-site effect (95% CI)","+3.0 pp (-3.1 pp to +9.2 pp)","+3.0 pp (-3.1 pp to +9.2 pp)",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",7,"Primary FDR-adjusted p","0.691","0.691",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",7,"At least 80% (95% CI)","+2.0 pp (-4.5 pp to +8.4 pp)","+2.0 pp (-4.5 pp to +8.4 pp)",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",7,"Direction retained","Yes","Yes",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",7,"CI conclusion retained","Yes","Yes",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",8,"Window","Daytime","Daytime",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",8,"Site","San José (CR)","San José (CR)",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",8,"Site effect minus equal-site effect (95% CI)","+3.3 pp (-7.2 pp to +13.9 pp)","+3.3 pp (-7.2 pp to +13.9 pp)",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",8,"Primary FDR-adjusted p","0.691","0.691",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",8,"At least 80% (95% CI)","+3.7 pp (-7.0 pp to +14.4 pp)","+3.7 pp (-7.0 pp to +14.4 pp)",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",8,"Direction retained","Yes","Yes",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",8,"CI conclusion retained","Yes","Yes",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",9,"Window","Daytime","Daytime",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",9,"Site","Kumasi (GH)","Kumasi (GH)",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",9,"Site effect minus equal-site effect (95% CI)","-6.2 pp (-12.2 pp to -0.2 pp)","-6.2 pp (-12.2 pp to -0.2 pp)",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",9,"Primary FDR-adjusted p","0.285","0.285",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",9,"At least 80% (95% CI)","-6.1 pp (-12.3 pp to +0.1 pp)","-6.1 pp (-12.3 pp to +0.1 pp)",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",9,"Direction retained","Yes","Yes",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",9,"CI conclusion retained","No","No",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",10,"Window","Pre-sleep","Pre-sleep",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",10,"Site","Borås (SE)","Borås (SE)",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",10,"Site effect minus equal-site effect (95% CI)","-6.5 pp (-17.9 pp to +5.0 pp)","-6.5 pp (-17.9 pp to +5.0 pp)",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",10,"Primary FDR-adjusted p","0.691","0.691",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",10,"At least 80% (95% CI)","-9.2 pp (-21.5 pp to +3.1 pp)","-9.2 pp (-21.5 pp to +3.1 pp)",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",10,"Direction retained","Yes","Yes",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",10,"CI conclusion retained","Yes","Yes",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",11,"Window","Pre-sleep","Pre-sleep",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",11,"Site","Delft (NL)","Delft (NL)",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",11,"Site effect minus equal-site effect (95% CI)","+2.1 pp (-11.8 pp to +16.0 pp)","+2.1 pp (-11.8 pp to +16.0 pp)",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",11,"Primary FDR-adjusted p","0.896","0.896",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",11,"At least 80% (95% CI)","-5.0 pp (-21.7 pp to +11.8 pp)","-5.0 pp (-21.7 pp to +11.8 pp)",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",11,"Direction retained","No","No",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",11,"CI conclusion retained","Yes","Yes",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",12,"Window","Pre-sleep","Pre-sleep",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",12,"Site","Dortmund (DE)","Dortmund (DE)",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",12,"Site effect minus equal-site effect (95% CI)","+2.5 pp (-9.1 pp to +14.1 pp)","+2.5 pp (-9.1 pp to +14.1 pp)",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",12,"Primary FDR-adjusted p","0.824","0.824",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",12,"At least 80% (95% CI)","+3.2 pp (-9.5 pp to +15.9 pp)","+3.2 pp (-9.5 pp to +15.9 pp)",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",12,"Direction retained","Yes","Yes",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",12,"CI conclusion retained","Yes","Yes",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",13,"Window","Pre-sleep","Pre-sleep",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",13,"Site","Tübingen (DE)","Tübingen (DE)",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",13,"Site effect minus equal-site effect (95% CI)","-5.2 pp (-14.5 pp to +4.1 pp)","-5.2 pp (-14.5 pp to +4.1 pp)",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",13,"Primary FDR-adjusted p","0.691","0.691",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",13,"At least 80% (95% CI)","-1.2 pp (-11.2 pp to +8.7 pp)","-1.2 pp (-11.2 pp to +8.7 pp)",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",13,"Direction retained","Yes","Yes",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",13,"CI conclusion retained","Yes","Yes",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",14,"Window","Pre-sleep","Pre-sleep",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",14,"Site","Munich (DE)","Munich (DE)",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",14,"Site effect minus equal-site effect (95% CI)","-4.5 pp (-19.0 pp to +9.9 pp)","-4.5 pp (-19.0 pp to +9.9 pp)",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",14,"Primary FDR-adjusted p","0.691","0.691",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",14,"At least 80% (95% CI)","-5.8 pp (-21.0 pp to +9.3 pp)","-5.8 pp (-21.0 pp to +9.3 pp)",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",14,"Direction retained","Yes","Yes",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",14,"CI conclusion retained","Yes","Yes",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",15,"Window","Pre-sleep","Pre-sleep",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",15,"Site","Madrid (ES)","Madrid (ES)",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",15,"Site effect minus equal-site effect (95% CI)","+1.2 pp (-9.8 pp to +12.3 pp)","+1.2 pp (-9.8 pp to +12.3 pp)",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",15,"Primary FDR-adjusted p","0.896","0.896",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",15,"At least 80% (95% CI)","+4.9 pp (-6.8 pp to +16.5 pp)","+4.9 pp (-6.8 pp to +16.5 pp)",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",15,"Direction retained","Yes","Yes",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",15,"CI conclusion retained","Yes","Yes",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",16,"Window","Pre-sleep","Pre-sleep",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",16,"Site","Izmir (TR)","Izmir (TR)",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",16,"Site effect minus equal-site effect (95% CI)","-4.0 pp (-15.9 pp to +8.0 pp)","-4.0 pp (-15.9 pp to +8.0 pp)",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",16,"Primary FDR-adjusted p","0.691","0.691",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",16,"At least 80% (95% CI)","+4.0 pp (-9.6 pp to +17.6 pp)","+4.0 pp (-9.6 pp to +17.6 pp)",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",16,"Direction retained","No","No",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",16,"CI conclusion retained","Yes","Yes",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",17,"Window","Pre-sleep","Pre-sleep",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",17,"Site","San José (CR)","San José (CR)",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",17,"Site effect minus equal-site effect (95% CI)","+9.7 pp (-8.5 pp to +28.0 pp)","+9.7 pp (-8.5 pp to +28.0 pp)",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",17,"Primary FDR-adjusted p","0.691","0.691",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",17,"At least 80% (95% CI)","+7.5 pp (-11.7 pp to +26.7 pp)","+7.5 pp (-11.7 pp to +26.7 pp)",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",17,"Direction retained","Yes","Yes",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",17,"CI conclusion retained","Yes","Yes",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",18,"Window","Pre-sleep","Pre-sleep",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",18,"Site","Kumasi (GH)","Kumasi (GH)",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",18,"Site effect minus equal-site effect (95% CI)","+4.6 pp (-6.9 pp to +16.1 pp)","+4.6 pp (-6.9 pp to +16.1 pp)",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",18,"Primary FDR-adjusted p","0.691","0.691",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",18,"At least 80% (95% CI)","+1.7 pp (-10.6 pp to +14.0 pp)","+1.7 pp (-10.6 pp to +14.0 pp)",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",18,"Direction retained","Yes","Yes",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",18,"CI conclusion retained","Yes","Yes",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",19,"Window","Sleep","Sleep",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",19,"Site","Borås (SE)","Borås (SE)",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",19,"Site effect minus equal-site effect (95% CI)","-3.2 pp (-12.3 pp to +5.9 pp)","-3.2 pp (-12.3 pp to +5.9 pp)",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",19,"Primary FDR-adjusted p","0.691","0.691",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",19,"At least 80% (95% CI)","-4.1 pp (-13.5 pp to +5.4 pp)","-4.1 pp (-13.5 pp to +5.4 pp)",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",19,"Direction retained","Yes","Yes",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",19,"CI conclusion retained","Yes","Yes",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",20,"Window","Sleep","Sleep",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",20,"Site","Delft (NL)","Delft (NL)",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",20,"Site effect minus equal-site effect (95% CI)","-2.4 pp (-9.1 pp to +4.4 pp)","-2.4 pp (-9.1 pp to +4.4 pp)",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",20,"Primary FDR-adjusted p","0.691","0.691",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",20,"At least 80% (95% CI)","-2.9 pp (-9.6 pp to +3.7 pp)","-2.9 pp (-9.6 pp to +3.7 pp)",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",20,"Direction retained","Yes","Yes",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",20,"CI conclusion retained","Yes","Yes",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",21,"Window","Sleep","Sleep",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",21,"Site","Dortmund (DE)","Dortmund (DE)",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",21,"Site effect minus equal-site effect (95% CI)","+2.4 pp (-3.7 pp to +8.5 pp)","+2.4 pp (-3.7 pp to +8.5 pp)",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",21,"Primary FDR-adjusted p","0.691","0.691",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",21,"At least 80% (95% CI)","+3.0 pp (-3.2 pp to +9.2 pp)","+3.0 pp (-3.2 pp to +9.2 pp)",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",21,"Direction retained","Yes","Yes",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",21,"CI conclusion retained","Yes","Yes",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",22,"Window","Sleep","Sleep",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",22,"Site","Tübingen (DE)","Tübingen (DE)",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",22,"Site effect minus equal-site effect (95% CI)","-0.5 pp (-5.3 pp to +4.2 pp)","-0.5 pp (-5.3 pp to +4.2 pp)",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",22,"Primary FDR-adjusted p","0.896","0.896",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",22,"At least 80% (95% CI)","-0.2 pp (-4.9 pp to +4.6 pp)","-0.2 pp (-4.9 pp to +4.6 pp)",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",22,"Direction retained","Yes","Yes",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",22,"CI conclusion retained","Yes","Yes",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",23,"Window","Sleep","Sleep",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",23,"Site","Munich (DE)","Munich (DE)",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",23,"Site effect minus equal-site effect (95% CI)","-3.4 pp (-13.5 pp to +6.8 pp)","-3.4 pp (-13.5 pp to +6.8 pp)",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",23,"Primary FDR-adjusted p","0.691","0.691",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",23,"At least 80% (95% CI)","-2.1 pp (-12.2 pp to +8.1 pp)","-2.1 pp (-12.2 pp to +8.1 pp)",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",23,"Direction retained","Yes","Yes",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",23,"CI conclusion retained","Yes","Yes",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",24,"Window","Sleep","Sleep",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",24,"Site","Madrid (ES)","Madrid (ES)",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",24,"Site effect minus equal-site effect (95% CI)","+3.4 pp (-0.0 pp to +6.8 pp)","+3.4 pp (-0.0 pp to +6.8 pp)",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",24,"Primary FDR-adjusted p","0.285","0.285",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",24,"At least 80% (95% CI)","+3.1 pp (-0.3 pp to +6.6 pp)","+3.1 pp (-0.3 pp to +6.6 pp)",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",24,"Direction retained","Yes","Yes",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",24,"CI conclusion retained","Yes","Yes",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",25,"Window","Sleep","Sleep",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",25,"Site","Izmir (TR)","Izmir (TR)",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",25,"Site effect minus equal-site effect (95% CI)","-2.3 pp (-9.5 pp to +4.8 pp)","-2.3 pp (-9.5 pp to +4.8 pp)",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",25,"Primary FDR-adjusted p","0.691","0.691",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",25,"At least 80% (95% CI)","-3.4 pp (-10.7 pp to +3.9 pp)","-3.4 pp (-10.7 pp to +3.9 pp)",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",25,"Direction retained","Yes","Yes",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",25,"CI conclusion retained","Yes","Yes",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",26,"Window","Sleep","Sleep",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",26,"Site","San José (CR)","San José (CR)",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",26,"Site effect minus equal-site effect (95% CI)","-0.3 pp (-11.7 pp to +11.0 pp)","-0.3 pp (-11.7 pp to +11.0 pp)",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",26,"Primary FDR-adjusted p","0.986","0.986",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",26,"At least 80% (95% CI)","+0.1 pp (-11.3 pp to +11.4 pp)","+0.1 pp (-11.3 pp to +11.4 pp)",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",26,"Direction retained","No","No",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",26,"CI conclusion retained","Yes","Yes",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",27,"Window","Sleep","Sleep",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",27,"Site","Kumasi (GH)","Kumasi (GH)",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",27,"Site effect minus equal-site effect (95% CI)","+6.3 pp (+3.5 pp to +9.1 pp)","+6.3 pp (+3.5 pp to +9.1 pp)",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",27,"Primary FDR-adjusted p","<0.001","<0.001",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",27,"At least 80% (95% CI)","+6.4 pp (+3.5 pp to +9.3 pp)","+6.4 pp (+3.5 pp to +9.3 pp)",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",27,"Direction retained","Yes","Yes",TRUE
+"tbl-stage4-ba-m6-localizations","localizations",27,"CI conclusion retained","Yes","Yes",TRUE
+"tbl-stage4-execution-map","execution",1,"Step","Measurement and grouping","Measurement and grouping",TRUE
+"tbl-stage4-execution-map","execution",1,"Method","Frozen minute comparisons grouped by actual wake dates and UTC intervals","Frozen minute comparisons grouped by actual wake dates and UTC intervals",TRUE
+"tbl-stage4-execution-map","execution",1,"Location","main_linkage_b_amendment/stage2/frames/","main_linkage_b_amendment/stage2/frames/",TRUE
+"tbl-stage4-execution-map","execution",2,"Step","Main model and sensitivities","Main model and sensitivities",TRUE
+"tbl-stage4-execution-map","execution",2,"Method","Serial bounded fitting and recorded diagnostic routes, with failed attempts preserved","Serial bounded fitting and recorded diagnostic routes, with failed attempts preserved",TRUE
+"tbl-stage4-execution-map","execution",2,"Location","main_linkage_b_amendment/stage2/completion_v2/continued_final_package_011/","main_linkage_b_amendment/stage2/completion_v2/continued_final_package_011/",TRUE
+"tbl-stage4-execution-map","execution",3,"Step","Response-scale summaries","Response-scale summaries",TRUE
+"tbl-stage4-execution-map","execution",3,"Method","Stored population-average means, contrasts, covariance-derived uncertainty and multiplicity","Stored population-average means, contrasts, covariance-derived uncertainty and multiplicity",TRUE
+"tbl-stage4-execution-map","execution",3,"Location","main_linkage_b_amendment/stage2/estimands/ and r2/","main_linkage_b_amendment/stage2/estimands/ and r2/",TRUE
+"tbl-stage4-execution-map","execution",4,"Step","Exploratory reuse","Exploratory reuse",TRUE
+"tbl-stage4-execution-map","execution",4,"Method","Exact eligible pairs, predictors, four contrasts, diagnostics and anonymous profiles","Exact eligible pairs, predictors, four contrasts, diagnostics and anonymous profiles",TRUE
+"tbl-stage4-execution-map","execution",4,"Location","main_linkage_b_amendment/stage2/reuse/","main_linkage_b_amendment/stage2/reuse/",TRUE
+"tbl-stage4-execution-map","execution",5,"Step","Reader display","Reader display",TRUE
+"tbl-stage4-execution-map","execution",5,"Method","Read-only aggregate formatting, source binding and candidate-first graphics","Read-only aggregate formatting, source binding and candidate-first graphics",TRUE
+"tbl-stage4-execution-map","execution",5,"Location","main_linkage_b_amendment/stage3/code/ and stage4/code/","main_linkage_b_amendment/stage3/code/ and stage4/code/",TRUE
+"tbl-stage4-artifact-map","artifacts",1,"Role","Complete current scientific package","Complete current scientific package",TRUE
+"tbl-stage4-artifact-map","artifacts",1,"Path","main_linkage_b_amendment/stage2/completion_v2/continued_final_package_011/final_manifest.csv","main_linkage_b_amendment/stage2/completion_v2/continued_final_package_011/final_manifest.csv",TRUE
+"tbl-stage4-artifact-map","artifacts",1,"Bytes","435249","435249",TRUE
+"tbl-stage4-artifact-map","artifacts",1,"SHA-256","c1ce90bf88ff3597d6a75419ee331f091d0a867735117e8785973e1f172af696","c1ce90bf88ff3597d6a75419ee331f091d0a867735117e8785973e1f172af696",TRUE
+"tbl-stage4-artifact-map","artifacts",2,"Role","Paired aggregate sources","Paired aggregate sources",TRUE
+"tbl-stage4-artifact-map","artifacts",2,"Path","main_linkage_b_amendment/stage2/source_data/manifest.csv","main_linkage_b_amendment/stage2/source_data/manifest.csv",TRUE
+"tbl-stage4-artifact-map","artifacts",2,"Bytes","44221","44221",TRUE
+"tbl-stage4-artifact-map","artifacts",2,"SHA-256","0ae37b58d54650632c92876925e2a2b663e9ff2927a8477b467d0d9c920eb542","0ae37b58d54650632c92876925e2a2b663e9ff2927a8477b467d0d9c920eb542",TRUE
+"tbl-stage4-artifact-map","artifacts",3,"Role","Point-only variance decomposition","Point-only variance decomposition",TRUE
+"tbl-stage4-artifact-map","artifacts",3,"Path","main_linkage_b_amendment/stage2/r2/manifest.csv","main_linkage_b_amendment/stage2/r2/manifest.csv",TRUE
+"tbl-stage4-artifact-map","artifacts",3,"Bytes","2462","2462",TRUE
+"tbl-stage4-artifact-map","artifacts",3,"SHA-256","24ebbf2c91ecb0a8d8f0eee659d69d83bcca5114846715fc15c23b09f2bebc98","24ebbf2c91ecb0a8d8f0eee659d69d83bcca5114846715fc15c23b09f2bebc98",TRUE
+"tbl-stage4-artifact-map","artifacts",4,"Role","Exact exploratory reuse","Exact exploratory reuse",TRUE
+"tbl-stage4-artifact-map","artifacts",4,"Path","main_linkage_b_amendment/stage2/reuse/manifest.csv","main_linkage_b_amendment/stage2/reuse/manifest.csv",TRUE
+"tbl-stage4-artifact-map","artifacts",4,"Bytes","1179","1179",TRUE
+"tbl-stage4-artifact-map","artifacts",4,"SHA-256","4fc217c3d27daffa05700c11285e7005c6557f1f5bd01cc574a6fe737ece7198","4fc217c3d27daffa05700c11285e7005c6557f1f5bd01cc574a6fe737ece7198",TRUE
+"tbl-stage4-environment","environment",1,"Software","R","R",TRUE
+"tbl-stage4-environment","environment",1,"Version","4.6.1","4.6.1",TRUE
+"tbl-stage4-environment","environment",2,"Software","Quarto","Quarto",TRUE
+"tbl-stage4-environment","environment",2,"Version","1.9.37","1.9.37",TRUE
+"tbl-stage4-environment","environment",3,"Software","TMB","TMB",TRUE
+"tbl-stage4-environment","environment",3,"Version","1.9.21","1.9.21",TRUE
+"tbl-stage4-environment","environment",4,"Software","data.table","data.table",TRUE
+"tbl-stage4-environment","environment",4,"Version","1.18.4","1.18.4",TRUE
+"tbl-stage4-environment","environment",5,"Software","gt","gt",TRUE
+"tbl-stage4-environment","environment",5,"Version","1.3.0","1.3.0",TRUE
+"tbl-stage4-environment","environment",6,"Software","ggplot2","ggplot2",TRUE
+"tbl-stage4-environment","environment",6,"Version","4.0.3","4.0.3",TRUE
+"tbl-stage4-environment","environment",7,"Software","knitr","knitr",TRUE
+"tbl-stage4-environment","environment",7,"Version","1.51","1.51",TRUE
+"tbl-stage4-environment","environment",8,"Software","digest","digest",TRUE
+"tbl-stage4-environment","environment",8,"Version","0.6.39","0.6.39",TRUE

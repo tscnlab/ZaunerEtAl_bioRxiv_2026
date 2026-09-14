@@ -1,0 +1,192 @@
+
+
+Audit workflowH03–H11 gated workflow
+
+How H03–H11 will be reviewed and rebuilt
+A gated workflow from audit to reader-facing results
+
+
+
+
+
+
+    
+    
+    Last modified:
+    
+      August 1, 2026
+    
+  
+  
+    
+  
+  
+
+
+
+
+
+
+Scope
+This workflow applies to H03 through H11. It does not retroactively change the work already underway for H01, H02, or the descriptive tables and figures.
+Each hypothesis is completed in four stages:
+
+audit and proposed analysis;
+implementation and comparison with V0;
+a standalone reader-facing results report; and
+a scientific description and provenance record for the result-producing pipeline.
+
+When final inference requires a computation-heavy bootstrap or simulation, the production run is an additional approval gate between Stages 2 and 3. It is not a numbered reporting stage. Work stops after Stages 1 and 2, after any production-computation gate, and after Stage 3 until the author has reviewed the relevant HTML output. Stage 4 begins only after the reader-facing result has been accepted.
+One hypothesis task retains responsibility from Stage 1 through Stage 4. It pauses at each gate and resumes in the same task only after explicit author approval; a new task is not created for every stage. This continuity preserves the evidence and reasoning developed during the audit without weakening any approval gate.
+
+
+Terms used in the audit reports
+V0 analysis means the analysis that produced the submitted manuscript. It includes the methods, code, prepared data, numerical results, figures, tables, and claims used for that submission.
+Main analysis means the analysis developed and approved through this audit for the Nature Health submission.
+V0-prepared data means the data as prepared for V0, with only objectively demonstrable data errors corrected. Applying the new model implementation to these data is an audit-only data-preparation sensitivity. It is not a second version of the reader-facing analysis.
+The final reader-facing document does not use the term V0 and does not describe discarded candidate models or variants considered while developing the analysis.
+In Stage 3 and Stage 4, this sensitivity is called the gap-timing-unaware dataset. Its first mention explains that it still passed the general 50%-per-hour and 80%-per-day coverage rules; the label means that the timing of the remaining missing observations is not used for an additional metric-specific adjustment. At that first explanation only, the primary dataset may be described as something that could be interpreted as a time-sensitive primary metric dataset. It is called simply the primary dataset thereafter. Internal scenario identifiers and filenames may retain their established names for provenance.
+
+
+File layout and gate ownership
+For a hypothesis such as H03, the staged files are:
+
+audit/hypotheses/H03/01_audit_and_plan.qmd;
+audit/hypotheses/H03/02_implementation_and_v0_comparison.qmd;
+audit/hypotheses/H03/production_computation.qmd, only when a production bootstrap or simulation requires a separate review gate;
+notebooks/hypotheses/H03.qmd, the Stage 3 standalone reader-facing report; and
+audit/hypotheses/H03/H03_analysis_preparation.qmd, the Stage 4 scientific description and provenance record for the result-producing pipeline.
+
+Every source document is rendered to Quarto HTML for review. Exact model outputs, fitted-model samples, figure data, and table data remain stored as separate RDS or CSV artifacts and are linked from the relevant report.
+The coordinating task owns shared preparation code, central ledgers, Quarto configuration, manuscript files, and the central gate-status table. A hypothesis task may prepare a gate report and a shared-change request, but it must stop rather than changing shared inputs or marking its own gate approved. After coordinator approval, the same hypothesis task may proceed to the next stage and edit only its stage-authorized Hxx scripts, tests, artifacts, audit files, and final hypothesis notebook.
+
+
+Stage 1: Audit and proposed analysis
+The first document audits the V0 analysis against:
+
+the exact preregistered hypothesis and analysis specification;
+all preregistration deviations stated before or in the submitted manuscript;
+the implementation and results that actually produced V0; and
+the analysis plan already developed during the Nature Health audit.
+
+The report must explain, in plain language:
+
+what question and quantity the analysis is intended to address;
+what V0 actually estimated and how it handled repeated observations;
+where V0 agrees with or differs from the preregistration and stated deviations;
+any coding, data, model, multiplicity, diagnostic, figure, table, or claim problem found;
+the proposed main analysis and why each retained or changed choice serves the analysis goal;
+the exact primary and complementary roles of near-eye and chest-level measurements;
+which registered sensitivities will later be needed; and
+every decision that needs author approval before implementation.
+
+The report contains visible evaluated R cells that print the exact Wilkinson formula objects used by V0 and proposed for the main analysis, including every full, reduced, null, or otherwise fitted comparison model. Distribution, link, contrasts, estimation method, correlation structure, and multiplicity families are stated beside those formulas because they are not encoded by Wilkinson notation.
+Stage 1 does not select a method by looking for a preferred new result. It may reproduce V0 and run checks needed to establish whether its implementation is valid, but the proposed estimand and model are fixed before the new inferential results are examined.
+
+Gate after Stage 1
+Implementation starts only after the author approves the proposed estimand, sample, outcome construction, model formulas, response distribution, comparisons, multiplicity families, diagnostics, and placement roles. Any unresolved major choice keeps the hypothesis at Stage 1.
+
+
+
+Stage 2: Implementation and comparison with V0
+The approved analysis is implemented and run in a clean R session. If a computation-heavy bootstrap is required, this stage uses only the approved 50- or 100-replicate pilot and labels its intervals as preliminary and not for inference.
+The second document must:
+
+show the exact formulas supplied to every fitted model;
+report the exact participants, participant-days, hours, observations, sites, and relevant category cells that entered each model;
+report estimates in practical units with 95% confidence intervals and raw and adjusted p-values where applicable;
+format every displayed raw or adjusted p-value under REPORT-008: a leading zero and three decimal places, <0.001 for values strictly below 0.001, and bold type only when the value meets its explicitly labelled significance rule;
+show convergence, singularity, residual, distributional, temporal, and influence checks relevant to the model;
+display those diagnostics with a plain-language interpretation and state whether each fitted model is acceptable, acceptable with a stated limitation, or not acceptable for inference;
+compare the main-analysis implementation, results, and defensible claims directly with V0;
+apply the identical new implementation to the V0-prepared data and report that audit-only data sensitivity separately;
+recreate the V0 figures and tables faithfully, then make only sensible, explicitly documented adjustments for correctness and readability;
+produce the corresponding near-eye and chest-level outputs; and
+export the exact data behind every durable figure and table.
+
+Faithful recreation does not require preserving an error. When a V0 display cannot be retained, the report shows what changed and why. Site names, order, and colours follow config/site_display_registry.csv; metric names follow config/metric_display_registry.csv.
+Expensive secondary work, including the full sensitivity battery, may remain out of Stage 2. The report must nevertheless list every deferred analysis and state whether it could alter the interpretation.
+
+Gate after Stage 2
+The author reviews the method, preliminary or final estimates, V0 comparison, recreated displays, and proposed reader-facing presentation. A material change reopens Stage 1. Otherwise the author approves either the production-computation gate or, when no production computation is needed, Stage 3.
+
+
+
+Optional production-computation gate between Stages 2 and 3
+This stage is required whenever final inference depends on a computation-heavy bootstrap or simulation. It follows the separate pilot-first policy in audit/decisions/bootstrap_execution_policy.md.
+After explicit approval of the pilot display and estimated runtime, the full run uses the same inputs, targets, formulas, resampling unit, failure rules, and output schema as the approved pilot. Its Quarto report records:
+
+requested, successful, failed, and warning-producing replicates;
+seeds, checkpoint behavior, elapsed time, and compute resources;
+final intervals and other bootstrap-derived quantities;
+any difference between the pilot preview and the production presentation;
+updated main-versus-V0 and V0-prepared-data comparisons; and
+all diagnostics required before the result can be treated as final, together with their interpretation and an explicit acceptable, acceptable-with-limitations, or not-acceptable assessment.
+
+Pilot estimates are never substituted for production estimates. A code, model, target, or display change after the pilot requires a new pilot and a new runtime approval.
+
+Gate after the production run
+The final reader-facing report is blocked until the production outputs pass their checks and the author approves them. Material instability or a changed scientific conclusion reopens the relevant earlier stage.
+
+
+
+Stage 3: Standalone reader-facing hypothesis report
+The final notebooks/hypotheses/Hxx.qmd stands on its own. It contains no mention of V0, submitted-versus-new comparisons, discarded candidates, working variants, or the construction history of the analysis.
+In concise, accessible language, it presents:
+
+the question, including the exact preregistered hypothesis as a quotation;
+what was analysed and why the chosen method addresses the question;
+every deviation from the preregistration, listed explicitly;
+the result in prose, figures, and digestible tables;
+the exact model sample and uncertainty needed to interpret the result;
+a restrained interpretation and the important limitations; and
+how the conclusion changes under the registered scientific sensitivities.
+
+The data-preparation sensitivity is presented as the gap-timing-unaware dataset under the definition above. Historical artifact names do not appear in reader-facing prose, headings, tables, figures, captions, legends, alt text, or visible link text.
+The report also shows the model diagnostics needed to judge the analysis. It explains what the diagnostic displays or summaries indicate and states plainly whether the near-eye and chest-level models are acceptable, acceptable with specified limitations, or not acceptable. Diagnostic output without interpretation is not sufficient.
+Near-eye measurements remain primary. Every hypothesis also has a clearly labelled chest-level section that recreates the primary figures and tables with chest-level data, rather than merely referring to an audit table or listing chest coefficients in prose.
+Each report also assesses the REPORT-009 paired-placement display. When the same estimand was fitted separately at near eye and chest on the identical paired/common sample and comparison scale, include a near-eye-versus-chest estimate plot with an identity line, null lines, and equal axis geometry. If a scalar plot would be scientifically invalid or the approved analysis did not produce common-sample estimates, explain why and use the closest valid matched curve, contrast, coefficient, or table comparison without fitting a new model solely for display.
+Reader-facing tables use gt. They are divided into conceptually coherent, legible pieces rather than continued across several pages or filled with audit-only columns. Complete numerical results remain available as linked CSV files. Figures and tables use familiar manuscript terminology, melEDI in reader-facing text, the registered site display rules, and 95% confidence intervals wherever they are estimable.
+Displayed p-values follow REPORT-008 in prose, tables, figures, captions, and annotations. Raw and adjusted values are labelled separately; full precision is retained in source data and significance is decided before display rounding.
+Necessary technical terms are explained on first use. Code may be folded, but each analytical section states what was done, why it was done, what the display shows, and what the result means.
+
+
+Stage 4: Scientific description and provenance of the result-producing pipeline
+After the reader-facing result and its accepted artifacts are fixed, the same hypothesis task creates audit/hypotheses/Hxx/Hxx_analysis_preparation.qmd. This companion is the fourth documentation stage, but it does not refit or reinterpret the scientific result and does not introduce a new inferential gate. It explains how the accepted result was prepared and how its provenance can be checked without reintroducing V0 comparisons into the result report.
+“Stage 4” is internal workflow shorthand. Neither “Stage 4” nor “Step 4” appears in the companion’s reader-facing title, prose, diagrams, captions, tables, callouts, or website navigation. The companion is written for an ordinary scientific reader, not for someone familiar with coordinator/worker roles, approvals, gates, task ownership, or migration history. Those internal mechanics and irrelevant construction variants are omitted.
+The page follows REPORT-007 and the revised H02 exemplar. It explains what data and code produced the result, why each analytical operation was needed, what it contributed, and what evidence shows that it behaved as intended. In analytical order, it covers:
+
+exact verified inputs and their identity, schema, key, content, and value checks;
+model-frame and sample construction, exclusions, support, missingness, coverage, transformations, units, and temporal ordering;
+exact participants, participant-days, observations or hours, sites, and relevant per-site or category samples;
+model construction, central settings, estimands, contrasts, multiplicity, uncertainty, and inference;
+convergence, distributional, residual, temporal, influence, and other applicable diagnostics;
+registered sensitivity branches; and
+the provenance of stored models, resampling results, predictions, figures, tables, diagnostics, source data, manifests, and claims.
+
+The page names the hypothesis-specific scripts or modules in execution order and explains what each reads, why it is separate, and what it produces. Useful compact gt tables and plots show input distributions, support, missingness or coverage, and intermediate quantities. A Mermaid data-to-result diagram is used when it materially clarifies the chain. Technical concepts are explained on first use in specific but plain publication language.
+
+Bounded rendering
+An informational note states which bounded identity checks and lightweight descriptive calculations run during rendering and which quantities are read from stored outputs. It does not use warning, important, caution, or danger styling.
+Rendering must not refit models, re-estimate autocorrelation, regenerate model predictions, rerun bootstraps or simulations, recompute Shapley analyses, or repeat other expensive scientific computation. Externally generated results need not be recomputed, but their producing scripts and exact output locations are identified.
+
+
+Displays, source data, and website identity
+Tables are readable and split into digestible pieces. Every figure has an informative caption, non-empty alt text, and exact paired source data. Axes use scientifically appropriate scales. Discrete masses such as exact zeros are shown separately when they would compress a continuous distribution, while the page states explicitly whether those observations remained in the fitted model.
+The companion and notebooks/hypotheses/Hxx.qmd link to each other. The coordinator adds the companion immediately after the result in the Nature Health render list and navigation only after the source exists. The authoring QMD remains available in the website output and its copied bytes must match the authoring source exactly.
+The hypothesis-specific preparation manifest records the source, website QMD copy, HTML, figures, paired source data, scripts, scientific outputs, environment identity, byte sizes, and SHA-256 checksums. It excludes the final worker inventory and any other self-reference that would make the checksum chain circular.
+
+
+Structural verification and closure
+Every hypothesis adds a focused structural test for reader-facing wording, informational callout semantics, reciprocal links and navigation, figure captions and alt text, gt tables, paired source data, bounded executable R chunks, source-copy identity, and manifest coverage. The shared verifier is scripts/pipeline/hypothesis_preparation_provenance_contract.R; each hypothesis extends it with its own required content and expensive function names.
+The hypothesis task refreshes its preparation manifest, non-circular worker inventory, tests, and handoff after coordinator-owned website integration. This documentation closure does not reopen an accepted result unless it exposes a substantive discrepancy. The complete contract is recorded in audit/decisions/hypothesis_preparation_provenance_companions.md.
+
+
+
+Reopening rules
+An approved stage reopens when an upstream input changes or when a finding changes an estimand, inclusion rule, metric, model, multiplicity family, substantive result, preregistration interpretation, or claim. A low-risk formatting repair may proceed without reopening only when tests establish that the data, fitted models, estimates, uncertainty, and interpretation are unchanged.
+
+
+
+
+

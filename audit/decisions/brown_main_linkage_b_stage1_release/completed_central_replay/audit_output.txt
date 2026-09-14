@@ -1,0 +1,138 @@
+R version 4.6.1 (2026-06-24) 
+Worktree: /Users/zauner/.codex/worktrees/82ab/ZaunerEtAl_bioRxiv_2026 
+Normalized diary: /Users/zauner/Documents/Arbeit/12-TUM/MeLiDos/WP2.2.5_Data_Analysis/ZaunerEtAl_bioRxiv_2026/artifacts/06_model_data/normalized_inputs/sleepdiaries.rds 
+
+Input identities
+                                                                                                                                                                     path
+                                                       /Users/zauner/.codex/worktrees/82ab/ZaunerEtAl_bioRxiv_2026/audit/analyses/brown_adherence/stage2/model_frames.rds
+                   /Users/zauner/Documents/Arbeit/12-TUM/MeLiDos/WP2.2.5_Data_Analysis/ZaunerEtAl_bioRxiv_2026/artifacts/06_model_data/normalized_inputs/sleepdiaries.rds
+               /Users/zauner/.codex/worktrees/82ab/ZaunerEtAl_bioRxiv_2026/audit/analyses/brown_adherence/stage2_boundary/model_BA-EIBB-SENS-LINKAGE-B-F3-R3-Q2-Q1-D0.rds
+                            /Users/zauner/.codex/worktrees/82ab/ZaunerEtAl_bioRxiv_2026/audit/analyses/brown_adherence/stage2_boundary/boundary_sensitivity_estimands.rds
+ /Users/zauner/.codex/worktrees/82ab/ZaunerEtAl_bioRxiv_2026/audit/analyses/brown_adherence/stage2_cross_state_association/stage2_historical_linkage_b_reconciliation.csv
+         /Users/zauner/.codex/worktrees/82ab/ZaunerEtAl_bioRxiv_2026/audit/analyses/brown_adherence/stage2_cross_state_association/stage2_date_mapping_reconciliation.csv
+   bytes                                                           sha256
+  141260 13ef1ed1e07d055e369b1e7d479285aee38a0587b61c5b87747067c3bc3a6821
+   42808 110819d74503c895170552c1f2214aca83de51cadd23bde7525aa821ee0b0e15
+  125704 592d03879523a485f54c8837378ff29c782be20538987e879ec8012ef72c0f75
+ 1183696 f4b8d1c61e124096bf2b3d63555a33602d2d0c5bc2c0be68f69da7445ffd1b90
+     145 6c307a08960c15968500612a1b489370289da482083e831f8cfa687e202d9c1f
+     849 e27a37c657eda5359fb468756027c51d3bb4c296c1a12854be0d297bdf7b1222
+
+Sample summary
+            sample_id rows participants cycles valid_minutes complete_triads
+  linkage_c_any_valid 2216          140    782       1028958             662
+  linkage_b_any_valid 2298          140    794       1043192             740
+ linkage_c_support_80 2004          140    770        985550             507
+ linkage_b_support_80 2069          140    762        996868             565
+ cells minimum_cell_rows maximum_cell_rows minimum_cell_participants
+    54                 7                90                         4
+    54                 7                90                         4
+    54                 4                86                         3
+    54                 7                86                         4
+ maximum_cell_participants
+                        26
+                        26
+                        26
+                        26
+
+Timestamp contract
+Sleep: 771 of 771 
+Daytime/Wake: 761 of 761 
+Following Pre-sleep: 766 of 766 
+Wake-anchor date: 2298 of 2298 
+Wake-anchor day type: 2298 of 2298 
+
+Raw diary gap distribution
+ raw_diary_gap Freq
+             1 1070
+             2   17
+             3    4
+Raw diary gaps over one date: 21 
+Maximum raw diary gap: 3 days
+Retained B Wake-anchor gap range: 1 to 1 days
+
+Pre-sleep reassignment
+  sample_id linkage_b_rows linkage_c_rows shared_physical_periods
+  any_valid            766            684                     637
+ support_80            617            552                     534
+ linkage_b_only linkage_c_only shared_periods_with_changed_day_type
+            129             47                                  182
+             83             18                                  148
+Sleep and Daytime/Wake scientific rows exact between C and B: TRUE 
+Participant-site nesting violations: 0 
+
+Existing B endpoint package coverage
+                  component present
+            model_any_valid    TRUE
+           model_support_80   FALSE
+ cell_predictions_any_valid    TRUE
+  cell_covariance_any_valid    TRUE
+ equal_site_means_any_valid    TRUE
+     m1_contrasts_any_valid    TRUE
+       quadrature_any_valid    TRUE
+
+Cross-state historical B reconciliation
+ target_state overlay_rows matched_rows exact_timestamp_matches
+        Sleep          758          758                     758
+    Pre-sleep          618          618                     618
+ exact_count_matches
+                 758
+                 618
+
+Cross-state date mapping summary
+         sample_id target_state rows participants cycles missing_diary
+ primary_any_valid        Sleep  758          140    758             0
+ primary_any_valid    Pre-sleep  618          139    618             0
+        support_80        Sleep  697          140    697             0
+        support_80    Pre-sleep  502          137    502             0
+ nonforward_date_gap anchor_date_mismatch anchor_day_type_mismatch
+                   0                    0                        0
+                   0                    0                        0
+                   0                    0                        0
+                   0                    0                        0
+ chronological_source_mismatch chronological_date_mismatch
+                             0                           0
+                             0                           0
+                             0                           0
+                             0                           0
+ chronological_time_mismatch wake_start_mismatch wake_end_mismatch
+                           0                   0                 0
+                           0                   0                 0
+                           0                   0                 0
+                           0                   0                 0
+ target_date_mismatch target_start_mismatch target_end_mismatch
+                    0                     0                   0
+                    0                     0                   0
+                    0                     0                   0
+                    0                     0                   0
+ target_site_mismatch target_id_mismatch count_identity_failure
+                    0                  0                      0
+                    0                  0                      0
+                    0                  0                      0
+                    0                  0                      0
+ duplicate_pair_key minimum_date_gap maximum_date_gap minimum_source_row_delta
+                  0                1                1                       -6
+                  0                1                1                       -6
+                  0                1                1                       -6
+                  0                1                1                       -6
+ maximum_source_row_delta
+                        7
+                        7
+                        7
+                        7
+
+Audit checks
+                                        check passed
+                                      R_4_6_1   TRUE
+                       sleep_timestamps_exact   TRUE
+                        wake_timestamps_exact   TRUE
+          following_presleep_timestamps_exact   TRUE
+                      wake_anchor_dates_exact   TRUE
+                  wake_anchor_day_types_exact   TRUE
+    sleep_and_wake_rows_exact_between_C_and_B   TRUE
+                   all_54_cells_present_B_any   TRUE
+                    all_54_cells_present_B_80   TRUE
+ cross_state_B_timestamp_count_reconciliation   TRUE
+   cross_state_date_chronology_reconciliation   TRUE
+                existing_B_any_endpoint_model   TRUE
+                 existing_B_80_endpoint_model  FALSE

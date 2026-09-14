@@ -1,0 +1,30 @@
+REPORT-018 H06 order 47b sole render record
+
+Command:
+GT_HTML_SEMANTIC_AUDIT_DIR=/private/tmp/h06_order47b_semantic.Iq7j7q quarto render notebooks/hypotheses/H06.qmd --profile nathealth
+
+Quarto: 1.9.37
+R: 4.6.1
+Result cells completed: 41 of 41
+Exit status: 1
+Approximate wall time: 128 seconds
+
+Pandoc warnings transcribed from the sole render terminal output:
+Could not fetch resource ../../audit/hypotheses/H06/H06_analysis_preparation.html
+Could not fetch resource ../../audit/hypotheses/H05/H05_analysis_preparation.html
+Could not fetch resource ../../Datatype.woff2
+
+Final hook error transcribed from the sole render terminal output:
+gt HTML semantic post-render ERROR: Every native gt table must have one Quarto tbl-* endpoint.
+
+Fresh HTML:
+_build/nathealth/notebooks/hypotheses/H06.html
+SHA-256 dc62f37001c2d7e9f5a2daa9167023e006aafecc72c2d0137925093e573027c1
+Bytes 4862444
+
+Semantic audit directory:
+/private/tmp/h06_order47b_semantic.Iq7j7q
+Final contents: empty
+
+No patch, semantic bypass, or second render followed this failure.
+

@@ -142,7 +142,22 @@ decision_files <- file.path(
     "audit/decisions/model_reporting.md",
     "audit/decisions/p_value_display_conventions.md",
     "audit/decisions/paired_placement_comparison_display.md",
-    "audit/decisions/site_display_conventions.md"
+    "audit/decisions/site_display_conventions.md",
+    "audit/decisions/l10_numerical_zero_normalization.md"
+  )
+)
+
+metric011_evidence_files <- file.path(
+  root,
+  c(
+    paste0(
+      "audit/reconciliation/l10_METRIC-011/",
+      "METRIC-011_evidence_manifest.csv"
+    ),
+    paste0(
+      "audit/reconciliation/l10_METRIC-011/",
+      "primary_scientific_cell_changes.csv"
+    )
   )
 )
 
@@ -158,6 +173,7 @@ files <- unique(c(
   file.path(root, "renv.lock"),
   file.path(root, "audit/hypotheses/H03-H11_gated_workflow.qmd"),
   decision_files,
+  metric011_evidence_files,
   file.path(root, "scripts/pipeline/paths_io.R"),
   file.path(root, "scripts/pipeline/multiplicity.R"),
   file.path(root, "scripts/pipeline/p_value_display.R"),
@@ -248,6 +264,8 @@ role <- dplyr::case_when(
   startsWith(relative, "artifacts/12_manifests/H08/") ~
     "referenced_H08_manifest",
   startsWith(relative, "audit/decisions/") ~ "approved_reporting_rule",
+  startsWith(relative, "audit/reconciliation/l10_METRIC-011/") ~
+    "shared_metric_reconciliation_evidence",
   relative == "audit/hypotheses/H03-H11_gated_workflow.qmd" ~
     "approved_workflow_contract",
   relative == "_quarto-nathealth.yml" ~ "shared_quarto_profile",

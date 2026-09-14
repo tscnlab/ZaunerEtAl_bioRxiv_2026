@@ -53,7 +53,7 @@ preanalysis_metric_crosswalk <- function() {
     "longest_bout_above_250_exact_only_sensitivity",
     "m10_mean_medi",
     "m10_midpoint",
-    "mder_ratio_of_integrals",
+    "mder_mean_of_viable_ratios",
     "mean_timing_above_250"
   )
   baseline_metric <- c(
@@ -75,7 +75,7 @@ preanalysis_metric_crosswalk <- function() {
     NA,
     "brightest_10h_mean",
     "brightest_10h_midpoint",
-    NA,
+    "MDER",
     "mean_timing_above_250"
   )
   analysis_unit <- c(
@@ -87,7 +87,7 @@ preanalysis_metric_crosswalk <- function() {
       c(
         "interdaily_stability",
         "intradaily_variability",
-        "mder_ratio_of_integrals"
+        "mder_mean_of_viable_ratios"
       ),
     "dimensionless",
     ifelse(
@@ -144,11 +144,6 @@ preanalysis_metric_crosswalk <- function() {
     "The exact-identifiable sensitivity is new and has no distinct",
     "frozen-baseline implementation."
   )
-  non_applicable_reason[metric == "mder_ratio_of_integrals"] <- paste(
-    "Main-analysis MDER is a ratio of paired-channel integrals;",
-    "the manuscript-prepared mean of epoch-wise ratios measures a",
-    "different quantity."
-  )
   technical_estimand <- gsub("_", " ", metric, fixed = TRUE)
   technical_estimand <- gsub(
     "\\bmedi\\b",
@@ -162,8 +157,10 @@ preanalysis_metric_crosswalk <- function() {
     "Observed participant-day melEDI integral"
   technical_estimand[metric == "dose_time_sensitive_corrected_medi"] <-
     "Time-sensitive support-profile corrected melEDI integral"
-  technical_estimand[metric == "mder_ratio_of_integrals"] <-
-    "Ratio of observed paired melEDI and photopic illuminance integrals"
+  technical_estimand[metric == "mder_mean_of_viable_ratios"] <- paste(
+    "Arithmetic mean of positive finite one-minute melEDI-to-photopic",
+    "illuminance ratios"
+  )
 
   data.frame(
     variable_order = seq_along(metric),

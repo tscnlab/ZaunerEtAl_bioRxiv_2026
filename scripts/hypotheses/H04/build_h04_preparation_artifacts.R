@@ -328,7 +328,7 @@ reader_labels <- c(
   outdoors = "Outdoors",
   road_vehicle = "Vehicle/public transport",
   sleeping = "Sleeping",
-  other = "Other/unspecified"
+  other = "Other"
 )
 
 category_support <- read_h04_csv(

@@ -1,0 +1,31 @@
+{
+  "timestamp": "2026-09-14T15:49:55.175Z",
+  "call_id": "call_T0lfJsfecKAu3CO6bwMPHaVE",
+  "source_kind": "existing_CUA_tool_output",
+  "tool_arguments": {
+    "code": "await capture015a('S390-utility-top','main'); nodeRepl.write({browserTeardownPreflight015a:{currentUrl:await recoveryTab.url(),tabs:await recoveryBrowser.tabs.list(),observationsRetained:recoveryObs.length},viewportDocumentation:await recoveryViewport.documentation()});",
+    "title": "Capture the final mobile utility layout and prepare viewport cleanup"
+  },
+  "text_blocks": [
+    "Wall time: 0.9636 seconds\nOutput:",
+    "{\n  id: 'S390-utility-top',\n  allLoaded: true,\n  box: { height: 43551.4609375, width: 375, x: 0, y: 69 },\n  clientWidth: 375,\n  images: 37,\n  pageWidth: 375,\n  scroll: { client: 375, left: 0, width: 375 },\n  svg: 20,\n  target: 'main',\n  url: 'http://127.0.0.1:56572/supplementary_information.html',\n  viewport: [ 390, 844 ]\n}{\n  browserTeardownPreflight015a: {\n    currentUrl: 'http://127.0.0.1:56572/supplementary_information.html',\n    tabs: [\n      {\n        id: '4',\n        providerTabId: 'browser-use:7c43f322-de28-4dae-bfb4-38ee3226cddb',\n        title: 'Supplementary Information – Nature Health analysis and manuscript',\n        url: 'http://127.0.0.1:56572/supplementary_information.html'\n      }\n    ],\n    observationsRetained: 117\n  },\n  viewportDocumentation: '# Browser Capability: viewport\\n' +\n    'Browser viewport override control. Do not set the viewport during normal browser setup; most tasks should use the existing/default viewport. Use `set()` only when the user asks for specific dimensions, asks to test a responsive breakpoint or device size, or the task cannot be answered correctly without a specific viewport. Do not resize the browser just to make a screenshot larger, prettier, or fit more content. Use the default viewport, a normal screenshot, or a full-page screenshot instead. If you set a temporary viewport, call `reset()` before finishing unless the user asked to keep that viewport.\\n' +\n    '\\n' +\n    '```ts\\n' +\n    'const capability = await browser.capabilities.get(\"viewport\");\\n' +\n    '\\n' +\n    'interface ViewportSize {\\n' +\n    '  height: number;\\n' +\n    '  width: number;\\n' +\n    '}\\n' +\n    '\\n' +\n    'interface ViewportBrowserCapability {\\n' +\n    '  reset(): Promise<void>; // Clear the explicit viewport override and return to default browser sizing.\\n' +\n    '  set(options: ViewportSize): Promise<void>; // Apply an explicit browser viewport override.\\n' +\n    '}\\n' +\n    '```\\n'\n}"
+  ],
+  "image_count": 1,
+  "observation_ids_in_text": [
+    "S390-utility-top"
+  ],
+  "images": [
+    {
+      "ordinal": 131,
+      "timestamp": "2026-09-14T15:49:55.175Z",
+      "call_id": "call_T0lfJsfecKAu3CO6bwMPHaVE",
+      "within_call_index": 1,
+      "observation_id_if_unambiguous": "S390-utility-top",
+      "image_path": "browser_captures/2026-09-14T154955175Z_call_T0lfJsfecKAu3CO6bwMPHaVE_1.jpg",
+      "metadata_path": "browser_captures/2026-09-14T154955175Z_call_T0lfJsfecKAu3CO6bwMPHaVE.json",
+      "bytes": 42080,
+      "sha256": "186c0f7e799af64f53c5e0cab1e2b1ca9bc06dbdd47da20a728d5eb64fe252cc",
+      "mime_type": "image/jpeg"
+    }
+  ]
+}

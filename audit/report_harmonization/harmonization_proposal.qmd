@@ -1,0 +1,350 @@
+---
+title: "Nature Health reader-facing harmonization proposal"
+subtitle: "Phase 2 package with recorded author decision"
+date: "2026-08-12"
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    number-sections: false
+    code-tools: false
+    link-external-newwindow: true
+execute:
+  enabled: false
+---
+
+::: {.callout-tip title="Author decision recorded — 2026-08-12"}
+Items 1–3 and 5 are approved with the vocabulary amendments below. Item 4 is authorized for one display-only adjustment run, including the native-`gt` work, but the principal and supplemental outputs remain provisional until the author sees the focused renders. The exact decision is recorded in [author_decision_2026-08-12.md](author_decision_2026-08-12.md).
+:::
+
+## Decision summary
+
+The corpus can be made substantially easier to read without changing its science. The accepted figures are already polished, and the numerical displays are generally publication-formatted. The main work is to replace internal production history with current scientific meaning, explain recurring specialist terms consistently, make every main finding visible early, normalize report structure, use dynamic QMD links, and provide one complete anchored deviation reference.
+
+The author decided the five bounded items as follows:
+
+1. shared vocabulary and first-use explanations;
+2. structural templates and the listed scientific exceptions;
+3. cross-link and navigation plan;
+4. main/supplement figure and table shortlist, small styling adjustments, and the native-`gt` table contract—authorized for a first adjustment run, with final visual approval retained;
+5. preregistration-deviation document structure and inclusion tiers.
+
+The complete read-only audit is in [the Phase 1 corpus audit](phase1_corpus_audit.md). The [corpus inventory](phase1_corpus_inventory.csv) records all 38 current QMDs, owner tasks, scientific status, source hashes, navigation positions, and expected renders. The unfinished H06_daily analysis has no accepted reader-facing Stage 3/4 QMD and is explicitly deferred.
+
+## Non-negotiable boundary
+
+Every authorized change is display-only. Owners must not change data, models, estimates, intervals, p-values, diagnostics, sensitivity results, multiplicity families, sample definitions, or scientific claims. They must not refit, predict, simulate, bootstrap, rerun Shapley analyses, rebuild shared preparation, or trigger a full-project render.
+
+If editing reveals a possible scientific discrepancy, that document stops. The owner returns a scoped issue to the responsible scientific task or coordinator. The harmonization task does not resolve such discrepancies editorially.
+
+Current scoped holds and qualifications are:
+
+- `index.qmd` remains on hold until the coordinator reconciles its legacy RQ claims and assets with accepted H01–H11 results.
+- Preparation 03 must retain the plain qualification that independent reconstruction of the current reference-profile input remains incomplete.
+- Preparation 04 and H10 must retain the plain qualification that independent reconstruction of current diary-period support remains incomplete.
+- H02 needs a display-description correction: its rendered main figure shows sites in panel B and participant curves in panel C, while current prose and alt text reverse those panels. Stored curves and results remain untouched.
+- H05 must retain the finding that none of 68 primary associations retained adjusted support and that four sleep-environment models are unfit for inference.
+- H07 must not turn its derivative-defined rule into a biological ceiling or unconditional plateau claim.
+- H11 must retain separate placement curves and the distinction between a global curve test and pointwise descriptive intervals.
+- The accepted hourly H06 report is the main H06 result. H06_daily is complementary and enters later without reopening the hourly report unnecessarily.
+
+## Approved shared vocabulary
+
+The following terms would become the reader-facing defaults. Technical terms remain where they identify a model, equation, diagnostic, or source-data field precisely, but only after a concise first-use explanation.
+
+| Current or compressed wording | Proposed reader wording | Required first-use explanation |
+|---|---|---|
+| `[predictor] heterogeneity` | `[predictor]-by-site interaction` | The association was allowed to differ by study site. |
+| `equal-site estimate` | `site-average estimate` | An average across sites that gives each site equal weight. |
+| `GAM` or `GAMM` without context | `nonlinear GAM analysis` or `nonlinear GAM model` | Explain that a generalized additive model (GAM) lets the named association bend rather than follow a straight line; `GAM` may remain afterward. |
+| `diagnostics` | `model checks` | At first use, “model checks (sometimes called model diagnostics)” is acceptable. |
+| `paired/common sample` | `same participants and participant-days at both sensor positions` | Name the matching unit and state that placement-specific models remain separate unless the report says otherwise. |
+| `transformed scale` | `transformed scale`, with the change named | State what transformation was applied and that coefficients are not yet in the original units. |
+| `back-transformed` | `back-transformed` | Explain once that the fitted quantity was returned to a named original or practical unit; the term may remain afterward. |
+| `interaction` | `interaction` | State that one association depends on another variable, naming both variables and the reference. |
+| `random effect` | `random effect` | A component representing remaining variation among named groups such as participants or sites. |
+| `autocorrelation` or `AR(1)` | `autocorrelation`, then `AR(1)` | Explain why adjacent observations may remain more similar and that AR(1) represents decreasing correlation at larger time separations; `AR(1)` may remain afterward. |
+| `CI` | `95% confidence interval (95% CI)` | Define it once and name how it was constructed when that distinction matters; `95% CI` may remain afterward. |
+| `BH` or `FDR adjustment` | `false-discovery-rate (FDR) adjustment` | State the family of tests; use `FDR`, not the abbreviation `BH`, thereafter. Name the full Benjamini–Hochberg method only where reproducibility requires it. |
+| `sensitivity analysis` | `sensitivity analysis` | Name exactly what changed: sample, dataset, metric definition, or model choice. |
+| `pointwise interval` | `pointwise confidence interval` | It applies at one displayed value at a time and is not a simultaneous band for the complete curve. |
+| `participant-cluster HC3` | `participant-cluster-robust confidence interval` | It allows observations from the same participant to be related; retain HC3 in methods or notes. |
+| `symlog` | `symlog scale` | Explain its linear and logarithmic ranges and that tick labels remain in the original unit; `symlog` may remain afterward. |
+| `Shapley allocation` | `Shapley allocation` | Explain that contributions are averaged across all component orderings so shared information is allocated rather than counted repeatedly; retain the term afterward. |
+| `concurvity` | `overlap among nonlinear model terms` | Explain that overlapping terms can make separate contributions harder to distinguish. |
+| `derivative` | `derivative` | Explain once that it is the slope of the fitted curve and describes how quickly the fitted outcome changes; retain the term afterward. |
+| `plateau` | `pattern consistent with a transition from increase to a sustained near-flat tail` | State the exact rule and avoid implying a biological ceiling. |
+| site name without country | site name with ISO alpha-2 country code | Use the country-coded label everywhere reader-facing, for example `Tübingen (DE)`, including prose, tables, figures, legends, captions, and alt text. |
+
+The full proposal—including melEDI, participant-day, placement roles, restricted-likelihood fitting, and internal-history substitutions—is in [vocabulary_proposal.csv](vocabulary_proposal.csv).
+
+### Internal and historical terms
+
+Reader reports would no longer lead with stage, gate, worker, task, coordinator, frozen, sealed, pinned, production artifact, manifest, checksum, SHA-256, V0, legacy implementation, submitted implementation, or internal `METRIC-`, `FIND-`, `REPORT-`, `CHG-`, and `ENV-` identifiers.
+
+Where an unresolved scientific qualification exists, it is stated directly. For example:
+
+> Independent reconstruction of the current diary-period support remains incomplete.
+
+Technical identifiers, hashes, and implementation histories remain available in audit records or concise reproducibility sections. Stable deviation IDs are different: they remain visible because they provide durable reader links.
+
+## Approved structural templates
+
+These are shared information orders, not rigid word counts. A section can be absent when it has no content, but the reason for a substantive departure is recorded.
+
+### Result report
+
+1. **Question and scope:** one short paragraph stating the scientific question, placement role, and outcome family.
+2. **Answer in brief:** an exact note callout—`::: {.callout-note title="Answer in brief"}`—with the main result, inferential scope, and most important limitation in two to four sentences.
+3. **What was analysed:** exact participant, participant-day/observation, and site support; primary versus complementary placement; exact linked deviations.
+4. **Model and reported quantities:** plain model description, reference conditions, scale, confidence intervals, and multiplicity family; technical model name second.
+5. **Primary near-eye result:** main figure and main table early, followed by only the detail needed to interpret them.
+6. **Complementary chest result:** same vocabulary, clearly described as complementary rather than automatically replicated.
+7. **Same-participant/day placement comparison:** only when scientifically valid; say what is matched and what the comparison cannot establish.
+8. **Model checks:** concise reader assessment, with detailed diagnostics in the companion or supplement.
+9. **Sensitivity analyses:** organized by what changed, with interpretation stability stated directly.
+10. **Interpretation and limitations:** strongest defensible result, uncertainty, practical meaning, and boundaries.
+11. **Analysis record and source data:** reciprocal QMD link to the companion and restrained links to stored source data.
+
+### Preparation/provenance companion
+
+1. **About this analysis record:** purpose, scientific target, reciprocal dynamic link to the result.
+2. **Analysis map:** short route from accepted inputs to reported outputs.
+3. **Render boundary:** state that the report displays stored outputs and does not refit or recompute.
+4. **Inputs and preparation:** authoritative data, versions where scientifically consequential, exclusions, and deviation links.
+5. **Sample and support:** exact units, denominators, placement role, and support limitations.
+6. **Model and estimands:** formula and technical details after a plain explanation.
+7. **Model checks and influence:** scientific assessment first, detailed values second.
+8. **Sensitivity analyses:** scenario, matching unit, and effect on interpretation.
+9. **Outputs and reproducibility:** source tables/figures, environment, formulas, and hashes in a restrained technical section.
+10. **Reader takeaway:** optional one-paragraph bridge back to the result when the companion is unusually technical.
+
+### Descriptives
+
+1. Study sample and sites.
+2. Data coverage and placement roles.
+3. Main descriptive figure and table.
+4. Light distributions and temporal context.
+5. Important data-quality or denominator qualifications.
+6. Dynamic links to preparation details and source data.
+
+Replication history, export pilots, hashes, and manifest comparisons move out of the main reader flow.
+
+### Preparation pages
+
+1. Why this preparation step matters.
+2. Inputs and relevant definitions.
+3. Processing decisions in scientific order.
+4. Resulting data and exact sample/support consequences.
+5. Limitations or unresolved qualifications.
+6. Material links to adjacent preparation pages and exact deviations.
+7. Technical provenance, hashes, and verifier evidence at the end or in an audit link.
+
+### Introductory glossary boxes
+
+Glossary boxes are approved only when a document introduces at least three specialized terms that recur and cannot be explained smoothly at first use. They should contain three to six one-sentence definitions, appear before the first dense figure/table, and never become a generic vocabulary dump.
+
+Proposed uses:
+
+- Preparation 04: metric support, M10/L10, MDER, and transformed/back-transformed quantities.
+- H02: nonlinear curve, pointwise interval, Shapley allocation, participant/site contribution.
+- H07: nonlinear model, derivative, pointwise interval, qualifying transition, concurvity.
+- H11: nonlinear whole-curve test, site-average fitted mean, shifted-value ratio, pointwise interval, combined linear-log axis.
+
+H03, H04, H08, and H09 should first try concise first-use prose. A glossary is added only if focused rendering shows that the explanation would otherwise be fragmented.
+
+## Approved structural exceptions
+
+The author approved the following departures because they preserve necessary scientific differences:
+
+- **H01:** retains additional response-family, test-family, and variation-partition context because it covers 17 responses and multiple model families.
+- **H02:** retains fitted-curve variation, Shapley allocation, and curve windows that do not apply to most hypotheses.
+- **H03:** keeps the complementary category that cannot be standardized across all chest sites explicitly absent.
+- **H04:** keeps the `Other/unspecified` additive display-only estimate visually distinct from interaction-model estimands.
+- **H05:** leads with the absence of retained associations and the four unfit models; it does not force a conventional effect-first narrative.
+- **H06:** treats the hourly analysis as main, retains clearly labeled exploratory timing displays, and defers the daily complement.
+- **H07:** uses a tall full-width curve/derivative figure and a how-to-read introduction; its exact derivative rule remains prominent.
+- **H08:** keeps one outcome as a difference in hours while other outcomes are percent changes, with separate visual scales.
+- **H09:** retains two chronotype instruments as separate predictors rather than pooling them.
+- **H10:** retains a dense page-wide three-part figure; site estimates remain descriptive components of omnibus interactions.
+- **H11:** uses separate placement curves, no common-sample placement figure, and keeps the global whole-curve test distinct from pointwise context.
+- **Preparation 03/04:** keep their unresolved independent-reconstruction qualifications visible.
+- **Internal workflow pages:** remain audit-only and are not forced into a reader-report template.
+
+The complete document-level set of mandatory repairs, optional changes, and exceptions is in [document_change_matrix.csv](document_change_matrix.csv).
+
+## Approved cross-link and navigation plan
+
+All page-to-page internal Quarto links would use relative `.qmd` source targets with optional anchors. They would not use `.html`, `file://`, absolute local paths, `_build`, or other build-directory paths. Direct links to downloadable source CSVs or images can remain relative artifact links because they are not Quarto page-navigation links.
+
+Mandatory links:
+
+- every H01–H11 result links to its preparation/provenance companion;
+- every companion links back to its result;
+- every reader-facing deviation mention links to the exact stable entry in `notebooks/preregistration_deviations.qmd`;
+- H11's companion links to H02's companion where H11 inherits the accepted temporal architecture;
+- H06 links to H06_daily only after accepted reader sources exist.
+
+Material shared links:
+
+- descriptives to Preparation 01 and 02 for aligned records and denominators;
+- Preparation 01 → 02 → 03/04 → 06, and Preparation 05 → 06;
+- results to Preparation 04/06 only where a shared metric or model-ready definition materially aids interpretation;
+- landing page to descriptives, preparation sequence, accepted results, deviation reference, and completed supplement after its scientific hold is cleared.
+
+Navigation requests:
+
+- add accepted H03, H04, H07, H09, and H11 companions;
+- remove internal comparison/gated-workflow pages from the reader sidebar;
+- remove or reclassify the assembly workflow;
+- replace `_deviations.qmd` with the new deviation source after Phase 3 acceptance.
+
+The exact map is in [crosslink_plan.csv](crosslink_plan.csv), and coordinator-owned requests are recorded in [the shared change request](../handoffs/report_harmonization_shared_change_request.md).
+
+## Main and supplemental output proposal
+
+The consolidated [main/supplement output catalog](phase2_main_supplement_output_catalog.csv) contains all 271 current cross-referenced candidates, their QMD source line, render anchor, resolved stored artifact where available, current dimensions/style, proposed role, identifier conformance, and polish status.
+
+The authorized first-pass principle is one main figure and one main table per hypothesis plus one of each for descriptives. Complementary placements, model checks, sensitivities, sample/formula detail, and influence analyses remain available as supplemental or report-support outputs. A principal output is not substantially redesigned or recomputed. The author authorized one adjustment run but retained final approval until the resulting outputs are presented for visual review.
+
+::: {.callout-note title="Universal manuscript-table requirement"}
+Every manuscript main and supplementary table must be a native `gt_tbl` printed from its labelled knitr cell. This applies to all 195 current table candidates, the proposed new H10 main table, the proposed combined H11 main table, and later accepted H06_daily tables. It excludes `knitr::kable()`, code/stdout under a table caption, raw HTML, screenshots, and saved table images reinserted into Quarto.
+
+The rendered audit found 190 current native `gt` tables and five conversions: four Descriptives tables using `knitr::kable()` and the H08 formula pseudo-table. Of the 195 endpoints, 194 already have a semantic table core, all 195 captions resolve and match their source caption, and 179 satisfy the complete proposed publication structure. All current principal-table components already use `gt`; H10's proposed compact main table still has to be created as `gt`. Eleven H06 tables are native `gt` but need conforming `tbl-` identifiers and caption relationships.
+:::
+
+The full semantic, accessibility, caption, analysis-boundary, and verification rules are in the [shared `gt` table contract](gt_table_contract.md). The [table-level audit](phase2_gt_table_audit.csv) gives source lines and current rendered evidence for all 195 tables; [conversion targets](phase2_gt_conversion_targets.csv) isolate the five gaps; the [conversion and identifier specifications](gt_conversion_specifications.md) define the exact value-preserving repair for all 16 endpoints; [document totals](phase2_gt_document_summary.csv) show owner scope; and [the main-table contract](gt_main_table_contract.csv) records the required endpoint for each Descriptives/H01–H11 main table.
+
+| Document | Proposed main figure | Proposed main table | Why these summarize the result |
+|---|---|---|---|
+| Descriptives | `fig-descriptive-overview` | `tbl-participant-site` | One visual study orientation plus the core participant/site characteristics. |
+| H01 | `fig-h01-model-support` | `tbl-h01-primary-publication-summary` | Compact overview of adjusted support plus exact primary estimates/samples. |
+| H02 | `fig-h02-near-patterns` | `tbl-h02-near-variation` | Daily curves and participant/site variation are the central result. |
+| H03 | `fig-h03-primary-estimates` | `tbl-h03-primary-results` | Category estimates and their exact interaction-model estimands. |
+| H04 | `fig-h04-primary-estimates` | `tbl-h04-primary-results` | Activity-category levels/contrasts and exact numerical results. |
+| H05 | `fig-h05-near-effects` | one continued `tbl-h05-near-results` | Shows all 68 associations, the null pattern, and four unfit cells without hiding rows. |
+| H06 | proposed `fig-h06-core-effects` | proposed `tbl-h06-primary-effects` | The three hourly primary associations and their contextual comparisons. |
+| H07 | `fig-h07-near-smooth-derivative-pairs` | `tbl-h07-near-results` | The accepted nonlinear curves/derivatives and their classification outcomes. |
+| H08 | `fig-h08-near-eye-effects` | `tbl-h08-near-eye-results` | Complete primary VLSQ-8 pattern with explicit mixed scales. |
+| H09 | `fig-h09-primary-effects` | `tbl-h09-near-eye-results` | Both chronotype instruments, timing outcomes, placements, and exact primary values. |
+| H10 | `fig-h10-age-site-overview` | proposed `tbl-h10-main-results` | Age support, retained effects, site context, and one compact stored-results table. |
+| H11 | `fig-h11-near-eye-curves` | proposed `tbl-h11-global-tests` | Primary curves plus near-eye/chest whole-curve tests without inventing a paired display. |
+
+### Styling changes authorized for the first adjustment
+
+Across polished figures and tables:
+
+- use the approved site names with ISO alpha-2 country codes everywhere, while retaining north-to-south order, colours, and placement roles;
+- standardize panel labels and keep them outside dense plotting regions where possible;
+- use captions for scientific interpretation and footnotes for scale, interval, multiplicity, or sample qualifications;
+- keep p-values in the approved display convention and identify the adjustment family;
+- explain abbreviations and model/display scales at first use;
+- preserve colour-plus-shape or colour-plus-text encoding where colour alone would be inaccessible;
+- use concise, figure-specific alt text that communicates the visual pattern, comparison, uncertainty, and key limitation;
+- use full-width placement for the dense Descriptives, H07, H10, and H11 principal figures;
+- use native `gt_tbl` objects with semantic stubs, row groups, spanners, unit-bearing labels, accessible notes, restrained styling, and one Quarto-owned `tbl-cap`; never use colour as the only carrier of meaning.
+
+Document-specific small changes—including exact artifact/data paths and dimensions—are in [main_output_shortlist.csv](main_output_shortlist.csv). Two display-only table consolidations are authorized for the first adjustment:
+
+- H10: select and format the 11 retained rows already stored in `H10_primary_main_results.csv` into one compact native `gt` table; keep the four detailed current `gt` tables supplemental.
+- H11: place the accepted near-eye and chest rows already stored in `H11_reader_global_tests.csv` into one two-row native `gt` global-test table.
+
+Neither operation recalculates a value. H05's two current near-eye table parts become one explicitly continued table. H06's nonconforming chunk labels gain `fig-`/`tbl-` prefixes.
+
+### Mandatory principal-output repair
+
+H02's current source prose and alt text reverse the content of panels B and C relative to the rendered figure. Approval of this package authorizes the H02 owner to correct only that description and associated caption/alt text. It does not authorize any curve, interval, participant/site count, or analysis change.
+
+## Proposed preregistration-deviation document
+
+### File and source authority
+
+After approval, Phase 3 creates `notebooks/preregistration_deviations.qmd`. Its authoritative evidence is the central deviation register, hypothesis crosswalk, hypothesis contracts, and linked decision/evidence records. R 4.6.1 will be used for joins or checks that can affect a scientific statement. The document will fail closed if IDs, mappings, or statuses conflict.
+
+The current register has 86 unique stable IDs and no duplicate IDs. Before generation, the coordinator must repair five missing crosswalk mappings (`IMP-022`, `DEV-057`, `DEV-058`, `IMP-023`, `IMP-024`) and reconcile status conflicts for `DEV-051` and `IMP-013`. The harmonization task will not infer those mappings or choose a status.
+
+### Proposed reader structure
+
+1. **What this document contains:** definition of a preregistration deviation and distinction from audit-only implementation/documentation records.
+2. **How to read an entry:** stable ID, topic, plain description, rationale, affected hypotheses, current consequence, and authoritative source link.
+3. **Current scientific deviations:** grouped by reader topic rather than workflow order:
+   - data eligibility and sample definition;
+   - time, state, placement, and reference definitions;
+   - metric definitions and support;
+   - model, estimand, and inferential specification;
+   - sensitivity and reporting decisions.
+4. **Superseded or audit-only records:** a compact appendix retaining stable anchors and enough context to state why the item does not control the current analysis.
+5. **Source and update note:** central evidence paths, generation/check date, and scope.
+
+Every represented stable record receives an anchor. Scientifically current or consequential entries receive the full reader entry. Documentation-only, environment, or superseded-history records remain in the audit-only appendix with the same required fields in concise form, so no ID disappears silently.
+
+### Entry pattern
+
+```markdown
+### DEV-015: Plain topic title {#dev-015}
+
+**Topic.** Data eligibility and sample definition.
+
+**What differed.** Plain description of the preregistered or expected approach and the accepted approach.
+
+**Why.** Reader-facing rationale grounded in the authoritative evidence.
+
+**Affected hypotheses.** H01, H05, and H10.
+
+**Consequence.** What changes for the sample, model, quantity, or interpretation; state explicitly when current results are unaffected.
+```
+
+The visible stable ID remains uppercase; the anchor is its lowercase form. No replacement ID is invented. A result link would look like:
+
+```markdown
+[deviation DEV-015](../preregistration_deviations.qmd#dev-015)
+```
+
+Companions and preparation pages use the relative path appropriate to their source location.
+
+### Proposed inclusion tiers requiring approval
+
+- **Full reader entry:** actual preregistration/data/sample/metric/model/estimand/reporting departure or a consequential implementation repair that affects what was analysed or how it is interpreted.
+- **Concise audit-only entry:** environment migration, documentation gap, nonconsequential implementation record, or superseded history with no current interpretive consequence.
+
+Both tiers retain stable anchors, topic, description, rationale, affected hypotheses, and consequence. The tier affects prominence and detail, not traceability.
+
+### Phase 3 structural tests
+
+After the document exists, tests will fail on:
+
+- hard-coded internal `.html`, `file://`, absolute local, `_build`, or build-directory links;
+- unresolved relative QMD targets or anchors;
+- duplicate deviation IDs or anchors;
+- a register ID missing from the reader or audit-only index;
+- an unlinked reader-facing deviation mention;
+- a visible deviation ID whose link does not target its exact anchor.
+
+## Document-by-document implementation boundary
+
+The [document change matrix](document_change_matrix.csv) distinguishes mandatory reader repairs from optional harmonization for all 38 sources. Common mandatory changes are:
+
+- exact note-style `Answer in brief` in accepted result reports;
+- primary result and principal output early;
+- approved shared vocabulary and first-use explanations;
+- reciprocal relative QMD links;
+- exact stable deviation links;
+- clear primary/complementary placement roles and matching units;
+- reader-focused headings, captions, alt text, and table notes;
+- native `gt_tbl` implementation for every manuscript main and supplementary table, with Quarto-owned `tbl-*` identifiers/captions and unchanged prepared inputs;
+- removal or relocation of internal workflow, construction-history, legacy, and hash language;
+- no scientific recomputation.
+
+Optional changes are limited to a glossary where genuinely needed, a concise diagram where it materially reduces prose, and small typography/spacing adjustments. No owner will receive an instruction until the author approves this package and the coordinating task confirms the current owner identity and safe execution point.
+
+## Requested author approval — recorded decision
+
+Decision recorded on 2026-08-12:
+
+1. **Vocabulary:** approved with the recorded GAM, back-transformed, AR(1), 95% CI, FDR, symlog, Shapley allocation, derivative, and country-coded site-name amendments.
+2. **Structure:** approved.
+3. **Cross-links/navigation:** approved.
+4. **Principal and supplementary outputs:** authorized for one display-only adjustment run, including native `gt`; final shortlist and appearance remain subject to the author's visual review.
+5. **Deviation document:** approved, with generation still fail-closed until the central mapping/status conflicts are repaired.
+
+No principal output becomes final merely because it renders or passes structural tests. The first adjusted outputs must be returned to the author for inspection.

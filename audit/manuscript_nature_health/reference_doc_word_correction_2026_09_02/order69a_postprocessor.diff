@@ -1,0 +1,57 @@
+--- preimage_order69a_prepare_word_manuscript.py
++++ scripts/manuscript_nature_health/prepare_word_manuscript.py
+@@ -238,6 +238,12 @@
+         margins.set(qn("w:footer"), str(720))
+         margins.set(qn("w:gutter"), "0")
+     if landscape:
++        line_number_types = sect_pr.findall(qn("w:lnNumType"))
++        if len(line_number_types) != 1:
++            raise RuntimeError(
++                "Landscape base section must contain exactly one line-number element",
++            )
++        line_number_types[0].set(qn("w:distance"), "72")
+         page_size.set(qn("w:w"), str(max(page_width, page_height)))
+         page_size.set(qn("w:h"), str(min(page_width, page_height)))
+         page_size.set(qn("w:orient"), "landscape")
+@@ -252,6 +258,7 @@
+ 
+     paragraph = OxmlElement("w:p")
+     paragraph_properties = OxmlElement("w:pPr")
++    paragraph_properties.append(OxmlElement("w:suppressLineNumbers"))
+     paragraph_properties.append(sect_pr)
+     paragraph.append(paragraph_properties)
+     return paragraph
+@@ -554,6 +561,33 @@
+ def main() -> None:
+     args = parse_args()
+     document = Document(args.input_docx)
++    try:
++        normal_style = document.styles["Normal"]
++    except KeyError as exc:
++        raise RuntimeError("Input DOCX lacks the Normal paragraph style") from exc
++    for style_name in ("Body Text", "First Paragraph", "Compact", "Bibliography"):
++        try:
++            current_style = document.styles[style_name]
++        except KeyError as exc:
++            raise RuntimeError(f"Input DOCX lacks the {style_name} style") from exc
++        while current_style is not None and current_style.style_id != normal_style.style_id:
++            current_style = current_style.base_style
++        if current_style is None:
++            raise RuntimeError(f"{style_name} does not inherit body typography from Normal")
++    for style_name, expected_size in {
++        "Title": 26,
++        "Heading 1": 18,
++        "Heading 2": 16,
++        "Heading 3": 14,
++    }.items():
++        try:
++            actual_size = document.styles[style_name].font.size
++        except KeyError as exc:
++            raise RuntimeError(f"Input DOCX lacks the {style_name} style") from exc
++        if actual_size is None or actual_size.pt != expected_size:
++            raise RuntimeError(f"Unexpected explicit size for {style_name}")
++    normal_style.font.name = "Arial"
++    normal_style.font.size = Pt(11)
+     images = manifest_map(args.png_manifest)
+     figures = figure_manifest_map(args.figure_manifest)
+     required_keys = {

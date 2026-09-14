@@ -1,0 +1,31 @@
+{
+  "timestamp": "2026-09-14T15:36:30.791Z",
+  "call_id": "call_TzPwv8VWWarCHj20tqi1m85r",
+  "source_kind": "existing_CUA_tool_output",
+  "tool_arguments": {
+    "code": "await recoveryTab.playwright.locator('#autocomplete-0-input').press('Enter'); await recoveryNative.getAXState({emit:false}); nodeRepl.write({searchDestination:await recoveryTab.url(),searchOpen:await recoveryTab.playwright.locator('.aa-DetachedContainer').count()}); await capture015a('I390-search-destination','#recommendation-adherence');",
+    "title": "Verify search navigation closes the overlay"
+  },
+  "text_blocks": [
+    "Wall time: 3.3939 seconds\nOutput:",
+    "{\n  searchDestination: 'http://127.0.0.1:56572/index.html#recommendation-adherence',\n  searchOpen: 0\n}{\n  id: 'I390-search-destination',\n  allLoaded: true,\n  box: { height: 4286.3359375, width: 375, x: 0, y: 0.0859375 },\n  clientWidth: 375,\n  images: 4,\n  pageWidth: 375,\n  scroll: { client: 375, left: 0, width: 375 },\n  svg: 4,\n  target: '#recommendation-adherence',\n  url: 'http://127.0.0.1:56572/index.html#recommendation-adherence',\n  viewport: [ 390, 844 ]\n}"
+  ],
+  "image_count": 1,
+  "observation_ids_in_text": [
+    "I390-search-destination"
+  ],
+  "images": [
+    {
+      "ordinal": 109,
+      "timestamp": "2026-09-14T15:36:30.791Z",
+      "call_id": "call_TzPwv8VWWarCHj20tqi1m85r",
+      "within_call_index": 1,
+      "observation_id_if_unambiguous": "I390-search-destination",
+      "image_path": "browser_captures/2026-09-14T153630791Z_call_TzPwv8VWWarCHj20tqi1m85r_1.jpg",
+      "metadata_path": "browser_captures/2026-09-14T153630791Z_call_TzPwv8VWWarCHj20tqi1m85r.json",
+      "bytes": 48162,
+      "sha256": "e420ac86131cc50cb721d401fc559d6803ecf157918b14ede440a6760110bb5a",
+      "mime_type": "image/jpeg"
+    }
+  ]
+}

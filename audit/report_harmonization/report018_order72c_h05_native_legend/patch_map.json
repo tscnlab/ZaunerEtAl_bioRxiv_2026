@@ -1,0 +1,17 @@
+[
+  {
+    "change": 1,
+    "before": "evidence_rel <- \"audit/hypotheses/H05/report018_order72_svg_export\"",
+    "after": "evidence_rel <- \"audit/hypotheses/H05/report018_order72_svg_export/vector_legend_repair\""
+  },
+  {
+    "change": 2,
+    "before": "      name = \"Model-scale effect\\nper LEBA SD\"",
+    "after": "      name = \"Model-scale effect\\nper LEBA SD\",\n      guide = ggplot2::guide_colourbar(display = \"rectangles\", nbin = 300)"
+  },
+  {
+    "change": 3,
+    "before": "  internal_url_ok <- !length(url_references) || all(\n    grepl(\"^url\\\\(#[A-Za-z0-9_.:-]+\\\\)$\", url_references)\n  )",
+    "after": "  clip_ids <- xml2::xml_attr(\n    xml2::xml_find_all(svg_doc, \".//*[local-name()='clipPath'][@id]\"),\n    \"id\"\n  )\n  fragments <- sub(\"^url\\\\(#(.*)\\\\)$\", \"\\\\1\", url_references)\n  internal_url_ok <- !length(url_references) || (\n    all(grepl(\"^url\\\\(#[^()[:space:]]+\\\\)$\", url_references)) &&\n      all(vapply(fragments, function(id) sum(clip_ids == id) == 1L, logical(1)))\n  )"
+  }
+]

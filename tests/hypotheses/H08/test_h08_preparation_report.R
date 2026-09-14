@@ -34,7 +34,7 @@ if (preintegration_only) {
     root = root,
     hypothesis_id = "H08",
     min_figures = 3L,
-    min_gt_tables = 18L,
+    min_gt_tables = 19L,
     extra_forbidden_calls = c(
       "h08_fit_model",
       "h08_fit_bundle",
@@ -61,6 +61,9 @@ stopifnot(
   grepl("Exact evaluated Wilkinson formulae", qmd, fixed = TRUE),
   grepl("complete nine-test", qmd, fixed = TRUE),
   grepl("no adjusted p-value met the 0.050 criterion", qmd, fixed = TRUE),
+  grepl("METRIC-011 exact-zero maintenance", qmd, fixed = TRUE),
+  grepl("H08_metric011_result_comparison.csv", qmd, fixed = TRUE),
+  grepl("H08_metric011_reconciliation.csv", qmd, fixed = TRUE),
   grepl("fig-width: 6.692913", qmd, fixed = TRUE),
   grepl("out-width: \"100%\"", qmd, fixed = TRUE),
   grepl("::: {.callout-note", qmd, fixed = TRUE),
@@ -113,6 +116,8 @@ stopifnot(
   grepl("743–902", main_text, fixed = TRUE),
   grepl("All 153 planned", main_text, fixed = TRUE),
   grepl("no adjusted p-value met the 0.050 criterion", main_text, fixed = TRUE),
+  grepl("METRIC-011 exact-zero maintenance", main_text, fixed = TRUE),
+  grepl("6 of 6", main_text, fixed = TRUE),
   !grepl("Execution halted", main_text, fixed = TRUE)
 )
 
@@ -341,7 +346,28 @@ gt_tables <- xml2::xml_find_all(
   main,
   ".//table[contains(concat(' ', normalize-space(@class), ' '), ' gt_table ')]"
 )
-stopifnot(length(gt_tables) >= 18L)
+stopifnot(length(gt_tables) >= 19L)
+
+if (!preintegration_only) {
+  preparation_manifest <- readr::read_csv(
+    paths$manifest,
+    show_col_types = FALSE
+  )
+  expected_metric011_paths <- c(
+    "scripts/hypotheses/H08/reseal_h08_l10_metric011.R",
+    "tests/hypotheses/H08/test_h08_metric011_reseal.R",
+    "audit/decisions/l10_numerical_zero_normalization.md",
+    paste0(
+      "audit/reconciliation/l10_METRIC-011/",
+      "METRIC-011_evidence_manifest.csv"
+    ),
+    "artifacts/09_tables/H08/H08_metric011_result_comparison.csv",
+    "artifacts/09_tables/H08/H08_metric011_display_invariance.csv",
+    "artifacts/09_tables/H08/H08_metric011_bh_recalculation.csv",
+    "artifacts/12_manifests/H08/H08_metric011_reconciliation.csv"
+  )
+  stopifnot(all(expected_metric011_paths %in% preparation_manifest$path))
+}
 
 if (preintegration_only) {
   message(
@@ -354,7 +380,7 @@ if (preintegration_only) {
 } else {
   stopifnot(
     verification$figures >= 3L,
-    verification$gt_tables >= 18L,
+    verification$gt_tables >= 19L,
     verification$manifest_identities >= 45L,
     isTRUE(verification$source_copy_identical)
   )

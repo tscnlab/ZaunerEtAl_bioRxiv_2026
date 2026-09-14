@@ -1,0 +1,80 @@
+--- tests/hypotheses/H02/test_h02_reader_report.R (pre-order33g)
++++ tests/hypotheses/H02/test_h02_reader_report.R (post-order33g)
+@@ -106,6 +106,7 @@
+   identical(
+     historical_mismatch(preparation_manifest_path),
+     sort(c(
++      "_build/nathealth/notebooks/hypotheses/H02.html",
+       "_quarto-nathealth.yml",
+       "audit/hypotheses/H02/H02_analysis_preparation.qmd",
+       "notebooks/hypotheses/H02.qmd"
+@@ -114,6 +115,7 @@
+   identical(
+     historical_mismatch(worker_manifest_path),
+     sort(c(
++      "_build/nathealth/notebooks/hypotheses/H02.html",
+       "audit/handoffs/H02_shared_change_request.md",
+       "audit/hypotheses/H02/H02_analysis_preparation.qmd",
+       "notebooks/hypotheses/H02.qmd",
+@@ -124,7 +126,7 @@
+   ),
+   identical(
+     artifact_sha256(html_path),
+-    "df73f2f87d6d3bdc9acd44493a113e18b510884f0ecb8e2214b39dc3d71cb164"
++    "736dc6311e53f2b70349326ce0845cc35d23e3b68c000a300833952e81190dd9"
+   ),
+   identical(
+     artifact_sha256(companion_html_path),
+@@ -458,13 +460,13 @@
+     grepl("154 participants", main_text, fixed = TRUE),
+     grepl("902 participant-days", main_text, fixed = TRUE),
+     grepl("41,842 30-minute", main_text, fixed = TRUE),
+-    grepl("FDR-adjusted p = <0.001", main_text, fixed = TRUE),
++    grepl("false-discovery-rate (FDR)-adjusted p = <0.001", main_text, fixed = TRUE),
+     !grepl("BH-adjusted", main_text, fixed = TRUE),
+     !grepl("H02-F1-site-pattern", main_text, fixed = TRUE),
+-    grepl("diagnostic p = 0.435", main_text, fixed = TRUE),
+-    grepl("diagnostic p = 0.455", main_text, fixed = TRUE),
+-    grepl("diagnostic p = 0.130", main_text, fixed = TRUE),
+-    grepl("diagnostic p = 0.115", main_text, fixed = TRUE),
++    grepl("check p = 0.435", main_text, fixed = TRUE),
++    grepl("check p = 0.455", main_text, fixed = TRUE),
++    grepl("check p = 0.130", main_text, fixed = TRUE),
++    grepl("check p = 0.115", main_text, fixed = TRUE),
+     grepl("112 participants", main_text, fixed = TRUE),
+     grepl("643 participant-days", main_text, fixed = TRUE),
+     grepl("29,786 30-minute observations", main_text, fixed = TRUE),
+@@ -503,13 +505,29 @@
+   )
+   stopifnot(all(data_rows <= 10L), all(header_columns <= 6L))
+ 
+-  captions <- trimws(xml2::xml_text(xml2::xml_find_all(
++  caption_nodes <- xml2::xml_find_all(
+     main,
+     ".//figcaption[contains(@class, 'quarto-float-caption')]"
+-  )))
++  )
++  captions <- trimws(xml2::xml_text(caption_nodes))
++  caption_endpoints <- vapply(
++    seq_along(caption_nodes),
++    function(index) {
++      endpoint <- xml2::xml_find_first(
++        caption_nodes[[index]],
++        "ancestor::*[@id][1]"
++      )
++      xml2::xml_attr(endpoint, "id")
++    },
++    character(1)
++  )
+   stopifnot(
+-    length(captions) >= length(expected_tables) + length(expected_figures),
+-    all(nchar(captions) <= 160L)
++    identical(
++      sort(caption_endpoints),
++      sort(c(expected_tables, expected_figures))
++    ),
++    length(captions) == length(expected_tables) + length(expected_figures),
++    all(nzchar(captions))
+   )
+ 
+   figure_predicate <- paste0(

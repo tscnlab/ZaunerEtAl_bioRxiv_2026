@@ -1,8 +1,16 @@
 # MDER support-cutoff author gate
 
 Decision ID: `METRIC-003`  
-Status: approved; canonical Preparation 04 rerun pending  
+Status: **superseded historical decision; not active under `METRIC-010`**  
 Date: 2026-07-30
+
+> **Supersession notice (2026-08-11).** This page accurately records the
+> support gate designed for the former ratio-of-integrals MDER. The author
+> subsequently approved the mean of viable momentary ratios in `METRIC-010`.
+> The active rule requires at least 720 viable positive paired minutes on the
+> fixed 1,440-minute wall-clock grid and does not use the profile-weighted
+> 0.70/0.80/0.90 gate below. The old values and classifications remain only as
+> audit history and must not be used for current model samples or claims.
 
 ## Question
 

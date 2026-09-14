@@ -1,0 +1,104 @@
+--- a/notebooks/hypotheses/H06.qmd
++++ b/notebooks/hypotheses/H06.qmd
+@@ -531,9 +531,11 @@
+ 0.017). Activity and previous sleep had no FDR-retained predictor-by-site
+ interaction. In the interaction model, the site-average work/free ratio,
+ calculated with equal weight for each site, was 1.15 (95% CI 0.93–1.44),
+-compared with 1.45 in the common-effect model. Day type also did not meet the
+-adjusted threshold when the working variance changed (FDR-adjusted p =
+-0.260). The day-type conclusion is therefore site- and model-dependent.
++compared with 1.45 in the common-effect model. The interaction model's
++site-average day-type association did not meet the adjusted threshold
++(three-predictor FDR-adjusted p = 0.298). Day type also did not meet the
++adjusted threshold when the working variance changed (FDR-adjusted p = 0.260).
++The day-type conclusion is therefore site- and model-dependent.
+ 
+ <details>
+ <summary>Show site-specific estimates and interaction details</summary>
+--- a/audit/handoffs/H06_worker_handoff.md
++++ b/audit/handoffs/H06_worker_handoff.md
+@@ -3,15 +3,17 @@
+ Date: 2026-08-14
+ 
+ Status: the four-stage main hourly H06 scientific workflow remains closed and
+-unchanged. REPORT-014/017 order 37 has harmonized only the reader and
+-preparation/provenance sources. Rendering remains on hold pending the separate
+-four-figure label repair and serial render authorization.
++unchanged. REPORT-014/017 order 37 stopped at its source-only verifier with 17
++sealed assertions. Order 37a restores one accepted visible `p = 0.298`
++sentence and corrects those verifier classifications without changing the
++analysis. Rendering remains on hold pending the separate four-figure label
++repair and serial render authorization.
+ 
+ ## Final source identities
+ 
+ - `notebooks/hypotheses/H06.qmd`: SHA-256
+-  `938f1a253bffefa99947783dc1ae4c739f92ad82fb224a4d8626d91bcebea061`,
+-  60,541 bytes.
++  `468ecebe8485de05d2bc47bb4a0948a3eaf8308c7ea1fdf6dacb54316a7544e2`,
++  60,677 bytes.
+ - `audit/hypotheses/H06/H06_analysis_preparation.qmd`: SHA-256
+   `f952d5ec72066ee86fded4888aaa815bdf763c11f466806ebc7391c79e22918b`,
+   59,613 bytes.
+@@ -66,11 +68,13 @@
+ p = 0.017. Activity and previous sleep retain no FDR-adjusted
+ predictor-by-site interaction. The interaction-model site-average ratios
+ remain 1.15 for free/work, 1.93 for active/sedentary, and 0.97 per additional
+-hour of previous sleep. The site screen still compares each site's ratio with
+-1, while the separate pointwise site-to-average intervals compare each site
+-with the site-average estimate. The free/work associations at Borås (SE) and
+-Dortmund (DE), and the active/sedentary association at Tübingen (DE), remain
+-retained in their separate nine-site FDR families.
++hour of previous sleep. The interaction model's site-average day-type
++association did not meet the adjusted threshold (three-predictor FDR-adjusted
++p = 0.298). The site screen still compares each site's ratio with 1, while the
++separate pointwise site-to-average intervals compare each site with the
++site-average estimate. The free/work associations at Borås (SE) and Dortmund
++(DE), and the active/sedentary association at Tübingen (DE), remain retained
++in their separate nine-site FDR families.
+ 
+ The required gap-timing-unaware sensitivity remains exact. Its near-eye frame
+ contains 16,329 hours, 702 participant-days, 137 participants, and nine sites.
+@@ -159,16 +163,24 @@
+ The one-shot verification command is:
+ 
+ ```sh
+-Rscript tests/hypotheses/H06/test_h06_report017_source_harmonization.R
++Rscript tests/hypotheses/H06/test_h06_report017_source_harmonization_37a.R
+ ```
+ 
+-The controlling result is `PASS`, as sealed by
+-`audit/hypotheses/H06/report017_order37/execution_record.md`. If that one-shot
+-suite does not reach `PASS`, this handoff is invalid and its consolidated
++Order 37 previously evaluated 171 checks and stopped with 17 defects in
++`audit/hypotheses/H06/report017_order37/defect_list.csv`. Sixteen were verifier
++classifications. The one source-preservation defect was the missing accepted
++`p = 0.298` sentence restored above. The preceding sandboxed startup process
++never entered the verifier body; after its authorized environment retry, the
++real order-37 verifier sealed in about two seconds.
++
++The controlling order-37a result is `PASS`, as sealed by
++`audit/hypotheses/H06/report017_order37a/execution_record.md`. If the one-shot
++37a suite does not reach `PASS`, this handoff is invalid and its consolidated
+ stopped-state defect list controls. The suite requires R 4.6.1, parses every R
+ chunk without execution, audits endpoints, source structure, dynamic links,
+-reader vocabulary, protected hashes, historical manifest mismatch sets, and
+-the new non-circular source manifest.
++reader vocabulary, the exact restored numeric inventory, protected hashes,
++historical manifest mismatch sets, two-step reverse substitution, and the new
++non-circular source manifest.
+ 
+ The following remain byte-identical to their order-37 preflight identities:
+ 
+@@ -183,6 +195,11 @@
+   evidence, stored figures, source CSVs, and figure builders pinned by the
+   order-37 source manifest.
+ 
++The stopped order-37 verifier and every file under
++`audit/hypotheses/H06/report017_order37/` also remain byte-identical historical
++evidence. The companion QMD remains byte-identical at
++`f952d5ec72066ee86fded4888aaa815bdf763c11f466806ebc7391c79e22918b`.
++
+ The historical manifest mismatch sets remain exactly 4, 5, and 4 paths for
+ Stage 2, Stage 3, and preparation, respectively. These are historical
+ identity differences, not new scientific discrepancies.

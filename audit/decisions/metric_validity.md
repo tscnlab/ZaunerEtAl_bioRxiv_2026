@@ -1,8 +1,8 @@
 # Personal light-exposure metric-validity decision
 
 Decision ID: `METRIC-001`  
-Related MDER support decision: `METRIC-003`  
-Status: approved advisory specification; implementation and rerun pending  
+Current MDER decision: `METRIC-010` (supersedes `METRIC-003`)
+Status: approved and implemented; metric artifacts independently verified
 Decision date: 2026-07-29  
 Scope: common metric construct, temporal support, missingness, gap handling,
 reference-profile use, and metric-specific admissibility  
@@ -121,23 +121,19 @@ as a generic repair.
 
 ### MDER, IS, and IV
 
-MDER is the exposure-weighted ratio of integrals over identical paired valid
-intervals:
+Under `METRIC-010`, MDER is the arithmetic mean of viable one-minute
+`MEDI / LIGHT` ratios. A minute is viable only when both channels are finite
+and strictly positive. Repeated local minutes at daylight-saving fall-back
+are first flattened by averaging each channel within the local minute; a
+spring clock gap remains missing. At least 720 of the fixed 1,440 local
+wall-clock minutes must be viable. Failure produces a reason-coded MDER `NA`
+without removing the participant-day.
 
-\[
-\mathrm{MDER} =
-\frac{\sum_i \mathrm{MEDI}_i \Delta t_i}
-     {\sum_i \mathrm{LIGHT}_i \Delta t_i}.
-\]
-
-It is not the arithmetic mean of epoch-level `MEDI / LIGHT` ratios. Under
-`METRIC-003`, ordinary paired coverage, fixed MEDI-profile support, and fixed
-`LIGHT`-profile support must each be at least 0.80, and the paired `LIGHT`
-integral must be positive. Failure of any requirement produces exactly one
-reason-coded MDER `NA` without removing the participant-day. The fixed
-profiles diagnose signal-specific temporal support; they do not scale,
-weight, or correct the numerator, denominator, or ratio. Support cutoffs 0.70
-and 0.90 are fixed MDER-specific sensitivities.
+The general Rule A 80% day-coverage requirement remains upstream. Fixed
+signal profiles, ratio-of-integrals weighting, and the superseded conjunctive
+0.70/0.80/0.90 MDER support gate do not weight, scale, or determine the new
+MDER. The complete rationale, verified sample flow, and old-versus-new
+comparison are recorded in `mder_mean_of_viable_ratios.md`.
 
 IS and IV are calculated from the fixed one-hour grid defined in
 `metric_implementation_parameters.md`. Missing hours remain missing. IV
@@ -157,13 +153,20 @@ bedside environment.
 implementation must be replaced or qualified before use. `Exclude` means the
 metric must not be produced.
 
+For zero-aware geometric means, `METRIC-011` applies before model-frame
+construction. A back-transformed residual is set to zero only within a
+scale-dependent machine-precision tolerance and, for a positive residual,
+only when all finite source values are exactly zero. Missing minutes are not
+imputed. Raw values and source counts remain auditable. Exact zeros remain in
+zero-capable outcomes and in the occurrence component of two-part models.
+
 | Metric | Current validity | Approved action and primary rule | Failure condition on an otherwise retained day |
 |---|---|---|---|
 | 30-minute arithmetic mean MEDI | `modify` | Preserve the 30-minute local-clock grid for H2/H11; require at least 15 valid one-minute intervals, report bin support, and apply the zero-aware log only at the modelling stage; never remove a whole day because this outcome is static or unsupported. | Unsupported bin becomes metric-specific `NA`; the day stays retained. |
 | 1-hour zero-aware geometric mean MEDI | `modify` | Preserve the local-clock hourly grid for H3/H4/H6; require at least 30 valid one-minute intervals and retain context/state boundaries. | Unsupported hour becomes metric-specific `NA`; the day stays retained. |
 | Daily geometric mean MEDI | `modify` | Report the zero-aware geometric mean of valid hybrid-day MEDI with ordinary and profile-weighted coverage; do not divide the mean by coverage. | No supported daily value or failed day eligibility. |
 | M10 mean | `modify` | Select the brightest supported 20-bin candidate and calculate its geometric mean. | No supported 10-hour candidate. |
-| L10 mean | `modify` | Select the darkest supported 20-bin candidate across the midnight boundary and calculate its geometric mean. | No supported 10-hour candidate. |
+| L10 mean | `modify` | Select the darkest supported 20-bin candidate across the midnight boundary, calculate its zero-aware geometric mean, and apply the source-verified numerical-zero rule in `METRIC-011`. | No supported 10-hour candidate. |
 | L5 mean | `exclude` | Do not calculate or report it. | Not applicable. |
 | Time above 1,000 lx | `modify` | Sum actual qualifying interval durations on the hybrid day; do not scale by coverage. | Target domain insufficiently supported; zero is allowed only for an observed no-event day. |
 | Time above 250 lx during wake | `modify` | Project canonical diary intervals onto the complete true-minute grid, then sum actual qualifying intervals within valid waking near-eye wear. | `incomplete_state_domain`, `no_state_window`, or `insufficient_state_support`; an adequately observed no-event wake window is zero. |
@@ -176,7 +179,7 @@ metric must not be produced.
 | M10 midpoint | `modify` | Report the circular local-clock midpoint of the selected supported M10 candidate. | No supported candidate or unresolved boundary. |
 | L10 midpoint | `modify` | Report the circular local-clock midpoint of the selected supported midnight-wrapping L10 candidate. | No supported candidate or unresolved boundary. |
 | Daily melanopic EDI dose | `modify` | Integrate MEDI using actual durations; use the fixed MEDI profile for the approved time-sensitive missing-coverage correction and retain observed dose and correction factor. | Missing/zero reference mass, unsupported correction, or failed eligibility; never substitute zero. |
-| MDER | `modify` | Use the ratio of MEDI and LIGHT integrals on identical paired valid intervals only when ordinary paired, fixed MEDI-profile, and fixed LIGHT-profile support are each at least 0.80; require a positive paired LIGHT integral; do not scale or profile-weight the ratio. | No paired observations, non-positive paired LIGHT integral, or any of the three supports below 0.80; return one reason-coded metric `NA` and retain the day. |
+| MDER | `retain` | Average finite one-minute `MEDI / LIGHT` ratios for minutes where both channels are strictly positive; require at least 720 viable minutes on the fixed 1,440-minute local wall-clock grid; do not scale, profile-weight, or replace the mean with a ratio of integrals. | No viable momentary ratio or fewer than 720 viable minutes; return one reason-coded metric `NA` and retain the day. |
 | Interdaily stability | `modify` | Use one-hour common local-clock bins on a regular repeated-day hybrid grid; require at least three eligible days and at least 20 clock hours represented on at least two days. | Fewer than three eligible days, insufficient clock-hour support, or undefined variance. |
 | Intradaily variability | `modify` | Use only truly adjacent one-hour pairs on the absolute-time grid, retain missing gaps, and require at least 24 pairs across at least three eligible days. | Fewer than three eligible days, fewer than 24 adjacent pairs across three days, or undefined variance. |
 
@@ -184,12 +187,14 @@ The exact estimands, units, primary rules, sensitivities, failure conditions,
 current baseline counts, and reporting qualifications are recorded row by row
 in `audit/ledgers/metric_validity.csv`.
 
-## R-verified current baseline
+## R-verified historical V0 baseline
 
-These counts describe the existing July 2026 `.RData` artifacts. They are
-**baseline/current**, not accepted final counts. They must be regenerated
-after implementation, the approved `MEDI <100000` operating-range rule, and a
-clean pipeline rerun.
+These counts describe the July 2026 `.RData` artifacts retained for V0 and the
+gap-timing-unaware comparison. They are comparison counts, not the accepted
+primary metric counts. MDER is the one exception: under `METRIC-010` it is
+reconstructed from the pinned one-minute inputs so that both datasets use the
+same estimand and support rule. Its current counts and distributions are
+recorded in `mder_mean_of_viable_ratios.md`.
 
 Verification environment:
 
@@ -215,7 +220,7 @@ Current metric-specific missingness is:
 | Current output | Near-eye non-missing / metric `NA` | Chest non-missing / metric `NA` |
 |---|---:|---:|
 | First, last, and mean timing above 250 lx | 778 / 33 | 867 / 30 |
-| MDER | 725 / 86 | 729 / 168 |
+| MDER | 687 / 124 | 723 / 174 |
 | Duration below 10 lx in pre-sleep | 780 / 31 | 867 / 30 |
 | Duration below 1 lx in sleep | 790 / 21 | 878 / 19 |
 | Duration above 250 lx in wake | 755 / 56 | 839 / 58 |
@@ -239,7 +244,11 @@ H3/H4/H6 separately use a one-hour zero-aware geometric mean. An earlier
 version of this audit conflated those outcomes; the ledger now records them as
 separate estimands.
 
-## R-verified MDER support gate
+## R-verified historical MDER support gate
+
+This section records the independently verified gate designed for the
+superseded ratio-of-integrals estimand. It remains audit evidence but is not an
+active support rule or sensitivity registry under `METRIC-010`.
 
 The cutoff-neutral gate used the repaired Preparation 02 Rule A
 participant-days and the fixed pooled MEDI and `LIGHT` profiles. It calculated
@@ -259,12 +268,12 @@ daily, overall, site, and participant rows exactly and confirmed the manifest
 SHA-256
 `c4ecfab41892e44b38dd78097277ccef5f94a379b44c7b309de281e9215a7b3c`.
 
-The author approved 0.80 as primary and 0.70/0.90 as fixed sensitivities
-before repaired ratios or hypothesis results were inspected. Full details and
-reopening conditions are in
+The author approved 0.80 as primary and 0.70/0.90 as fixed sensitivities for
+that historical estimand before repaired ratios or hypothesis results were
+inspected. Full details and supersession conditions are in
 [`../findings/mder_support_cutoff_gate.md`](../findings/mder_support_cutoff_gate.md).
-Canonical metric values and downstream before/after comparisons remain
-pending.
+Current MDER values and their independent reconstruction are reported under
+`METRIC-010`; only the affected downstream MDER models and reports remain open.
 
 ## Locked implementation parameters
 

@@ -3,6 +3,7 @@ options(warn = 2)
 source("scripts/pipeline/paths_io.R")
 source("scripts/pipeline/assertions.R")
 source("scripts/pipeline/metric_display_registry.R")
+source("scripts/pipeline/time_support.R")
 source("scripts/pipeline/manuscript_prepared_data.R")
 source("scripts/pipeline/build_manuscript_prepared_data.R")
 source("scripts/pipeline/h01_model_data.R")
@@ -23,7 +24,7 @@ stopifnot(
     ],
     c(
       "dose_time_sensitive_corrected_medi",
-      "mder_ratio_of_integrals"
+      "mder_mean_of_viable_ratios"
     )
   )
 )

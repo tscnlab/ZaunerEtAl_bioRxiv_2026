@@ -12,14 +12,14 @@ h03_input_contract <- function(root) {
       root,
       "artifacts/06_model_data/base/metrics_glasses_one_hour_context.rds"
     ),
-    "cee864bb0e329b98444088b777c7245250be68111ec9f24db7c0e3f395ed6445",
+    "7591bcfaae4b49fdde2053160848e170895092b223f96108e538066ce210a951",
     "accepted_primary_one_hour_outcome",
     "main_chest",
     file.path(
       root,
       "artifacts/06_model_data/base/metrics_chest_one_hour_context.rds"
     ),
-    "50f50ca5d39d621d06f2794037c4b769e01fc7329a70432e79a51203727ed209",
+    "18134eec529c36e5fd47c7b3bb1e3b909628b97986cd91eff8e59ee9b5343cbb",
     "accepted_complementary_one_hour_outcome",
     "normalized_diary",
     file.path(

@@ -1,0 +1,11 @@
+--- audit/report_harmonization/final_site_a4_delta_2026_09_14/helpers/check_closure.py
++++ audit/report_harmonization/final_site_a4_delta_2026_09_14/verification_recovery_015a/helpers/check_closure.py
+@@ -31,7 +31,7 @@
+         expected={r['path']:dict(r) for r in live}
+         for r in plan_rows():
+             path=str(Path(r['target']).relative_to('_build/nathealth'));expected[path]=dict(path=path,bytes=r['bytes'],sha256=r['post_sha256'])
+-        candidate=inv(BUILD);assert candidate==[expected[k] for k in sorted(expected)]
++        candidate=inv(BUILD);assert len(candidate)==len({r['path'] for r in candidate})==len(expected) and {r['path']:r for r in candidate}==expected
+         assert candidate==parsed_inv(E/'candidate_inventory.csv');candidate_count=len(candidate)
+         csvout(E/'post_candidate_inventory.csv',candidate)
+     csvout(E/f'{phase}_protected_checks.csv',checks);csvout(E/f'{phase}_live_inventory.csv',live)

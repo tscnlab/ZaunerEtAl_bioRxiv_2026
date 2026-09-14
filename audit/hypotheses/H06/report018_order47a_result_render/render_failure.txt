@@ -1,0 +1,25 @@
+REPORT-018 H06 order 47a render failure
+
+Command:
+GT_HTML_SEMANTIC_AUDIT_DIR=/private/tmp/h06_order47a_semantic.LTK1Qz quarto render notebooks/hypotheses/H06.qmd --profile nathealth
+
+Versions:
+Quarto 1.9.37
+R 4.6.1
+
+Exit status:
+1
+
+Failure location:
+H06.qmd lines 1560-1580
+Cell tbl-h06-figure-readability-checks
+Render progress 40 of 41 cells
+
+Error:
+Error in dplyr::select():
+In argument: dplyr::if_else(...).
+Caused by error:
+object '.data' not found
+
+Classification:
+The Status expression calls dplyr::if_else() inside dplyr::select(). The expression refers to .data$report_011_status, but .data is unavailable in the tidy-selection context. The render stopped before Pandoc output and before the semantic hook.

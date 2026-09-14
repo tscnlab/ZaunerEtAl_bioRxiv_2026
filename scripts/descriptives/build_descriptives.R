@@ -85,9 +85,13 @@ load_descriptive_render_bundle <- function(root = descriptive_project_root()) {
     )
   }
   list(
-    tables = stats::setNames(lapply(table_paths, read_plot_source_csv), table_files),
+    tables = stats::setNames(
+      lapply(table_paths, read_plot_source_csv),
+      table_files
+    ),
     sources = stats::setNames(
-      lapply(source_paths, read_plot_source_csv), source_files
+      lapply(source_paths, read_plot_source_csv),
+      source_files
     ),
     manifest = read_plot_source_csv(manifest_path)
   )
@@ -95,12 +99,15 @@ load_descriptive_render_bundle <- function(root = descriptive_project_root()) {
 
 descriptive_figure_spec <- function() {
   figure_id <- c(
-    "descriptive_overview", "near_eye_site_profiles", "chest_site_profiles",
-    "near_eye_metric_distributions", "time_series_to_metrics",
+    "descriptive_overview",
+    "near_eye_site_profiles",
+    "chest_site_profiles",
+    "near_eye_metric_distributions",
+    "time_series_to_metrics",
     "latitude_photoperiod_diagnostic"
   )
   base_width_in <- c(10.5, rep(170 / 25.4, length(figure_id) - 1L))
-  base_height_in <- c(10, c(132, 108, 170, 153, 170) / 25.4)
+  base_height_in <- c(10, c(175, 140, 170, 153, 170) / 25.4)
   export_scale_multiplier <- c(1.5, rep(1, length(figure_id) - 1L))
   export_width_in <- base_width_in * export_scale_multiplier
   export_height_in <- base_height_in * export_scale_multiplier
@@ -109,7 +116,7 @@ descriptive_figure_spec <- function() {
     print_display_width_mm * export_height_in / export_width_in
   display_reduction_factor <-
     (print_display_width_mm / 25.4) / export_width_in
-  nominal_min_essential_text_pt <- c(8.5, 7.5, 7.5, 7.5, 9, 8)
+  nominal_min_essential_text_pt <- c(8.5, 7, 7, 6.5, 7.5, 10.75)
   effective_min_essential_text_pt <-
     nominal_min_essential_text_pt * display_reduction_factor
   data.frame(
@@ -127,24 +134,36 @@ descriptive_figure_spec <- function() {
     display_reduction_factor = display_reduction_factor,
     nominal_min_essential_text_pt = nominal_min_essential_text_pt,
     effective_min_essential_text_pt = effective_min_essential_text_pt,
-    dpi = 300L,
+    dpi = c(300L, 450L, 450L, 450L, 300L, 300L),
     a4_mockup_dpi = 150L,
     a4_mockup_path = file.path(
-      "artifacts", "08_diagnostics", "descriptives", "a4_mockups",
+      "artifacts",
+      "08_diagnostics",
+      "descriptives",
+      "a4_mockups",
       paste0(figure_id, "_a4.png")
     ),
     physical_size_qa = c(
-      "TYPOGRAPHY_APPROVED_DETAIL_QA_OPEN",
+      "AUTHOR_ACCEPTED_FINAL",
       rep("PASS_INTENDED_SIZE_VISUAL_QA", length(figure_id) - 1L)
     ),
     physical_size_qa_notes = c(
       paste(
         "REPORT-011-PILOT-001 corrected showcase: accepted scientific",
         "content and submitted panel geometry use the original source-level",
-        "14-pt cowplot themes and 3-unit map labels. The 10.5-by-10-inch",
+        "14-pt cowplot themes and 3.5-unit map labels. The map restores",
+        "registered site names plus country and coordinates using the",
+        "stored deterministic label anchors so labels cannot overlap. The",
+        "10.5-by-10-inch",
         "plot is exported with literal ggsave(scale = 1.5) to 15.75 by 15",
         "inches. The pooled profile uses the LightLogR symlog transform with",
-        "threshold 1. The author approved the recorded source typography:",
+        "threshold 1, nested central 50% and 90% value bands, explicit",
+        "pooled-median annotation, labels centred at 01:00 on day two,",
+        "straight approximately 45-degree leaders from each lower-right",
+        "label corner to right-day targets, a San José site-median target,",
+        "larger guide/annotation labels, and the",
+        "sleep strip from negative infinity to -0.1. The author approved",
+        "the recorded source typography:",
         "12-pt ticks, 14-pt titles and tags, 11-pt captions, and 3-unit",
         "map labels. The 170-mm A4 mock-up is an inspection scaffold only;",
         "it is not a final export format. No clipping, overlap, distortion,",
@@ -153,39 +172,54 @@ descriptive_figure_spec <- function() {
         "and 100% width. Browser-level visual inspection of the local file",
         "is NOT TESTED because browser security policy blocks file URLs.",
         "The final files use the tightly bounded figure canvas, not A4.",
-        "Figure-detail review remains open independently of typography."
+        "The author accepted the final Figure 1 detail layout on 2026-08-11."
       ),
       paste(
         "Intended-size inspection (A4 used only as a QA scaffold): 3-by-3",
-        "profile panels, vertical bracket,",
+        "profile panels on a taller 170-by-175-mm canvas, single-level",
+        "vertical bracket with added label separation, black median curves,",
+        "and lighter axes,",
         "nested 50/75/95% ribbons, legend, axes, and caption are legible",
-        "without clipping or overlap."
+        "without clipping or overlap; the raster is exported at 450 dpi."
       ),
       paste(
         "Intended-size inspection (A4 used only as a QA scaffold): the",
-        "complete 4-by-2 chest layout has no orphan",
-        "panel; vertical bracket, nested ribbons, legend, and caption pass."
+        "complete 4-by-2 chest layout on a 170-by-140-mm canvas has no orphan",
+        "panel; the vertical bracket has deliberate label whitespace, black",
+        "median curves and lighter axes,",
+        "nested ribbons, legend, and caption pass."
       ),
       paste(
         "Intended-size inspection (A4 used only as a QA scaffold): all 16",
-        "single-line metric names and reduced",
-        "clock/numeric ticks are legible without clipping or collisions."
+        "single-line metric names, lighter ridge/box strokes, smaller",
+        "outlier points, and author-requested 6.5-pt",
+        "clock/numeric text are legible without clipping or collisions;",
+        "the raster is exported at 450 dpi."
       ),
       paste(
         "Intended-size inspection (A4 used only as a QA scaffold): the",
-        "time series, selected-sample TAT250 panels, annotations, axes, and",
-        "three-line caption are legible and balanced; the Panel C tag was",
-        "separated from its vertical axis title."
+        "time series uses the submitted finite-row path behavior and daily",
+        "mean dawn/dusk context, so missing measurement bins do not split",
+        "the paths or civil-night bands. Lighter primary curves, tighter",
+        "panel margins, selected-sample TAT250 panels, 9.5-pt base",
+        "typography, annotations, axes, and the two-line caption are",
+        "legible and balanced; the Panel C tag remains separated from its",
+        "vertical axis title."
       ),
       paste(
         "Intended-size inspection (A4 used only as a QA scaffold): colored",
-        "densities remain behind the black",
-        "feasibility curtain; legend, annotation, and axes are legible."
+        "densities remain behind the black feasibility curtain; deterministic",
+        "two-dimensional point jitter removes artificial bands, and the",
+        "further enlarged axes and right-shifted legend are legible."
       )
     ),
     placement = c(
-      "near_eye_primary_and_chest_complementary", "near_eye", "chest",
-      "near_eye", "near_eye", "near_eye"
+      "near_eye_primary_and_chest_complementary",
+      "near_eye",
+      "chest",
+      "near_eye",
+      "near_eye",
+      "near_eye"
     ),
     stringsAsFactors = FALSE
   )
@@ -195,8 +229,11 @@ descriptive_figure_comparison_spec <- function() {
   data.frame(
     figure_id = descriptive_figure_spec()$figure_id,
     original_path = c(
-      "figures/Fig1.png", "figures/Fig2.png", "figures/Fig2.png",
-      "figures/Fig3.png", "figures/Timeseries_to_metrics.png",
+      "figures/Fig1.png",
+      "figures/Fig2.png",
+      "figures/Fig2.png",
+      "figures/Fig3.png",
+      "figures/Timeseries_to_metrics.png",
       "figures/photoperiod_potential_ridges.png"
     ),
     comparison_scope = c(
@@ -208,12 +245,12 @@ descriptive_figure_comparison_spec <- function() {
       "submitted latitude-ridge grammar and physical dimensions"
     ),
     required_difference = c(
-      "The accepted scientific content uses the submitted 10.5-by-10-inch design canvas, original source-level theme sizes, and literal ggsave(scale = 1.5) export. Collection dates are continuous site intervals interrupted after at least six dates without data. The pooled profile uses a central 67% value interval; average sleep and civil night are retained, declared non-wear is omitted, and the y-axis uses a true symlog transform with threshold 1.",
-      "LightLogR-pooled 15-minute medians and nested central 50%, 75%, and 95% value intervals use the updated eligible minute data; average sleep and civil night remain explicit, and declared non-wear is omitted.",
-      "MPI is omitted because no eligible chest main days exist; remaining sites retain registered order and colours in a complete four-by-two layout with nested 50%, 75%, and 95% intervals.",
-      "Verified metric values, symlog rows, circular clock axes, corrected melEDI names, and DISPLAY-001 replace the old inputs.",
-      "The same seven submitted IDs and study days 2–6 are drawn directly from the pinned gap-timing-unaware 30-minute dataset; TAT250 is recalculated from exactly those displayed daytime samples and determines participant order.",
-      "Verified H1 theoretical bounds restore the submitted impossible-region curtains above the observed points and density curves; observed verified main near-eye participant-days and DISPLAY-001 replace the old inputs."
+      "The submitted 10.5-by-10-inch design canvas, source-level theme sizes, and literal ggsave(scale = 1.5) export are retained. Map labels restore country and coordinates alongside DISPLAY-001 names at deterministic non-overlapping anchors. Collection intervals split after at least six dates without data. The pooled profile shows nested central 50% and 90% value bands with labels, a pooled-median annotation, average sleep from -Inf to -0.1, average civil night, no declared non-wear, and a true LightLogR symlog transform with threshold 1.",
+      "LightLogR-pooled 15-minute medians and nested central 50%, 75%, and 95% value intervals use the updated eligible minute data; the sleep strip spans -Inf to -0.1, average civil night remains explicit, declared non-wear is omitted, and the single-level guide plus lighter curves and axes improve final-size detail.",
+      "MPI is omitted because no eligible chest main days exist; remaining sites retain registered order and colours in a complete four-by-two layout with nested 50%, 75%, and 95% intervals, the corrected sleep strip, single-level guide, and lighter curves and axes.",
+      "Verified metric values, including METRIC-010 MDER as the mean of viable one-minute ratios under the inclusive 50% support rule, true symlog rows, circular clock axes, corrected melEDI names, DISPLAY-001, thinner ridge/box strokes, smaller outlier points, and a 450-dpi raster replace the old inputs.",
+      "The same seven submitted IDs and study days 2–6 use the pinned stored 30-minute near-eye values; TAT250 is recalculated from exactly those displayed daytime samples and determines participant order. As in V0, finite plotted values connect across isolated missing bins, while civil-night rectangles come from daily mean dawn and dusk rather than measurement-state rows. Primary time-series lines are lighter and panel gaps are reduced without changing the selected sample or four-panel layout.",
+      "Verified H1 theoretical bounds retain the submitted impossible-region curtains above the observed points and density curves; observed verified main near-eye participant-days and DISPLAY-001 replace the old inputs, with deterministic two-dimensional jitter, larger axes, and a right-shifted legend."
     ),
     stringsAsFactors = FALSE
   )
@@ -229,7 +266,11 @@ read_png_dimensions <- function(path) {
   }
   seek(connection, where = 16L, origin = "start")
   dimensions <- readBin(
-    connection, what = "integer", n = 2L, size = 4L, endian = "big",
+    connection,
+    what = "integer",
+    n = 2L,
+    size = 4L,
+    endian = "big",
     signed = TRUE
   )
   c(width_px = dimensions[[1L]], height_px = dimensions[[2L]])
@@ -249,30 +290,35 @@ build_visual_export_comparison <- function(paths, table_build, figure_build) {
       output_type = "table",
       original_path = .data$original_path,
       rebuilt_path = file.path(
-        "artifacts/09_tables/descriptives", .data$filename
+        "artifacts/09_tables/descriptives",
+        .data$filename
       ),
       comparison_scope = paste(
         "submitted gt styling and original gtsave viewport",
         .data$viewport_width_px
       ),
       required_difference = dplyr::case_when(
-        .data$table_id == "participant_site_characteristics" ~ paste(
-          "Updated verified values, explicit placement denominators, corrected",
-          "MPI/TUM labels, and DISPLAY-001."
-        ),
-        .data$table_id == "participant_site_manuscript" ~ paste(
-          "The exact reduced row set embedded in the submitted manuscript is",
-          "retained with updated verified values, corrected MPI/TUM labels,",
-          "and DISPLAY-001."
-        ),
-        .data$table_id == "near_eye_metric_summary" ~ paste(
-          "Verified metric artifacts, complete denominator types, circular",
-          "clock summaries, corrected terminology, and DISPLAY-001."
-        ),
-        TRUE ~ paste(
-          "Context rather than adherence wording, explicit minute denominators,",
-          "and bedside sleep-environment limitation."
-        )
+        .data$table_id == "participant_site_characteristics" ~
+          paste(
+            "Updated verified values, explicit placement denominators, corrected",
+            "MPI/TUM labels, and DISPLAY-001."
+          ),
+        .data$table_id == "participant_site_manuscript" ~
+          paste(
+            "The exact reduced row set embedded in the submitted manuscript is",
+            "retained with updated verified values, corrected MPI/TUM labels,",
+            "and DISPLAY-001."
+          ),
+        .data$table_id == "near_eye_metric_summary" ~
+          paste(
+            "Verified metric artifacts, complete denominator types, circular",
+            "clock summaries, corrected terminology, and DISPLAY-001."
+          ),
+        TRUE ~
+          paste(
+            "Context rather than adherence wording, explicit minute denominators,",
+            "and bedside sleep-environment limitation."
+          )
       )
     )
   figure_spec <- descriptive_figure_comparison_spec() |>
@@ -281,7 +327,8 @@ build_visual_export_comparison <- function(paths, table_build, figure_build) {
       output_type = "figure",
       original_path = .data$original_path,
       rebuilt_path = file.path(
-        "artifacts/10_figures/descriptives", paste0(.data$figure_id, ".png")
+        "artifacts/10_figures/descriptives",
+        paste0(.data$figure_id, ".png")
       ),
       comparison_scope = .data$comparison_scope,
       required_difference = .data$required_difference
@@ -289,22 +336,32 @@ build_visual_export_comparison <- function(paths, table_build, figure_build) {
   comparison <- dplyr::bind_rows(table_spec, figure_spec)
   absolute_original <- file.path(paths$root, comparison$original_path)
   absolute_rebuilt <- file.path(paths$root, comparison$rebuilt_path)
-  if (!all(file.exists(absolute_original)) || !all(file.exists(absolute_rebuilt))) {
+  if (
+    !all(file.exists(absolute_original)) || !all(file.exists(absolute_rebuilt))
+  ) {
     stop("A visual-comparison export is missing", call. = FALSE)
   }
   original_dimensions <- t(vapply(
-    absolute_original, read_png_dimensions, numeric(2)
+    absolute_original,
+    read_png_dimensions,
+    numeric(2)
   ))
   rebuilt_dimensions <- t(vapply(
-    absolute_rebuilt, read_png_dimensions, numeric(2)
+    absolute_rebuilt,
+    read_png_dimensions,
+    numeric(2)
   ))
   comparison |>
     dplyr::mutate(
       original_sha256 = vapply(
-        absolute_original, artifact_sha256, character(1)
+        absolute_original,
+        artifact_sha256,
+        character(1)
       ),
       rebuilt_sha256 = vapply(
-        absolute_rebuilt, artifact_sha256, character(1)
+        absolute_rebuilt,
+        artifact_sha256,
+        character(1)
       ),
       original_width_px = as.integer(original_dimensions[, "width_px"]),
       original_height_px = as.integer(original_dimensions[, "height_px"]),
@@ -323,27 +380,36 @@ build_visual_export_comparison <- function(paths, table_build, figure_build) {
 descriptive_figure_source_map <- function() {
   list(
     descriptive_overview = c(
-      "protocol_asset_provenance.csv", "site_locations.csv", "world_map_wkt.csv",
-      "collection_intervals.csv", "available_collection_days.csv",
-      "profile_summary.csv", "profile_context_bands.csv",
+      "protocol_asset_provenance.csv",
+      "site_locations.csv",
+      "world_map_wkt.csv",
+      "collection_intervals.csv",
+      "available_collection_days.csv",
+      "profile_summary.csv",
+      "profile_context_bands.csv",
       "profile_average_periods.csv"
     ),
     near_eye_site_profiles = c(
-      "profile_summary.csv", "profile_context_bands.csv",
+      "profile_summary.csv",
+      "profile_context_bands.csv",
       "profile_average_periods.csv"
     ),
     chest_site_profiles = c(
-      "profile_summary.csv", "profile_context_bands.csv",
+      "profile_summary.csv",
+      "profile_context_bands.csv",
       "profile_average_periods.csv"
     ),
     near_eye_metric_distributions = "metric_plot_values.csv",
     time_series_to_metrics = c(
-      "time_series_replica_30_minute.csv", "time_series_replica_states.csv",
-      "time_series_replica_metrics.csv", "time_series_replica_selection.csv",
+      "time_series_replica_30_minute.csv",
+      "time_series_replica_states.csv",
+      "time_series_replica_metrics.csv",
+      "time_series_replica_selection.csv",
       "gap_timing_unaware_source_provenance.csv"
     ),
     latitude_photoperiod_diagnostic = c(
-      "latitude_photoperiod.csv", "photoperiod_latitude_bounds.csv"
+      "latitude_photoperiod.csv",
+      "photoperiod_latitude_bounds.csv"
     )
   )
 }
@@ -365,7 +431,8 @@ write_descriptive_data_outputs <- function(
         artifact_type = artifact_type,
         placement = if (grepl("chest", filename)) "chest" else if (
           grepl("near_eye", filename)
-        ) "near_eye" else "mixed_or_not_applicable"
+        )
+          "near_eye" else "mixed_or_not_applicable"
       )
       record$rows <- nrow(outputs[[filename]])
       record$columns <- ncol(outputs[[filename]])
@@ -401,8 +468,7 @@ build_descriptive_figure_qa <- function(spec, paths) {
       print_display_height_mm = .data$print_display_height_mm,
       display_reduction_factor = .data$display_reduction_factor,
       nominal_min_essential_text_pt = .data$nominal_min_essential_text_pt,
-      effective_min_essential_text_pt =
-        .data$effective_min_essential_text_pt,
+      effective_min_essential_text_pt = .data$effective_min_essential_text_pt,
       dpi = .data$dpi,
       a4_mockup_path = .data$a4_mockup_path,
       a4_mockup_sha256 = vapply(
@@ -415,78 +481,146 @@ build_descriptive_figure_qa <- function(spec, paths) {
     )
 }
 
-build_and_save_descriptive_figures <- function(paths) {
-  source <- list(
-    locations = read_plot_source_csv(file.path(paths$source_dir, "site_locations.csv")),
-    world = read_plot_source_csv(file.path(paths$source_dir, "world_map_wkt.csv")),
-    collection_intervals = read_plot_source_csv(file.path(
-      paths$source_dir, "collection_intervals.csv"
+build_and_save_descriptive_figures <- function(
+  paths,
+  figure_ids = descriptive_figure_spec()$figure_id
+) {
+  spec <- descriptive_figure_spec()
+  unknown_figure_ids <- setdiff(figure_ids, spec$figure_id)
+  if (length(unknown_figure_ids)) {
+    stop(
+      "Unknown descriptive figure id: ",
+      paste(unknown_figure_ids, collapse = ", "),
+      call. = FALSE
+    )
+  }
+  source <- list()
+  profile_figure_ids <- c(
+    "descriptive_overview",
+    "near_eye_site_profiles",
+    "chest_site_profiles"
+  )
+  if (any(figure_ids %in% profile_figure_ids)) {
+    source$profile <- read_plot_source_csv(file.path(
+      paths$source_dir,
+      "profile_summary.csv"
+    ))
+    source$state <- read_plot_source_csv(file.path(
+      paths$source_dir,
+      "profile_context_bands.csv"
+    ))
+    source$period <- read_plot_source_csv(file.path(
+      paths$source_dir,
+      "profile_average_periods.csv"
+    ))
+  }
+  if ("descriptive_overview" %in% figure_ids) {
+    source$locations <- read_plot_source_csv(file.path(
+      paths$source_dir,
+      "site_locations.csv"
+    ))
+    source$world <- read_plot_source_csv(file.path(
+      paths$source_dir,
+      "world_map_wkt.csv"
+    ))
+    source$collection_intervals <- read_plot_source_csv(file.path(
+      paths$source_dir,
+      "collection_intervals.csv"
     )) |>
       dplyr::mutate(
         interval_start = as.Date(.data$interval_start),
         interval_end = as.Date(.data$interval_end)
-      ),
-    collection_days = read_plot_source_csv(file.path(
-      paths$source_dir, "available_collection_days.csv"
+      )
+    source$collection_days <- read_plot_source_csv(file.path(
+      paths$source_dir,
+      "available_collection_days.csv"
     )) |>
-      dplyr::mutate(local_date = as.Date(.data$local_date)),
-    profile = read_plot_source_csv(file.path(paths$source_dir, "profile_summary.csv")),
-    state = read_plot_source_csv(file.path(
-      paths$source_dir, "profile_context_bands.csv"
-    )),
-    period = read_plot_source_csv(file.path(
-      paths$source_dir, "profile_average_periods.csv"
-    )),
-    metric = read_plot_source_csv(file.path(
-      paths$source_dir, "metric_plot_values.csv"
-    )),
-    series = read_plot_source_csv(file.path(
-      paths$source_dir, "time_series_replica_30_minute.csv"
-    )) |>
-      dplyr::mutate(local_date = as.Date(.data$local_date)),
-    states = read_plot_source_csv(file.path(
-      paths$source_dir, "time_series_replica_states.csv"
-    )) |>
-      dplyr::mutate(local_date = as.Date(.data$local_date)),
-    time_metrics = read_plot_source_csv(file.path(
-      paths$source_dir, "time_series_replica_metrics.csv"
-    )) |>
-      dplyr::mutate(local_date = as.Date(.data$local_date)),
-    latitude = read_plot_source_csv(file.path(
-      paths$source_dir, "latitude_photoperiod.csv"
-    )) |>
-      dplyr::mutate(local_date = as.Date(.data$local_date)),
-    bounds = read_plot_source_csv(file.path(
-      paths$source_dir, "photoperiod_latitude_bounds.csv"
+      dplyr::mutate(local_date = as.Date(.data$local_date))
+  }
+  if ("near_eye_metric_distributions" %in% figure_ids) {
+    source$metric <- read_plot_source_csv(file.path(
+      paths$source_dir,
+      "metric_plot_values.csv"
     ))
+  }
+  if ("time_series_to_metrics" %in% figure_ids) {
+    source$series <- read_plot_source_csv(file.path(
+      paths$source_dir,
+      "time_series_replica_30_minute.csv"
+    )) |>
+      dplyr::mutate(local_date = as.Date(.data$local_date))
+    source$states <- read_plot_source_csv(file.path(
+      paths$source_dir,
+      "time_series_replica_states.csv"
+    )) |>
+      dplyr::mutate(local_date = as.Date(.data$local_date))
+    source$time_metrics <- read_plot_source_csv(file.path(
+      paths$source_dir,
+      "time_series_replica_metrics.csv"
+    )) |>
+      dplyr::mutate(local_date = as.Date(.data$local_date))
+  }
+  if ("latitude_photoperiod_diagnostic" %in% figure_ids) {
+    source$latitude <- read_plot_source_csv(file.path(
+      paths$source_dir,
+      "latitude_photoperiod.csv"
+    )) |>
+      dplyr::mutate(local_date = as.Date(.data$local_date))
+    source$bounds <- read_plot_source_csv(file.path(
+      paths$source_dir,
+      "photoperiod_latitude_bounds.csv"
+    ))
+  }
+  plot_builders <- list(
+    descriptive_overview = function() {
+      make_overview_replica_figure(
+        file.path(paths$root, "assets", "2026-03-30_MeLiDos_Protocol.png"),
+        source$locations,
+        source$world,
+        source$collection_intervals,
+        source$collection_days,
+        source$profile,
+        source$state,
+        source$period
+      )
+    },
+    near_eye_site_profiles = function() {
+      make_site_profile_replica_figure(
+        source$profile,
+        source$state,
+        source$period,
+        "near_eye"
+      )
+    },
+    chest_site_profiles = function() {
+      make_site_profile_replica_figure(
+        source$profile,
+        source$state,
+        source$period,
+        "chest"
+      )
+    },
+    near_eye_metric_distributions = function() {
+      make_metric_distributions_replica_figure(source$metric)
+    },
+    time_series_to_metrics = function() {
+      make_time_series_replica_figure(
+        source$series,
+        source$states,
+        source$time_metrics
+      )
+    },
+    latitude_photoperiod_diagnostic = function() {
+      make_latitude_photoperiod_replica_figure(source$latitude, source$bounds)
+    }
   )
-  spec <- descriptive_figure_spec()
-  plots <- list(
-    descriptive_overview = make_overview_replica_figure(
-      file.path(paths$root, "assets", "2026-03-30_MeLiDos_Protocol.png"),
-      source$locations, source$world, source$collection_intervals,
-      source$collection_days,
-      source$profile, source$state, source$period
-    ),
-    near_eye_site_profiles = make_site_profile_replica_figure(
-      source$profile, source$state, source$period, "near_eye"
-    ),
-    chest_site_profiles = make_site_profile_replica_figure(
-      source$profile, source$state, source$period, "chest"
-    ),
-    near_eye_metric_distributions = make_metric_distributions_replica_figure(
-      source$metric
-    ),
-    time_series_to_metrics = make_time_series_replica_figure(
-      source$series, source$states, source$time_metrics
-    ),
-    latitude_photoperiod_diagnostic = make_latitude_photoperiod_replica_figure(
-      source$latitude, source$bounds
-    )
+  plots <- stats::setNames(
+    lapply(figure_ids, function(figure_id) plot_builders[[figure_id]]()),
+    figure_ids
   )
   source_map <- descriptive_figure_source_map()
   records <- list()
-  for (figure_id in spec$figure_id) {
+  for (figure_id in figure_ids) {
     row <- spec[spec$figure_id == figure_id, , drop = FALSE]
     outputs <- save_descriptive_figure(
       plots[[figure_id]],
@@ -521,9 +655,8 @@ build_and_save_descriptive_figures <- function(paths) {
       record$figure_id <- figure_id
       record$width_in <- row$export_width_in[[1L]]
       record$height_in <- row$export_height_in[[1L]]
-      record$dpi <- if (
-        format %in% c("png", "jpeg", "pdf")
-      ) row$dpi[[1L]] else NA_integer_
+      record$dpi <- if (format %in% c("png", "jpeg", "pdf")) row$dpi[[1L]] else
+        NA_integer_
       records[[length(records) + 1L]] <- record
     }
     mockup_record <- file_artifact_record(
@@ -563,13 +696,24 @@ build_sample_count_contract <- function(inputs) {
       "Paired main subset"
     ),
     placement = c(
-      "participant roster", "near_eye", "near_eye", "near_eye",
-      "chest", "chest", "chest", "paired"
+      "participant roster",
+      "near_eye",
+      "near_eye",
+      "near_eye",
+      "chest",
+      "chest",
+      "chest",
+      "paired"
     ),
     participants = c(
-      dplyr::n_distinct(inputs$demographics$Id), NA, NA,
+      dplyr::n_distinct(inputs$demographics$Id),
+      NA,
+      NA,
       dplyr::n_distinct(inputs$participant_day$near_eye$Id),
-      NA, NA, dplyr::n_distinct(inputs$participant_day$chest$Id), 112
+      NA,
+      NA,
+      dplyr::n_distinct(inputs$participant_day$chest$Id),
+      112
     ),
     participant_days = c(
       NA,
@@ -582,9 +726,12 @@ build_sample_count_contract <- function(inputs) {
       643
     ),
     one_minute_real_observations = c(
-      NA, NA, NA,
+      NA,
+      NA,
+      NA,
       sum(inputs$coverage$near_eye$day_eligible),
-      NA, NA,
+      NA,
+      NA,
       sum(inputs$coverage$chest$day_eligible),
       NA
     ),
@@ -619,7 +766,8 @@ remove_stale_descriptive_outputs <- function(paths) {
   stale_paths <- c(
     as.vector(outer(
       file.path(paths$figure_dir, stale_figure_stems),
-      c(".png", ".jpeg", ".pdf", ".svg"), paste0
+      c(".png", ".jpeg", ".pdf", ".svg"),
+      paste0
     )),
     file.path(
       paths$source_dir,
@@ -640,22 +788,26 @@ build_descriptives <- function(root = descriptive_project_root()) {
   initial_device_option <- getOption("device")
   initial_devices <- grDevices::dev.list()
   scratch_device_path <- tempfile(
-    pattern = "descriptives-default-device-", fileext = ".pdf"
+    pattern = "descriptives-default-device-",
+    fileext = ".pdf"
   )
   options(device = function(...) {
     grDevices::pdf(file = scratch_device_path, ...)
   })
-  on.exit({
-    current_devices <- grDevices::dev.list()
-    opened_devices <- setdiff(current_devices, initial_devices)
-    for (device_id in rev(opened_devices)) {
-      try(grDevices::dev.off(device_id), silent = TRUE)
-    }
-    options(device = initial_device_option)
-    if (file.exists(scratch_device_path)) {
-      unlink(scratch_device_path, force = FALSE)
-    }
-  }, add = TRUE)
+  on.exit(
+    {
+      current_devices <- grDevices::dev.list()
+      opened_devices <- setdiff(current_devices, initial_devices)
+      for (device_id in rev(opened_devices)) {
+        try(grDevices::dev.off(device_id), silent = TRUE)
+      }
+      options(device = initial_device_option)
+      if (file.exists(scratch_device_path)) {
+        unlink(scratch_device_path, force = FALSE)
+      }
+    },
+    add = TRUE
+  )
   source_descriptive_modules(root)
   check_descriptive_packages()
   paths <- descriptive_paths(root)
@@ -679,7 +831,9 @@ build_descriptives <- function(root = descriptive_project_root()) {
   collection_days <- build_collection_days(inputs)
   available_collection_days <- build_available_collection_days(inputs)
   site_sample <- build_site_sample_characteristics(
-    inputs, collection_days, available_collection_days
+    inputs,
+    collection_days,
+    available_collection_days
   )
   participant_characteristics <- build_participant_characteristics(inputs)
   metric_values <- build_metric_values(inputs)
@@ -698,7 +852,9 @@ build_descriptives <- function(root = descriptive_project_root()) {
   site_locations <- build_site_location_source(inputs)
   world_map <- build_world_map_source()
   participant_site_replica <- build_participant_site_replica(
-    inputs, site_sample, available_collection_days
+    inputs,
+    site_sample,
+    available_collection_days
   )
   participant_site_manuscript_replica <-
     participant_site_manuscript_data(participant_site_replica)
@@ -718,14 +874,20 @@ build_descriptives <- function(root = descriptive_project_root()) {
     "metric_distribution_summary.csv" = metric_summary,
     "metric_availability.csv" = metric_summary |>
       dplyr::select(
-        placement, placement_label, site, metric_id, metric_label,
-        analysis_unit, n_participants, n_participant_days, n_observations,
+        placement,
+        placement_label,
+        site,
+        metric_id,
+        metric_label,
+        analysis_unit,
+        n_participants,
+        n_participant_days,
+        n_observations,
         n_possible_observations
       ),
     "recommendation_context_near_eye.csv" = recommendation,
     "participant_site_characteristics_replica.csv" = participant_site_replica,
-    "participant_site_characteristics_manuscript_replica.csv" =
-      participant_site_manuscript_replica,
+    "participant_site_characteristics_manuscript_replica.csv" = participant_site_manuscript_replica,
     "metric_descriptive_summary_replica.csv" = metric_replica,
     "recommendation_context_replica.csv" = recommendation_replica
   )
@@ -738,7 +900,9 @@ build_descriptives <- function(root = descriptive_project_root()) {
     "protocol_asset_provenance.csv" = data.frame(
       asset_path = "assets/2026-03-30_MeLiDos_Protocol.png",
       sha256 = artifact_sha256(file.path(
-        root, "assets", "2026-03-30_MeLiDos_Protocol.png"
+        root,
+        "assets",
+        "2026-03-30_MeLiDos_Protocol.png"
       )),
       role = "Retained study-protocol schematic from the manuscript-generating overview",
       stringsAsFactors = FALSE
@@ -775,21 +939,17 @@ build_descriptives <- function(root = descriptive_project_root()) {
   audit_outputs <- list(
     "sample_count_contract.csv" = sample_count_contract,
     "package_versions.csv" = package_version_audit(),
-    "site_display_registry_provenance.csv" = descriptive_site_display_audit(root),
+    "site_display_registry_provenance.csv" = descriptive_site_display_audit(
+      root
+    ),
     "previous_render_table_1.csv" = previous_comparisons$previous_render_table_1,
     "previous_render_table_2.csv" = previous_comparisons$previous_render_table_2,
-    "previous_render_recommendation_near_eye.csv" =
-      previous_comparisons$previous_render_recommendation_near_eye,
-    "previous_render_recommendation_chest.csv" =
-      previous_comparisons$previous_render_recommendation_chest,
-    "previous_table1_comparison.csv" =
-      previous_comparisons$previous_table1_comparison,
-    "previous_table2_comparison.csv" =
-      previous_comparisons$previous_table2_comparison,
-    "previous_recommendation_comparison.csv" =
-      previous_comparisons$previous_recommendation_comparison,
-    "output_difference_explanations.csv" =
-      previous_comparisons$output_difference_explanations
+    "previous_render_recommendation_near_eye.csv" = previous_comparisons$previous_render_recommendation_near_eye,
+    "previous_render_recommendation_chest.csv" = previous_comparisons$previous_render_recommendation_chest,
+    "previous_table1_comparison.csv" = previous_comparisons$previous_table1_comparison,
+    "previous_table2_comparison.csv" = previous_comparisons$previous_table2_comparison,
+    "previous_recommendation_comparison.csv" = previous_comparisons$previous_recommendation_comparison,
+    "output_difference_explanations.csv" = previous_comparisons$output_difference_explanations
   )
   data_records <- write_descriptive_data_outputs(
     paths,
@@ -857,7 +1017,9 @@ build_descriptives <- function(root = descriptive_project_root()) {
     artifact_type = "descriptive_figure_readability_qa"
   )
   visual_comparison <- build_visual_export_comparison(
-    paths, table_build, figure_build
+    paths,
+    table_build,
+    figure_build
   )
   write_descriptive_csv(
     visual_comparison,

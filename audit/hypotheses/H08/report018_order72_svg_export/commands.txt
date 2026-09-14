@@ -1,0 +1,27 @@
+REPORT-018 Order 72 H08 command record
+Working directory: /Users/zauner/Documents/Arbeit/12-TUM/MeLiDos/WP2.2.5_Data_Analysis/ZaunerEtAl_bioRxiv_2026
+R invocation environment: RENV_CONFIG_AUTOLOADER_ENABLED=FALSE
+R library: /Users/zauner/Library/R/arm64/4.6/library
+
+Pre-output identity verification:
+Rscript --vanilla read audit/report_harmonization/report018_order72_release/release_manifest.csv; require 71 rows, unique paths, exact SHA-256, and exact bytes
+
+Candidate export, executed exactly once:
+Rscript --vanilla audit/hypotheses/H08/report018_order72_svg_export/export_h08_s14_svg.R
+
+Native SVG structural preflight:
+Rscript --vanilla inline xml2 check of dimensions, viewBox, node types, references, visible strings, and accepted colours
+
+Original-size rasterization, executed once:
+qlmanage -t -s 2007 -o /private/tmp/order72-h08-original.W40i7c /Users/zauner/Documents/Arbeit/12-TUM/MeLiDos/WP2.2.5_Data_Analysis/ZaunerEtAl_bioRxiv_2026/audit/hypotheses/H08/report018_order72_svg_export/candidate/H08_near_eye_effects.svg
+sips -c 1606 2007 /private/tmp/order72-h08-original.W40i7c/H08_near_eye_effects.svg.png --out audit/hypotheses/H08/report018_order72_svg_export/qa/candidate_original_2007x1606.png
+
+Intended-reader-size rasterization, executed once:
+qlmanage -t -s 643 -o /private/tmp/order72-h08-reader.dKUa4b /Users/zauner/Documents/Arbeit/12-TUM/MeLiDos/WP2.2.5_Data_Analysis/ZaunerEtAl_bioRxiv_2026/audit/hypotheses/H08/report018_order72_svg_export/candidate/H08_near_eye_effects.svg
+sips -c 514 643 /private/tmp/order72-h08-reader.dKUa4b/H08_near_eye_effects.svg.png --out audit/hypotheses/H08/report018_order72_svg_export/qa/candidate_reader_643x514.png
+sips -z 514 643 artifacts/10_figures/H08/H08_near_eye_effects.png --out audit/hypotheses/H08/report018_order72_svg_export/qa/accepted_reader_643x514.png
+
+Visual inspection:
+The accepted PNG, raw Quick Look square, and failed crops were inspected. The central crops omitted required content because Quick Look placed the intrinsic SVG at the top of square thumbnails.
+
+No export, rasterization, crop, source render, or report render was rerun after the observed failure.

@@ -845,7 +845,7 @@ h04_temporal_bootstrap_preview_figure <- function(
         pilot_label,
         "\nBands are 50-replicate pilot percentiles when the pilot is complete; they are not inferential.",
         "\nCurves use 1/k weights and exclude participant/day smooths; no line wraps across midnight.",
-        "\nOther/unspecified activity is display-only."
+        "\nOther is display-only."
       ),
       theme = h04_figure_theme()
     )

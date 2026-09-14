@@ -472,6 +472,35 @@ test_p04_core_outputs <- function(placement) {
       missing_medi_real_minutes = .data$expected_real_minutes -
         .data$valid_medi_real_minutes
     )
+  numerical_zero <- tibble::tibble(
+    site = character(),
+    Id = character(),
+    position = character(),
+    local_date = as.Date(character()),
+    metric = character(),
+    analysis_unit = character(),
+    units = character(),
+    clock_hour = integer(),
+    window_start_clock_minute = integer(),
+    window_end_clock_minute = integer(),
+    window_wraps_midnight = logical(),
+    raw_backtransformed_value_lx = numeric(),
+    normalized_value_lx = numeric(),
+    shifted_mean_lx = numeric(),
+    numerical_zero_tolerance_lx = numeric(),
+    zero_offset_lx = numeric(),
+    source_all_zero = logical(),
+    source_valid_minutes = integer(),
+    source_zero_minutes = integer(),
+    source_positive_minutes = integer(),
+    source_missing_minutes = integer(),
+    source_real_minutes = integer(),
+    source_valid_real_minutes = integer(),
+    numerical_zero_decision_id = character(),
+    numerical_zero_rule = character(),
+    numerical_zero_reason = character(),
+    raw_value_preserved = logical()
+  )
   list(
     daily = dplyr::select(
       daily,
@@ -487,7 +516,8 @@ test_p04_core_outputs <- function(placement) {
       dplyr::all_of(admissibility_columns)
     ),
     censoring = censoring,
-    gap = gap
+    gap = gap,
+    numerical_zero = numerical_zero
   )
 }
 
@@ -576,6 +606,12 @@ test_p04_core_write_placement <- function(
       type = "metric_gap_diagnostics",
       data = outputs$gap,
       path = paths[["metric_gap_diagnostics"]],
+      writer = "csv"
+    ),
+    list(
+      type = "metric_numerical_zero_audit",
+      data = outputs$numerical_zero,
+      path = paths[["metric_numerical_zero_audit"]],
       writer = "csv"
     )
   )
@@ -667,6 +703,20 @@ test_p04_core_fixture <- function() {
         timing_exceedance_application = "support_only_no_value_scaling",
         dose_minimum_relevance_support = 0.80,
         minimum_circular_resultant = 0.10,
+        numerical_zero_decision_id = "METRIC-011",
+        numerical_zero_status = "author_approved",
+        numerical_zero_scope = "offset_geometric_mean_backtransforms",
+        numerical_zero_rule = p04_core_numerical_zero_rule,
+        numerical_zero_tolerance_multiplier = 100,
+        numerical_zero_positive_requires_all_source_zero = TRUE,
+        numerical_zero_raw_value_preserved = TRUE,
+        numerical_zero_reclassified_cells = 0L,
+        numerical_zero_zero_capable_model_rule =
+          "retain_participant_day_as_zero",
+        numerical_zero_two_part_model_rule = paste0(
+          "retain_in_zero_occurrence_component;exclude_only_from_",
+          "strictly_positive_magnitude_component"
+        ),
         longest_bout_primary = "longest_observed_uninterrupted_above_250_lower_bound",
         longest_bout_missing_rule = "missing_or_invalid_minutes_break_observed_runs",
         longest_bout_possible_bound = "upper_bound_if_all_missing_or_invalid_minutes_qualified",
@@ -803,7 +853,7 @@ fixture <- test_p04_core_fixture()
 verified <- test_p04_core_verify_fixture(fixture)
 stopifnot(
   identical(verified$status, "PASS"),
-  verified$manifest_artifacts == 29L,
+  verified$manifest_artifacts == 31L,
   nrow(verified$dimensions) == 2L,
   all(verified$dimensions$participant_days == 2L),
   nrow(verified$sampled_reconstruction) == 4L,

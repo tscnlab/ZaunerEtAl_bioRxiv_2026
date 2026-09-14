@@ -427,22 +427,31 @@ hypothesis_section <- xml2::xml_find_first(
   main,
   ".//section[@id='hypothesis-and-analytical-question']"
 )
-callout <- xml2::xml_find_first(
+section_callouts <- xml2::xml_find_all(
   hypothesis_section,
-  ".//div[contains(concat(' ', normalize-space(@class), ' '), ' callout-note ')]"
+  "./div[contains(concat(' ', normalize-space(@class), ' '), ' callout-note ')]"
 )
+callout <- section_callouts[[1L]]
 callout_title <- xml2::xml_find_first(
   callout,
   ".//*[contains(concat(' ', normalize-space(@class), ' '), ' callout-title-container ')]"
 )
 stopifnot(
   !inherits(hypothesis_section, "xml_missing"),
-  !inherits(callout, "xml_missing"),
+  length(section_callouts) == 2L,
   xml2::xml_attr(callout, "title") == "Results in brief",
   grepl("Results in brief", xml2::xml_text(callout_title), fixed = TRUE),
   identical(xml2::xml_parent(callout), hypothesis_section),
-  xml2::xml_path(tail(xml2::xml_children(hypothesis_section), 1L)) ==
-    xml2::xml_path(callout)
+  xml2::xml_attr(section_callouts[[2L]], "title") ==
+    "Exact-zero normalization audit",
+  identical(
+    xml2::xml_find_first(callout, "preceding-sibling::*[1]"),
+    xml2::xml_children(hypothesis_section)[[4L]]
+  ),
+  identical(
+    xml2::xml_find_first(callout, "following-sibling::*[1]"),
+    section_callouts[[2L]]
+  )
 )
 callout_text <- tolower(xml2::xml_text(callout))
 stopifnot(
@@ -555,16 +564,31 @@ expected_manifest_paths <- c(
   "scripts/hypotheses/H08/h08_contract.R",
   "scripts/hypotheses/H08/h08_modeling.R",
   "scripts/hypotheses/H08/run_h08_stage2.R",
+  "scripts/hypotheses/H08/reseal_h08_l10_metric011.R",
   "scripts/hypotheses/H08/build_h08_stage3_manifest.R",
   "tests/hypotheses/H08/test_h08_stage2.R",
+  "tests/hypotheses/H08/test_h08_metric011_reseal.R",
   "tests/hypotheses/H08/test_h08_stage3_reader_report.R",
   "audit/hypotheses/H08/01_audit_and_plan.qmd",
   "audit/hypotheses/H08/02_implementation_and_v0_comparison.qmd",
   "audit/handoffs/H08_worker_handoff.md",
+  "audit/decisions/l10_numerical_zero_normalization.md",
+  paste0(
+    "audit/reconciliation/l10_METRIC-011/",
+    "METRIC-011_evidence_manifest.csv"
+  ),
+  paste0(
+    "audit/reconciliation/l10_METRIC-011/",
+    "primary_scientific_cell_changes.csv"
+  ),
   "artifacts/09_tables/H08/H08_model_results_master.csv",
+  "artifacts/09_tables/H08/H08_metric011_result_comparison.csv",
+  "artifacts/09_tables/H08/H08_metric011_display_invariance.csv",
+  "artifacts/09_tables/H08/H08_metric011_bh_recalculation.csv",
   "artifacts/10_figures/H08/H08_near_eye_effects.png",
   "artifacts/10_figures/H08/H08_chest_effects.png",
   "artifacts/11_source_data/H08/H08_near_eye_effects_data.csv",
+  "artifacts/12_manifests/H08/H08_metric011_reconciliation.csv",
   "artifacts/12_manifests/H08/H08_stage2_artifacts.csv"
 )
 stopifnot(
@@ -575,6 +599,18 @@ stopifnot(
     manifest$path,
   !"audit/hypotheses/H08/H08_analysis_preparation.qmd" %in%
     manifest$path,
+  !"artifacts/12_manifests/H08/H08_preparation_report_manifest.csv" %in%
+    manifest$path,
+  !"artifacts/12_manifests/H08/H08_figure_physical_size_qa.csv" %in%
+    manifest$path,
+  !any(startsWith(
+    manifest$path,
+    "artifacts/12_manifests/H08/physical_size_qa/"
+  )),
+  !any(startsWith(
+    manifest$path,
+    "artifacts/11_source_data/H08/H08_preparation_"
+  )),
   all(manifest$r_version == "4.6.1"),
   all(nchar(manifest$sha256) == 64L)
 )

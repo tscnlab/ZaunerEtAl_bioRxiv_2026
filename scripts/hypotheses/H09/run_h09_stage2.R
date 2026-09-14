@@ -219,7 +219,7 @@ base_manifest <- readr::read_csv(
 )
 base_bundle_audit <- tibble::tibble(
   expected_input_bundle_sha256 =
-    "fb5ccac6cc96a97b27b41dd34ba3551565a4d48414ca5e4e694f08106cf2030b",
+    "e840ce9d2a7f653bc5ebbfe020ce087017dfdaf0276df09da578bda30a539916",
   observed_input_bundle_sha256 = paste(
     unique(base_manifest$input_bundle_sha256),
     collapse = "|"
@@ -227,7 +227,7 @@ base_bundle_audit <- tibble::tibble(
   input_bundle_verified =
     length(unique(base_manifest$input_bundle_sha256)) == 1L &&
     unique(base_manifest$input_bundle_sha256) ==
-      "fb5ccac6cc96a97b27b41dd34ba3551565a4d48414ca5e4e694f08106cf2030b",
+      "e840ce9d2a7f653bc5ebbfe020ce087017dfdaf0276df09da578bda30a539916",
   provenance_qualification = paste(
     "PREP-003/FIND-044 remain open: current metric, MDER, and state-support",
     "values have not all passed a current-manifest independent reconstruction"
@@ -2461,17 +2461,22 @@ effect_plot <- ggplot2::ggplot(
   ggplot2::theme_bw(base_size = 14) +
   ggplot2::theme(
     legend.position = "top",
-    strip.text = ggplot2::element_text(face = "bold", size = 14),
-    axis.text = ggplot2::element_text(size = 12),
-    axis.title = ggplot2::element_text(size = 14),
-    panel.grid.minor = ggplot2::element_blank()
+    text = ggplot2::element_text(size = 17),
+    legend.text = ggplot2::element_text(size = 17),
+    legend.title = ggplot2::element_text(size = 17),
+    strip.text = ggplot2::element_text(face = "bold", size = 17),
+    axis.text = ggplot2::element_text(size = 17),
+    axis.title = ggplot2::element_text(size = 17),
+    panel.grid.minor = ggplot2::element_blank(),
+    panel.spacing = grid::unit(12, "pt"),
+    plot.margin = ggplot2::margin(12, 16, 12, 12)
   )
 
 ggplot2::ggsave(
   file.path(roots$figures, "H09_primary_effects.png"),
   effect_plot,
   width = 10.5,
-  height = 6,
+  height = 6.5,
   scale = 1.5,
   dpi = 300,
   device = ragg::agg_png
@@ -2480,7 +2485,7 @@ ggplot2::ggsave(
   file.path(roots$figures, "H09_primary_effects.pdf"),
   effect_plot,
   width = 10.5,
-  height = 6,
+  height = 6.5,
   scale = 1.5,
   device = grDevices::cairo_pdf
 )
@@ -2550,17 +2555,22 @@ paired_plot <- ggplot2::ggplot(
   ggplot2::theme_bw(base_size = 14) +
   ggplot2::theme(
     legend.position = "bottom",
+    text = ggplot2::element_text(size = 13),
+    legend.text = ggplot2::element_text(size = 13),
+    legend.title = ggplot2::element_text(size = 13),
     strip.text = ggplot2::element_text(face = "bold", size = 14),
-    axis.text = ggplot2::element_text(size = 12),
+    axis.text = ggplot2::element_text(size = 13),
     axis.title = ggplot2::element_text(size = 14),
-    panel.grid.minor = ggplot2::element_blank()
+    panel.grid.minor = ggplot2::element_blank(),
+    panel.spacing = grid::unit(10, "pt"),
+    plot.margin = ggplot2::margin(10, 14, 12, 10)
   )
 
 ggplot2::ggsave(
   file.path(roots$figures, "H09_paired_placement_effects.png"),
   paired_plot,
   width = 8,
-  height = 6,
+  height = 6.5,
   scale = 1.5,
   dpi = 300,
   device = ragg::agg_png
@@ -2569,7 +2579,7 @@ ggplot2::ggsave(
   file.path(roots$figures, "H09_paired_placement_effects.pdf"),
   paired_plot,
   width = 8,
-  height = 6,
+  height = 6.5,
   scale = 1.5,
   device = grDevices::cairo_pdf
 )
@@ -2819,14 +2829,23 @@ h09_diagnostic_plot <- function(placement, placement_label) {
   ) +
     ggplot2::geom_hline(yintercept = 0, colour = "grey55") +
     ggplot2::geom_point(alpha = 0.32, size = 0.8) +
-    ggplot2::facet_wrap(~panel, scales = "free_x", ncol = 3) +
+    ggplot2::facet_wrap(
+      ~panel,
+      scales = "free_x",
+      ncol = 3,
+      labeller = ggplot2::label_wrap_gen(width = 26)
+    ) +
     ggplot2::labs(x = "Fitted timing (hours)", y = "Standardized residual") +
     ggplot2::theme_bw(base_size = 14) +
     ggplot2::theme(
-      strip.text = ggplot2::element_text(size = 12, face = "bold"),
-      axis.text = ggplot2::element_text(size = 12),
-      axis.title = ggplot2::element_text(size = 13),
-      panel.grid.minor = ggplot2::element_blank()
+      text = ggplot2::element_text(size = 17),
+      strip.text = ggplot2::element_text(size = 17, face = "bold"),
+      axis.text = ggplot2::element_text(size = 17),
+      axis.title = ggplot2::element_text(size = 17),
+      panel.grid.minor = ggplot2::element_blank(),
+      plot.tag = ggplot2::element_text(size = 17, face = "bold"),
+      panel.spacing = grid::unit(10, "pt"),
+      plot.margin = ggplot2::margin(10, 12, 10, 10)
     )
   qq_plot <- ggplot2::ggplot(
     data,
@@ -2837,21 +2856,31 @@ h09_diagnostic_plot <- function(placement, placement_label) {
   ) +
     ggplot2::geom_abline(intercept = 0, slope = 1, colour = "grey55") +
     ggplot2::geom_point(alpha = 0.32, size = 0.8) +
-    ggplot2::facet_wrap(~panel, scales = "free", ncol = 3) +
+    ggplot2::facet_wrap(
+      ~panel,
+      scales = "free",
+      ncol = 3,
+      labeller = ggplot2::label_wrap_gen(width = 26)
+    ) +
     ggplot2::labs(x = "Normal-score quantile", y = "Standardized residual") +
     ggplot2::theme_bw(base_size = 14) +
     ggplot2::theme(
-      strip.text = ggplot2::element_text(size = 12, face = "bold"),
-      axis.text = ggplot2::element_text(size = 12),
-      axis.title = ggplot2::element_text(size = 13),
-      panel.grid.minor = ggplot2::element_blank()
+      text = ggplot2::element_text(size = 17),
+      strip.text = ggplot2::element_text(size = 17, face = "bold"),
+      axis.text = ggplot2::element_text(size = 17),
+      axis.title = ggplot2::element_text(size = 17),
+      panel.grid.minor = ggplot2::element_blank(),
+      plot.tag = ggplot2::element_text(size = 17, face = "bold"),
+      panel.spacing = grid::unit(10, "pt"),
+      plot.margin = ggplot2::margin(10, 12, 10, 10)
     )
   residual_plot / qq_plot +
     patchwork::plot_annotation(
       title = paste0("H09 mixed-model residual diagnostics — ", placement_label),
       tag_levels = "A",
       theme = ggplot2::theme(
-        plot.title = ggplot2::element_text(face = "bold", size = 16)
+        plot.title = ggplot2::element_text(face = "bold", size = 18),
+        plot.margin = ggplot2::margin(12, 12, 8, 12)
       )
     )
 }
@@ -2866,7 +2895,7 @@ for (item in list(
     file.path(roots$figures, paste0(item$stem, ".png")),
     item$plot,
     width = 10.5,
-    height = 14,
+    height = 17.5,
     scale = 1.5,
     dpi = 300,
     device = ragg::agg_png
@@ -2875,7 +2904,7 @@ for (item in list(
     file.path(roots$figures, paste0(item$stem, ".pdf")),
     item$plot,
     width = 10.5,
-    height = 14,
+    height = 17.5,
     scale = 1.5,
     device = grDevices::cairo_pdf
   )
@@ -2890,9 +2919,13 @@ figure_manifest <- tibble::tribble(
   "primary_effects",
   "artifacts/10_figures/H09/H09_primary_effects.png",
   "artifacts/11_source_data/H09/H09_primary_effects_data.csv",
-  10.5, 6, 1.5, 15.75, 9, 300, 170, 12,
-  12 * (170 / 25.4) / 15.75,
-  "PENDING_FINAL_SIZE_VISUAL_INSPECTION",
+  10.5, 6.5, 1.5, 15.75, 9.75, 300, 170, 17,
+  17 * (170 / 25.4) / 15.75,
+  paste(
+    "PASS: Order 56a candidate inspected at original dimensions, 170 mm,",
+    "708 px, and 720 by 500 on 2026-08-22; no clipping, overlap, broken",
+    "wrapping, or blocking whitespace."
+  ),
   paste(
     "Forest plot of site-adjusted chronotype associations with five local",
     "light-exposure timing metrics. Panels separate MCTQ MSFsc and MEQ;",
@@ -2902,9 +2935,13 @@ figure_manifest <- tibble::tribble(
   "paired_placement_effects",
   "artifacts/10_figures/H09/H09_paired_placement_effects.png",
   "artifacts/11_source_data/H09/H09_paired_placement_effects_data.csv",
-  8, 6, 1.5, 12, 9, 300, 170, 12,
-  12 * (170 / 25.4) / 12,
-  "PENDING_FINAL_SIZE_VISUAL_INSPECTION",
+  8, 6.5, 1.5, 12, 9.75, 300, 170, 13,
+  13 * (170 / 25.4) / 12,
+  paste(
+    "PASS: Order 56a candidate inspected at original dimensions, 170 mm,",
+    "708 px, and 720 by 500 on 2026-08-22; no clipping, overlap, broken",
+    "wrapping, or blocking whitespace."
+  ),
   paste(
     "Near-eye estimates on the horizontal axis and chest estimates on the",
     "vertical axis for separately fitted models using identical paired",
@@ -2936,9 +2973,13 @@ figure_manifest <- tibble::tribble(
   "diagnostics_near_eye",
   "artifacts/10_figures/H09/H09_diagnostics_near_eye.png",
   "artifacts/11_source_data/H09/H09_primary_diagnostic_figure_data.csv",
-  10.5, 14, 1.5, 15.75, 21, 300, 170, 12,
-  12 * (170 / 25.4) / 15.75,
-  "PENDING_FINAL_SIZE_VISUAL_INSPECTION",
+  10.5, 17.5, 1.5, 15.75, 26.25, 300, 170, 17,
+  17 * (170 / 25.4) / 15.75,
+  paste(
+    "PASS: Order 56a candidate inspected at original dimensions, 170 mm,",
+    "708 px, and 720 by 500 on 2026-08-22; no clipping, overlap, broken",
+    "wrapping, or blocking whitespace."
+  ),
   paste(
     "Near-eye residual-versus-fitted and normal Q-Q panels for each timing",
     "metric and chronotype instrument. Reference lines identify zero",
@@ -2947,9 +2988,13 @@ figure_manifest <- tibble::tribble(
   "diagnostics_chest",
   "artifacts/10_figures/H09/H09_diagnostics_chest.png",
   "artifacts/11_source_data/H09/H09_primary_diagnostic_figure_data.csv",
-  10.5, 14, 1.5, 15.75, 21, 300, 170, 12,
-  12 * (170 / 25.4) / 15.75,
-  "PENDING_FINAL_SIZE_VISUAL_INSPECTION",
+  10.5, 17.5, 1.5, 15.75, 26.25, 300, 170, 17,
+  17 * (170 / 25.4) / 15.75,
+  paste(
+    "PASS: Order 56a candidate inspected at original dimensions, 170 mm,",
+    "708 px, and 720 by 500 on 2026-08-22; no clipping, overlap, broken",
+    "wrapping, or blocking whitespace."
+  ),
   paste(
     "Chest residual-versus-fitted and normal Q-Q panels for each timing",
     "metric and chronotype instrument. Reference lines identify zero",

@@ -6,7 +6,7 @@ long_data <- h07_stage2_load_long()
 placements <- c("near_eye", "chest")
 registry <- tidyr::crossing(
   placement = placements,
-  metric_id = h07_stage2_metric_ids
+  metric_id = h07_stage2_execution_metric_ids
 ) |>
   mutate(
     main_run_id = paste("primary", .data$placement, sep = "__"),
@@ -45,6 +45,28 @@ loso_registry <- purrr::pmap_dfr(
       .data$omitted_site_slug
     )
   )
+execution_loso_registry <- loso_registry
+if (h07_stage2_partial_execution) {
+  existing_registry_path <- file.path(
+    h07_stage2_paths$tables,
+    "H07_loso_run_registry.csv"
+  )
+  if (!file.exists(existing_registry_path)) {
+    h07_stage2_abort(
+      "A partial H07 LOSO execution requires the accepted run registry"
+    )
+  }
+  loso_registry <- bind_rows(
+    readr::read_csv(existing_registry_path, show_col_types = FALSE) |>
+      filter(!.data$metric_id %in% h07_stage2_execution_metric_ids),
+    execution_loso_registry
+  ) |>
+    arrange(
+      factor(.data$placement, levels = placements),
+      factor(.data$metric_id, levels = h07_stage2_metric_ids),
+      factor(.data$omitted_site, levels = h07_stage2_site_levels)
+    )
+}
 if (anyDuplicated(loso_registry[c("placement", "metric_id", "omitted_site")])) {
   h07_stage2_abort("H07 LOSO placement/metric/site rows are not unique")
 }
@@ -58,11 +80,20 @@ readr::write_csv(
   file.path(h07_stage2_paths$tables, "H07_loso_run_registry.csv")
 )
 
-samples <- tibble::tibble()
-diagnostics <- tibble::tibble()
+h07_loso_seed_unaffected <- function(filename) {
+  path <- file.path(h07_stage2_paths$tables, filename)
+  if (!h07_stage2_partial_execution || !file.exists(path)) {
+    return(tibble::tibble())
+  }
+  readr::read_csv(path, show_col_types = FALSE) |>
+    filter(!.data$metric_id %in% h07_stage2_execution_metric_ids)
+}
 
-for (row_index in seq_len(nrow(loso_registry))) {
-  run <- loso_registry[row_index, , drop = FALSE]
+samples <- h07_loso_seed_unaffected("H07_loso_samples.csv")
+diagnostics <- h07_loso_seed_unaffected("H07_loso_diagnostics.csv")
+
+for (row_index in seq_len(nrow(execution_loso_registry))) {
+  run <- execution_loso_registry[row_index, , drop = FALSE]
   main_run_id <- paste("primary", run$placement[[1L]], sep = "__")
   main_frame <- readRDS(file.path(
     h07_stage2_paths$models,
@@ -143,6 +174,29 @@ for (row_index in seq_len(nrow(loso_registry))) {
   rm(result, main_frame)
   invisible(gc())
 }
+
+samples <- samples |>
+  arrange(
+    factor(.data$placement, levels = placements),
+    factor(.data$metric_id, levels = h07_stage2_metric_ids),
+    factor(.data$omitted_site, levels = h07_stage2_site_levels)
+  )
+diagnostics <- diagnostics |>
+  arrange(
+    factor(.data$placement, levels = placements),
+    factor(.data$metric_id, levels = h07_stage2_metric_ids),
+    factor(.data$omitted_site, levels = h07_stage2_site_levels)
+  )
+readr::write_csv(
+  samples,
+  file.path(h07_stage2_paths$tables, "H07_loso_samples.csv"),
+  na = ""
+)
+readr::write_csv(
+  diagnostics,
+  file.path(h07_stage2_paths$tables, "H07_loso_diagnostics.csv"),
+  na = ""
+)
 
 expected <- loso_registry |>
   count(.data$placement, .data$metric_id, name = "expected_omissions")

@@ -1,0 +1,5 @@
+2026-09-14, immediately before implementation preflight and first live mutation.
+Approved read-only process inventory:
+/bin/ps -Ao pid=,comm=,args= | rg '(^|/)(Rscript|quarto|pandoc|soffice)|serve_candidate|serve_live|http.server|final_site_(integration|promotion)' | rg -v 'cua_node|trusted-worker|kernel.js|codex sandbox|/bin/zsh|/bin/ps|rg '
+Result: exit 1, no matching output. No competing render, semantic process, site writer or matching loopback preview was observed.
+No processes were killed. Writer Order012's disjoint candidate was not pinned or contacted.

@@ -354,7 +354,7 @@ primary_table <- function(predictor_id) {
     compact_gt(
       groupname_col = "Category",
       source_note = paste(
-        "Effects use metric-specific scales; all intervals are pointwise 95% CIs.",
+        "Effects use metric-specific scales; all intervals are pointwise 95% CIs, not simultaneous intervals.",
         "Bold q-values meet the explicitly labelled FDR q < 0.05 rule and",
         "the explicitly labelled claim-eligibility rule. Timing site interactions remain",
         "sensitivity-dependent even when their q-value is below 0.05."
@@ -385,7 +385,7 @@ primary_table <- function(predictor_id) {
 
 placement_table <- function(predictor_id) {
   table_data <- placement |>
-    filter(.data$predictor_id == predictor_id) |>
+    filter(.data$predictor_id == .env$predictor_id) |>
     mutate(
       Category = category_label(.data$manuscript_category),
       Metric = .data$manuscript_name,
@@ -417,8 +417,8 @@ placement_table <- function(predictor_id) {
     compact_gt(
       groupname_col = "Category",
       source_note = paste(
-        "Each cell is the estimate (pointwise 95% CI) followed by its exact",
-        "participant-days, participants, and sites. Chest and paired/common",
+        "Each cell is the estimate (pointwise 95% CI, not a simultaneous interval) followed by its exact",
+        "participant-days, participants, and sites. Chest and common-day placement",
         "results are estimation-only complements; no additional p-value family",
         "was created."
       ),
@@ -483,13 +483,12 @@ primary_matrix_table <- function() {
     compact_gt(
       groupname_col = "Category",
       source_note = paste(
-        "Batch: primary near-eye predictor-specific participant-day models.",
-        "Each cell gives the estimate (pointwise 95% CI), its 15-slot FDR q-value,",
-        "and the exact fitted participant-days and participants. Raw p-values and",
-        "complete model fields remain in the linked source CSV. Bold q-values meet",
-        "the FDR and claim-eligibility rule. All primary frames use nine sites."
+        "Primary near-eye predictor-specific participant-day models.",
+        "Each cell gives the estimate with its 95% CI, FDR-adjusted q-value within",
+        "the 15-outcome family, and exact fitted participant-days and participants.",
+        "Bold q-values meet the FDR criterion. All analyses use nine sites."
       ),
-      font_size = 9.5
+      font_size = 12
     ) |>
     gt::fmt_markdown(columns = c(`Free / Work`, `Active / Sedentary`, `+1 h previous sleep`)) |>
     gt::cols_width(
@@ -519,7 +518,7 @@ format_comparison_model_cell <- function(
 ) {
   model_text <- ifelse(
     uses_interaction,
-    "Interaction model: equal-site full contrast",
+    "Interaction model: site-average full contrast",
     "Additive model: common contrast"
   )
   site_text <- ifelse(
@@ -589,17 +588,28 @@ This complementary analysis asks that question with one row per admissible
 metric-specific participant-day. It does not give days with more supported
 hours greater weight.
 
-The completed [main H06 analysis](H06.qmd) instead answers the selected hourly
-melEDI question. The two analyses are related but have different outcomes and
-weighting; neither result substitutes for the other.
+The completed [hourly H06 analysis](H06.qmd) is the selected main H06 result.
+This participant-day analysis is complementary, preregistration-oriented
+evidence. The two analyses are related but have different outcomes and
+weighting; neither result substitutes for the other. The
+[analysis-preparation and provenance companion](../../audit/hypotheses/H06_daily/H06_daily_analysis_preparation.qmd)
+documents the exact inputs, models, checks, and stored outputs used here.
 
 ::: {.callout-note appearance="simple" icon="false" title="Answer in brief"}
 
-In the primary near-eye analysis, the 15-slot FDR families retained
-associations for **10 of 14 estimable metrics** with Free versus Work day,
+In the primary near-eye analysis, false-discovery-rate (FDR) adjustment, which
+limits the expected proportion of false discoveries within each prespecified
+15-slot family, retained associations for **10 of 14 estimable metrics** with
+Free versus Work day,
 **6 of 14** with Active versus Sedentary status, and **12 of 14** per
 additional hour of previous-night sleep. Every retained association requires
-the diagnostic qualifications described below.
+the model-check qualifications (model diagnostics), which assess fit, support,
+residual behavior, and sensitivity evidence, described below.
+
+For outcomes fitted as $\log_{10}(Y + 0.1)$, $Y$ remains in its stated unit,
+such as lx for melEDI, h for continuous periods, or lx h for dose. The
+back-transformed ratios compare fitted geometric-mean-like values of $Y + 0.1$;
+they are not ratios of raw metric means.
 
 - Free days had lower fitted mean melEDI, M10 mean, waking time above 250 lx
   melEDI, longest continuous period above 250 lx melEDI, and melEDI dose than
@@ -612,12 +622,14 @@ the diagnostic qualifications described below.
   bright-duration, longest-period, and dose metrics; more time below 1 lx
   melEDI during sleep; and later M10, L10, mean-light, and first-light timing.
 
-Ten primary predictor-by-site interaction blocks met their separate 15-slot
-FDR rule. For example, the interaction model estimated lower Free-day mean
-melEDI at every site, with pointwise 95% intervals excluding 1 at Dortmund,
-Tübingen, Madrid, and Kumasi. The global interaction test establishes
-heterogeneity, while these pointwise site intervals describe where the
-site-specific contrasts are clearest.
+Ten primary predictor-by-site interaction blocks, which allow an association
+to differ among sites, met their separate 15-slot FDR rule. For example, the
+interaction model estimated lower Free-day mean melEDI at every site, with
+pointwise 95% confidence intervals (95% CIs) excluding 1 at Dortmund (DE),
+Tübingen (DE), Madrid (ES), and Kumasi (GH). A pointwise interval assesses one
+site estimate at a time and is not a simultaneous band. The global interaction
+test establishes variation across sites, while the site intervals describe
+where the fitted site-specific contrasts are clearest.
 
 In the exploratory mutually adjusted daily models, activity estimates were
 stable after adding day type and sleep. Three sleep estimates and four
@@ -627,13 +639,15 @@ and shifted by more than 3 standard errors. Mean melEDI nevertheless remained
 lower on Free days after adjustment, with a fitted ratio of 0.75 (95% CI 0.68
 to 0.82; FDR q < 0.001).
 
-The separate 30-minute GAMM found time-varying profiles for day type,
-activity, within-participant sleep, and between-participant sleep in its
-four-test exploratory FDR family. The selected main hourly H06 analysis does
-not give the same answer as the daily mean metric: hourly melEDI was higher on
-Free days, whereas the participant-day mean metric was lower. This difference
-is scientifically plausible because the analyses use different outcomes,
-weighting, and model structures.
+The separate nonlinear generalized additive mixed model (GAMM) analysis of
+30-minute bins allowed context associations to vary smoothly over clock time
+while accounting for repeated measurements. It found time-varying profiles for
+day type, activity, within-participant sleep, and between-participant sleep in
+its four-test exploratory FDR family. The selected main hourly H06 analysis
+does not give the same answer as the daily mean metric: hourly melEDI was higher
+on Free days, whereas the participant-day mean metric was lower. This
+difference is scientifically plausible because the analyses use different
+outcomes, weighting, and model structures.
 
 The overall two-part L10 mean result remains non-estimable, and all three
 primary MDER 95% intervals included zero. The gap-timing-unaware analysis is
@@ -659,9 +673,11 @@ The three primary contexts were:
 - each additional hour of previous-night sleep duration, centered at 8 h.
 
 Near-eye measurements are primary. All-available chest results are a
-complementary non-ocular comparison, and paired/common results compare the two
-placements on common participant-days. The gap-timing-unaware dataset repeats
-the near-eye analysis as a separate metric-construction sensitivity.
+complementary non-ocular comparison. Paired/common results compare the two
+placements after retaining the same participant-days in both placements. More
+generally, a common sample means that the compared models or placements use the
+same participant-days. The gap-timing-unaware dataset repeats the near-eye
+analysis as a separate metric-construction sensitivity.
 
 ```{r}
 #| label: tbl-h06-daily-analysis-roles
@@ -727,7 +743,7 @@ sample_roles |>
   )
 ```
 
-The nine submitted sites, in display order, are
+The nine study sites, in display order, are
 `r paste(site_registry$display_name, collapse = ", ")`. Primary near-eye
 results use all nine sites; the complementary chest and paired/common results
 use eight sites where both the placement and exact metric-specific frame are
@@ -736,9 +752,10 @@ supported.
 ### Models, contrasts, and multiplicity
 
 The non-timing outcomes use fixed study-site terms and a participant random
-intercept. The primary models were fitted separately for each predictor, so
+intercept, which allows participants to have different baseline outcome
+levels. The primary models were fitted separately for each predictor, so
 their estimates are not mutually adjusted for the other two day-level
-contexts. The common-association and site-heterogeneity formulas are:
+contexts. The common-association and predictor-by-site interaction formulas are:
 
 ```text
 response ~ site + predictor + (1 | participant)
@@ -748,12 +765,13 @@ response ~ site * predictor + (1 | participant)
 Four clock outcomes, M10 midpoint, L10 midpoint, first timing above 250 lx
 melEDI, and last timing above 250 lx melEDI, use the corresponding fixed-site
 linear models with participant-cluster HC3 uncertainty. All displayed
-intervals are **pointwise 95% confidence intervals**; none is simultaneous.
-Site-average estimates give each site equal weight.
+intervals are **pointwise 95% confidence intervals (95% CIs)**; each assesses
+one estimate at a time, and none is simultaneous. A site-average estimate gives
+each included site equal weight, irrespective of its observed sample size.
 
-Multiplicity comprises 12 separate Benjamini–Hochberg FDR families: primary
+Multiplicity comprises 12 separate FDR families: primary
 and gap-timing-unaware datasets × three predictors × association or
-predictor-by-site heterogeneity. Every family retains all 15 named metric
+predictor-by-site interaction. Every family retains all 15 named metric
 slots. L10 mean remains the non-estimable slot 3 with missing raw and adjusted
 p-values; MDER occupies slot 15 and has no association FDR support.
 
@@ -772,7 +790,7 @@ family_summary |>
     Test = recode(
       .data$test_type,
       association = "Association",
-      site_heterogeneity = "Predictor by site"
+      site_heterogeneity = "Predictor-by-site interaction"
     ),
     `Family valid` = if_else(.data$family_construct_valid, "Yes", "No")
   ) |>
@@ -791,7 +809,7 @@ family_summary |>
     source_note = paste(
       "FDR-supported counts are numerical q < 0.05 decisions.",
       "Claim-eligible counts additionally exclude MDER and",
-      "retain all stated diagnostic limitations."
+      "retain all stated model-check limitations."
     )
   ) |>
   gt::cols_align(
@@ -806,11 +824,33 @@ family_summary |>
   )
 ```
 
+::: {.callout-note appearance="simple" icon="false" title="How to read the estimates"}
+
+- A **site-average estimate** gives every included site equal weight. It is not
+  weighted by the number of observations contributed by each site.
+- A **predictor-by-site interaction** allows the association between a context
+  and an outcome to differ among sites. A global interaction test does not by
+  itself identify which site estimates differ.
+- A **pointwise 95% CI** describes uncertainty for one displayed estimate. It
+  is not a simultaneous interval across sites, metrics, or clock times.
+- An **FDR adjustment** limits the expected proportion of false discoveries
+  among the tests in its explicitly defined family.
+- A **participant random intercept** allows participants to have different
+  baseline outcome levels. A **common sample** retains the same participant-days
+  across the compared models or placements.
+- **Model checks** cover fit, support, residual behavior, and sensitivity
+  evidence. A working first-order autoregressive correlation, **AR(1)**, allows
+  adjacent residuals within a participant-day sequence to be correlated.
+
+:::
+
 ## Primary near-eye results
 
 The first two figures show effect magnitude and pointwise uncertainty for the
-13 estimable non-L10 metrics. Ratios for shifted-log outcomes refer to the
-fitted metric plus 0.1 in its stated unit; they are not raw-metric ratios.
+13 estimable non-L10 metrics. For shifted-log outcomes, the response is
+$\log_{10}(Y + 0.1)$ and the displayed ratios compare fitted
+geometric-mean-like values of $Y + 0.1$ in the metric's stated unit. They are
+not raw-metric ratios.
 Clock-time and absolute duration effects are differences in hours.
 
 ![Primary near-eye multiplicative associations for seven daily metrics. Points and bars are estimates and pointwise 95% confidence intervals; the reference ratio is one.](../../artifacts/10_figures/H06_daily/H06_daily_non_l10_production_primary_ratio_effects.png){#fig-h06-daily-primary-ratio fig-alt="Three-panel forest plot of primary near-eye multiplicative daily-metric associations. Seven metric rows per panel show point estimates and pointwise 95 percent confidence intervals around a vertical null ratio of one for Free versus Work day, Active versus Sedentary day, and each additional hour of previous-night sleep." width="100%"}
@@ -848,27 +888,28 @@ primary_matrix_table()
 Ten global predictor-by-site interaction blocks met the separate 15-slot FDR
 rule. A retained global interaction indicates that the predictor association
 varies across sites. It does not identify a pair of sites that differ. The
-table first gives the **equal-site comparison-versus-reference contrast from
-the complete interaction model**. For these ratio-scale outcomes, it is the
-geometric mean of the nine full site-specific ratios. The site entries then
-show adjustment factors relative to that equal-site contrast:
+table first gives the **site-average comparison-versus-reference contrast from
+the complete interaction model**, with every site weighted equally. For these
+ratio-scale outcomes, it is the geometric mean of the nine full site-specific
+ratios. The site entries then show adjustment factors relative to that
+site-average contrast:
 
 \[
 \text{site adjustment factor}
 =
 \frac{\text{full site-specific comparison/reference ratio}}
-{\text{equal-site comparison/reference ratio}}.
+{\text{site-average comparison/reference ratio}}.
 \]
 
 An adjustment factor below 1 means that the site's fitted ratio is lower than
-the equal-site ratio; a factor above 1 means it is higher. Multiplying the
-equal-site ratio by the adjustment factor recovers the site's full fitted
+the site-average ratio; a factor above 1 means it is higher. Multiplying the
+site-average ratio by the adjustment factor recovers the site's full fitted
 ratio. The pointwise intervals localize the fitted pattern, but they are not
 separately multiplicity adjusted and are not pairwise site comparisons.
 
 ```{r}
 #| label: tbl-h06-daily-primary-site-interactions
-#| tbl-cap: "Equal-site contrasts and site adjustment factors for primary interaction blocks retained by the global FDR rule."
+#| tbl-cap: "Site-average contrasts and site adjustment factors for primary interaction blocks retained by the global FDR rule."
 #| column: page
 
 primary_site_summary |>
@@ -876,39 +917,39 @@ primary_site_summary |>
     Predictor = .data$predictor,
     Metric = .data$manuscript_name,
     `Global interaction FDR q` = format_global_q(.data$global_interaction_bh_q),
-    `Equal-site comparison / reference` = format_equal_site_contrast(
+    `Site-average comparison / reference` = format_equal_site_contrast(
       .data$equal_site_display_estimate,
       .data$equal_site_display_lower_95,
       .data$equal_site_display_upper_95
     ),
-    `Site adjustment below equal-site; pointwise 95% CI excludes 1` =
+    `Site adjustment below site average; pointwise 95% CI excludes 1` =
       .data$pointwise_adjustment_below_equal_site,
-    `Site adjustment above equal-site; pointwise 95% CI excludes 1` =
+    `Site adjustment above site average; pointwise 95% CI excludes 1` =
       .data$pointwise_adjustment_above_equal_site,
-    `Site adjustment; pointwise 95% CI includes 1` =
+    `Site adjustment compatible with site average; pointwise 95% CI includes 1` =
       .data$pointwise_adjustment_compatible_with_equal_site
   ) |>
   select(
     Predictor,
     Metric,
     `Global interaction FDR q`,
-    `Equal-site comparison / reference`,
-    `Site adjustment below equal-site; pointwise 95% CI excludes 1`,
-    `Site adjustment above equal-site; pointwise 95% CI excludes 1`,
-    `Site adjustment; pointwise 95% CI includes 1`
+    `Site-average comparison / reference`,
+    `Site adjustment below site average; pointwise 95% CI excludes 1`,
+    `Site adjustment above site average; pointwise 95% CI excludes 1`,
+    `Site adjustment compatible with site average; pointwise 95% CI includes 1`
   ) |>
   compact_gt(
     groupname_col = "Predictor",
     source_note = paste(
       "Batch: primary near-eye predictor-specific interaction models.",
-      "The equal-site column gives the comparison/reference ratio from the",
+      "The site-average column gives the equal-weight comparison/reference ratio from the",
       "complete interaction model: Free/Work, Active/Sedentary, or per",
       "additional hour of previous-night sleep. Each site adjustment is its",
-      "full site-specific ratio divided by that equal-site ratio; multiply the",
+      "full site-specific ratio divided by that site-average ratio; multiply the",
       "two to recover the full site-specific ratio. Site intervals are",
       "unadjusted pointwise 95% CIs and do not test one site against another.",
       "The bold q-value is the global interaction-block test. Filled dots use",
-      "the submitted site colours and do not encode significance."
+      "consistent study-site colors and do not encode significance."
     ),
     font_size = 8.7
   ) |>
@@ -916,33 +957,34 @@ primary_site_summary |>
   gt::cols_width(
     Metric ~ gt::px(205),
     `Global interaction FDR q` ~ gt::px(100),
-    `Equal-site comparison / reference` ~ gt::px(165),
-    `Site adjustment below equal-site; pointwise 95% CI excludes 1` ~
+    `Site-average comparison / reference` ~ gt::px(165),
+    `Site adjustment below site average; pointwise 95% CI excludes 1` ~
       gt::px(300),
-    `Site adjustment above equal-site; pointwise 95% CI excludes 1` ~
+    `Site adjustment above site average; pointwise 95% CI excludes 1` ~
       gt::px(300),
-    `Site adjustment; pointwise 95% CI includes 1` ~ gt::px(330)
+    `Site adjustment compatible with site average; pointwise 95% CI includes 1` ~ gt::px(330)
   )
 ```
 
-For the author’s mean-melEDI example, the equal-site Free/Work ratio from the
-interaction model was 0.70 (95% CI 0.63 to 0.78). Delft had a pointwise higher
-site adjustment, 1.36 (1.01 to 1.83), meaning a weaker Free-day reduction than
-the equal-site pattern. Madrid, 0.71 (0.56 to 0.90), and Kumasi, 0.57 (0.43 to
-0.76), had pointwise lower adjustments, meaning stronger reductions. The
-remaining six adjustment intervals included 1. For example, the full fitted
-Delft ratio is 0.70 × 1.36 = 0.95, apart from rounding.
+For the author’s mean-melEDI example, the site-average Free/Work ratio from the
+interaction model was 0.70 (95% CI 0.63 to 0.78), with every site weighted
+equally. Delft (NL) had a pointwise higher site adjustment, 1.36 (1.01 to 1.83),
+meaning a weaker Free-day reduction than the site-average pattern. Madrid (ES),
+0.71 (0.56 to 0.90), and Kumasi (GH), 0.57 (0.43 to 0.76), had pointwise lower
+adjustments, meaning stronger reductions. The remaining six adjustment
+intervals included 1. For example, the full fitted Delft (NL) ratio is
+0.70 × 1.36 = 0.95, apart from rounding.
 
-![Site deviations from the equal-site context association.](../../artifacts/10_figures/H06_daily/H06_daily_stage3_primary_site_deviations.png){#fig-h06-daily-primary-site-deviations fig-alt="Ten faceted forest plots show nine site adjustment factors for each globally supported primary predictor-by-site interaction. A factor below 1 means the site's comparison-to-reference ratio is lower than the equal-site ratio, and a factor above 1 means it is higher. Horizontal bars are pointwise 95% confidence intervals. Of 90 site adjustments, 13 are pointwise below 1, 11 are pointwise above 1, and 66 include 1. Filled points use the submitted site colours." width="100%"}
+![Site deviations from the site-average context association.](../../artifacts/10_figures/H06_daily/H06_daily_stage3_primary_site_deviations.png){#fig-h06-daily-primary-site-deviations fig-alt="Ten faceted forest plots show nine site adjustment factors for each globally supported primary predictor-by-site interaction. A factor below 1 means the site's comparison-to-reference ratio is lower than the equal-weight site-average ratio, and a factor above 1 means it is higher. Horizontal bars are pointwise 95% confidence intervals. Of 90 site adjustments, 13 are pointwise below 1, 11 are pointwise above 1, and 66 include 1. Filled points use consistent study-site colors and do not encode significance." width="100%"}
 
 [Source data for the site-deviation figure](../../artifacts/11_source_data/H06_daily/H06_daily_stage3_primary_site_deviation_figure.csv)
 
 [Complete site-specific interaction estimates](../../artifacts/11_source_data/H06_daily/H06_daily_stage3_primary_site_interaction_estimates.csv)
 
 The L10 occurrence component had complete or quasi-complete separation, so the
-overall two-part association and heterogeneity tests were not estimable.
-Positive-only and regularized component diagnostics do not replace that
-overall result. MDER is the arithmetic mean of viable positive finite
+overall two-part association and predictor-by-site interaction tests were not
+estimable. Positive-only and regularized component model checks do not replace
+that overall result. MDER is the arithmetic mean of viable positive finite
 one-minute melEDI/illuminance ratios; its primary estimates were −0.001 for
 Free versus Work day (95% CI −0.013 to 0.011), 0.008 for Active versus
 Sedentary (−0.007 to 0.024), and 0.002 per additional hour of sleep (−0.003 to
@@ -1081,8 +1123,10 @@ CSV](../../artifacts/11_source_data/H06_daily/H06_daily_stage3_gap_results.csv).
 This exploratory batch directly addresses whether day type, activity, and
 previous-night sleep remain stable when included together. For each metric,
 one common complete-case near-eye frame was used for both the separate
-predictor models and the mutually adjusted model. This prevents a change in
-rows from being mistaken for covariate adjustment.
+predictor models and the mutually adjusted model. For the 14 estimable metrics,
+this common sample contains 715 participant-days from 137 participants. Using
+the same rows prevents a sample change from being mistaken for covariate
+adjustment.
 
 For non-timing outcomes, the mutually adjusted formula was:
 
@@ -1091,7 +1135,7 @@ response ~ site + day type + activity + previous-night sleep +
   (1 | participant)
 ```
 
-The site-heterogeneity models added one `site × context` block at a time while
+The predictor-by-site interaction models added one `site × context` block at a time while
 holding the other two contexts additive. This is the prespecified
 lower-dimensional implementation of the proposed
 `site * day type + site * activity + site * sleep duration` structure. It
@@ -1112,7 +1156,7 @@ joint_family_summary |>
     Test = recode(
       .data$test_type,
       conditional_association = "Conditional association",
-      conditional_site_heterogeneity = "Conditional predictor by site"
+      conditional_site_heterogeneity = "Conditional predictor-by-site interaction"
     )
   ) |>
   transmute(
@@ -1128,7 +1172,7 @@ joint_family_summary |>
     groupname_col = "Predictor",
     source_note = paste(
       "Batch: exploratory mutually adjusted near-eye participant-day models.",
-      "The numerical work/free heterogeneity count includes MDER, which remains",
+      "The numerical work/free interaction count includes MDER, which remains",
       "descriptive because of its major heavy-tail and site-influence limitation."
     )
   ) |>
@@ -1222,12 +1266,12 @@ Five work/free interaction blocks remained conditionally FDR-supported among
 the daily metrics: mean melEDI, brightest 10 h mean, waking time above 250 lx
 melEDI, longest continuous period above 250 lx melEDI, and melEDI dose. The
 numerical MDER interaction also crossed its exploratory FDR threshold but is
-descriptive only because of its major diagnostic limitation. No conditional
+descriptive only because of its major model-check limitation. No conditional
 activity or sleep interaction block met the exploratory FDR rule.
 As in the primary interaction table, every listed site value is the complete
 Free/Work contrast from that interaction model while activity and sleep remain
 in the model. It is not an interaction coefficient that needs multiplication
-by the joint model's equal-site contrast.
+by the joint model's site-average contrast.
 
 ```{r}
 #| label: tbl-h06-daily-joint-site-interactions
@@ -1260,7 +1304,7 @@ joint_site_summary |>
       "The global interaction q-value is multiplicity adjusted within a 15-slot",
       "family. Site intervals are pointwise and unadjusted. Each value is the",
       "full site-specific Free/Work ratio, not a multiplier to apply to a",
-      "separate main effect. Filled dots use submitted site colours and do not",
+      "separate main effect. Filled dots use consistent study-site colors and do not",
       "encode significance."
     ),
     font_size = 8.7
@@ -1277,9 +1321,9 @@ joint_site_summary |>
 ```
 
 For conditionally adjusted mean melEDI, the Free/Work point estimates remained
-below 1 at all nine sites. Pointwise intervals excluded 1 at Madrid, 0.45
-(95% CI 0.34 to 0.58), and Kumasi, 0.44 (0.34 to 0.58). The other seven site
-intervals included 1.
+below 1 at all nine sites. Pointwise intervals excluded 1 at Madrid (ES), 0.45
+(95% CI 0.34 to 0.58), and Kumasi (GH), 0.44 (0.34 to 0.58). The other seven
+site intervals included 1.
 These full site ratios already include the jointly adjusted day-type term and
 the corresponding site interaction contribution.
 
@@ -1293,8 +1337,10 @@ response is the 30-minute arithmetic mean melEDI, $Y$, transformed as
 $\log_{10}(Y + 0.1\ \mathrm{lx})$. Its 33,057 supported half-hour bins come
 from 715 participant-days, 137 participants, and all nine sites.
 
-The accepted `bam()` model used Gaussian identity errors, fREML,
+The accepted `mgcv::bam()` model used Gaussian identity errors, fREML,
 `discrete = TRUE`, one thread, and a frame-specific working AR(1) coefficient.
+This working correlation allows adjacent residuals within each audited
+participant-day sequence to be correlated.
 Its exact smooth structure was:
 
 ```text
@@ -1351,7 +1397,7 @@ temporal_gamm |>
   compact_gt(
     source_note = paste(
       "Ratios refer to fitted Y + 0.1 lx, not the raw-scale arithmetic mean Y.",
-      "The q-values are approximate whole-function tests in one four-test BH",
+      "The q-values are approximate whole-function tests in one four-test FDR",
       "family. All displayed curve intervals are pointwise, not simultaneous."
     )
   ) |>
@@ -1384,7 +1430,8 @@ contexts in one model. H06_daily gives each admissible participant-day one row
 per metric. Its primary models are predictor-specific, while the exploratory
 joint column below uses a common 715-day frame and includes all three contexts.
 Where a global predictor-by-site interaction met its FDR rule, the table uses
-the **equal-site full contrast from that interaction model** and gives the
+the **site-average full contrast from that interaction model**, with every site
+weighted equally, and gives the
 range of its nine full site-specific ratios. Otherwise it uses the additive
 model's common contrast. The additive-family association q-value remains the
 prespecified association test, while the global interaction q-value determines
@@ -1437,9 +1484,9 @@ main_hourly_comparison |>
   ) |>
   compact_gt(
     source_note = paste(
-      "All entries are equal-site ratios with pointwise 95% CIs, but their",
+      "All entries are site-average ratios, with sites weighted equally, and pointwise 95% CIs, but their",
       "outcomes, weighting, fitted samples, model families, and multiplicity",
-      "families differ. Supported interaction rows use the equal-site geometric",
+      "families differ. Supported interaction rows use the site-average geometric",
       "mean of the nine full site-specific ratios from that model and show the",
       "site range. Other rows use the additive common contrast. Interaction-model",
       "site ratios are full contrasts and require no multiplication by a main",
@@ -1452,10 +1499,10 @@ main_hourly_comparison |>
 ```
 
 The clearest contrast is day type, for which all three global site interactions
-were supported. The interaction-model equal-site ratio was 1.15 (95% CI 0.93
+were supported. The interaction-model site-average ratio was 1.15 (95% CI 0.93
 to 1.44) in main hourly H06, with full site-specific ratios from 0.53 to 2.44.
 Daily mean melEDI was lower on Free days in both the predictor-specific
-interaction model, equal-site ratio 0.70 (0.63 to 0.78; site range 0.40 to
+interaction model, site-average ratio 0.70 (0.63 to 0.78; site range 0.40 to
 0.95), and the mutually adjusted interaction model, 0.73 (0.66 to 0.81; site
 range 0.44 to 1.00). This is not a failed replication. The hourly analysis
 weights days by their supported hours and targets a retained hour's geometric
@@ -1463,7 +1510,7 @@ mean; the daily analysis weights admissible days equally and targets a daily
 metric.
 
 Activity was positive in all three analyses. Its primary daily interaction was
-supported, so that column uses the interaction-model equal-site ratio 1.22
+supported, so that column uses the interaction-model site-average ratio 1.22
 (1.08 to 1.39; full site ratios 0.84 to 2.26). The main hourly and mutually
 adjusted daily activity interactions were not supported, so their displayed
 2.06 and 1.16 ratios come from additive models. Previous sleep had no supported
@@ -1482,7 +1529,7 @@ estimability gates, but every cell was classified **acceptable with
 limitations** after direct visual review of residual centering, variance, and
 gross distributional shape. No gross residual failure was observed.
 
-Temporal dependence was retained as a mandatory sidecar rather than an
+Temporal dependence was retained as a mandatory model-check sidecar rather than an
 automatic failure criterion. Actual-date AR counterparts were sometimes
 singular, numerically unresolved, or left residual dependence; those findings
 remain part of interpretation but do not replace the primary estimates or
@@ -1494,13 +1541,13 @@ predictor-by-site results remain sensitivity-dependent.
 Participant/site deletion checks were stable for 270 of 468 cells, showed a
 substantial limitation for 128, were unstable for 46, and had a non-estimable
 deletion refit for 24. Gaussian, Tweedie, Student-t, exact-period, and AR
-sidecars are reported as response-family or stability limitations; none was
+model-check sidecars are reported as response-family or stability limitations; none was
 used to substitute a p-value. MDER additionally retains its heavy-tail and
 site-influence qualifications.
 
 ```{r}
 #| label: tbl-h06-daily-diagnostic-summary
-#| tbl-cap: "Diagnostic and sensitivity classifications."
+#| tbl-cap: "Model-check and sensitivity classifications."
 
 diagnostic_summary |>
   mutate(
@@ -1570,4 +1617,4 @@ Reader source data:
 - [main hourly H06 comparison](../../artifacts/11_source_data/H06_daily/H06_daily_stage3_main_hourly_comparison.csv);
 - [30-minute temporal GAMM summary](../../artifacts/11_source_data/H06_daily/H06_daily_stage3_temporal_gamm_summary.csv);
 - [12-family primary and sensitivity summary](../../artifacts/11_source_data/H06_daily/H06_daily_stage3_family_summary.csv); and
-- [diagnostic classification summary](../../artifacts/11_source_data/H06_daily/H06_daily_stage3_diagnostic_summary.csv).
+- [model-check classification summary](../../artifacts/11_source_data/H06_daily/H06_daily_stage3_diagnostic_summary.csv).

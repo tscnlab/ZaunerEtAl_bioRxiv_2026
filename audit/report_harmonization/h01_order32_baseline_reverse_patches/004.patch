@@ -1,0 +1,74 @@
+# order32 file-change event: exec-0a10247a-5caf-4637-835f-4e537f3b67bd
+--- a/notebooks/hypotheses/H01.qmd
++++ b/notebooks/hypotheses/H01.qmd
+@@ -1160,5 +1160,7 @@
+ the same side of the null, although `r paired_summary$support_switches`
+-FDR-adjusted support decisions differed. The alternative-data near-eye
+-sensitivity applies the same general coverage rules but does not use the
+-timing of remaining missing observations for metric-specific adjustment; it changed
++FDR-adjusted support decisions differed. Relative to the primary dataset,
++which for this contrast can be interpreted as a time-sensitive primary metric
++dataset, the gap-timing-unaware near-eye sensitivity still passed the general
++50%-per-hour and 80%-per-day coverage rules but did not use the timing of
++remaining missing observations for metric-specific adjustment; it changed
+ `r gap_primary_summary$support_switches` of `r gap_primary_summary$evaluated_cells`
+@@ -1180,8 +1182,21 @@
+ 
+-The sensitivity analysis also uses an alternative dataset that passed the
+-general 50%-per-hour and 80%-per-day coverage rules but does not use the timing
+-of remaining missing observations for metric-specific adjustment. For this
+-contrast only, the primary dataset can be understood as a **time-sensitive
+-primary metric dataset**. Below, it is called simply the primary dataset, while
+-the alternative is called the **gap-timing-unaware dataset**.
++The **all-available sample** uses all retained metric-specific observations at
++one sensor position. Across the 17 outcomes, the primary near-eye samples used
++`r h01_support_orientation$primary_participant_min`--`r h01_support_orientation$primary_participant_max`
++participants and `r h01_support_orientation$primary_day_min`--`r h01_support_orientation$primary_day_max`
++participant-days across `r h01_support_orientation$primary_sites` sites. The
++complementary chest samples used
++`r h01_support_orientation$chest_participant_min`--`r h01_support_orientation$chest_participant_max`
++participants and `r h01_support_orientation$chest_day_min`--`r h01_support_orientation$chest_day_max`
++participant-days across `r h01_support_orientation$chest_sites` sites. A
++**matched sample** restricts each metric to the same participants and
++participant-days at the near-eye and chest positions; the positions are still
++fitted separately. Exact metric-specific samples are retained in the
++[detailed analysis record](#exact-fitted-samples).
++
++After the first explanation above, the time-sensitive dataset is called the
++primary dataset and the alternative sensitivity is called the
++**gap-timing-unaware dataset**. The complete
++[registration changes and related records](#h01-preregistration-deviations)
++are retained later in this report.
+ 
+@@ -1190,20 +1205,3 @@
+ [Preparation 06](../preparation/06_model_ready_datasets.qmd).
+-
+-```{r}
+-#| label: tbl-h01-metric-registry
+-#| tbl-cap: "H01 response package and fitted response families."
+ 
+-metric_registry |>
+-  arrange(.data$metric_order) |>
+-  transmute(
+-    Category = recode(.data$manuscript_category, !!!category_labels),
+-    Metric = .data$manuscript_name,
+-    Unit = .data$display_unit,
+-    `Model unit` = .data$analysis_unit_label,
+-    `Response family` = .data$family_label
+-  ) |>
+-  h01_gt(groupname_col = "Category", rowname_col = "Metric") |>
+-  cols_width(Metric ~ px(300), everything() ~ px(190))
+-```
+-
+ ## Statistical models
+@@ -1217,3 +1215,3 @@
+ weight, reports a difference or ratio with a 95% CI, and applies a
+-within-metric multiplicity adjustment.
++within-metric FDR adjustment.
+ 
+@@ -1251,3 +1249,3 @@
+ 
+-### Primary publication summary
++### Primary near-eye summary
+ 
+

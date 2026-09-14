@@ -103,7 +103,14 @@ stopifnot(
   grepl("paired_placement_site_curves.csv", result_qmd, fixed = TRUE),
   grepl("gap-timing-unaware dataset", result_qmd, fixed = TRUE),
   grepl("p_value_display.R", result_qmd, fixed = TRUE),
-  grepl("BH-adjusted", result_qmd, fixed = TRUE),
+  grepl(
+    "false-discovery-rate (FDR)-adjusted",
+    result_qmd,
+    fixed = TRUE
+  ),
+  grepl("FDR adjustment", result_qmd, fixed = TRUE),
+  !grepl("\\bBH\\b", result_qmd, perl = TRUE),
+  !grepl("H02-F1-site-pattern", result_qmd, fixed = TRUE),
   grepl("gap-timing-unaware dataset", preparation_qmd, fixed = TRUE),
   grepl("p_value_display.R", preparation_qmd, fixed = TRUE)
 )

@@ -1,0 +1,112 @@
+REPORT-018 H07 Order 53 fail-closed stopped-state record
+
+Recorded UTC: 2026-08-21 18:28:05 UTC
+Status: STOPPED_FAIL_CLOSED
+Decision: The sole render and hook succeeded, and the sole helper succeeded, but the render removed the protected source-side historical companion HTML and its complete 15-file asset tree. The preservation contract therefore failed before browser QA.
+
+Execution ledger
+  - Render count: exactly 1.
+  - Render command: GT_HTML_SEMANTIC_AUDIT_DIR=/private/tmp/H07-order53-semantic.tbIeZC quarto render audit/hypotheses/H07/H07_analysis_preparation.qmd --profile nathealth
+  - Render exit: 0. R 4.6.1 and Quarto 1.9.37.
+  - Analytical chunks: 26 of 26 completed. No scientific recomputation was separately invoked.
+  - Render retry count: 0. No result, later-page, or full-project render was run.
+  - Semantic hook count: exactly 1 as part of the sole render.
+  - Semantic hook: REPAIRED; pre 7dadaaaa92c89346af7a46490419c2af98602235cf655daa49a756c9b76dec4a (621890 bytes); post 4c03a3e3cdfa1c6eac13d5785ceee8306e6d0941278b679a1eb88e357b270d93 (654955 bytes); 21 tables; 116 IDs; 734 headers; 850 substitutions.
+  - Helper count: exactly 1 after the successful render and hook.
+  - Helper command: NATHEALTH_PROJECT_ROOT=/Users/zauner/Documents/Arbeit/12-TUM/MeLiDos/WP2.2.5_Data_Analysis/ZaunerEtAl_bioRxiv_2026 Rscript --vanilla scripts/hypotheses/H07/build_h07_preparation_report_manifest.R
+  - Helper exit: 0. It recorded 1,235 identities with a byte-identical build QMD and shared profile integration TRUE.
+  - Helper retry count: 0.
+
+Fail-closed defect
+  - Exact missing historical HTML: audit/hypotheses/H07/H07_analysis_preparation.html
+  - Historical HTML pre-render identity: SHA-256 53c261b88b5d10238e18e33323ad705c61c92215c040fc84880385cdc434fd2f, 641597 bytes.
+  - Exact missing historical asset root: audit/hypotheses/H07/H07_analysis_preparation_files/
+  - The complete 15-file asset tree is missing:
+  - audit/hypotheses/H07/H07_analysis_preparation_files/libs/bootstrap/bootstrap-138a6193a3bd40baf1e627da441a4734.min.css | pre SHA-256 a20d3d44875fd0fbe2eadf1dc56573a7a052bd9bd9eddb1d4965d913189ad5ec | 430952 bytes | current MISSING
+  - audit/hypotheses/H07/H07_analysis_preparation_files/libs/bootstrap/bootstrap-icons.css | pre SHA-256 01253947f506e030589e4f33fc7ec7ccdfb9505e2e596dedf16445f12e243c0a | 99464 bytes | current MISSING
+  - audit/hypotheses/H07/H07_analysis_preparation_files/libs/bootstrap/bootstrap-icons.woff | pre SHA-256 f55513b7b591cb84a3b87ff0e34ea24d4831d6fedc22e54b911ca64b5b544a15 | 180288 bytes | current MISSING
+  - audit/hypotheses/H07/H07_analysis_preparation_files/libs/bootstrap/bootstrap.min.js | pre SHA-256 d2ea6c1e0cabca20d18e924b25a1cd0187c38ba7c33f60ab06e1b0402b9bcdb5 | 80668 bytes | current MISSING
+  - audit/hypotheses/H07/H07_analysis_preparation_files/libs/clipboard/clipboard.min.js | pre SHA-256 e17a1d816e13c0826e0ed7febfabc3277f45571234bde0bf9120829a7169edc9 | 9160 bytes | current MISSING
+  - audit/hypotheses/H07/H07_analysis_preparation_files/libs/quarto-diagram/mermaid-init.js | pre SHA-256 a68a1b7deabddb8dafadefbeec74f61f0e0c549539547843a3189a2665f3ea7a | 14113 bytes | current MISSING
+  - audit/hypotheses/H07/H07_analysis_preparation_files/libs/quarto-diagram/mermaid.css | pre SHA-256 7cde9e49bfab3857c4bd590b86c15c2f46d4b4bdc4af4c9cc3e0480cbd249562 | 281 bytes | current MISSING
+  - audit/hypotheses/H07/H07_analysis_preparation_files/libs/quarto-diagram/mermaid.min.js | pre SHA-256 07e37dfa97b337ccc85365d57eddf99b9706f09db3b59b260d0333b23b343c4b | 2748992 bytes | current MISSING
+  - audit/hypotheses/H07/H07_analysis_preparation_files/libs/quarto-html/anchor.min.js | pre SHA-256 69098e105d990f834cff1b7886d873444228ff63c590e5ff834d568f1115ed8b | 5888 bytes | current MISSING
+  - audit/hypotheses/H07/H07_analysis_preparation_files/libs/quarto-html/popper.min.js | pre SHA-256 4d50586b184724d39ddfe0f6582861664eddd5e806e5a79e0dbaa832361414d0 | 20084 bytes | current MISSING
+  - audit/hypotheses/H07/H07_analysis_preparation_files/libs/quarto-html/quarto-syntax-highlighting-7f8f88aac4f3542376d5c11b86a4c14d.css | pre SHA-256 96d688dbd4c2de66404fd9b0e75d5b62573cbece9ee7011ca24d8bce1bbe044c | 3678 bytes | current MISSING
+  - audit/hypotheses/H07/H07_analysis_preparation_files/libs/quarto-html/quarto.js | pre SHA-256 4ecb60f215d96b2af0fe9d985c71e32863b1c993a64725a416ac18b5991c59c6 | 26830 bytes | current MISSING
+  - audit/hypotheses/H07/H07_analysis_preparation_files/libs/quarto-html/tabsets/tabsets.js | pre SHA-256 a9c226bf70e82eaf5476f619cecfb70b4446b87ce4d1634d6404b0b2ba006d15 | 2882 bytes | current MISSING
+  - audit/hypotheses/H07/H07_analysis_preparation_files/libs/quarto-html/tippy.css | pre SHA-256 5969f497d9158d7682f8219c6f13fa67269cdf5bf50a3931d95327151dee5678 | 1409 bytes | current MISSING
+  - audit/hypotheses/H07/H07_analysis_preparation_files/libs/quarto-html/tippy.umd.min.js | pre SHA-256 41181eeec6d7ba64cb9165f0e95563e34e026bde79e7c13aeec83270429b6fae | 24033 bytes | current MISSING
+  - Protected delta: 16 removed paths, comprising the HTML and 15 assets.
+  - Helper manifest: 1,235 unique, non-circular rows; 1,235 of 1,235 are live-exact. The missing historical HTML and assets are not restored and are not represented as live rows.
+
+Nonvisual acceptance
+  - Raw prepared audit: 28 checks, 24 PASS, 4 FAIL.
+  - Three real failed preservation checks share the same 16-path deletion: historical HTML presence, historical asset coverage, and zero removed protected paths.
+  - The fourth raw failure was a checker-construction false negative: Show All Code, Hide All Code, and View Source use javascript:void(0) and are not file links.
+  - Corrected applicable reader-link check: 405 of 405 PASS; three Quarto JavaScript controls excluded explicitly.
+  - Result reader test: unchanged, exit 0, PASS.
+  - Held preparation test: unchanged and not executed.
+
+Current file identities
+  - order 53 | audit/report_harmonization/owner_orders/53_h07_companion_report018_render.md | SHA-256 988d0773e2b2ed05696a0fb1d2d717384a5d80f80ae976612706f82c7eed7c9b | 5016 bytes
+  - central release | audit/report_harmonization/report018_h07_companion_release.md | SHA-256 4d3948848ad229e128dbeee6be98b3142e688b47eb2d6d0f2cb8f1baf8ddb085 | 6013 bytes
+  - dispatch manifest | audit/report_harmonization/report018_h07_companion_order53_dispatch_manifest.csv | SHA-256 d5a405c26a998f9a2944262ff44cb78bfe4eaa3925d26b8ec8c69914d9ea138b | 4444 bytes
+  - current coordination matrix | audit/report_harmonization/coordination_matrix.csv | SHA-256 6835f5a5fb56a9ed08e84aa906442521a9a9ac50177d292492691a2186b9437a | 34034 bytes
+  - accepted result source | notebooks/hypotheses/H07.qmd | SHA-256 c779c57ffc64a15c82e519ef38e865a39108a6563d82e408e4522253c61e8226 | 45440 bytes
+  - accepted result HTML | _build/nathealth/notebooks/hypotheses/H07.html | SHA-256 7814860467f71311c56e22960e757059524ccc3890b0721708eda7a5c661ab40 | 265730 bytes
+  - released companion source | audit/hypotheses/H07/H07_analysis_preparation.qmd | SHA-256 a6c05e81333bb612e99ef431f42f47860ac26b6d5c0f0f44ecbce019ee470d1b | 49762 bytes
+  - source-identical build QMD | _build/nathealth/audit/hypotheses/H07/H07_analysis_preparation.qmd | SHA-256 a6c05e81333bb612e99ef431f42f47860ac26b6d5c0f0f44ecbce019ee470d1b | 49762 bytes
+  - rendered and semantically repaired build HTML | _build/nathealth/audit/hypotheses/H07/H07_analysis_preparation.html | SHA-256 4c03a3e3cdfa1c6eac13d5785ceee8306e6d0941278b679a1eb88e357b270d93 | 654955 bytes
+  - missing source-side historical HTML | audit/hypotheses/H07/H07_analysis_preparation.html | SHA-256 MISSING; expected 53c261b88b5d10238e18e33323ad705c61c92215c040fc84880385cdc434fd2f | NA bytes
+  - preparation report manifest | artifacts/12_manifests/H07/H07_preparation_report_manifest.csv | SHA-256 db1b00058848d27eed9d5ece9d9eae97851d1bdc997c4f2fe28d2ce9abd3c8e2 | 335146 bytes
+  - normal nathealth profile | _quarto-nathealth.yml | SHA-256 80dd05573b6c764272d0d0aa1c82571bdaab3cb2bee9ee34441e2456318708e3 | 7480 bytes
+  - dedicated preparation manifest helper | scripts/hypotheses/H07/build_h07_preparation_report_manifest.R | SHA-256 9e961ec8746f512f34d1330b227118e407a75260168619a6457413a3ecb74508 | 10592 bytes
+  - held preparation test | tests/hypotheses/H07/test_h07_preparation_report.R | SHA-256 89fd3eaa2f4f9928234280844e480ff5b863e104366af17675fe36366c456558 | 12912 bytes
+  - executed unchanged result reader test | tests/hypotheses/H07/test_h07_stage3_reader_report.R | SHA-256 84e96a523bf1d9051be8abe3cabbef9837dfe98ab978a30bd846d0f2d728cd17 | 8435 bytes
+  - external semantic summary | /private/tmp/H07-order53-semantic.tbIeZC/gt_html_semantic_post_render_summary.csv | SHA-256 43df6cca4556ed9ce4d42f19207940dcfa435f67290a317120c2188690d98334 | 498 bytes
+  - external semantic ledger | /private/tmp/H07-order53-semantic.tbIeZC/001__build__nathealth__audit__hypotheses__H07__H07_analysis_preparation.html_gt_semantic_ledger.csv | SHA-256 5269f9d8ea846195387a15372772d0d286fabc0661d9e8eb7181f448372e5a1f | 222598 bytes
+  - durable semantic summary copy | audit/hypotheses/H07/report018_order53_companion_render/gt_html_semantic_post_render_summary.csv | SHA-256 43df6cca4556ed9ce4d42f19207940dcfa435f67290a317120c2188690d98334 | 498 bytes
+  - durable semantic ledger copy | audit/hypotheses/H07/report018_order53_companion_render/001__build__nathealth__audit__hypotheses__H07__H07_analysis_preparation.html_gt_semantic_ledger.csv | SHA-256 5269f9d8ea846195387a15372772d0d286fabc0661d9e8eb7181f448372e5a1f | 222598 bytes
+  - fig-h07-prep-metric-sample-support source PNG | artifacts/10_figures/H07/preparation/H07_preparation_metric_sample_support.png | SHA-256 603afa8def8ff640003daaef806ee390d513df9bb6f6307fa300dba4ad5ba8a7 | 158151 bytes
+  - fig-h07-prep-site-photoperiod-ranges source PNG | artifacts/10_figures/H07/preparation/H07_preparation_site_photoperiod_ranges.png | SHA-256 00d687082780c65d07467fdf730ac8bcf0bd97af11a03af156dc38020b815eb4 | 146588 bytes
+
+Current rendered table endpoints
+  - 01 tbl-h07-preparation-contributions
+  - 02 tbl-h07-preparation-input-identities
+  - 03 tbl-h07-preparation-frame-integrity
+  - 04 tbl-h07-preparation-sample-ranges
+  - 05 tbl-h07-preparation-metric-samples
+  - 06 tbl-h07-preparation-site-support
+  - 07 tbl-h07-preparation-metric-contract
+  - 08 tbl-h07-preparation-formulas
+  - 09 tbl-h07-preparation-fit-settings
+  - 10 tbl-h07-preparation-derivative-settings
+  - 11 tbl-h07-preparation-pattern-counts
+  - 12 tbl-h07-preparation-diagnostic-summary
+  - 13 tbl-h07-preparation-tweedie-pilot
+  - 14 tbl-h07-preparation-sensitivity-samples
+  - 15 tbl-h07-preparation-sensitivity-classifications
+  - 16 tbl-h07-preparation-model-form
+  - 17 tbl-h07-preparation-loso
+  - 18 tbl-h07-preparation-metric011
+  - 19 tbl-h07-preparation-code-order
+  - 20 tbl-h07-preparation-output-map
+  - 21 tbl-h07-preparation-environment
+
+Current rendered figure endpoints
+  - fig-h07-prep-metric-sample-support | SHA-256 603afa8def8ff640003daaef806ee390d513df9bb6f6307fa300dba4ad5ba8a7 | _build/nathealth/artifacts/10_figures/H07/preparation/H07_preparation_metric_sample_support.png
+  - fig-h07-prep-site-photoperiod-ranges | SHA-256 00d687082780c65d07467fdf730ac8bcf0bd97af11a03af156dc38020b815eb4 | _build/nathealth/artifacts/10_figures/H07/preparation/H07_preparation_site_photoperiod_ranges.png
+  - fig-h07-preparation-map | TD Mermaid node-text SHA-256 07d97917fe2fd33abe6c4359ac5d7fe54ef09d86f8d3ebaeb631850d7768a4fd | _build/nathealth/audit/hypotheses/H07/H07_analysis_preparation.html
+
+Browser and teardown state
+  - Browser QA: NOT_RUN_GATED.
+  - Unrun viewports: 1440 x 1000; 708 x 1000; 720 x 500 at 200-percent equivalent; 170 mm figure inspection.
+  - Secure loopback server: never started for Order 53.
+  - Screenshots, browser console inspection, and interactive link checks: not run.
+  - Corrected elevated process scan: zero matching Quarto, Pandoc, semantic-hook, semantic-directory, or http.server processes.
+  - Teardown: no-op because no browser QA listener was started; no relevant process remains.
+
+Stop boundaries
+  - No rerender, restoration, browser QA, source patch, source/test/helper/profile edit, retry, scientific recomputation, full-project render, commit, push, or upload followed the defect.
+  - The stopped-state manifest excludes itself, contains unique paths, and is validated live-exact immediately after creation.

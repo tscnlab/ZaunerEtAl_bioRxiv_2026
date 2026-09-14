@@ -430,3 +430,135 @@ result/preparation pair with the Nature Health profile and rerun
 scientific analysis or companion construction is required unless that
 integrated render exposes a new issue. Do not modify `_quarto-nathealth.yml`
 in this H03 worker task.
+
+## REPORT-014/017 order 34 source synchronization, 2026-08-14
+
+This section supersedes only the earlier handoff's source-navigation,
+terminology, endpoint-count, and next-action statements. It does not change
+the accepted scientific results. H03 remains scientifically closed under
+H03-AUX-001 / CHG-139 and RH-SYNC-H03-001. No stage was reopened.
+
+### Final synchronized sources
+
+| Source | SHA-256 | Bytes |
+|---|---|---:|
+| `notebooks/hypotheses/H03.qmd` | `45ea5a009efd3b451c392dfc23bef584c7b16e087bf4093780b051cfde42ae41` | 68,198 |
+| `audit/hypotheses/H03/H03_analysis_preparation.qmd` | `59270288388e48ceef880ffa4a2ba0e87b8deeb9a8046b49510c4e525ff8c131` | 75,638 |
+
+The result keeps 14 tables and eight figures, with
+`fig-h03-primary-estimates` and `tbl-h03-primary-results` first. The
+companion keeps all previous 26 tables and four figures and adds only
+`tbl-h03-prep-participant-random-intercept`, for 27 tables and four figures.
+Both QMDs use dynamic source links and `lightbox: true`. No corresponding
+HTML was rendered under this order.
+
+The exact result-to-companion link is
+`../../audit/hypotheses/H03/H03_analysis_preparation.qmd#sec-h03-prep-participant-random-intercept`.
+The companion anchor is
+`sec-h03-prep-participant-random-intercept`, and the companion retains its
+dynamic links to `../../../notebooks/hypotheses/H03.qmd`.
+
+### Two distinct participant assessments
+
+The predefined within-participant and between-participant sensitivity is a
+population-mean quasi-Tweedie augmentation with participant-clustered
+covariance. It is not a mixed model, random-intercept model, random-slope
+model, or variance-component analysis.
+
+The post-closure auxiliary assessment is a separate descriptive
+participant-random-intercept model:
+`geo_medi_1h ~ site * light_source + (1 | participant)`. It uses a glmmTMB
+Tweedie log-link likelihood with fixed power 1.539919. It contains no
+participant-day effect, random light-source slope, or AR(1) term. Its R²,
+ICC, and hierarchy-respecting Shapley values are descriptive,
+model-dependent, non-causal, uncertainty-unqualified point summaries and do
+not replace the population-mean primary model or its multiplicity families.
+
+Controlling auxiliary files:
+
+- decision:
+  `audit/decisions/h03_auxiliary_model_assessments_closure.md`, SHA-256
+  `85be31f6c105ea2c47a5353a32d4081dcdbc50a0738998f2106c0952c4527827`;
+- synchronization record:
+  `audit/report_harmonization/h03_postclosure_synchronization_check.md`,
+  SHA-256
+  `569767a839a34f1dc3e58ea8c5b554da23a56163a2cf48ad90d7a17cd05b1aea`;
+- accepted runner:
+  `scripts/hypotheses/H03/run_h03_participant_random_intercept_assessment.R`,
+  SHA-256
+  `662e7ac81b3b67693023acdb196b2187d7058e863294b7b77e0105b8ca456f4c`;
+- six-file manifest:
+  `artifacts/12_manifests/H03/H03_near_eye_participant_random_intercept_manifest.csv`,
+  SHA-256
+  `81bab5291ca9f9aa24a39cae991857b8f5b39046090da2e4f4c984f4ea7c2306`.
+
+### Source-only verification and seals
+
+The new source-only test is
+`tests/hypotheses/H03/test_h03_report017_source_harmonization.R`. The final
+verification record, exact commands, runtimes, and package versions are in
+`audit/hypotheses/H03/report017_order34/H03_order34_execution_record.md`.
+The non-circular current source seal is
+`audit/hypotheses/H03/report017_order34/H03_order34_source_manifest.csv`.
+
+The historical scientific-closure and preparation manifests remain
+byte-for-byte unchanged:
+
+- `H03_stage3_artifacts.csv`, SHA-256
+  `5f4f10528f1c49d52518a6dde36d6ce0ffd71869cab9bcde382bf9c9edce3170`;
+- `H03_preparation_report_manifest.csv`, SHA-256
+  `5235b02c6c542a010336eca9569b77b269deb673d4659d794393d2427146393a`.
+
+The latter remains historical render evidence with the same seven known
+mismatches. Neither existing HTML file is accepted as a render of the revised
+sources.
+
+### Deferred baked-label refresh
+
+No figure was edited or regenerated. A later bounded order may refresh only
+the baked FDR and site-average wording in:
+
+- `H03_near_eye_site_context_estimates.{png,pdf,svg}`; and
+- `H03_reader_latitude_category_slopes.{png,pdf,svg}`.
+
+Their exact pins, frozen source-data identities, builders, and minimum label
+replacements are recorded in
+`audit/hypotheses/H03/report017_order34/H03_order34_stored_figure_label_inventory.md`.
+No new central scientific decision or ledger entry is proposed by this
+source synchronization.
+
+Order-34 acceptance is currently stopped by one source-test contract defect,
+not by a scientific or link-resolution discrepancy. The new test imposed an
+unsupported minimum of 20 Markdown-linked source-data targets; the preserved
+sources contain 16, and all 16 resolved before that assertion. In accordance
+with the order, the test was not patched or rerun. The exact stopped state and
+required fresh correction are recorded in
+`audit/hypotheses/H03/report017_order34/H03_order34_execution_record.md`.
+
+## REPORT-017 order 34a final source-test acceptance, 2026-08-15
+
+This section supersedes only the stopped acceptance status in the preceding
+order-34 section. It does not change any H03 scientific result, source QMD,
+render, or artifact.
+
+Under the authorized order-34a correction, the source-only test now requires
+the exact 16 unique linked source-data targets and exact set equality. Its
+existing auxiliary qualification checks use a whitespace-normalized companion
+string so source-wrapped required phrases are matched without changing the
+QMD. The corrected test parsed under R 4.6.1. The unchanged auxiliary test and
+the complete corrected REPORT-017 source-harmonization test each passed on
+their single authorized run, and the latter reached its final success
+message.
+
+The synchronized QMD sources remain frozen at:
+
+| Source | SHA-256 | Bytes |
+|---|---|---:|
+| `notebooks/hypotheses/H03.qmd` | `45ea5a009efd3b451c392dfc23bef584c7b16e087bf4093780b051cfde42ae41` | 68,198 |
+| `audit/hypotheses/H03/H03_analysis_preparation.qmd` | `59270288388e48ceef880ffa4a2ba0e87b8deeb9a8046b49510c4e525ff8c131` | 75,638 |
+
+The original order-34 manifest remains an immutable historical stopped-state
+seal. The final execution record, exact reverse diff, target and qualification
+proof, and superseding non-circular source seal are in
+`audit/hypotheses/H03/report017_order34/`. No H03 render is released. The next
+action is independent harmonizer acceptance of this source-only seal.

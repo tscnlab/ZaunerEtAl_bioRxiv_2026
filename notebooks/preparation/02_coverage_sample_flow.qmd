@@ -472,8 +472,8 @@ Preparation 01 contain enough valid melEDI to represent an hour or a complete
 participant-day. It reads the stored near-eye and chest files separately,
 constructs a complete local-clock grid for every participant-date present in
 those files, and records hourly and daily coverage decisions. The accepted
-outputs enter Preparation 03 for reference-profile learning and Preparation
-04 for metric derivation.
+outputs enter [Preparation 03](03_reference_profiles.qmd) for reference-profile
+learning and [Preparation 04](04_metric_derivation.qmd) for metric derivation.
 
 The primary dataset uses the full 1,440-minute hybrid measurement day,
 including bedside sleep-environment measurements. A day passes when at least
@@ -489,20 +489,11 @@ interpreted as a “time-sensitive primary metric dataset.” This report presen
 the general coverage step for the primary dataset; the separate dataset is
 constructed and identified later in the preparation chain.
 
-::: {.callout-note appearance="simple" title="What is calculated during this render?"}
-This report reads the stored coverage manifest, settings, hourly decisions,
-daily decisions, reason-coded missing-data periods, and sample-flow table.
-During rendering it checks file identities and required columns and calculates
-only compact descriptive summaries of those stored rows. It does not construct
-a participant-day grid, reassess an hour or day, change a coverage flag,
-rebuild a coverage file, derive a metric, or run the production verifier.
-:::
-
 ```{mermaid}
 %%| label: fig-preparation02-chain
 %%| fig-cap: "Position of Preparation 02 in the data-to-analysis chain. Rendering reads the stored coverage outputs but does not recreate the grid or decisions."
 %%| fig-alt: "Flow diagram from aligned near-eye and chest one-minute records through a complete local-clock grid, hourly and daily melEDI coverage decisions, a day-long flat-zero check, and stored coverage and sample-flow files passed to reference-profile and metric preparation."
-flowchart LR
+flowchart TB
   A["Aligned actual-time minutes<br/>Preparation 01"] --> B["Complete local-clock grid<br/>for each observed date"]
   B --> C["Hourly support<br/>30 of 60 valid minutes"]
   B --> D["Daily support<br/>1,152 of 1,440 valid minutes"]
@@ -517,7 +508,7 @@ flowchart LR
 
 Coverage uses melEDI as the common availability signal. Illuminance retains
 its own missingness, so an unavailable melEDI value does not erase an observed
-illuminance value. Table @tbl-preparation02-rules separates the hourly and
+illuminance value. @tbl-preparation02-rules separates the hourly and
 daily decisions and shows when each affects later use.
 
 ```{r}
@@ -538,6 +529,7 @@ denominator. Sleep-excluded rules remain prespecified sensitivities; they are
 not substituted for the primary decision on this page. Preparation 04 later
 checks whether the timing and amount of remaining support are adequate for
 each specific metric.
+This primary full-day denominator choice is documented in [DEV-055](../preregistration_deviations.qmd#dev-055).
 
 ## 2. Overall input and retained coverage
 
@@ -567,7 +559,7 @@ minutes. Near-eye and chest measurements remain separate throughout.
 
 ## 3. Coverage by site
 
-Table @tbl-preparation02-site-days shows both the numerator and denominator at
+@tbl-preparation02-site-days shows both the numerator and denominator at
 each site. “Days retained by direct daily rule” are days that reached 80%
 coverage across the day but would have failed if sub-50% hours had first been
 discarded. The direct daily rule retained seven such near-eye days and eight
@@ -666,13 +658,13 @@ gap_summary |>
 ```
 
 Five otherwise passing days were excluded by the flat-zero screen: two
-near-eye and two chest days at Izmir, plus one chest day at Delft. Individual
-zero readings remain valid measurements, and the inclusive sensitivity flag
-remains stored for those days.
+near-eye and two chest days at Izmir (TR), plus one chest day at Delft (NL).
+Individual zero readings remain valid measurements, and the inclusive
+sensitivity flag remains stored for those days.
 
 ## 5. Sample flow through each branch
 
-The full sample-flow file reports each stage both overall and by site. Table
+The full sample-flow file reports each step both overall and by site.
 @tbl-preparation02-sample-flow shows the overall branches without treating
 actual-time rows, local-clock rows, and valid signal minutes as interchangeable
 denominators.
@@ -694,6 +686,7 @@ sample_flow_display |>
     use_seps = TRUE
   ) |>
   gt::cols_label(
+    Stage = "Step",
     `Participant-days` = "Days",
     `Actual-time minutes` = "Actual-time min",
     `Valid melEDI minutes` = "Valid melEDI",
@@ -709,6 +702,15 @@ The all-zero-inclusive and hour-screened rows are stored comparisons, not the
 primary dataset. They do not replace the accepted direct daily rule.
 
 ## 6. Checks that passed
+
+::: {.callout-note appearance="simple" title="What is calculated during this render?"}
+This report reads the stored coverage manifest, settings, hourly decisions,
+daily decisions, reason-coded missing-data periods, and sample-flow table.
+During rendering it checks file identities and required columns and calculates
+only compact descriptive summaries of those stored rows. It does not construct
+a participant-day grid, reassess an hour or day, change a coverage flag,
+rebuild a coverage file, derive a metric, or run the production verifier.
+:::
 
 ```{r}
 #| label: tbl-preparation02-validation

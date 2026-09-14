@@ -1,0 +1,13 @@
+options(warn = 2, stringsAsFactors = FALSE)
+stopifnot(getRversion() == "4.6.1")
+d <- "audit/decisions/brown_main_linkage_b_stage2_author_confirmation_2026_09_12"
+out <- file.path(d, "dispatch_receipt_manifest.csv")
+stopifnot(!file.exists(out))
+paths <- file.path(d, c("decision.md", "dispatch_message.md", "dispatch_manifest.csv", "dispatch_receipt.md", "dispatch_tool_result.json", "seal_receipt.R"))
+hash <- function(p) digest::digest(file = p, algo = "sha256", serialize = FALSE)
+stopifnot(all(file.exists(paths)), !anyDuplicated(paths), !out %in% paths)
+m <- data.frame(path = paths, sha256 = unname(vapply(paths, hash, character(1))), bytes = unname(file.info(paths)$size))
+write.csv(m, out, row.names = FALSE)
+z <- read.csv(out)
+stopifnot(nrow(z) == 6L, all(z$sha256 == vapply(z$path, hash, character(1))), all(z$bytes == file.info(z$path)$size))
+cat(sprintf("BROWN_ACTUAL_DISPATCH_RECEIPT=PASS rows=6/6 manifest=%s\n", hash(out)))

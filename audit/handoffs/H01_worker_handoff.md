@@ -1,12 +1,643 @@
 # H01 worker handoff
 
-Date: 2026-08-01  
+Date: 2026-08-31
 Worker scope: H01 only  
-Status: **Stage 3 author-approved; analysis-preparation and provenance
-companion rendered, verified, and ready for coordinator closure**  
+Status: **METRIC-010 MDER production, focused integration, and H01 reader
+reporting complete and verified; no open H01 author gate**
 Primary placement: near eye  
 Complementary placement: chest  
 Runtime: R 4.6.1; Quarto 1.9.37
+
+## Current closure: METRIC-010 MDER production and reader integration (2026-08-31)
+
+The author explicitly approved the 1,000-refit MDER production bootstrap after
+reviewing the separate 50-refit pilot. The production runner fitted only the
+eight accepted MDER targets. The other 16 H01 metrics were not refitted, and
+their fitted-model and raw-test artifacts remained frozen. Complete 17-test
+family fields were recalculated only where the replaced MDER p-value enters a
+family.
+
+The current MDER estimand is the arithmetic mean of viable one-minute
+melEDI-to-illuminance ratios. Both channels must be finite and strictly
+positive, and at least 720 viable minute ratios are required to retain a
+participant-day value. The controlling decision is
+`audit/decisions/mder_mean_of_viable_ratios.md`, SHA-256
+`1664347de976057807fcb5ac6e24bd4b66af1fe32378fabd1f2acafcfc9266de`.
+The author authorization is
+`audit/hypotheses/H01/mder_METRIC-010/H01_METRIC-010_production_authorization.md`,
+SHA-256
+`f9279a46c73b5feede48adaeee98306a4841183468688446ce91cf09045e33af`.
+
+### Exact target samples and production execution
+
+All MDER models are participant-day models. Participant-days therefore equal
+model observations. The primary near-eye all-available model uses all nine
+sites; the chest and paired/common variants contain eight sites because one
+site has no estimable observations in those exact samples.
+
+| Dataset | Placement | Sample | Participants | Participant-days | Observations | Sites |
+|---|---|---|---:|---:|---:|---:|
+| Primary | Near eye | All available | 137 | 702 | 702 | 9 |
+| Primary | Chest | All available | 152 | 732 | 732 | 8 |
+| Primary | Near eye | Paired/common | 107 | 489 | 489 | 8 |
+| Primary | Chest | Paired/common | 107 | 489 | 489 | 8 |
+| Gap-timing-unaware | Near eye | All available | 137 | 687 | 687 | 9 |
+| Gap-timing-unaware | Chest | All available | 152 | 723 | 723 | 8 |
+| Gap-timing-unaware | Near eye | Paired/common | 107 | 478 | 478 | 8 |
+| Gap-timing-unaware | Chest | Paired/common | 107 | 478 | 478 | 8 |
+
+| Production check | Verified result |
+|---|---|
+| Targets | 8 of 8 PASS |
+| Retained successful joint refits | 1,000 per target; 8,000 total |
+| Attempted refits | 12,000 |
+| Successful attempts | 11,998 |
+| Failed and warning attempts | 2, both excluded from retained draws |
+| Failure location | Gap-timing-unaware near-eye all-available, attempts 565 and 1,456 |
+| Target wall time | 320.8769 seconds summed across sequential targets |
+| Command wall time | 322.3757 seconds |
+| Resources | Four refit workers; one BLAS/OpenMP thread per worker |
+| Checkpoints | Eight completed-target checkpoints and eight draw files |
+| Retained uncertainty | 95% joint parametric percentile intervals |
+| Disposition changes from accepted point gate | 0 |
+| Focused production verifier | PASS |
+| Integration status | `PASS_NO_NEW_AUTHOR_GATE` |
+
+Both excluded attempts had a maximum-gradient convergence warning and failed
+the convergence, Hessian, or singularity screen. Every target still supplied
+1,000 successful retained joint refits. Peak memory was not instrumented per
+child process. Production draws occupy 458,952 bytes. The production record
+verified 1,169 canonical H01 artifacts as byte-identical before and after the
+bootstrap itself.
+
+### Current primary MDER result and downstream family fields
+
+The complete primary near-eye families contain 17 tests each. With current
+MDER, 10 metrics support an overall site association, 12 support photoperiod,
+7 support latitude, and 9 support the site-versus-linear-latitude adequacy
+comparison. For MDER itself:
+
+- overall site FDR-adjusted p = 0.000635;
+- photoperiod difference per hour = 0.0236, 95% CI [0.0166, 0.0307],
+  FDR-adjusted p < 0.001;
+- absolute-latitude difference per 10 degrees = -0.0139, 95% CI
+  [-0.0237, -0.00418], FDR-adjusted p = 0.013; and
+- site-versus-linear-latitude adequacy FDR-adjusted p = 0.010.
+
+The primary near-eye full model has marginal R-squared 0.278, 95% CI
+[0.213, 0.381], conditional R-squared 0.605 [0.546, 0.682], and a
+participant-associated share of 0.327 [0.241, 0.400]. Model-specific part
+R-squared values are 0.0957 [0.0598, 0.178] for site, 0.130 [0.0674,
+0.206] for photoperiod, and 0.0274 [0.00265, 0.0686] for latitude. These
+components can overlap and must not be summed.
+
+No support, diagnostic, influence, sensitivity, placement-comparison, or
+claim disposition changed relative to the accepted repaired point gate.
+Consequently, the focused installer integrated the stored production
+intervals without reopening a major-change gate.
+
+### Reader-report implementation
+
+The H01 result report now includes a 17-row publication synthesis table. It
+combines, for each metric:
+
+- the manuscript metric name and a concise definition;
+- the accepted overall median and interquartile range with descriptive
+  denominators;
+- an accessible nine-site density thumbnail using the registered site order,
+  names, and colours;
+- site, photoperiod, and latitude results with 95% intervals and separately
+  labelled FDR-adjusted p-values;
+- marginal and conditional R-squared, participant-associated share, and
+  model-specific part R-squared; and
+- the exact fitted participants, participant-days, observations, and sites.
+
+The table keeps descriptive and fitted denominators distinct. It displays
+participant and participant-day labels with true subscripts, states that
+participant-days equal observations for the 15 participant-day outcomes, and
+states that the primary fitted models use nine sites throughout. The two
+participant-level dynamics outcomes have one fitted observation per
+participant and show participant-days only as contributing support. Grey
+part R-squared values remain numerically visible when their corresponding
+17-test FDR result is unsupported.
+
+The report contains 37 semantic `gt` tables and 27 images. The 27 images are
+the 10 accepted H01 figures plus 17 density thumbnails with labelled
+`role="img"` wrappers. The preparation and provenance companion contains 20
+semantic `gt` tables and two figures. The archived Stage 2 comparison now
+maps the submitted ratio-of-integrals MDER identifier to the current
+mean-of-viable-ratios comparison slot while explicitly stating that the two
+constructs are not like-for-like.
+
+### Verification and visual QA
+
+Current verification passed under R 4.6.1 with `gt` 1.3.0 and Quarto 1.9.37:
+
+- H01 contract, fit-output, modelling, response-family candidate,
+  response-gate, and canonical bootstrap-output tests;
+- the focused METRIC-010 production verifier;
+- the complete H01 reporting-input and rendered-HTML test; and
+- the full preparation-report test with 75 exact manifest identities.
+
+Historical pre-production gate tests intentionally retain their original
+frozen boundaries. They now stop on superseded MDER paths or later accepted
+display transitions and are not current production verifiers. The current
+METRIC-010 production test proves the isolated eight-target replacement and
+the frozen non-MDER boundary.
+
+Secure loopback review at 1,440 by 1,000 and 708 by 1,000 pixels found no
+browser-console errors, page-level horizontal overflow, clipping, or missing
+local assets. The synthesis table uses a contained horizontal scroller at
+both widths; fitted-sample subscripts, density thumbnails, headings, and
+footnotes remain readable. The result page has 37 native `gt` tables, 27
+images, 17 labelled density graphics, and no cell-output error. The companion
+has 20 native `gt` tables, two images with non-empty alt text, and no
+cell-output error. The temporary loopback server was stopped after review.
+
+The initial restricted render attempt could not access the existing Quarto
+and Sass caches. The successful renders used the already approved narrow
+cache access with the activated project library. No package, lockfile,
+profile, or shared Quarto configuration changed. The current `renv.lock`
+SHA-256 remains
+`3bf99c633fb123626eb14d29f0847b91f71030c92e90331fe401e3204bca8350`.
+
+### Current identities
+
+| Artifact | SHA-256 |
+|---|---|
+| MDER production manifest | `c1f334c973fd9e970ce4f3678addcbdf70d25ca653792ee6ac170b3e13da540c` |
+| MDER integration summary | `35bfabc0d658f09fd3c7f0e8af12325f205792a9f2ae6f371ac1088b96a105e5` |
+| MDER production-integration manifest | `78fdc14539d8c1a9cb71fbfe7da93ffa09e0b30b661dfb1810cd2eda616379e8` |
+| Canonical model-results manifest | `657d96b566163fe753bfcc7ebf92df60a0e05a2915b6c9ab608e18c65c03f813` |
+| Publication synthesis CSV | `7f6edc7aa24b23d9eb9076dc06073512435cc61d0bb8eed2fdd8f43ec594a354` |
+| Reporting manifest | `d9be58e5ef59dace1588c2243826e40316660c739fe3e79b45bc0be6f770f2ad` |
+| Stage 3 reporting manifest | `cc966393265c9d4a0aded4fbd1c59315b7edebd9be6cbf3c2d731ddddaccf979` |
+| Preparation-report manifest | `7020651a6f09964fcc7350ccafcc3550e1d04d6bccc8d1b1d7418832d3c2b4ff` |
+| Stage 2 comparison source | `553c9f7d0e877adb5da0133b8e18a0315f56ce1f514c4dd1d46c185e09016763` |
+| Stage 2 comparison HTML | `d74f2f20bbd4fb0b8df37a09f637b7a1ccdb6a515e2ded276f61dd7ca0139840` |
+| Stage 3 result source | `5e0bcf315ea113543dbcb762aaea19e4e2b0cd4bbe4f3520de04ebc19e041208` |
+| Stage 3 result HTML | `72458413f3a2b025474abdff556feeb897e4a968a254e2f546565348f8a07e4a` |
+| Stage 4 companion source | `c6435a5f482df40c20f3d4d6e4f77d07f2a4f0bb3f1f2687efd2ebf92829e044` |
+| Stage 4 companion HTML | `9bb80c068570b168e500da0ce5905859e36543ec2c91aed423c9557aaa33aa0a` |
+
+### Proposed coordinator-only closure entries
+
+| Ledger class | Proposed entry |
+|---|---|
+| Finding | The authorized METRIC-010 production run completed eight MDER targets with 1,000 retained successful joint refits each, 11,998 successful attempts of 12,000, two excluded convergence-warning attempts, and every target audit status PASS. |
+| Finding | Current primary near-eye MDER supports overall site, photoperiod, latitude, and site-versus-linear-latitude adequacy after the four separate 17-test FDR adjustments; no accepted point-gate disposition changed after production intervals were installed. |
+| Decision | Close the METRIC-010 MDER production and reporting gate as `PASS_NO_NEW_AUTHOR_GATE`; retain all other 16 H01 model fits and raw tests unchanged. |
+| Change log | Integrated only MDER-dependent model, uncertainty, complete-family, sensitivity, comparison, diagnostic, source-data, report, test, and manifest outputs; added the 17-row publication synthesis table and 17 registered-site density thumbnails; rerendered only the H01 result, companion, and standalone Stage 2 comparison. |
+| Claim provenance | Current MDER claims use the mean-of-viable-one-minute-ratios estimand and production 95% intervals. The submitted ratio-of-integrals construct remains identified only as historical, non-like-for-like comparison context. |
+
+Central ledgers remain coordinator-owned and were not edited here. No commit,
+push, upload, dependency change, shared preparation change, manuscript edit,
+or shared Quarto configuration change was made.
+
+## Current closure: REPORT-014/017 consolidated reader rewrite (2026-08-14)
+
+### Fail-closed source-only verification stop
+
+The single authorized verification attempt exited with status 1 before any
+of the four focused tests began. While auditing the new
+`h01_support_orientation` boundary, the order-32 verifier called its recursive
+R call walker on a missing argument and stopped with:
+
+```text
+Error in walk(element) : argument "element" is missing, with no default
+Calls: intersect ... collect_calls -> walk -> walk -> walk -> walk -> walk
+Execution halted
+```
+
+No incremental repair or second attempt was made. Consequently, the complete
+reporting test, preparation source-only test, REPORT-016 test, unchanged
+display-refresh test, chunk-level preservation audit, manifest reverse proof,
+and final scoped diff gate remain unexecuted under this order. The QMD
+rewrites and direct manifest rows below are assembled but are not accepted
+until a separately authorized correction reruns the complete suite once.
+The complete stopped-state evidence is retained in
+`audit/hypotheses/H01/report017_order32_source_rewrite/`.
+
+Order 32 reorganized the accepted H01 result report and its preparation and
+provenance companion without executing either QMD. The principal result
+figure and table now lead the results overview. Exact fitted samples,
+registration records, response-family details, formulas, diagnostics, and
+source-data records remain complete in later sections or disclosures. The
+result report and companion retain exactly 36 tables and 10 figures, and 20
+tables and two figures, respectively.
+
+The only new result-report object is the non-mutating
+`h01_support_orientation`, derived from the already loaded `exact_samples`
+object. It supplies early sample-range orientation without hard-coded fitted
+sample counts. No stored analysis object, estimate, interval, p-value, FDR
+decision, model-check classification, sensitivity result, formula, figure,
+table data source, or claim changed.
+
+The preparation estimand wording now records RH-SCI-H01-003 exactly:
+
+> Marginal R², conditional R², participant-associated share, and
+> model-specific term part-R² values that may overlap and must not be summed
+
+Latitude remains a term part-R² from its separate same-frame model. This is a
+wording correction only and does not change any calculation.
+
+### Source identities and direct manifest reseal
+
+| Current dependency | Pre-order-32 SHA-256 | Order-32 SHA-256 | Bytes |
+|---|---|---|---:|
+| Result QMD | `31c477fae21e0506521d27147cd3f1ea33941dac4c0a6e3a6d485f5acbc129a6` | `9448eacc1345a2b0bf73c988be588308d191e42d90c49d68c7f92db36ba83eeb` | 93,260 |
+| Preparation companion QMD | `962b28663d115c2da216e313f6eff22afb8ed2198d4441d7b0864d207ec231a8` | `ed12b6232ef60905b648707240309e6574e627995d0436a19f671fdc033ecc5f` | 55,827 |
+| Reporting source test | `ab648ac80bc1c8a149a11bb958fd683b38722487c53179b42b215a2b000e6fd5` | `48f374cc70b69a6d96a95dc425ffd9676b2e83133a5554ae1c19eda939c0c8af` | 23,014 |
+| Preparation source test | `12b04008e60cab737780947308042634ee06643dddc450502754fade11228bea` | `379414830e5bcd656ac460c2ad93616ecbcab104259c56a8fcf9296da8c0f2c4` | 10,993 |
+| REPORT-016 historical/live test | `1aa2e9419fcc25fbfc759ffa0a39aa0556abff5bdc3f2c6e4f1950213bdec2e5` | `c359489b45703ae243d277817832e305716271dd54a7713620ceb4a7943d6393` | 14,658 |
+| Reporting manifest | `d0ed8e0c62579597f11c3fa701af35b5016e4921bee0000d2fd700b719f25079` | `dfa9e15f44f0919277264765e84b49b7be78e4822df014abed678b29a9a951b4` | 11,054 |
+| Stage 3 reporting manifest | `16e752b57eafa43b9cc09d70a698ba194cb3fe83dc62bf1bcc3e08c67f85eb6e` | `e9fe8740785e9f4d29e17c4333fdc0615347299c1dabea1d62ffad1cdafd11f9` | 26,497 |
+| Preparation-report manifest | `bae856c2bb75df317f476e7e993178061628c0fcdbc6795a4b88f78843f8d9d0` | `cb89845e92b39f5bab7a0524508a3f7e2ce1d19ebbc99afe12f1ebf8eb9aefb5` | 13,841 |
+
+Only direct current dependency rows were resealed from leaves upward. Every
+build-output row, profile row, scientific-artifact row, role, producer, R
+version, row order, and historical REPORT-016 identity remained unchanged.
+The exact row diffs and byte-for-byte reverse proofs are in
+`audit/hypotheses/H01/report017_order32_source_rewrite/`.
+
+### Source-only verification and held render boundary
+
+The order-32 attempt record contains the exact R 4.6.1 command, runtime,
+exit status, console error, identities at the stop, and the complete list of
+verification gates that did not run. A separately authorized correction must
+restart the complete source-only suite from the beginning. It must include the
+complete reporting test, the preparation test with
+`H01_PREPARATION_SOURCE_ONLY=true`, the complete REPORT-016 test, the
+unchanged display-refresh test, and the structural and reverse-proof audits.
+
+No Quarto command, fitted-model function, prediction, bootstrap, simulation,
+reporting builder, or artifact-regeneration path ran. The held result HTML
+remains `6e0bb1b3bc3b09ee92fd4650655521c6b8fdc01c125ff10c3df2fe733d3c62aa`;
+the held companion HTML remains
+`5857f9e0655e5c1a8530c5794008d20dcb364749a8a7c36bd3e7815c15c36d38`;
+and `_quarto-nathealth.yml` remains
+`80dd05573b6c764272d0d0aa1c82571bdaab3cb2bee9ee34441e2456318708e3`.
+Fresh rendering and visual acceptance remain a separate coordinator gate.
+
+## Current closure: METRIC-011 production and reporting integration (2026-08-12)
+
+The author explicitly accepted all three H01-012 dispositions. The
+coordinator recorded production authorization as H01-013 / CHG-110 in
+`audit/decisions/h01_metric011_l10_production_authorization.md`
+(`ab0764bb55144d9c69caafc8373010f497561757ad2c576d88e32b450817ed4f`).
+The bounded run replaced exactly four primary darkest-10-hour mean melEDI
+bootstrap targets and no others:
+
+| Dataset | Placement | Sample | Participants | Participant-days | Observations | Sites |
+|---|---|---|---:|---:|---:|---:|
+| Primary | Near eye | All available | 141 | 816 | 816 | 9 |
+| Primary | Chest | All available | 154 | 902 | 902 | 8 |
+| Primary | Near eye | Paired/common | 112 | 643 | 643 | 8 |
+| Primary | Chest | Paired/common | 112 | 643 | 643 | 8 |
+
+These are participant-day models, so participant-days equal fitted
+observations. Exact main-data L10 derivation-support hours remain unavailable;
+they were not reconstructed. The unchanged gap-timing-unaware L10 outputs
+also retain unavailable support hours.
+
+### Final inputs and environment
+
+| Item | SHA-256 |
+|---|---|
+| Primary H01 RDS | `0328fe1a698bc13965feb0b68b03ccf0fd20f32b55d6148635811b0d674e0a00` |
+| Primary prepared-input manifest | `25978c5d6903e6e835c1aff6a9bc2e7552b85295e8d840d3dd65bbf9b1eb6b72` |
+| Gap-timing-unaware H01 RDS | `3c70363fc0468202a431904aa9d9444f2858af2e3add3475a56c872b49a18bd6` |
+| Gap-timing-unaware prepared-input manifest | `e0d98178ede61b74353e3a654e7f1b53d7e1c915833a2cda74eea45ed02f383b` |
+| METRIC-011 decision | `23b9f70d1d16f7fd3ebbdbc57aaf78c0a701fe1f9d22bd667d926cd320d40797` |
+| Production authorization | `ab0764bb55144d9c69caafc8373010f497561757ad2c576d88e32b450817ed4f` |
+| `renv.lock` | `3bf99c633fb123626eb14d29f0847b91f71030c92e90331fe401e3204bca8350` |
+
+Production used R 4.6.1, `lme4` 2.0.1, `performance` 0.17.1, four R
+workers, and one BLAS/OpenMP thread per worker. Reporting used Quarto 1.9.37,
+`gt` 1.3.0, `knitr` 1.51, and `rmarkdown` 2.31.
+
+### Commands, runtime, and successful refits
+
+```sh
+H01_L10_AUTHOR_APPROVAL=accepted_2026-08-12 \
+R_LIBS_USER=<project>/renv/library/macos/R-4.6/aarch64-apple-darwin23 \
+H01_L10_PRODUCTION_REFITS=1000 H01_L10_PRODUCTION_CORES=4 \
+OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 \
+VECLIB_MAXIMUM_THREADS=1 \
+Rscript --vanilla scripts/hypotheses/H01/run_h01_l10_METRIC011_bootstrap_production.R
+
+Rscript --vanilla scripts/hypotheses/H01/integrate_h01_l10_METRIC011_production.R
+Rscript --vanilla tests/hypotheses/H01/test_h01_l10_METRIC011_production.R
+Rscript --vanilla scripts/hypotheses/H01/integrate_h01_l10_METRIC011_reporting.R
+Rscript --vanilla tests/hypotheses/H01/test_h01_l10_METRIC011_reporting.R
+
+quarto render audit/hypotheses/H01/02_implementation_and_v0_comparison.qmd --profile nathealth
+quarto render notebooks/hypotheses/H01.qmd --profile nathealth
+quarto render audit/hypotheses/H01/H01_analysis_preparation.qmd --profile nathealth
+```
+
+Each target attempted 1,500 refits, obtained 1,500 successful refits, retained
+the first 1,000 joint refits for inference, and had zero failed or warning
+refits. Target wall times were 39.72, 39.03, 39.81, and 39.53 seconds;
+the summed target time was 158.09 seconds and the production process elapsed
+160.51 seconds. The production contract identity is
+`0f8bc85ec11705efebd1f3ada05f7187113ba54112b57aa481d6bf490a186e8a`.
+The first attempted process, launched without the project `R_LIBS_USER`,
+stopped before its first draw because workers could not load `lme4`. It did
+not create a checkpoint or scientific result. The corrected environment and
+incident are recorded in
+`audit/hypotheses/H01/l10_METRIC-011/bootstrap_production/H01_METRIC-011_execution_incident.md`.
+
+### Estimates, 95% intervals, and multiplicity
+
+The numerical-zero normalization is below meaningful fitted precision. The
+primary near-eye all-available L10 mean retained an equally weighted site
+mean of 0.133 lx melEDI (95% CI 0.112 to 0.157). Photoperiod was a ratio of
+1.09 per hour (95% CI 1.03 to 1.14); absolute latitude was 1.04 per 10 degrees
+(95% CI 0.971 to 1.11). The complete vector-wide BH results were:
+
+| Primary near-eye question | Raw p | BH-adjusted p | Support |
+|---|---:|---:|---|
+| Overall site | <0.001 | <0.001 | Supported |
+| Photoperiod | 0.001 | 0.002 | Supported |
+| Latitude | 0.259 | 0.400 | Not supported |
+| Site-versus-linear-latitude adequacy | <0.001 | <0.001 | Supported |
+
+The complementary chest equally weighted site mean was 0.102 lx melEDI
+(95% CI 0.085 to 0.121). Photoperiod was 1.07 per hour (95% CI 1.02 to
+1.12), and latitude was 0.920 per 10 degrees (95% CI 0.877 to 0.966).
+The complete chest BH-adjusted p-values were <0.001 for site, 0.011 for
+photoperiod, 0.002 for latitude, and <0.001 for adequacy. No support decision
+changed relative to the accepted point baseline.
+
+Because the overall site tests remain supported, the hierarchical emmeans
+contrasts from the equally weighted overall site mean remain eligible. In the
+primary near-eye analysis, Izmir was higher (ratio 1.49; 95% CI 1.16 to
+1.91; within-metric adjusted p = 0.016), Kumasi was lower (0.668; 95% CI
+0.509 to 0.876; adjusted p = 0.016), and Tübingen was higher (1.36; 95% CI
+1.09 to 1.69; adjusted p = 0.020). At the chest, Dortmund was lower (0.723;
+95% CI 0.570 to 0.917; adjusted p = 0.020), Izmir was higher (1.57; 95% CI
+1.24 to 1.98; adjusted p = 0.001), and San José was higher (1.32; 95% CI
+1.12 to 1.57; adjusted p = 0.005).
+
+Production R-squared summaries also remain numerically unchanged. For the
+primary near-eye L10 mean, marginal R-squared was 0.220 (95% bootstrap CI
+0.158 to 0.318), conditional R-squared 0.611 (0.553 to 0.681), and the
+participant-associated share 0.391 (0.304 to 0.462). At the chest these were
+0.138 (0.095 to 0.231), 0.517 (0.457 to 0.589), and 0.379 (0.292 to 0.447).
+The stored site, photoperiod, and latitude part-R-squared summaries remain
+separate non-overlapping model comparisons and were not summed.
+
+### Diagnostics, sensitivities, and claim disposition
+
+All four fits converged with positive-definite Hessians and were non-singular.
+All retain `WARN_REVIEW`: Shapiro p-values were below 0.001 and residual
+variance ratios ranged from 7.35 to 15.4; 1.1% to 1.6% of standardized
+residuals exceeded three in absolute value. The L10 response has no verified
+upper physical bound, so prediction-bound status remains
+`UPPER_BOUND_UNAVAILABLE`. The accepted disposition is **acceptable with
+limitations** for all four targets; no common response-family replacement is
+required.
+
+Participant influence refits all passed; maximum absolute DFBETA was 0.820
+across the evaluated all-available targets. Latitude leave-one-site-out
+refits all passed. Primary near-eye latitude remained unsupported across the
+site omissions (raw p range 0.063 to 0.992), while chest latitude was more
+sample-sensitive (raw p range <0.001 to 0.165). The exact paired/common
+comparison remains 112 participants and 643 participant-days/observations at
+each placement. Gap-timing-unaware results and the noon-cut, exactly
+identified-period, complementary chest, and other registered sensitivities
+retain their accepted classifications. No sensitivity or claim disposition
+changed.
+
+### Preservation, report QA, and final identities
+
+The focused production and reporting verifiers pass. Every one of the 830
+protected non-L10, unchanged gap-L10, and METRIC-010 identities matches its
+baseline. The reporting integration additionally preserves value identities
+for non-L10 rows in 20 mixed tables. Its stopped type-promotion incident and
+repair are documented in
+`audit/hypotheses/H01/l10_METRIC-011/production_integration/reporting/H01_METRIC-011_reporting_integration_incident.md`.
+
+The three H01 pages render under the Nature Health profile. The Stage 3 HTML
+passes its structural/alt-text/source-link checks, and the Stage 4 companion
+passes with 23 figures, 20 semantic `gt` tables, and 62 manifest identities.
+The four regenerated Stage 3 figures pass final-size typography, clipping,
+overlap, null-line alignment, legend, and accessibility review, recorded in
+`H01_METRIC-011_figure_readability_qa.md`.
+
+| Final artifact | SHA-256 |
+|---|---|
+| Production audit | `93e06b6462296d143d3dabfdb36a93731fd32ea6c9e89f362e6c90cd69758ca5` |
+| Production runtime | `ee95a68d95ba7720920f82b944335c8b5835eaaf96a1c2ddcf3cdeee358d1c0e` |
+| Production provenance | `89d548aedfe1783d08b9aeb3cd550020c6c68b0cd225c3efa90a28a7e5d0285b` |
+| Production manifest | `e996dccb9556330a23c14bf2650ed7102662303dbac01a7873f5e974cc97eb57` |
+| Canonical integration summary | `b60caac20771230d4e371e79158c7da2ff2c7ae64d6f21b1027c49168667fbda` |
+| Canonical integration manifest | `f3755db338695515564bc3b60e4321bf4139eb0dffacab4ece7a86718cffb77d` |
+| Reporting integration summary | `202a8dd7b29308d1411b3b13b15f19ebf073b1f548ffaf78c094161d294dce06` |
+| Reporting integration manifest | `762794151fb5a50e3ef1964c7c05084d7a61e6c038538557b305fb3b8507633e` |
+| Stage 2 reporting manifest | `79e68e3676e7862e596495584e4bd8900b9bffd7f1778a8cfcbe2eef696baa79` |
+| Stage 3 reporting manifest | `12599e3b307bba9aa042697fe304e68a95cdf161fa9d297197f00abfb3bb0ada` |
+| Stage 4 preparation manifest | `bae856c2bb75df317f476e7e993178061628c0fcdbc6795a4b88f78843f8d9d0` |
+| Canonical model-results manifest | `eceb971726ee4a52cf4266ad1a44441c45078328c08f32c1ef1c1e83df2aee7c` |
+| Stage 2 source / HTML | `c5edcecf7e6288eae47eb19b71d8e6fd7a0a072a3fd2eb34c264577f943f0eb2` / `6106275d95acf3ee8f4be9460e472b019fbbcb43d6397f2b54a43ba687c9d759` |
+| Stage 3 source / HTML | `6a9c81d63e6b8b8ab67aa6886fe1bde36712f54f05b438a3298331eec92b8ed8` / `53a216ff0ae82b2e9177671d6330862832c1c5f2a9e79251e0da0acb5671260f` |
+| Stage 4 source / HTML | `85d51304a3a5808efa6ec4cf7bded79a07a31ff639a6643ec49be67fb8ed6dcc` / `5857f9e0655e5c1a8530c5794008d20dcb364749a8a7c36bd3e7815c15c36d38` |
+
+The first sandboxed Quarto attempt completed R/knitr but could not open its
+generated Deno/Sass cache database. Moving that generated cache recoverably
+to `/private/tmp/H01-quarto-cache-backup.Ne6oNn/project-cache` did not resolve
+the sandbox restriction. All three bounded H01 renders then completed outside
+the filesystem sandbox using the same project library and profile; no shared
+Quarto configuration was edited.
+
+### Proposed coordinator closure entries
+
+| Ledger class | Proposed entry |
+|---|---|
+| Finding | METRIC-011 normalized eight numerical-roundoff L10 cells to exact zero; four affected primary targets completed 1,000 retained successful joint refits each with zero failed/warning refits and no support or claim change. |
+| Decision | Close H01-013 after focused production, reporting, preservation, render, and manifest verifiers pass; no new author gate is required. |
+| Deviation | Retain the accepted shifted-log Gaussian L10 model as acceptable with limitations; disclose residual-shape warnings and unavailable upper-bound verification without changing family. |
+| Change log | Replaced only four primary L10 fit/draw/R-squared branches, recomputed complete affected BH vectors, refreshed dependent L10 comparison/results/provenance rows and figures, and preserved 830 protected artifacts. |
+| Result comparison | METRIC-011 changes values only below fitted numerical precision: all site, photoperiod, latitude, adequacy, sensitivity, and claim dispositions remain unchanged. |
+| Claim provenance | Existing H01 scientific claims remain supported with no wording consequence; reader reports now point to the verified METRIC-011 production outputs and retain all diagnostic limitations. |
+
+Unresolved gates: none for METRIC-011. The separate METRIC-010 record remains
+independent and was not changed by this closure. Central ledgers and manuscript
+claims were not edited; the coordinator should review and apply the proposed
+entries above.
+
+## Current METRIC-010 post-repair author gate (2026-08-11)
+
+The coordinator resolved the gap-timing-unaware MDER preparation defect and
+issued final input pins. The former zero for THUAS_S002 chest on 2025-03-09 is
+now reason-coded missing, 687 near-eye and 723 chest comparator days retain
+MDER, and all 25,620 non-MDER participant-day cells are unchanged. The final
+H01 pins are:
+
+- primary RDS
+  `2d226a48d92eec7f419e66f4011e8294557034abb4e1a6af6c055d4a0cbc7621`;
+- primary manifest
+  `5aa19326b2de468efb177af0d8f193253db63aade2d607f9570f5c3337e39c74`;
+- gap-timing-unaware RDS
+  `24948e6b138c80bf236a7c9b2b005760206d34a7318a45594ac541482408830e`;
+- gap-timing-unaware manifest
+  `79ee4818d7f3967827a6412f8537196e84ee7a6ccc1b8d2c5e9dd3124ed44b47`;
+  and
+- embedded gap scenario manifest
+  `4ed62fbe58de65a6d05d8cfc6b5d870d7c74a3c83fe89bcd72bd1dd838698935`.
+
+A fresh isolated MDER-only point run completed all eight registered
+scenario/placement/sample targets. The accepted 16-metric package was not
+refitted or overwritten; the 830 non-MDER artifact hashes remain verified.
+Exact MDER samples are:
+
+| Dataset | Placement | Sample | Participants | Participant-days/observations | Sites |
+|---|---|---|---:|---:|---:|
+| Primary | Near eye | All available | 137 | 702 | 9 |
+| Primary | Chest | All available | 152 | 732 | 8 |
+| Primary | Near eye | Paired/common | 107 | 489 | 8 |
+| Primary | Chest | Paired/common | 107 | 489 | 8 |
+| Gap-timing-unaware | Near eye | All available | 137 | 687 | 9 |
+| Gap-timing-unaware | Chest | All available | 152 | 723 | 8 |
+| Gap-timing-unaware | Near eye | Paired/common | 107 | 478 | 8 |
+| Gap-timing-unaware | Chest | Paired/common | 107 | 478 | 8 |
+
+Primary support hours are 10,949.917 near eye, 11,145.300 at the chest,
+7,665.217 for paired near eye, and 7,435.617 for paired chest. Comparator
+support hours remain unavailable.
+
+The primary near-eye equally weighted MDER is 0.726 (95% CI 0.712 to 0.740).
+Photoperiod is +0.024 MDER/h (95% CI +0.017 to +0.031) and absolute latitude
+is -0.014 MDER/10 degrees (95% CI -0.024 to -0.004). Complete 17-test BH
+q-values are <0.001 for site, <0.001 for photoperiod, 0.013 for latitude, and
+0.010 for site-versus-linear-latitude adequacy. Kumasi is +0.083 (95% CI
++0.041 to +0.126; within-MDER q = 0.001) and Munich is -0.083 (95% CI
+-0.130 to -0.036; q = 0.002) relative to the equal-site mean.
+
+Primary package support changes from 8/12/6/8 to 10/12/7/9 for
+site/photoperiod/latitude/adequacy. All other raw p-values are unchanged, but
+the complete site-family ranking moves calendar-day time below 10 lx melEDI
+before sleep from q = 0.054 to q = 0.049. The inference change remains
+material and requires author approval.
+
+The repaired gap-timing-unaware near-eye MDER reproduces all four primary
+support decisions (q <0.001, <0.001, 0.016, and 0.010). On exactly common
+days, its mean differs from primary by only -0.000039 near eye and +0.000009
+at the chest; the old approximately 0.010/0.015 comparison is superseded.
+
+The exact paired/common placement display uses near eye on x, chest on y,
+identity and null lines, equal geometry, component 95% intervals, and 107
+participants with 489 primary or 478 comparator days at each placement.
+Photoperiod is supported at both placements. Latitude is unsupported near eye
+but supported at the chest in both datasets, demonstrating placement
+sensitivity without constituting a direct placement-effect test.
+
+All eight fits converge with positive-definite Hessians and no singularity or
+major diagnostic failure. All remain `WARN_REVIEW` for Gaussian residual
+shape and are classified acceptable with limitations. Primary results survive
+omitting the highest-DFBETA participant or maximum-MDER day. Latitude is weak
+after omitting Kumasi and also weak after omitting Tübingen. The chest maximum
+of 3.574 and KNUST_S007 maximum absolute DFBETA of 2.62 remain visible
+limitations; omission strengthens rather than creates the main chest signals.
+
+Current evidence:
+
+- `audit/hypotheses/H01/mder_METRIC-010/H01_METRIC-010_author_gate.md`;
+- `audit/hypotheses/H01/mder_METRIC-010/point_refit_repaired_gap/`;
+- `audit/hypotheses/H01/mder_METRIC-010/author_gate_post_repair/`; and
+- `audit/handoffs/H01_shared_change_request.md` (resolved).
+
+No bootstrap pilot, production bootstrap, report render, accepted-artifact
+merge, central-ledger edit, or manuscript change was performed.
+
+### Current proposed coordinator ledger updates
+
+| Ledger class | Proposed entry |
+|---|---|
+| Finding | METRIC-010 changes primary H01 MDER from photoperiod-only support to site, photoperiod, latitude, and adequacy support; q <0.001, <0.001, 0.013, and 0.010. |
+| Finding | Complete-vector BH recomputation moves the unchanged calendar-day pre-sleep site result from q = 0.054 to q = 0.049. |
+| Finding | The repaired gap-timing-unaware sensitivity reproduces all four primary MDER support decisions; exact common-day mean differences are -0.000039 near eye and +0.000009 chest. |
+| Finding | In exact paired/common samples, photoperiod support is consistent across placements, while latitude support appears at chest but not near eye; this is placement sensitivity, not a direct placement-effect test. |
+| Decision | Shared-input gate resolved; retain Gaussian identity as acceptable with limitations and stop at material-inference author approval before any bootstrap pilot. |
+| Deviation | Preserve all 16 non-MDER fits and accepted production draws; replace only MDER-dependent targets after explicit pilot and production approvals. |
+| Change log | Repinned repaired inputs; reran eight isolated MDER point targets, complete affected BH vectors, diagnostics/influence, exact samples, common-day and paired-placement comparisons; verified 830 frozen non-MDER artifacts. |
+| Result comparison | Provisional point baseline: support counts change from 8/12/6/8 to 10/12/7/9. Final interval comparison awaits approved production bootstrap. |
+| Claim provenance | Existing H01 claims remain released until author approval, pilot review, production approval, and MDER-only final merge. |
+
+## Superseded pre-repair METRIC-010 reopening (2026-08-11)
+
+This section supersedes the closed H01 status below only for MDER-dependent
+outputs. The accepted fits and artifacts for the other 16 metrics remain
+frozen. No accepted H01 model bundle, production bootstrap draw, Stage 2–4
+source, rendered page, central ledger, shared preparation file, or manuscript
+file was overwritten.
+
+The H01 model contract now uses the internal identifier
+`mder_mean_of_viable_ratios`, while reader-facing terminology remains MDER.
+The controlling construct is the arithmetic mean of viable one-minute
+melEDI/illuminance ratios, using only finite, strictly positive pairs and
+retaining a day at 720 or more viable minutes.
+
+An isolated point refit was completed for all eight registered H01
+scenario/placement/sample targets using the unchanged common Gaussian
+identity implementation. The primary near-eye fit used 137 participants,
+702 participant-days/observations, all 9 sites, and 10,949.917 h of viable
+minute support. The equally weighted overall MDER was 0.726 (95% CI 0.712 to
+0.740); photoperiod was +0.0236 MDER/h (95% CI +0.0166 to +0.0307), and
+absolute latitude was -0.0139 MDER/10 degrees (95% CI -0.0237 to -0.0042).
+
+The complete primary 17-test BH families provisionally support MDER for site
+(q = 0.000635), photoperiod (q < 0.001), latitude (q = 0.0125), and
+site-versus-linear-latitude adequacy (q = 0.00980). The changed MDER site
+p-value also changes the BH rank of the unchanged pre-sleep metric, moving its
+overall-site q from 0.0541 to 0.0487. Primary support counts would therefore
+change from 8/12/6/8 to 10/12/7/9 for site, photoperiod, latitude, and
+adequacy. This is a material inferential and claim change and requires author
+approval.
+
+All eight point fits converged without a predefined major diagnostic failure,
+but all remain `WARN_REVIEW` for Gaussian residual shape. Primary MDER
+support remains after omitting the highest-DFBETA participant or the maximum
+MDER participant-day. Latitude leave-one-site-out results are weaker when
+Kumasi or Tübingen is removed, so a universal latitude-gradient claim would
+remain inappropriate. The chest maximum of 3.574 is newly identified under
+METRIC-010 and has strong participant influence; the superseded
+ratio-of-integrals device-day screen was not reused.
+
+The gap-timing-unaware chest artifact retains MDER = 0 for THUAS_S002 on
+2025-03-09 in both all-available and paired/common frames. A retained mean of
+strictly positive minute ratios cannot equal zero. The required shared repair
+and full downstream scope are documented in
+`audit/handoffs/H01_shared_change_request.md`. H01 stopped without changing
+the shared artifacts.
+
+The complete evidence and decisions requested are in
+`audit/hypotheses/H01/mder_METRIC-010/H01_METRIC-010_author_gate.md`. The
+isolated point outputs are under
+`audit/hypotheses/H01/mder_METRIC-010/point_refit/`, and the provisional
+complete-family, sample, diagnostic, distribution, influence, and hash
+evidence is under
+`audit/hypotheses/H01/mder_METRIC-010/author_gate/`.
+
+No METRIC-010 bootstrap pilot was launched. After the coordinator repairs and
+repins the invalid gap row and the author accepts the revised point inference,
+the next authorized action is a separately stored 50-successful-refit pilot
+for every planned MDER bootstrap target, followed by another explicit author
+approval before production.
+
+### Proposed coordinator ledger updates
+
+| Ledger class | Proposed entry |
+|---|---|
+| Finding | METRIC-010 changes primary H01 MDER support from photoperiod-only to support for site, photoperiod, latitude, and adequacy; primary site q = 0.000635, latitude q = 0.0125, adequacy q = 0.00980. |
+| Finding | Complete-vector BH recomputation moves the unchanged calendar-day pre-sleep site result from q = 0.0541 to q = 0.0487. |
+| Finding | The gap-timing-unaware chest artifact retains one construct-impossible zero MDER day (THUAS_S002, 2025-03-09), affecting its all-available and paired/common H01 frames. |
+| Decision | Reopen H01 only for METRIC-010; stop at a shared-input repair gate and a material-inference author gate. |
+| Deviation | Preserve all 16 non-MDER fits and every accepted production draw; do not update reports or claims from provisional point output. |
+| Change log | Updated the H01 MDER identifier/input pins; produced eight isolated point refits, complete provisional 17-test BH vectors, exact samples, diagnostics, upper-tail and influence checks, frozen non-MDER hashes, gate evidence, and the shared-change request. |
+| Result comparison | Provisional only: primary support counts change from 8/12/6/8 to 10/12/7/9 for site/photoperiod/latitude/adequacy; final comparison awaits shared repair and production bootstrap. |
+| Claim provenance | Existing H01 claims remain the released version until the shared repair, author decision, pilot approval, and production update are complete. |
 
 ## Authoritative current disposition
 

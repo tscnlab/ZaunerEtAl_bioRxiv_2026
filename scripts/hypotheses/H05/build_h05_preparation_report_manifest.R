@@ -56,7 +56,9 @@ dir.create(
 if (!file.copy(source_path, rendered_source_path, overwrite = TRUE)) {
   stop("Could not create the H05 website QMD source copy", call. = FALSE)
 }
-if (!identical(read_raw_file(source_path), read_raw_file(rendered_source_path))) {
+if (
+  !identical(read_raw_file(source_path), read_raw_file(rendered_source_path))
+) {
   stop(
     "The H05 website QMD copy is not byte-identical to its authoring source",
     call. = FALSE
@@ -151,6 +153,15 @@ files <- unique(c(
     root,
     "audit/decisions/gap_timing_unaware_dataset_terminology.md"
   ),
+  file.path(root, "audit/decisions/mder_mean_of_viable_ratios.md"),
+  file.path(root, "audit/decisions/l10_numerical_zero_normalization.md"),
+  file.path(
+    root,
+    paste0(
+      "audit/reconciliation/l10_METRIC-011/",
+      "METRIC-011_evidence_manifest.csv"
+    )
+  ),
   file.path(root, "audit/decisions/figure_readability_and_layout.md"),
   file.path(root, "audit/decisions/report011_physical_size_revalidation.md"),
   file.path(root, "audit/decisions/reader_facing_symlog_scale.md"),
@@ -199,21 +210,26 @@ relative <- substring(normalized_files, nchar(root) + 2L)
 role <- dplyr::case_when(
   relative == "audit/hypotheses/H05/H05_analysis_preparation.qmd" ~
     "preparation_source",
-  relative == paste0(
-    "_build/nathealth/audit/hypotheses/H05/",
-    "H05_analysis_preparation.html"
-  ) ~ "preparation_render",
-  relative == paste0(
-    "_build/nathealth/audit/hypotheses/H05/",
-    "H05_analysis_preparation.qmd"
-  ) ~ "preparation_rendered_source",
+  relative ==
+    paste0(
+      "_build/nathealth/audit/hypotheses/H05/",
+      "H05_analysis_preparation.html"
+    ) ~
+    "preparation_render",
+  relative ==
+    paste0(
+      "_build/nathealth/audit/hypotheses/H05/",
+      "H05_analysis_preparation.qmd"
+    ) ~
+    "preparation_rendered_source",
   startsWith(
     relative,
     paste0(
       "_build/nathealth/audit/hypotheses/H05/",
       "H05_analysis_preparation_files/"
     )
-  ) ~ "preparation_page_asset",
+  ) ~
+    "preparation_page_asset",
   relative == "notebooks/hypotheses/H05.qmd" ~ "result_report_source",
   relative == "_build/nathealth/notebooks/hypotheses/H05.html" ~
     "result_report_render",
@@ -256,18 +272,21 @@ if (
   anyDuplicated(inventory$path) ||
     anyNA(inventory$sha256) ||
     any(nchar(inventory$sha256) != 64L) ||
-    !all(c(
-      "audit/hypotheses/H05/H05_analysis_preparation.qmd",
-      paste0(
-        "_build/nathealth/audit/hypotheses/H05/",
-        "H05_analysis_preparation.qmd"
-      ),
-      paste0(
-        "_build/nathealth/audit/hypotheses/H05/",
-        "H05_analysis_preparation.html"
-      ),
-      "_quarto-nathealth.yml"
-    ) %in% inventory$path)
+    !all(
+      c(
+        "audit/hypotheses/H05/H05_analysis_preparation.qmd",
+        paste0(
+          "_build/nathealth/audit/hypotheses/H05/",
+          "H05_analysis_preparation.qmd"
+        ),
+        paste0(
+          "_build/nathealth/audit/hypotheses/H05/",
+          "H05_analysis_preparation.html"
+        ),
+        "_quarto-nathealth.yml"
+      ) %in%
+        inventory$path
+    )
 ) {
   stop("Invalid H05 preparation-report manifest", call. = FALSE)
 }

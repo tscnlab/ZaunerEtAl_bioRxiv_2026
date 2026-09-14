@@ -9,6 +9,12 @@
 
 p04_core_day_key <- c("site", "Id", "position", "local_date")
 p04_core_participant_key <- c("site", "Id", "position")
+p04_core_numerical_zero_rule <- paste0(
+  "normalize_to_zero_only_if_abs(raw_backtransform)<=",
+  "100*.Machine$double.eps*max(1,abs(shifted_mean),abs(zero_offset))",
+  "_and_source_values_are_all_exact_zero;",
+  "within-tolerance_negative_domain_roundoff_is_also_zero"
+)
 p04_core_profile_alignment_key <- c(
   "profile_scope",
   "profile_variant",
@@ -138,7 +144,7 @@ p04_core_normalise_placements <- function(
   ) {
     p04_core_abort(
       paste0(
-        "The exact 29-artifact contract requires exactly two safe ",
+        "The exact 31-artifact contract requires exactly two safe ",
         "placement labels"
       )
     )
@@ -200,6 +206,10 @@ p04_core_output_paths <- function(metric_run_root, placement) {
     metric_gap_diagnostics = file.path(
       metric_run_root,
       paste0(prefix, "gap_diagnostics.csv")
+    ),
+    metric_numerical_zero_audit = file.path(
+      metric_run_root,
+      paste0(prefix, "numerical_zero_audit.csv")
     )
   )
 }
@@ -575,9 +585,9 @@ p04_core_verify_manifest <- function(
     ),
     object = "Preparation 04 artifact manifest"
   )
-  if (nrow(manifest) != 29L) {
+  if (nrow(manifest) != 31L) {
     p04_core_abort(
-      "Preparation 04 manifest must contain exactly 29 artifacts; found %d",
+      "Preparation 04 manifest must contain exactly 31 artifacts; found %d",
       nrow(manifest)
     )
   }
@@ -604,7 +614,7 @@ p04_core_verify_manifest <- function(
       !identical(observed$path, expected$path)
   ) {
     p04_core_abort(
-      "Preparation 04 manifest does not match the exact 29-artifact path/type set"
+      "Preparation 04 manifest does not match the exact 31-artifact path/type set"
     )
   }
   if (
@@ -716,7 +726,10 @@ p04_core_read_outputs <- function(metric_run_root, placements) {
       censoring = p04_core_read_csv(
         paths[["metric_censoring_diagnostics"]]
       ),
-      gap = p04_core_read_csv(paths[["metric_gap_diagnostics"]])
+      gap = p04_core_read_csv(paths[["metric_gap_diagnostics"]]),
+      numerical_zero = p04_core_read_csv(
+        paths[["metric_numerical_zero_audit"]]
+      )
     )
   }
   outputs
@@ -736,6 +749,7 @@ p04_core_verify_dimensions <- function(
   admissibility <- output$admissibility
   censoring <- output$censoring
   gap <- output$gap
+  numerical_zero <- output$numerical_zero
 
   assert_columns(
     daily,
@@ -779,6 +793,94 @@ p04_core_verify_dimensions <- function(
       "%s output dimensions do not reconcile to metric settings",
       placement
     )
+  }
+  assert_columns(
+    numerical_zero,
+    c(
+      p04_core_day_key,
+      "metric",
+      "analysis_unit",
+      "clock_hour",
+      "raw_backtransformed_value_lx",
+      "normalized_value_lx",
+      "numerical_zero_tolerance_lx",
+      "source_all_zero",
+      "source_valid_minutes",
+      "source_zero_minutes",
+      "source_positive_minutes",
+      "source_missing_minutes",
+      "numerical_zero_decision_id",
+      "numerical_zero_rule",
+      "raw_value_preserved"
+    ),
+    object = paste0(placement, " numerical-zero audit")
+  )
+  if (nrow(numerical_zero) > 0L) {
+    invalid_clock_key <-
+      (!numerical_zero$analysis_unit %in% c(
+        "participant_day",
+        "participant_day_window",
+        "participant_hour"
+      )) |
+      (numerical_zero$analysis_unit %in% c(
+        "participant_day",
+        "participant_day_window"
+      ) &
+        !is.na(numerical_zero$clock_hour)) |
+      (numerical_zero$analysis_unit == "participant_hour" &
+        (
+          is.na(numerical_zero$clock_hour) |
+            numerical_zero$clock_hour < 0L |
+            numerical_zero$clock_hour > 23L |
+            numerical_zero$clock_hour !=
+              as.integer(numerical_zero$clock_hour)
+        ))
+    if (anyNA(invalid_clock_key) || any(invalid_clock_key)) {
+      p04_core_abort(
+        "%s numerical-zero audit has an invalid analysis-unit/clock key",
+        placement
+      )
+    }
+    numerical_zero_key <- numerical_zero
+    numerical_zero_key$clock_hour_key <- ifelse(
+      numerical_zero_key$analysis_unit %in% c(
+        "participant_day",
+        "participant_day_window"
+      ),
+      -1L,
+      as.integer(numerical_zero_key$clock_hour)
+    )
+    p04_core_assert_unique(
+      numerical_zero_key,
+      c(
+        p04_core_day_key,
+        "metric",
+        "analysis_unit",
+        "clock_hour_key"
+      ),
+      paste0(placement, " numerical-zero audit")
+    )
+    invalid_numerical_zero <-
+      !is.finite(numerical_zero$raw_backtransformed_value_lx) |
+      numerical_zero$raw_backtransformed_value_lx == 0 |
+      numerical_zero$normalized_value_lx != 0 |
+      !is.finite(numerical_zero$numerical_zero_tolerance_lx) |
+      numerical_zero$numerical_zero_tolerance_lx <= 0 |
+      abs(numerical_zero$raw_backtransformed_value_lx) >
+        numerical_zero$numerical_zero_tolerance_lx |
+      (numerical_zero$raw_backtransformed_value_lx > 0 &
+        !numerical_zero$source_all_zero) |
+      numerical_zero$source_valid_minutes !=
+        numerical_zero$source_zero_minutes +
+          numerical_zero$source_positive_minutes |
+      numerical_zero$numerical_zero_decision_id != "METRIC-011" |
+      !numerical_zero$raw_value_preserved
+    if (anyNA(invalid_numerical_zero) || any(invalid_numerical_zero)) {
+      p04_core_abort(
+        "%s numerical-zero audit violates METRIC-011",
+        placement
+      )
+    }
   }
 
   daily_long <- long |>
@@ -1244,6 +1346,16 @@ p04_core_verify_settings_and_inputs <- function(
     "timing_exceedance_application",
     "dose_minimum_relevance_support",
     "minimum_circular_resultant",
+    "numerical_zero_decision_id",
+    "numerical_zero_status",
+    "numerical_zero_scope",
+    "numerical_zero_rule",
+    "numerical_zero_tolerance_multiplier",
+    "numerical_zero_positive_requires_all_source_zero",
+    "numerical_zero_raw_value_preserved",
+    "numerical_zero_reclassified_cells",
+    "numerical_zero_zero_capable_model_rule",
+    "numerical_zero_two_part_model_rule",
     "eligible_participant_days",
     "participants",
     "longest_bout_primary",
@@ -1277,6 +1389,20 @@ p04_core_verify_settings_and_inputs <- function(
     settings$timing_exceedance_comparison != "strict_greater_than" |
     settings$timing_exceedance_aggregation != expected_aggregation |
     settings$timing_exceedance_application != "support_only_no_value_scaling" |
+    settings$numerical_zero_decision_id != "METRIC-011" |
+    settings$numerical_zero_status != "author_approved" |
+    settings$numerical_zero_scope !=
+      "offset_geometric_mean_backtransforms" |
+    settings$numerical_zero_rule != p04_core_numerical_zero_rule |
+    settings$numerical_zero_tolerance_multiplier != 100 |
+    !settings$numerical_zero_positive_requires_all_source_zero |
+    !settings$numerical_zero_raw_value_preserved |
+    settings$numerical_zero_zero_capable_model_rule !=
+      "retain_participant_day_as_zero" |
+    settings$numerical_zero_two_part_model_rule != paste0(
+      "retain_in_zero_occurrence_component;exclude_only_from_",
+      "strictly_positive_magnitude_component"
+    ) |
     settings$longest_bout_primary !=
       "longest_observed_uninterrupted_above_250_lower_bound" |
     settings$longest_bout_missing_rule !=
@@ -1366,7 +1492,9 @@ p04_core_verify_settings_and_inputs <- function(
     }
     if (
       nrow(outputs[[placement]]$daily) !=
-        as.integer(row$eligible_participant_days[[1L]])
+        as.integer(row$eligible_participant_days[[1L]]) ||
+        nrow(outputs[[placement]]$numerical_zero) !=
+          as.integer(row$numerical_zero_reclassified_cells[[1L]])
     ) {
       p04_core_abort(
         "%s settings participant-day count is stale",
@@ -2522,7 +2650,7 @@ verify_metric_derivation_core <- function(
     status = "PASS",
     run_label = layout$run_label,
     verification_scope = paste0(
-      "exact_29_artifact_manifest_and_whole_cohort_invariants;",
+      "exact_31_artifact_manifest_and_whole_cohort_invariants;",
       "deterministic_exact_minute_reconstruction"
     ),
     minute_reconstruction_scope = if (is.infinite(sample_days_per_placement)) {

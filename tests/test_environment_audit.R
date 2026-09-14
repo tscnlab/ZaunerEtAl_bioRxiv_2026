@@ -52,26 +52,27 @@ sf_row <- reconciliation[reconciliation$package == "sf", ]
 
 stopifnot(
   nrow(see_row) == 1L,
-  !see_row$static_detected,
   see_row$runtime_required,
   see_row$installed,
-  !see_row$locked,
-  see_row$reconciliation_status == "missing_from_lock_pending_snapshot",
+  see_row$locked,
+  see_row$version_equal,
+  see_row$reconciliation_status == "version_synchronized",
   nrow(dharma_row) == 1L,
-  !dharma_row$static_detected,
   dharma_row$runtime_required,
   dharma_row$installed,
-  !dharma_row$locked,
-  dharma_row$reconciliation_status == "missing_from_lock_pending_snapshot",
+  dharma_row$locked,
+  dharma_row$version_equal,
+  dharma_row$reconciliation_status == "version_synchronized",
   nrow(shiny_row) == 1L,
   shiny_row$static_detected,
   shiny_row$static_source_count == 11L,
   !shiny_row$runtime_required,
   isTRUE(shiny_row$scanner_false_positive_confirmed),
   shiny_row$installed,
-  !shiny_row$locked,
-  matrix_row$reconciliation_status == "version_mismatch_pending_snapshot",
-  sf_row$reconciliation_status == "version_mismatch_pending_snapshot"
+  shiny_row$locked,
+  shiny_row$version_equal,
+  matrix_row$reconciliation_status == "version_synchronized",
+  sf_row$reconciliation_status == "version_synchronized"
 )
 
 stopifnot(
@@ -80,11 +81,23 @@ stopifnot(
     result$summary$status[
       result$summary$check == "lock_r_version"
     ],
-    "PENDING_LOCK_SNAPSHOT"
+    "PASS"
   ),
   identical(
     result$summary$status[
       result$summary$check == "dependency_scan_seconds"
+    ],
+    "PASS"
+  ),
+  identical(
+    result$summary$status[
+      result$summary$check == "version_mismatches"
+    ],
+    "PASS"
+  ),
+  identical(
+    result$summary$status[
+      result$summary$check == "explicit_packages_missing_from_lock"
     ],
     "PASS"
   )

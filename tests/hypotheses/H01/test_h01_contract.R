@@ -33,7 +33,15 @@ stopifnot(
   ] == 24,
   registry$audit_upper_threshold[
     registry$metric_id == "duration_below_10_pre_sleep"
-  ] == 6
+  ] == 6,
+  registry$metric_id[registry$metric_order == 17L] ==
+    "mder_mean_of_viable_ratios",
+  registry$response_family[
+    registry$metric_id == "mder_mean_of_viable_ratios"
+  ] == "gaussian",
+  registry$response_transform[
+    registry$metric_id == "mder_mean_of_viable_ratios"
+  ] == "identity"
 )
 
 message("Testing the four vector-wide H01 families")

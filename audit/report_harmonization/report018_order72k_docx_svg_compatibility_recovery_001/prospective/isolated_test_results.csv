@@ -1,0 +1,117 @@
+test,pass
+accept base=True native=False dpi=False raster=False without mutation,True
+relationship selection True/False/False/False,True
+accept base=True native=False dpi=True raster=False without mutation,True
+relationship selection True/False/True/False,True
+accept base=False native=True dpi=False raster=False without mutation,True
+relationship selection False/True/False/False,True
+accept base=False native=True dpi=True raster=False without mutation,True
+relationship selection False/True/True/False,True
+accept base=True native=True dpi=False raster=False without mutation,True
+relationship selection True/True/False/False,True
+accept base=True native=True dpi=True raster=False without mutation,True
+relationship selection True/True/True/False,True
+accept base=True native=True dpi=True raster=True without mutation,True
+relationship selection True/True/True/True,True
+base and SVG may share one exact relationship,True
+standard extension order preserved verbatim,True
+no image relationship,True
+duplicate relationship ID,True
+empty relationship ID,True
+whitespace relationship ID,True
+wrong relationship namespace,True
+base target mode External,True
+base target mode external,True
+base target mode Unknown,True
+base wrong relationship type,True
+base missing relationship type,True
+base unresolved ID,True
+base invalid target 'https://example.invalid/x.svg',True
+base invalid target '../media/x.svg',True
+base invalid target '/word/media/x.svg',True
+base invalid target 'media/../x.svg',True
+base invalid target 'media//x.svg',True
+base invalid target 'media/x.svg#fragment',True
+base invalid target 'media/x.svg?query',True
+base invalid target 'media/%2e%2e/x.svg',True
+base invalid target 'media\\x.svg',True
+base invalid target 'media/x y.svg',True
+base invalid target '',True
+native target mode External,True
+native target mode external,True
+native target mode Unknown,True
+native wrong relationship type,True
+native missing relationship type,True
+native unresolved ID,True
+native invalid target 'https://example.invalid/x.svg',True
+native invalid target '../media/x.svg',True
+native invalid target '/word/media/x.svg',True
+native invalid target 'media/../x.svg',True
+native invalid target 'media//x.svg',True
+native invalid target 'media/x.svg#fragment',True
+native invalid target 'media/x.svg?query',True
+native invalid target 'media/%2e%2e/x.svg',True
+native invalid target 'media\\x.svg',True
+native invalid target 'media/x y.svg',True
+native invalid target '',True
+missing native member,True
+missing base member,True
+native mismatched payload,True
+base SVG mismatched payload,True
+base-only mismatched payload,True
+base-only raster not silently promoted,True
+bad existing PNG fallback,True
+unrecognized existing fallback,True
+linked blip,True
+unexpected blip attribute,True
+empty base ID,True
+unexpected text,True
+unexpected child,True
+duplicate extension list,True
+empty extension list,True
+extension list attributes,True
+unknown extension,True
+duplicate SVG extension,True
+duplicate DPI extension,True
+malformed extension namespace,True
+extension extra attribute,True
+extension extra child,True
+missing SVG child,True
+wrong SVG child namespace,True
+empty native relationship,True
+native child nested content,True
+native child unexpected attribute,True
+DPI wrong val,True
+DPI wrong namespace,True
+DPI extra attribute,True
+DPI nested content,True
+"addition preserves crop and one native node, DPI=False",True
+"exact whole-fill reversal, DPI=False",True
+"addition preserves crop and one native node, DPI=True",True
+"exact whole-fill reversal, DPI=True",True
+adding over native fails unchanged,True
+shared-source retarget is idempotent,True
+shared-source conflict rejected unchanged,True
+SVG content type insertion is precise and idempotent,True
+reject duplicate_default without mutation,True
+reject wrong_default without mutation,True
+reject duplicate_override without mutation,True
+reject wrong_override without mutation,True
+orphan-removal block AST unchanged,True
+orphan cleanup removes only unreferenced former member,True
+actual main SVG 1 native-only validated,True
+actual main SVG 2 native-only validated,True
+actual main SVG 3 native-only validated,True
+actual document and relationships entirely unchanged,True
+final52/23 drawing gate 51/22,True
+final52/23 drawing gate 51/23,True
+final52/23 drawing gate 51/24,True
+final52/23 drawing gate 52/22,True
+final52/23 drawing gate 52/23,True
+final52/23 drawing gate 52/24,True
+final52/23 drawing gate 53/22,True
+final52/23 drawing gate 53/23,True
+final52/23 drawing gate 53/24,True
+physical22SVG gate 21,True
+physical22SVG gate 22,True
+physical22SVG gate 23,True

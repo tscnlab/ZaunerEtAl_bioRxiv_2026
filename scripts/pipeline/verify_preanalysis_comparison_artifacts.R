@@ -1806,8 +1806,11 @@ preanalysis_verifier_verify_series_summary <- function(
   )
   effective <- preanalysis_verifier_effective_crosswalk(crosswalk)
   expected <- preanalysis_verifier_expected_series(effective)
-  if (nrow(series) != 172L) {
-    abort_pipeline("Series summary must contain exactly 172 rows")
+  if (nrow(series) != nrow(expected)) {
+    abort_pipeline(
+      "Series summary must contain exactly %s rows",
+      nrow(expected)
+    )
   }
   preanalysis_verifier_assert_exact_keys(
     series,
@@ -2110,8 +2113,7 @@ preanalysis_verifier_verify_numeric_quantiles <- function(
   )
   crosswalk_index <- match(quantiles$variable_id, crosswalk$variable_id)
   if (
-    nrow(quantiles) != 1062L ||
-      anyNA(crosswalk_index) ||
+    anyNA(crosswalk_index) ||
       any(crosswalk$value_type[crosswalk_index] != "numeric") ||
       any(!quantiles$series %in% c("baseline", "canonical")) ||
       !is.numeric(quantiles$probability) ||
@@ -2124,6 +2126,14 @@ preanalysis_verifier_verify_numeric_quantiles <- function(
     c(preanalysis_verifier_variable_key, "series"),
     drop = FALSE
   ]
+  expected_rows <-
+    nrow(expected_groups) * length(preanalysis_verifier_probabilities)
+  if (nrow(quantiles) != expected_rows) {
+    abort_pipeline(
+      "Numeric quantiles must contain exactly %s rows",
+      expected_rows
+    )
+  }
   observed_groups <- unique(quantiles[
     c(preanalysis_verifier_variable_key, "series")
   ])
@@ -3241,8 +3251,11 @@ preanalysis_verifier_verify_numeric_figure_data <- function(
     preanalysis_verifier_numeric_figure_schema,
     drop = FALSE
   ]
-  if (nrow(figure) != 570L) {
-    abort_pipeline("Numeric figure data must contain exactly 570 rows")
+  if (nrow(figure) != nrow(expected)) {
+    abort_pipeline(
+      "Numeric figure data must contain exactly %s rows",
+      nrow(expected)
+    )
   }
   preanalysis_verifier_compare_table(
     figure,

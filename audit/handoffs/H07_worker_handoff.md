@@ -1,11 +1,11 @@
 # H07 worker handoff
 
-Last updated: 2026-08-07
+Last updated: 2026-08-12
 Branch: `rewrite/NH`
-Current gate: H07-005 approved; H07 worker closed, coordinator integration pending
-Production computation: not run
+Current gate: H07-005 approved; bounded METRIC-011 reseal complete; coordinator integration pending
+Production computation: no full rerun; 59 sealed-input L10 refits completed
 Stage 3: rendered and verified
-Stage 4: approved, rendered, and verified before shared-site integration
+Stage 4: approved, resealed, rendered, and verified before shared-site integration
 
 ## Scope and ownership
 
@@ -43,6 +43,20 @@ Decision `H07-005` approved `H07-S4-001` through `H07-S4-004` on
 central-ledger integration remain coordinator-owned and pending; they require
 no scientific recomputation.
 
+On 2026-08-12, shared decision `METRIC-011` reopened H07 only for the sealed
+L10 mean numerical-zero normalization. Eight primary source cells changed
+from `4.163336342344337e-17` lx to exact zero: three near eye and five at the
+chest. The bounded reconciliation refit 18 primary, 24 declared sensitivity,
+and 17 leave-one-site-out L10 branches, recomputed BH fields in families
+containing L10, and preserved the historical V0 reconstruction and every
+non-L10 fit and raw test. No fitted sample, diagnostic category, derivative
+classification, transition grid point, conditional-AIC category, BH
+significance label, or REPORT-008 three-decimal value changed. The result
+remains six of nine near-eye and seven of nine chest patterns, with L10 a
+pattern at both placements. Because the scientific conclusions did not
+change, the accepted H07 gates remain closed rather than returning for a new
+author decision.
+
 Durable records:
 
 - `audit/hypotheses/H07/H07_stage1_gate_and_stage2_transition.md`;
@@ -51,7 +65,8 @@ Durable records:
 - `audit/hypotheses/H07/H07_stage3_author_gate.md`;
 - `audit/hypotheses/H07/H07_stage3_gate_and_stage4_transition.md`; and
 - `audit/hypotheses/H07/H07_stage4_author_gate.md`; and
-- `audit/hypotheses/H07/H07_stage4_closure.md`.
+- `audit/hypotheses/H07/H07_stage4_closure.md`; and
+- `audit/hypotheses/H07/H07_METRIC-011_reconciliation.md`.
 
 H07-002 is explicitly post-result. It removes the pooled-support,
 one-hour-run, and leave-one-site-out criteria as eligibility gates while
@@ -88,6 +103,9 @@ a mechanistic ceiling, or a causal photoperiod effect.
   `audit/hypotheses/H07/01_audit_and_plan.html`.
 - Core implementation:
   `scripts/hypotheses/H07/h07_stage2_core.R`.
+- Bounded sealed-input reconciliation:
+  `scripts/hypotheses/H07/reconcile_h07_metric011.R` and
+  `audit/hypotheses/H07/H07_METRIC-011_reconciliation.md`.
 - Revised derivative extraction:
   `scripts/hypotheses/H07/build_h07_stage2_revised_derivative_assessment.R`.
 - Paired fitted-smooth/derivative figure builder:
@@ -100,6 +118,8 @@ a mechanistic ceiling, or a causal photoperiod effect.
 - Persisted tables, diagnostics, formula and run registries, sample counts,
   support grids, sensitivity classifications, and session information are
   under `artifacts/09_tables/H07/`.
+- METRIC-011 seals, scientific comparison, and exact artifact-update hashes
+  are under `artifacts/12_manifests/H07/H07_METRIC-011_*.csv`.
 
 The revised derivative artifacts include:
 
@@ -125,17 +145,34 @@ used R 4.6.1 and the existing project library. Current SHA-256 values are:
 |---|---|
 | `01_audit_and_plan.qmd` | `cc23223d751901a2dd06ece56a0457988f1e7d572f123bd3a0450f775f056b86` |
 | `01_audit_and_plan.html` | `94b3cb1678e898b9b6652ce378a477a42a18a41258780fb57f0719f053c66f83` |
-| `02_implementation_and_v0_comparison.qmd` | `b6489eb8ffd78b6f96493d296d88da73ae18ddfb2bb36d56540d044a6b319680` |
-| `02_implementation_and_v0_comparison.html` | `e5e7b22e94253783c26224b82200778533d6f39caf3d4bf036888834161d4002` |
+| `02_implementation_and_v0_comparison.qmd` | `554bbccefd9ffa50915e0d4ae9cbb3b3adb8e1f4a0b4db8e428a6842557b95cb` |
+| `02_implementation_and_v0_comparison.html` | `fa84bf89f5c3ed1c0da1164e896111aa1f18c75a86a473fdca4debd5509d6acd` |
 | `H07_stage2_derivative_gate_revision.md` | `f1749102406563932f3f9b981c99f4197c9c8a6790a57a1d47c3556f67ce1ed7` |
 | `build_h07_stage2_revised_derivative_assessment.R` | `1d423755c9155f4776b27df8fb37a0a0eb7511d416f94b664746bf8e55e3a53b` |
 | `build_h07_stage2_paired_smooth_derivative_figures.R` | `cd0606469932e28ff6acd0f0d1f833ae8a92daeae9934f595cb447228ffbe770` |
+
+The bounded METRIC-011 reconciliation is pinned by the following H07-owned
+non-circular hashes:
+
+| Artifact | SHA-256 |
+|---|---|
+| `h07_stage2_core.R` | `973267891574e73a27cfb49b4598fffaf355fc9f5bca1b1731a6be0ee05ac8b8` |
+| `run_h07_stage2_main.R` | `6f1bce47cfe0e5121189b51e06f052f78bdf26043104eeeb829dca656de7582e` |
+| `run_h07_stage2_sensitivities.R` | `aa038f92445d34cac6ce8097348348afcb5cd0d05a737b6fd703c09a6ef4b0a0` |
+| `run_h07_stage2_loso.R` | `fb60924f383f43295ea462269d5ca2604de2cd8faeae8397dfeb4fa0bc3da3ce` |
+| `reconcile_h07_metric011.R` | `cefba4366ad1c746b22c491b09558bc739145eec89a3852e83e674205876b1c1` |
+| `H07_METRIC-011_reconciliation.md` | `34bde0575763547a27ed23cc3774068772a048ac9b44266c8d6839e4f5255cc9` |
+| `H07_METRIC-011_reconciliation_summary.csv` | `49afd19494f10e2624ef2a06868bfac4de19504ad06cf43f246673d078bae63c` |
+| `H07_METRIC-011_scientific_comparison.csv` | `7119d5102f283470d5533d1ef9fdd55898e55675e0ad5afd61e8c2288d971ef9` |
+| `H07_METRIC-011_artifact_update_manifest.csv` | `969d156d59036023af4e0439209a5f966ac5ed0bf01a7565bb66e5ea6d284989` |
+| `H07_stage4_closure.md` | `c3f362553323020b80e798d6ed5adff83378e9bf8e9873187fa22ed8503e4392` |
 
 Visual QA covered the revised Stage 2 opening, primary table, both paired
 fitted-value/derivative figures at native and rendered screen-inset size,
 sensitivity summary, final approval gate, and the reopened Stage 1 rule. No
 horizontal clipping, panel-title collision, or unreadable final-size figure
-text remains.
+text remains. The METRIC-011 additions render as an overflow-protected
+semantic table, and both paired result-figure hashes remain unchanged.
 
 ## Stage 3 reader deliverable
 
@@ -215,7 +252,7 @@ Nine downloadable preparation CSVs and two preparation figures were built
 from frozen H07 frames and tables. All four consequential input hashes and all
 18 serialized primary-frame hashes pass. Frame schemas, unique keys, response
 reconstructions, stored sample counts, and latitude constancy within site also
-pass. The render contains 20 semantic `gt` tables, two figures with captions
+pass. The resealed render contains 21 semantic `gt` tables, two figures with captions
 and non-empty alternative text, and one Mermaid analysis map.
 
 REPORT-011 verification covers the two results figures and two preparation
@@ -227,7 +264,7 @@ text checks. Effective essential text is 7.81–7.87 pt.
 
 The focused preparation verifier passes under R 4.6.1 before shared-site
 integration. It confirms a byte-identical expected website QMD copy, two
-figures, 20 `gt` tables, all source-data row contracts, formula identities,
+figures, 21 `gt` tables, all source-data row contracts, formula identities,
 four PASS figure-QA rows, six proof pages, reciprocal links, and the complete
 preparation manifest. Executable preparation cells contain no model-fit,
 prediction, derivative, simulation, or bootstrap calls.
@@ -242,11 +279,12 @@ Current non-circular SHA-256 values are:
 
 | Artifact | SHA-256 |
 |---|---|
-| `H07_analysis_preparation.qmd` | `db57a52eedbfc7cdba78f6cf49e7ed287e8aab2ebd75babcfc7ad2e65339c028` |
-| `H07_analysis_preparation.html` | `81c6134635bbfb25915049c3fee16ecfd007e37eb01e878b07c01685ae901302` |
-| expected website `H07_analysis_preparation.qmd` | `db57a52eedbfc7cdba78f6cf49e7ed287e8aab2ebd75babcfc7ad2e65339c028` |
-| expected website `H07_analysis_preparation.html` | `81c6134635bbfb25915049c3fee16ecfd007e37eb01e878b07c01685ae901302` |
+| `H07_analysis_preparation.qmd` | `e32aff685b713838acd5e416003edae8c9d066abe8dbd52fe9e133159b23e663` |
+| `H07_analysis_preparation.html` | `53c261b88b5d10238e18e33323ad705c61c92215c040fc84880385cdc434fd2f` |
+| expected website `H07_analysis_preparation.qmd` | `e32aff685b713838acd5e416003edae8c9d066abe8dbd52fe9e133159b23e663` |
+| expected website `H07_analysis_preparation.html` | `53c261b88b5d10238e18e33323ad705c61c92215c040fc84880385cdc434fd2f` |
 | `build_h07_preparation_artifacts.R` | `c8bcb22f49d1c1f73e5973663a6ac369377ca880c3066d22803f1e4dfa795ed3` |
+| `test_h07_preparation_report.R` | `89fd3eaa2f4f9928234280844e480ff5b863e104366af17675fe36366c456558` |
 | `H07_preparation_metric_sample_support.png` | `603afa8def8ff640003daaef806ee390d513df9bb6f6307fa300dba4ad5ba8a7` |
 | `H07_preparation_site_photoperiod_ranges.png` | `00d687082780c65d07467fdf730ac8bcf0bd97af11a03af156dc38020b815eb4` |
 | `H07_figure_readability_qa.csv` | `463308c6d01d501815fbcf481b81f0b1cc772f034b9f402403e7dda4cbb2185a` |
@@ -262,12 +300,15 @@ Current non-circular SHA-256 values are:
   outcome-placement candidates.
 - One 100-draw derivative simultaneous-band validation pilot per main metric.
 - One 100-simulation distribution pilot per Tweedie outcome-placement fit.
+- Bounded METRIC-011 reseal: 59 L10 refits comprising 18 primary, 24
+  sensitivity, and 17 leave-one-site-out fits; no non-L10 or V0 refit.
 - No production bootstrap, simulation, or coefficient-draw run.
 
 All main fits use exact `mgcv::gam(method = "REML")`. The provisional `bam()`
 fallback was not needed. No H07 branch uses ML or `discrete = FALSE`.
 H07-002 extracted derivatives from existing checkpoints; it did not refit a
-model or run a new simulation.
+model or run a new simulation. METRIC-011 later refit only the sealed-input
+L10 branches and ran no new simulation.
 
 ## Approved Stage 2 findings carried into Stage 3
 
@@ -378,6 +419,7 @@ following entries using central conventions:
 | `H07-STAGE4-001` | stage gate | H07-S4-001 through H07-S4-004 approved in H07-005; H07-owned workflow closed, shared-site integration pending |
 | `H07-REPORT-002` | figure QA | Four H07 reader-facing figures pass REPORT-011 at 170-mm display width; result-figure re-export was display-only and preserved scientific content |
 | `H07-INTEGRATION-001` | shared change request | Add the H07 preparation source immediately after the result in the shared render list and navigation, then rerun the bounded verifier |
+| `H07-METRIC-011-001` | sealed-input reconciliation | Eight primary L10 numerical residues normalized to exact zero; bounded L10-only refits and affected BH families verified; no sample, classification, transition, significance, or REPORT-008 display change |
 
 Do not enter an inferential p-value, significant/non-significant association
 label, causal site effect, placement-equivalence claim, temperature-adjusted

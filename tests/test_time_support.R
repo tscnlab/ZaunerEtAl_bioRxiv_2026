@@ -26,6 +26,26 @@ stopifnot(
     zero_offset = 0.1
   ) == 0
 )
+positive_zero_details <- geometric_mean_backtransform_details(
+  log10(0.1) + .Machine$double.eps,
+  zero_offset = 0.1,
+  source_all_zero = TRUE
+)
+positive_nonzero_details <- geometric_mean_backtransform_details(
+  log10(0.1) + .Machine$double.eps,
+  zero_offset = 0.1,
+  source_all_zero = FALSE
+)
+stopifnot(
+  positive_zero_details$raw_value > 0,
+  positive_zero_details$raw_value <= positive_zero_details$tolerance,
+  positive_zero_details$value == 0,
+  positive_zero_details$numerical_zero_reclassified,
+  positive_zero_details$numerical_zero_reason ==
+    "source_verified_all_zero_roundoff",
+  positive_nonzero_details$value == positive_nonzero_details$raw_value,
+  !positive_nonzero_details$numerical_zero_reclassified
+)
 expect_error(
   restore_nonnegative_geometric_mean(
     log10(0.09),
@@ -271,6 +291,18 @@ stopifnot(
   l10$offset_day_shift == 1L
 )
 expect_equal(l10$window_mean, 0)
+stopifnot(
+  abs(l10$window_raw_backtransformed_mean) <=
+    l10$numerical_zero_tolerance,
+  l10$selected_window_wall_minutes == 600L,
+  l10$selected_window_valid_wall_minutes == 600L,
+  l10$selected_window_zero_wall_minutes == 600L,
+  l10$selected_window_positive_wall_minutes == 0L,
+  l10$selected_window_missing_wall_minutes == 0L,
+  l10$selected_window_start_clock_minute == 1200L,
+  l10$selected_window_end_clock_minute == 360L,
+  l10$selected_window_wraps_midnight
+)
 
 l10_minute_value <- rep(100, 1440)
 l10_minute_value[
@@ -379,134 +411,67 @@ fold_window <- rolling_window_summary(
 )
 stopifnot(fold_window$duplicate_wall_minutes == 60L)
 
-message("Testing MDER as a ratio of paired integrals")
-mder <- mder_ratio_of_integrals(
+message("Testing MDER as the mean of viable one-minute ratios")
+mder <- mder_mean_of_viable_ratios(
   medi = c(1, 9),
   light = c(1, 3),
-  minimum_support = 0.8,
-  observed_fraction = c(1, 0.8),
-  medi_reference_weight = c(1, 3),
-  light_reference_weight = c(3, 1)
+  minimum_viable_fraction = 0.50
 )
-expect_equal(mder$MDER, 8.2 / 3.4)
-expect_equal(mder$ordinary_paired_coverage, 0.9)
-expect_equal(mder$medi_profile_coverage, 0.85)
-expect_equal(mder$light_profile_coverage, 0.95)
+expect_equal(mder$MDER, mean(c(1, 3)))
 stopifnot(
-  mder$paired_seconds == 108,
-  mder$minimum_support == 0.8,
-  mder$passes_ordinary_paired_support,
-  mder$passes_medi_profile_support,
-  mder$passes_light_profile_support,
-  !mder$low_medi_profile_coverage,
-  !mder$low_light_profile_coverage,
+  mder$viable_ratio_minutes == 2L,
+  mder$expected_minutes == 2L,
+  mder$viable_ratio_fraction == 1,
+  mder$minimum_viable_fraction == 0.50,
+  mder$passes_viable_ratio_support,
   mder$support_threshold_enforced,
   !mder$ratio_scaled_or_weighted,
   mder$estimable,
   is.na(mder$failure_reason)
 )
 
-message("Testing inclusive MDER support and reason-code precedence")
-mder_boundary <- mder_ratio_of_integrals(
-  medi = c(1, 9),
-  light = c(1, 3),
-  minimum_support = 0.8,
-  observed_fraction = c(0.8, 0.8),
-  medi_reference_weight = c(0.1, 0.9),
-  light_reference_weight = c(0.9, 0.1)
+message("Testing zero/non-finite exclusions and inclusive 50% support")
+mder_boundary <- mder_mean_of_viable_ratios(
+  medi = c(2, 6, 0, NA_real_),
+  light = c(1, 2, 5, 1),
+  minimum_viable_fraction = 0.50
 )
-expect_equal(mder_boundary$ordinary_paired_coverage, 0.8)
-expect_equal(mder_boundary$medi_profile_coverage, 0.8)
-expect_equal(mder_boundary$light_profile_coverage, 0.8)
+expect_equal(mder_boundary$MDER, mean(c(2, 3)))
 stopifnot(
-  mder_boundary$passes_ordinary_paired_support,
-  mder_boundary$passes_medi_profile_support,
-  mder_boundary$passes_light_profile_support,
+  mder_boundary$viable_ratio_minutes == 2L,
+  mder_boundary$expected_minutes == 4L,
+  mder_boundary$viable_ratio_fraction == 0.50,
+  mder_boundary$excluded_nonfinite_source_minutes == 1L,
+  mder_boundary$excluded_zero_either_minutes == 1L,
+  mder_boundary$passes_viable_ratio_support,
   mder_boundary$estimable
 )
-mder_low_ordinary <- mder_ratio_of_integrals(
-  medi = c(1, 9),
-  light = c(1, 3),
-  minimum_support = 0.8,
-  observed_fraction = c(1, 0.5),
-  medi_reference_weight = c(0.9, 0.1),
-  light_reference_weight = c(0.9, 0.1)
+
+mder_below <- mder_mean_of_viable_ratios(
+  medi = c(2, 0, NA_real_, 4),
+  light = c(1, 2, 1, 0),
+  minimum_viable_fraction = 0.50
 )
 stopifnot(
-  is.na(mder_low_ordinary$MDER),
-  is.finite(mder_low_ordinary$medi_integral_lx_h),
-  is.finite(mder_low_ordinary$light_integral_lx_h),
-  !mder_low_ordinary$estimable,
-  !mder_low_ordinary$passes_ordinary_paired_support,
-  mder_low_ordinary$passes_medi_profile_support,
-  mder_low_ordinary$passes_light_profile_support,
-  mder_low_ordinary$failure_reason == "below_ordinary_paired_support"
+  is.na(mder_below$MDER),
+  mder_below$viable_ratio_minutes == 1L,
+  mder_below$viable_ratio_fraction == 0.25,
+  !mder_below$passes_viable_ratio_support,
+  !mder_below$estimable,
+  mder_below$failure_reason == "below_viable_ratio_fraction"
 )
-mder_low_medi_profile <- mder_ratio_of_integrals(
-  medi = c(1, 9),
-  light = c(1, 3),
-  minimum_support = 0.8,
-  observed_fraction = c(1, 0.75),
-  medi_reference_weight = c(0.1, 0.9),
-  light_reference_weight = c(0.9, 0.1)
+
+mder_zero <- mder_mean_of_viable_ratios(
+  medi = c(0, 2),
+  light = c(1, 0),
+  minimum_viable_fraction = 0.50
 )
 stopifnot(
-  is.na(mder_low_medi_profile$MDER),
-  !mder_low_medi_profile$estimable,
-  mder_low_medi_profile$passes_ordinary_paired_support,
-  !mder_low_medi_profile$passes_medi_profile_support,
-  mder_low_medi_profile$passes_light_profile_support,
-  mder_low_medi_profile$failure_reason == "below_medi_profile_support"
-)
-mder_low_light_profile <- mder_ratio_of_integrals(
-  medi = c(1, 9),
-  light = c(1, 3),
-  minimum_support = 0.8,
-  observed_fraction = c(1, 0.75),
-  medi_reference_weight = c(0.9, 0.1),
-  light_reference_weight = c(0.1, 0.9)
-)
-stopifnot(
-  is.na(mder_low_light_profile$MDER),
-  !mder_low_light_profile$estimable,
-  mder_low_light_profile$passes_ordinary_paired_support,
-  mder_low_light_profile$passes_medi_profile_support,
-  !mder_low_light_profile$passes_light_profile_support,
-  mder_low_light_profile$failure_reason == "below_light_profile_support"
-)
-mder_zero <- mder_ratio_of_integrals(
-  medi = c(1, 2),
-  light = c(0, 0),
-  minimum_support = 0.8,
-  medi_reference_weight = c(0.5, 0.5),
-  light_reference_weight = c(0.5, 0.5)
-)
-stopifnot(
+  is.na(mder_zero$MDER),
+  mder_zero$viable_ratio_minutes == 0L,
+  mder_zero$excluded_zero_either_minutes == 2L,
   !mder_zero$estimable,
-  mder_zero$failure_reason == "nonpositive_paired_light_integral"
-)
-mder_no_pair <- mder_ratio_of_integrals(
-  medi = c(NA_real_, NA_real_),
-  light = c(1, 2),
-  minimum_support = 0.8,
-  medi_reference_weight = c(0.5, 0.5),
-  light_reference_weight = c(0.5, 0.5)
-)
-stopifnot(
-  !mder_no_pair$estimable,
-  mder_no_pair$failure_reason == "no_paired_observation"
-)
-mder_unknown_support <- mder_ratio_of_integrals(
-  medi = c(1, 2),
-  light = c(1, 2),
-  minimum_support = 0.8,
-  observed_fraction = c(1, NA_real_),
-  medi_reference_weight = c(0.5, 0.5),
-  light_reference_weight = c(0.5, 0.5)
-)
-stopifnot(
-  !mder_unknown_support$estimable,
-  mder_unknown_support$failure_reason == "unknown_paired_support"
+  mder_zero$failure_reason == "no_viable_momentary_ratio"
 )
 
 new_is_iv_data <- function(

@@ -1,0 +1,177 @@
+--- audit/manuscript_nature_health/revision_2026_09_11/consolidated_display_repair_order72k/helpers/capture_word_tables.mjs
++++ PROSPECTIVE_ONLY/capture_word_tables.mjs
+@@ -11,6 +11,10 @@
+ import process from "node:process";
+ import { createHash } from "node:crypto";
+ import { createRequire } from "node:module";
++
++// PROSPECTIVE ONLY. This remains blocked even if an old command is reused.
++// A separately sealed implementation order must resolve the capture route.
++throw new Error("PROSPECTIVE ONLY: no browser/capture route is authorized");
+ 
+ const require = createRequire(import.meta.url);
+ // BEGIN S2_SCREEN_READER_CONTRACT
+@@ -237,8 +241,12 @@
+   "/Users/zauner/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright",
+ );
+ 
+-const [sourceUrl, outputDir, captureSubset] = process.argv.slice(2);
+-if (captureSubset && captureSubset !== "only-s2") throw new Error("Only the approved S2-only correction subset is supported");
++const [sourceUrl, outputDir, captureSubset, s2ReductionArgument = "0"] = process.argv.slice(2);
++if (!["only-s2", "only-s7-tail", "only-s2-s7-tail"].includes(captureSubset)) throw new Error("An explicit separately released subset is required");
++if (!["0", "1"].includes(s2ReductionArgument)) throw new Error("S2 numeric reduction must be zero or one printed point");
++const s2PrintedPointReduction = Number(s2ReductionArgument);
++// CSS px to physical points after embedding at the declared 15.55-inch width.
++const s2CssReduction = s2PrintedPointReduction * 1490 / (72 * 15.55);
+ 
+ if (!sourceUrl || !outputDir) {
+   throw new Error(
+@@ -391,19 +399,17 @@
+ ];
+ 
+ // Order72k only: no broad recapture and no scientific figure rasterization.
+-const activeSpecs = specs.filter((s) => ["supp_table_s2", "supp_table_s5", "supp_table_s6", "supp_table_s10"].includes(s.key));
++const activeSpecs = specs.filter((s) => ["supp_table_s2", "supp_table_s7"].includes(s.key));
+ Object.assign(activeSpecs.find((s) => s.key === "supp_table_s2"), {
+   rowRanges: [[0, 9], [9, 17], [17, 23]],
+   columnSets: [Array.from({length: 14}, (_, i) => i)],
+   targetWidth: 1490,
+-  fixedWidths: [200, 80, 105, 86, 86, 86, 86, 86, 86, 86, 86, 86, 100, 231],
++  fixedWidths: [200, 60, 103, 96, 96, 96, 96, 96, 96, 96, 96, 96, 78, 185],
+ });
+-for (const spec of activeSpecs) {
+-  if (spec.key !== "supp_table_s2") {
+-    spec.fontRepair = true;
+-    spec.targetWidth = spec.key === "supp_table_s10" ? 904 : 902;
+-  }
+-}
++Object.assign(activeSpecs.find((s) => s.key === "supp_table_s7"), {
++  // Parts 1 and 2 are reused byte-exact. Replace old part 3 by parts 3 and 4.
++  rowRanges: [[13, 19], [19, 23]], targetWidth: 896, partOffset: 2, totalParts: 4,
++});
+ 
+ const browser = await chromium.launch({
+   headless: true,
+@@ -420,7 +426,8 @@
+ 
+ const outputManifest = [];
+ 
+-for (const spec of activeSpecs.filter((s) => !captureSubset || s.key === "supp_table_s2")) {
++for (const spec of activeSpecs.filter((s) => captureSubset === "only-s2-s7-tail" ||
++    (captureSubset === "only-s2" ? s.key === "supp_table_s2" : s.key === "supp_table_s7"))) {
+   const sourceRoot = source.locator(spec.selector).first();
+   const count = await sourceRoot.count();
+   if (count !== 1) {
+@@ -490,8 +497,8 @@
+     Array.from({ length: sourceInfo.columnCount }, (_, i) => i),
+   ];
+   const files = [];
+-  const totalParts = rowRanges.length * columnSets.length;
+-  let part = 0;
++  const totalParts = spec.totalParts ?? rowRanges.length * columnSets.length;
++  let part = spec.partOffset ?? 0;
+ 
+   for (let columnPart = 0; columnPart < columnSets.length; columnPart += 1) {
+     for (let rowPart = 0; rowPart < rowRanges.length; rowPart += 1) {
+@@ -534,6 +541,7 @@
+           continuation,
+           requestedWidth,
+           fixedWidths,
++          s2CssReduction,
+           sourceHiddenDescriptions,
+         }) => {
+           function collectS2ScreenReaderSpans(table, rowOffset = 0) {
+@@ -664,12 +672,24 @@
+               img.style.width = "100%"; img.style.height = "auto"; img.style.maxWidth = "100%"; img.style.minWidth = "0"; img.style.objectFit = "contain";
+               if (img.parentElement !== img.closest("td")) { img.parentElement.style.width = "100%"; img.parentElement.style.minWidth = "0"; }
+             }
+-            // S2 correction: preserve every character, allowing only vertical wrapping.
++            // Preserve every character and the whole source mean-plus-minus-SD span.
+             for (const cell of table.querySelectorAll("tbody tr > :nth-child(n+3):nth-child(-n+12)")) {
+-              for (const node of [cell, ...cell.querySelectorAll("*")]) {
+-                node.style.setProperty("white-space", "normal", "important");
++              cell.style.setProperty("padding-left", "4px", "important");
++              cell.style.setProperty("padding-right", "4px", "important");
++              const meanSdSpans = Array.from(cell.querySelectorAll("span")).filter((span) =>
++                span.style.whiteSpace === "nowrap" && span.textContent.includes("±"));
++              const keptNodes = new Set(meanSdSpans.flatMap((span) => [span, ...span.querySelectorAll("*")]));
++              const nodes = [cell, ...cell.querySelectorAll("*")];
++              // Snapshot first, so inherited sizes are not reduced repeatedly.
++              const fontSizes = new Map(nodes.map((node) => [node, parseFloat(getComputedStyle(node).fontSize)]));
++              for (const node of nodes) {
++                node.style.setProperty("white-space", keptNodes.has(node) ? "nowrap" : "normal", "important");
+                 node.style.setProperty("overflow-wrap", "normal", "important");
+                 node.style.setProperty("word-break", "normal", "important");
++                if (s2CssReduction) {
++                  const originalSize = fontSizes.get(node);
++                  node.style.setProperty("font-size", `${originalSize >= 12 ? originalSize - s2CssReduction : originalSize}px`, "important");
++                }
+               }
+             }
+           }
+@@ -707,6 +727,7 @@
+           continuation,
+           requestedWidth,
+           fixedWidths: spec.fixedWidths ?? null,
++          s2CssReduction,
+           sourceHiddenDescriptions: sourceInfo.s2HiddenDescriptions,
+         },
+       );
+@@ -790,7 +811,23 @@
+         });
+         if (images.some((img) => !img.naturalWidth || !img.contained || !img.ratioPreserved)) throw new Error("Distribution image containment or aspect ratio failed");
+         const numericalTextOverflow = [];
++        const meanSdUnits = [];
+         if (selector === "#tbl-near-eye-metrics") {
++          for (const cell of table.querySelectorAll("tbody tr > :nth-child(n+3):nth-child(-n+12)")) {
++            const cellBox = cell.getBoundingClientRect();
++            for (const span of cell.querySelectorAll("span")) {
++              if (span.style.whiteSpace !== "nowrap" || !span.textContent.includes("±")) continue;
++              const range = document.createRange(); range.selectNodeContents(span);
++              const rects = Array.from(range.getClientRects()).filter((rect) => rect.width > 0 && rect.height > 0);
++              const oneLine = rects.length > 0 && Math.max(...rects.map((rect) => rect.top)) - Math.min(...rects.map((rect) => rect.top)) < 1;
++              const contained = rects.every((rect) => !s2TextRectOverflows(rect, cellBox));
++              const record = {text: span.textContent, oneLine, contained, whiteSpace: getComputedStyle(span).whiteSpace};
++              if (!oneLine || !contained || record.whiteSpace !== "nowrap") throw new Error("S2 complete mean-plus-minus-SD unit wraps or exceeds its cell");
++              meanSdUnits.push(record);
++            }
++          }
++          const expectedCount = ({0:70, 9:50, 17:50})[rowStart];
++          if (meanSdUnits.length !== expectedCount) throw new Error("S2 complete mean-plus-minus-SD inventory differs from the frozen row map");
+           for (const cell of table.querySelectorAll("thead th, thead td, tbody th, tbody td, tfoot th, tfoot td")) {
+             const cellBox = cell.getBoundingClientRect();
+             const walker = document.createTreeWalker(cell, NodeFilter.SHOW_TEXT);
+@@ -808,7 +845,7 @@
+         }
+         if (numericalTextOverflow.length) throw new Error(`S2 all-cell text clipping: ${JSON.stringify(numericalTextOverflow)}`);
+         const screenReaderDescriptions = expectedHiddenDescriptions.map(({image_src, ...record}) => ({...record, hiddenStylePreserved: true, sourceImageMatched: true}));
+-        return {fonts, images, numericalTextOverflow, screenReaderDescriptions, bodyCells: Array.from(table.querySelectorAll("tbody tr")).map((row) => Array.from(row.children).map((cell) => cell.textContent))};
++        return {fonts, images, numericalTextOverflow, meanSdUnits, screenReaderDescriptions, bodyCells: Array.from(table.querySelectorAll("tbody tr")).map((row) => Array.from(row.children).map((cell) => cell.textContent))};
+       }, {selector: spec.selector, fontRepair: !!spec.fontRepair, sourceHiddenDescriptions: sourceInfo.s2HiddenDescriptions, rowStart, rowEnd});
+       if (JSON.stringify(verification.bodyCells) !== JSON.stringify(sourceInfo.bodyCells.slice(rowStart, rowEnd))) throw new Error("Frozen cell text changed in capture");
+       await fs.writeFile(path.join(outputDir, `${spec.key}_part_${String(part).padStart(2, "0")}.html`), await page.content());
+@@ -816,8 +853,13 @@
+       const capture = page.locator("#word-table-capture");
+       const filename = `${spec.key}_part_${String(part).padStart(2, "0")}.png`;
+       const destination = path.resolve(outputDir, filename);
++      const box = await capture.boundingBox();
++      const fixedWordWidth = spec.key === "supp_table_s2" ? 15.55 : 10.55;
++      const maxWordHeight = spec.key === "supp_table_s2" ? 9.20 : 6.20;
++      if (!box || Math.abs(box.width-captureInfo.width)>1 || fixedWordWidth*box.height/box.width>maxWordHeight) {
++        throw new Error("Fixed-width Word height budget exceeded; stop before PNG export, do not shrink a continuation");
++      }
+       await capture.screenshot({ path: destination });
+-      const box = await capture.boundingBox();
+       files.push({
+         path: destination,
+         part,
+@@ -825,6 +867,9 @@
+         columns: keepColumns,
+         cssWidth: captureInfo.width,
+         cssHeight: box ? Math.ceil(box.height) : null,
++        fixedWordWidthInches: fixedWordWidth,
++        maximumWordHeightInches: maxWordHeight,
++        ...(spec.key === "supp_table_s2" ? {s2PrintedPointReduction, s2CssReduction} : {}),
+         verification,
+       });
+       await page.close();

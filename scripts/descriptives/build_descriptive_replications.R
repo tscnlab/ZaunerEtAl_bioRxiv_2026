@@ -429,7 +429,7 @@ replica_metric_contract <- function() {
       "longest_bout_above_250", "interdaily_stability",
       "intradaily_variability", "dose_time_sensitive_corrected_medi",
       "daily_geometric_mean_medi", "m10_mean_medi", "l10_mean_medi",
-      "mder_ratio_of_integrals", "m10_midpoint", "l10_midpoint",
+      "mder_mean_of_viable_ratios", "m10_midpoint", "l10_midpoint",
       "first_timing_above_250", "last_timing_above_250",
       "mean_timing_above_250"
     ),
@@ -447,13 +447,46 @@ replica_metric_contract <- function() {
       "Mean timing of exposure above 250 lx melEDI"
     ),
     unit = c(
-      rep("HH:MM", 5), rep("dimensionless", 2), "klx·h",
-      rep("lx", 3), "dimensionless", rep("HH:MM clock time", 5)
+      rep("HH:MM", 5), rep("—", 2), "klx·h",
+      rep("lx", 3), "—", rep("HH:MM clock time", 5)
     ),
     scaling = c(rep("Symlog", 5), rep("Linear", 2), "Symlog",
                 rep("Symlog", 3), "Linear", rep("Circular clock", 5)),
+    meaning_and_relevance = c(
+      "Bright-light exposure duration; relevant to daytime alerting and circadian entrainment.",
+      "Waking time in recommended daytime light; relevant to alertness, entrainment, and subsequent sleep.",
+      "Low-light time before bed; limits evening melatonin suppression and circadian delay.",
+      "Darkness during sleep; supports nocturnal melatonin and an undisturbed sleep environment.",
+      "Longest sustained bright-light bout; captures continuity of daytime circadian stimulation.",
+      "Day-to-day regularity of the light–dark pattern; higher regularity supports circadian stability.",
+      "Within-day fragmentation of light exposure; higher values indicate less consolidated light–dark input.",
+      "Intensity–duration-weighted melanopic exposure; summarizes cumulative non-visual retinal light input.",
+      "Geometric average of daily melEDI values, including zeros; summarizes overall exposure while reducing peak influence.",
+      "Mean of the brightest 10 hours; reflects the strength of the main daytime light episode.",
+      "Mean of the darkest 10 hours; lower values during the biological night favour melatonin preservation and sleep.",
+      paste(
+        "Mean of viable one-minute melEDI/illuminance ratios; indicates",
+        "melanopic efficacy relative to visual light."
+      ),
+      "Centre time of the brightest 10 hours; indexes the main daily circadian light cue.",
+      "Centre time of the darkest 10 hours; indexes the main daily darkness cue.",
+      "First waking bright-light exposure; morning timing can advance circadian phase and promote alertness.",
+      "Last bright-light exposure; later timing may delay circadian phase and sleep onset.",
+      "Average bright-light timing; summarizes the phase of daily circadian stimulation."
+    ),
     stringsAsFactors = FALSE
   )
+}
+
+format_replica_metric_decimal <- function(value, decimal_places = 3L) {
+  if (!is.finite(value)) return("Not estimable")
+  if (abs(value) < 0.5 * 10^(-decimal_places)) value <- 0
+  formatted <- formatC(
+    value,
+    format = "f", digits = decimal_places,
+    big.mark = ",", decimal.mark = "."
+  )
+  sub("\\.?0+$", "", formatted)
 }
 
 format_replica_metric_value <- function(value, metric_id) {
@@ -461,10 +494,9 @@ format_replica_metric_value <- function(value, metric_id) {
   if (grepl("duration|longest_bout", metric_id)) return(format_duration_hours(value))
   if (grepl("timing|midpoint", metric_id)) return(format_clock_minute(value))
   if (metric_id == "dose_time_sensitive_corrected_medi") {
-    return(format_number_compact(value / 1000, 3L))
+    return(format_replica_metric_decimal(value / 1000, 3L))
   }
-  digits <- if (metric_id %in% c("daily_geometric_mean_medi", "m10_mean_medi", "l10_mean_medi")) 4L else 3L
-  format_number_compact(value, digits)
+  format_replica_metric_decimal(value, 3L)
 }
 
 format_replica_metric_spread <- function(value, metric_id) {
@@ -476,12 +508,9 @@ format_replica_metric_spread <- function(value, metric_id) {
     return(format_duration_minutes(value))
   }
   if (metric_id == "dose_time_sensitive_corrected_medi") {
-    return(format_number_compact(value / 1000, 3L))
+    return(format_replica_metric_decimal(value / 1000, 3L))
   }
-  digits <- if (metric_id %in% c(
-    "daily_geometric_mean_medi", "m10_mean_medi", "l10_mean_medi"
-  )) 4L else 3L
-  format_number_compact(value, digits)
+  format_replica_metric_decimal(value, 3L)
 }
 
 build_metric_replica <- function(metric_summary) {
@@ -747,6 +776,8 @@ build_time_series_replica_sources <- function(root) {
       aligned_minute = .data$aligned_minute,
       melEDI_lx = .data$MEDI,
       sample_available = is.finite(.data$MEDI),
+      photoperiod_state = .data$photoperiod.state,
+      daytime = .data$photoperiod.state == "day",
       aggregation_method =
         "Stored floor-aligned 30-minute arithmetic mean",
       dataset = "Gap-timing-unaware near-eye dataset",
@@ -754,7 +785,10 @@ build_time_series_replica_sources <- function(root) {
     ) |>
     dplyr::arrange(.data$participant_order, .data$aligned_minute)
 
-  states <- selected_samples |>
+  # Reproduce the submitted gg_photoperiod() construction from daily mean
+  # dawn and dusk. The former row-state display inherited NA holes from
+  # missing light samples, although solar context remains defined there.
+  daily_solar_context <- selected_samples |>
     dplyr::left_join(
       dplyr::select(
         selected_keys,
@@ -762,14 +796,40 @@ build_time_series_replica_sources <- function(root) {
       ),
       by = c("site", "Id", "Date", "protocol_day", "weekday")
     ) |>
-    dplyr::mutate(
-      clock_bin = lubridate::hour(.data$Datetime) * 60 +
-        lubridate::minute(.data$Datetime),
-      aligned_minute = (.data$protocol_day - 1L) * 1440 + .data$clock_bin,
-      xmin = .data$aligned_minute,
-      xmax = .data$xmin + 30,
-      civil_night = .data$photoperiod.state == "night"
+    dplyr::group_by(
+      .data$site, .data$Id, .data$Date, .data$participant_order,
+      .data$protocol_day, .data$weekday
     ) |>
+    dplyr::summarise(
+      dawn = mean(.data$dawn, na.rm = TRUE),
+      dusk = mean(.data$dusk, na.rm = TRUE),
+      .groups = "drop"
+    ) |>
+    dplyr::mutate(
+      day_start = (.data$protocol_day - 1L) * 1440,
+      dawn_minute = lubridate::hour(.data$dawn) * 60 +
+        lubridate::minute(.data$dawn) + lubridate::second(.data$dawn) / 60,
+      dusk_minute = lubridate::hour(.data$dusk) * 60 +
+        lubridate::minute(.data$dusk) + lubridate::second(.data$dusk) / 60
+    )
+  if (any(!is.finite(daily_solar_context$dawn_minute)) ||
+      any(!is.finite(daily_solar_context$dusk_minute))) {
+    stop("A Figure 4 day lacks finite dawn or dusk context", call. = FALSE)
+  }
+  states <- dplyr::bind_rows(
+    daily_solar_context |>
+      dplyr::mutate(
+        interval = "midnight_to_dawn",
+        xmin = .data$day_start,
+        xmax = .data$day_start + .data$dawn_minute
+      ),
+    daily_solar_context |>
+      dplyr::mutate(
+        interval = "dusk_to_midnight",
+        xmin = .data$day_start + .data$dusk_minute,
+        xmax = .data$day_start + 1440
+      )
+  ) |>
     dplyr::transmute(
       site = .data$site,
       participant = .data$Id,
@@ -777,10 +837,13 @@ build_time_series_replica_sources <- function(root) {
       local_date = as.Date(.data$Date),
       weekday = .data$weekday,
       protocol_day = .data$protocol_day,
-      clock_bin = .data$clock_bin,
-      civil_night = .data$civil_night,
+      interval = .data$interval,
+      dawn_minute = .data$dawn_minute,
+      dusk_minute = .data$dusk_minute,
+      civil_night = TRUE,
       xmin = .data$xmin,
-      xmax = .data$xmax
+      xmax = .data$xmax,
+      state_source = "Daily mean dawn and dusk, matching submitted gg_photoperiod()"
     ) |>
     dplyr::arrange(.data$participant_order, .data$xmin)
 
@@ -812,12 +875,32 @@ build_time_series_replica_sources <- function(root) {
   )
 }
 
+build_time_series_replica_alt_text <- function(time_series) {
+  list(
+    short = paste0(
+      "Four-panel explanation connecting five protocol weekdays of stored ",
+      "30-minute near-eye light samples for seven fixed participants to ",
+      "TAT250 calculated from the same displayed daytime samples."
+    ),
+    long = paste0(
+      "Panel A shows stored 30-minute mean melEDI across Wednesday to Sunday ",
+      "for ", length(unique(time_series$metrics$participant)),
+      " fixed manuscript exemplars, with continuous daily dawn-to-dusk ",
+      "civil-night context and a 250-lux guide. Panels B and C summarize ",
+      "TAT250 calculated from the same displayed daytime samples by ",
+      "participant and weekday. Panel D encodes the same calculated values ",
+      "by point size. Actual dates remain in the source data."
+    )
+  )
+}
+
 build_replica_figure_alt_text <- function(
   site_sample, metric_summary, time_series, latitude_source
 ) {
   overall <- dplyr::filter(site_sample, as.character(.data$site) == "Overall")
   main_metrics <- metric_summary |>
     dplyr::filter(.data$placement == "near_eye", .data$site == "Overall")
+  time_series_alt <- build_time_series_replica_alt_text(time_series)
   data.frame(
     figure_id = c(
       "descriptive_overview", "near_eye_site_profiles", "chest_site_profiles",
@@ -826,13 +909,13 @@ build_replica_figure_alt_text <- function(
     ),
     short_alt_text = c(
       paste0(
-        "Five-panel study overview with the protocol, world map, collection dates, ",
-        "site photoperiod distributions, and a repeated 48-hour near-eye melEDI profile."
+        "Five-panel study overview with the protocol, a country-and-coordinate-labelled world map, collection dates, ",
+        "site photoperiod distributions, and a repeated 48-hour near-eye melEDI profile with central 50% and 90% bands."
       ),
       "Nine site panels repeat pooled 15-minute near-eye 24-hour melEDI profiles across 48 hours with nested central 50%, 75%, and 95% value bands.",
       "Eight site panels repeat complementary 15-minute chest-level 24-hour melEDI profiles across 48 hours with nested central 50%, 75%, and 95% value bands.",
       "Sixteen-panel grid of corrected near-eye light-metric distributions by labelled study site.",
-      "Four-panel explanation connecting five protocol weekdays of stored gap-timing-unaware light samples for seven fixed participants to TAT250 calculated from the same displayed daytime samples.",
+      time_series_alt$short,
       "Observed civil photoperiod distributions and verified theoretical bounds plotted against absolute study-site latitude for main near-eye participant-days."
     ),
     long_description = c(
@@ -840,7 +923,7 @@ build_replica_figure_alt_text <- function(
         "Panel A retains the study protocol schematic. Panel B locates nine sites. ",
         "Panel C shows roster-wide collection intervals split by pauses of at least six dates. Panel D shows roster-wide ",
         "photoperiod ridges. Panel E repeats the main near-eye daily profile once; a black ",
-        "pooled 15-minute median and grey central 67% pointwise value band are ",
+        "pooled 15-minute median and nested grey central 50% and 90% pointwise value bands are ",
         "shown with site lines and average sleep and civil-night periods. ",
         "The main sample is ", overall$near_eye_participants, " participants and ",
         overall$near_eye_participant_days, " participant-days; chest is complementary ",
@@ -865,15 +948,13 @@ build_replica_figure_alt_text <- function(
         "finite distributions and middle 50% intervals for duration, regularity, dose, ",
         "level, spectrum, and circular timing metrics. Sample sizes vary by verified metric ",
         "support; the overall table contains ", nrow(main_metrics), " registered near-eye ",
-        "metrics with explicit participants, participant-days, and observations."
+        "metrics with explicit participants, participant-days, and observations. ",
+        "For MDER, each daily value is the arithmetic mean of viable one-minute ",
+        "melEDI/photopic-illuminance ratios. Both channels must be finite and ",
+        "strictly positive, and at least 720 of the complete 1,440 local ",
+        "wall-clock minutes are required (inclusive 50% rule)."
       ),
-      paste0(
-        "Panel A shows stored 30-minute mean melEDI from the gap-timing-unaware dataset across Wednesday to Sunday for ",
-        length(unique(time_series$metrics$participant)), " fixed manuscript exemplars, ",
-        "with civil-night shading and a 250-lux guide. Panels B and C summarize TAT250 ",
-        "calculated from the same displayed daytime samples by participant and weekday. ",
-        "Panel D encodes the same calculated values by point size. Actual dates remain in the source data."
-      ),
+      time_series_alt$long,
       paste0(
         "Points and density ridges summarize ", nrow(latitude_source),
         " main near-eye participant-days across nine sites identified by a ",

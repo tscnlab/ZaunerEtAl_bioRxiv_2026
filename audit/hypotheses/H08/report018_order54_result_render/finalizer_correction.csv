@@ -1,0 +1,3 @@
+attempt,stage,original_check,observed,correction,source_changed,render_repeated,scientific_computation
+1,manifest_readback,"identical(readback, manifest)","Stopped because CSV readback changed non-value data-frame attributes","Use all.equal with attribute checking disabled while retaining subsequent exact path, SHA-256, and byte-count checks",FALSE,FALSE,FALSE
+2,sha256_recheck,"identical(vapply(resolved, sha256_file, character(1)), readback$sha256)","Stopped because vapply retained path names while the CSV vector had no names","Remove names from both vectors before exact SHA-256 comparison; hash strings remain compared exactly",FALSE,FALSE,FALSE

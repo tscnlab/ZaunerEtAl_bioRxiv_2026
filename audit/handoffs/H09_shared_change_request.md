@@ -1,9 +1,10 @@
 # H09 shared change request
 
-Date: 2026-08-10
+Date: 2026-08-12
 
 Status: **Stage 4 website integration requested; remaining shared gap artifact
-is optional and coordinator-owned**
+is optional and coordinator-owned; METRIC-011 requires no new shared H09
+change**
 
 Shared files modified by the H09 worker: **none**
 
@@ -18,6 +19,23 @@ and the owner approved the standalone reader report under H09-003 with a brief
 predictor-definition amendment. The H09-owned analysis-preparation and
 provenance companion is now ready for coordinator-owned website integration.
 No shared file was changed by the H09 worker.
+
+## METRIC-011 requires no new shared change
+
+The final shared `METRIC-011` decision changes only numerical-zero L10 mean
+melEDI cells. H09's registered rolling-window outcome is L10 midpoint timing,
+so the decision is outside H09's scientific estimand. The H09 worker repinned
+only the affected shared/base identities in H09-owned provenance records and
+verified all 12 stored primary L10-midpoint frames (9,378 rows) plus 65
+scientific artifacts exactly. No model or diagnostic was rerun and no H09
+result or claim changed.
+
+The bounded H09 overlay manifest is
+`artifacts/12_manifests/H09/H09_METRIC-011_provenance_reseal_manifest.csv`
+(SHA-256
+`cb4e0701c0f642c36e138ef670af373eeeef850e538a991af32bcf7f63583cad`).
+No coordinator-owned shared file needs modification for this follow-up. A
+proposed central-ledger note is recorded in the worker handoff only.
 
 ## Resolved request 1: MCTQ/MEQ aggregate-score acceptance
 

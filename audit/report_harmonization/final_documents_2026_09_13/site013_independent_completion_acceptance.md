@@ -1,0 +1,17 @@
+# Exact website promotion independent acceptance
+
+14 September 2026. The coordinator independently accepts completed Order013. The approved010c/C manuscript and supplement website is now integrated locally. The later98-page A4 candidate under Writer012 is not yet incorporated.
+
+Owner package: `audit/report_harmonization/final_site_promotion_2026_09_14/`. Its89-member unique non-circular manifest is `01e01dadccead1ade67c19df561be524e08b6c3ef008098f7ebd4aac767a06c3`; separate seal `79b2c580a65946d274e89320ac95f966336d54cda204f5ee78798a53ae8770e9`. Both remain exact.
+
+The coordinator reproduced all89 members, the complete914-file live and candidate inventories, and3869 postflight assertions. The latter comprise3868 exact regular-file hashes and one complete directory-inventory assertion, verified as an exact914-file set with no symlinks. The unchanged Order011 owner1026 and fixed1771 input rows are included. The exact25 website targets and corpus as operation26 reproduce from the staged payloads and accepted promotion manifest; all26 completed once and the corpus was last. Five exact preimages remain available. The889 retained public files and35 non-entry reader pages are unchanged.
+
+Final entry hashes are `588bf4f60c7e1ca9cf409e86696632b8a14cc9d79e8aecf2aa105c8190b7cdd2` for index and `649bbc1796cad3bbd2ff1b372a46599a297cef98e3a338b4985824bb5764c53e` for Supplementary Information. Word download remains accepted010c `325c3a8e3a76ea225970f80e177ceed0bbdd592b72e79196d154597f3581250b`. The corpus is `b5b4b009db76e6f869f324a360e6eeafdf63438539382f1b8d85058f277eb93f`: exactly the two entry HTML-hash cells changed and all37 historical source-hash cells remain exact.
+
+The retained production evidence passes53747 structural checks,75 R4.6.1 exact-content checks,22 exact GET/HEAD download checks and942 search records over37 reader routes. Exact identity with the independently reviewed Order011 candidate carries its complete content and visual acceptance. The owner's16 bounded production captures cover both entries at1440/708/390, Table2/S2 scrolling, downloads, Contents/navigation/search and20 passage-comparison rows. They are actual transcript captures, not invented local PNG files. The coordinator's earlier independent localhost views remain valid through exact candidate/production identity; no redundant production browser was opened.
+
+The owner server PID28418 stopped at13:46:05 UTC, task tab3 closed and viewport reset. Its durable safe point at13:47:36 has hash `2cd05bd9e9bd8162ac34e0d10fa7ea64a0ef7675e512626a3634868d865aced8`. The coordinator independently confirmed lsof exit1 with no listener on55182, then rehashed the full live/candidate/fixed closure. The Writer browser slot was subsequently released separately under Order014. No further Harmonizer browser activity is required.
+
+The four inherited font-reference exceptions and historical source/render gaps remain disclosed. This is not a fresh37-source render, scientific recalculation, remote publication or accessibility certification. S2's secondary text remains accepted. No extra promotion, rollback, source/artwork mutation or pending A4 incorporation occurred.
+
+Disposition: ORDER013_LOCAL_PRODUCTION_ACCEPTED. Preserve this baseline for the later minimal Writer012 website delta only after its remaining HTML QA and independent acceptance. No new task or cleanup loop is released by this completion.

@@ -1,0 +1,21 @@
+check,status,detail
+implementation_preimage,PASS,345837702576f0ed5ddfbd01dd484820e5edb0ae730acb786168ecd1c9cc7ed8; 53259 bytes
+two_substitution_scope,PASS,route_qa$viewport_width to route_qa$width; landing_qa$viewport_width to landing_qa$width
+prospective_reverse_proof,PASS,exact byte reversal to Order 70e implementation
+prospective_parse,PASS,f87eaf01f7ea76cba94a1d30bd45ddc07c6fcf55f8ea87c1bb94bf510a56f66a; 53241 bytes; R 4.6.1 parse PASS
+promotion_postflight_logic_preserved,PASS,"single promotion, rollback, corpus reseal, production browser QA, postflight, and teardown logic unchanged"
+browser_route_schema,PASS,74 rows; width field; 390 and 708; viewport_width absent
+browser_landing_schema,PASS,"3 rows; width field; 390, 708, and 1440; viewport_width absent"
+browser_results,PASS,77/77 PASS; exact accepted classifications and landing counts
+server_lifecycle,PASS,4/4 PASS; listener absent
+screenshots,PASS,10/10 exact and nonempty
+process_gate,PASS,PASS; zero conflicting processes and zero listeners
+promotion_manifest,PASS,2/2 exact sources; one replace and one add
+production_preimage,PASS,892 files; zero symlinks; landing and corpus exact; Word absent
+retained_candidate,PASS,893 files; zero symlinks; landing and Word exact
+candidate_delta,PASS,"891 exact, one changed landing, one added Word"
+candidate_dom,PASS,37/37 PASS; landing clean; 2776 IDREFs; 2762 header tokens
+candidate_links,PASS,46071/46071 resolved
+protected_routes,PASS,36/36 exact
+accepted_svg,PASS,accepted Brown raincloud SVG exact
+no_write_boundary,PASS,"candidate, QA, build, source, corpus, and production bytes unchanged"

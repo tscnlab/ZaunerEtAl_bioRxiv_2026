@@ -247,13 +247,13 @@ assert_primary_state_support_cutoff <- function(
   invisible(minimum_state_support)
 }
 
-assert_primary_mder_support_cutoff <- function(
-  minimum_mder_support,
+assert_primary_mder_viable_fraction <- function(
+  minimum_mder_viable_fraction,
   layout,
   paths
 ) {
-  minimum_mder_support <- validate_mder_metric_support_cutoff(
-    minimum_mder_support
+  minimum_mder_viable_fraction <- validate_mder_viable_fraction(
+    minimum_mder_viable_fraction
   )
   canonical_output <- identical(
     normalizePath(
@@ -266,20 +266,20 @@ assert_primary_mder_support_cutoff <- function(
   if (
     canonical_output &&
       !isTRUE(all.equal(
-        minimum_mder_support,
-        0.80,
+        minimum_mder_viable_fraction,
+        0.50,
         tolerance = 1e-12
       ))
   ) {
     abort_pipeline(
       paste0(
-        "Canonical Preparation 04 requires the author-approved 0.80 ",
-        "MDER-support cutoff; registered 0.70 and 0.90 sensitivities ",
-        "must use a namespaced run"
+        "Canonical Preparation 04 requires the author-approved 0.50 ",
+        "minimum viable one-minute MDER-ratio fraction; alternative ",
+        "thresholds must use a namespaced run"
       )
     )
   }
-  invisible(minimum_mder_support)
+  invisible(minimum_mder_viable_fraction)
 }
 
 discover_metric_placements <- function(coverage_run_root) {
@@ -538,6 +538,10 @@ metric_output_paths <- function(metric_run_root, placement) {
     gaps = file.path(
       metric_run_root,
       paste0(prefix, "gap_diagnostics.csv")
+    ),
+    numerical_zero_audit = file.path(
+      metric_run_root,
+      paste0(prefix, "numerical_zero_audit.csv")
     )
   )
 }
@@ -597,6 +601,95 @@ validate_metric_builder_outputs <- function(result, placement) {
     metric_day_key,
     object = paste0(placement, " gap diagnostics")
   )
+  assert_columns(
+    result$numerical_zero_audit,
+    c(
+      metric_day_key,
+      "metric",
+      "analysis_unit",
+      "clock_hour",
+      "raw_backtransformed_value_lx",
+      "normalized_value_lx",
+      "numerical_zero_tolerance_lx",
+      "source_all_zero",
+      "numerical_zero_decision_id",
+      "raw_value_preserved"
+    ),
+    object = paste0(placement, " numerical-zero audit")
+  )
+  if (nrow(result$numerical_zero_audit) > 0L) {
+    numerical_zero_key <- result$numerical_zero_audit
+    invalid_clock_key <-
+      (!numerical_zero_key$analysis_unit %in% c(
+        "participant_day",
+        "participant_day_window",
+        "participant_hour"
+      )) |
+      (numerical_zero_key$analysis_unit %in% c(
+        "participant_day",
+        "participant_day_window"
+      ) &
+        !is.na(numerical_zero_key$clock_hour)) |
+      (numerical_zero_key$analysis_unit == "participant_hour" &
+        (
+          is.na(numerical_zero_key$clock_hour) |
+            numerical_zero_key$clock_hour < 0L |
+            numerical_zero_key$clock_hour > 23L |
+            numerical_zero_key$clock_hour !=
+              as.integer(numerical_zero_key$clock_hour)
+        ))
+    if (anyNA(invalid_clock_key) || any(invalid_clock_key)) {
+      abort_pipeline(
+        "%s numerical-zero audit has an invalid analysis-unit/clock key",
+        placement
+      )
+    }
+    numerical_zero_key$clock_hour_key <- ifelse(
+      numerical_zero_key$analysis_unit %in% c(
+        "participant_day",
+        "participant_day_window"
+      ),
+      -1L,
+      as.integer(numerical_zero_key$clock_hour)
+    )
+    assert_unique_key(
+      numerical_zero_key,
+      c(
+        metric_day_key,
+        "metric",
+        "analysis_unit",
+        "clock_hour_key"
+      ),
+      object = paste0(placement, " numerical-zero audit")
+    )
+    numerical_zero <- result$numerical_zero_audit
+    if (
+      any(!is.finite(numerical_zero$raw_backtransformed_value_lx)) ||
+        any(numerical_zero$raw_backtransformed_value_lx == 0) ||
+        any(numerical_zero$normalized_value_lx != 0) ||
+        any(!is.finite(numerical_zero$numerical_zero_tolerance_lx)) ||
+        any(numerical_zero$numerical_zero_tolerance_lx <= 0) ||
+        any(
+          abs(numerical_zero$raw_backtransformed_value_lx) >
+            numerical_zero$numerical_zero_tolerance_lx
+        ) ||
+        any(
+          numerical_zero$raw_backtransformed_value_lx > 0 &
+            !numerical_zero$source_all_zero
+        ) ||
+        any(
+          numerical_zero$numerical_zero_decision_id !=
+            numerical_zero_decision_id
+        ) ||
+        anyNA(numerical_zero$raw_value_preserved) ||
+        !all(numerical_zero$raw_value_preserved)
+    ) {
+      abort_pipeline(
+        "%s numerical-zero audit does not satisfy METRIC-011",
+        placement
+      )
+    }
+  }
   assert_unique_key(
     result$state_support_candidates,
     c(
@@ -888,7 +981,7 @@ build_metric_derivation <- function(
   minimum_window_support = 0.80,
   minimum_relevance_support = 0.80,
   minimum_state_support = NULL,
-  minimum_mder_support = 0.80,
+  minimum_mder_viable_fraction = 0.50,
   provisional_state_support = FALSE,
   synthetic_test = FALSE,
   minimum_circular_resultant = 0.10
@@ -905,8 +998,8 @@ build_metric_derivation <- function(
     )
   }
   validate_fraction(minimum_state_support, "minimum_state_support")
-  minimum_mder_support <- validate_mder_metric_support_cutoff(
-    minimum_mder_support
+  minimum_mder_viable_fraction <- validate_mder_viable_fraction(
+    minimum_mder_viable_fraction
   )
   if (
     !is.logical(provisional_state_support) ||
@@ -941,8 +1034,8 @@ build_metric_derivation <- function(
     layout,
     paths
   )
-  assert_primary_mder_support_cutoff(
-    minimum_mder_support,
+  assert_primary_mder_viable_fraction(
+    minimum_mder_viable_fraction,
     layout,
     paths
   )
@@ -1058,7 +1151,7 @@ build_metric_derivation <- function(
       minimum_window_support = minimum_window_support,
       minimum_relevance_support = minimum_relevance_support,
       minimum_state_support = minimum_state_support,
-      minimum_mder_support = minimum_mder_support,
+      minimum_mder_viable_fraction = minimum_mder_viable_fraction,
       minimum_circular_resultant = minimum_circular_resultant
     )
     validate_metric_builder_outputs(result, placement)
@@ -1128,6 +1221,21 @@ build_metric_derivation <- function(
       relevance_maps_sha256 = maps_sha256,
       minute_epoch_seconds = 60L,
       zero_aware_offset_lx = zero_offset,
+      numerical_zero_decision_id = numerical_zero_decision_id,
+      numerical_zero_status = "author_approved",
+      numerical_zero_scope = "offset_geometric_mean_backtransforms",
+      numerical_zero_rule = numerical_zero_rule,
+      numerical_zero_tolerance_multiplier = 100,
+      numerical_zero_positive_requires_all_source_zero = TRUE,
+      numerical_zero_raw_value_preserved = TRUE,
+      numerical_zero_reclassified_cells =
+        nrow(result$numerical_zero_audit),
+      numerical_zero_zero_capable_model_rule =
+        "retain_participant_day_as_zero",
+      numerical_zero_two_part_model_rule = paste0(
+        "retain_in_zero_occurrence_component;exclude_only_from_",
+        "strictly_positive_magnitude_component"
+      ),
       operating_boundary_rule = "finite_MEDI_strictly_below_100000_lx",
       threshold_endpoint_rule = "strict",
       threshold_values_lx = "above_1000|above_250|below_10|below_1",
@@ -1150,14 +1258,17 @@ build_metric_derivation <- function(
       state_support_candidates = "0.70|0.80|0.90",
       state_support_sensitivity_cutoffs = "0.70|0.90",
       state_failure_scope = "metric_specific_only_day_retained",
-      mder_support_cutoff = minimum_mder_support,
-      mder_support_decision_id = "METRIC-003",
+      mder_support_cutoff = minimum_mder_viable_fraction,
+      mder_support_decision_id = "METRIC-010",
       mder_support_status = "author_approved",
-      mder_support_candidates = "0.7|0.8|0.9",
-      mder_support_sensitivity_cutoffs = "0.7|0.9",
-      mder_support_rule = "ordinary_and_both_fixed_signal_profile_supports_gte_cutoff",
+      mder_support_candidates = "0.5",
+      mder_support_sensitivity_cutoffs = NA_character_,
+      mder_support_rule = "positive_finite_one_minute_ratio_fraction_gte_0.50",
       mder_failure_scope = "metric_specific_only_day_retained",
-      mder_ratio_definition = "ratio_of_observed_paired_integrals",
+      mder_ratio_definition = "arithmetic_mean_of_positive_finite_one_minute_ratios",
+      mder_pair_resolution_minutes = 1L,
+      mder_zero_pair_rule = "exclude_if_either_channel_zero",
+      mder_nonfinite_pair_rule = "exclude_if_source_or_ratio_nonfinite",
       mder_ratio_scaled_or_weighted = FALSE,
       m10_wraps_midnight = FALSE,
       l10_wraps_midnight = TRUE,
@@ -1214,15 +1325,33 @@ build_metric_derivation <- function(
       relevance_maps_sha256 = maps_sha256,
       profile_variant = profile_variant,
       state_support_status = settings$state_support_status,
-      mder_support_cutoff = minimum_mder_support,
-      mder_support_decision_id = "METRIC-003",
+      mder_support_cutoff = minimum_mder_viable_fraction,
+      mder_support_decision_id = "METRIC-010",
       mder_support_status = "author_approved",
-      mder_support_candidates = "0.7|0.8|0.9",
-      mder_support_sensitivity_cutoffs = "0.7|0.9",
-      mder_support_rule = "ordinary_and_both_fixed_signal_profile_supports_gte_cutoff",
+      mder_support_candidates = "0.5",
+      mder_support_sensitivity_cutoffs = NA_character_,
+      mder_support_rule = "positive_finite_one_minute_ratio_fraction_gte_0.50",
       mder_failure_scope = "metric_specific_only_day_retained",
-      mder_ratio_definition = "ratio_of_observed_paired_integrals",
+      mder_ratio_definition = "arithmetic_mean_of_positive_finite_one_minute_ratios",
+      mder_pair_resolution_minutes = 1L,
+      mder_zero_pair_rule = "exclude_if_either_channel_zero",
+      mder_nonfinite_pair_rule = "exclude_if_source_or_ratio_nonfinite",
       mder_ratio_scaled_or_weighted = FALSE,
+      numerical_zero_decision_id = numerical_zero_decision_id,
+      numerical_zero_status = "author_approved",
+      numerical_zero_scope = "offset_geometric_mean_backtransforms",
+      numerical_zero_rule = numerical_zero_rule,
+      numerical_zero_tolerance_multiplier = 100,
+      numerical_zero_positive_requires_all_source_zero = TRUE,
+      numerical_zero_raw_value_preserved = TRUE,
+      numerical_zero_reclassified_cells =
+        nrow(result$numerical_zero_audit),
+      numerical_zero_zero_capable_model_rule =
+        "retain_participant_day_as_zero",
+      numerical_zero_two_part_model_rule = paste0(
+        "retain_in_zero_occurrence_component;exclude_only_from_",
+        "strictly_positive_magnitude_component"
+      ),
       rolling_window_minutes = 600L,
       rolling_window_candidate_step_minutes = 1L,
       rolling_window_profile_bin_minutes = 30L,
@@ -1333,6 +1462,13 @@ build_metric_derivation <- function(
         type = "metric_gap_diagnostics",
         data = result$gap,
         path = output_paths$gaps,
+        writer = "csv"
+      ),
+      list(
+        label = "numerical_zero_audit",
+        type = "metric_numerical_zero_audit",
+        data = result$numerical_zero_audit,
+        path = output_paths$numerical_zero_audit,
         writer = "csv"
       )
     )
@@ -1586,28 +1722,18 @@ if (sys.nframe() == 0L) {
   ) {
     abort_pipeline("NATHEALTH_STATE_SUPPORT_CUTOFF must be numeric")
   }
-  mder_support_argument <- Sys.getenv(
-    "NATHEALTH_MDER_SUPPORT_CUTOFF",
-    unset = ""
+  mder_viable_fraction_argument <- Sys.getenv(
+    "NATHEALTH_MDER_VIABLE_FRACTION",
+    unset = "0.50"
   )
-  if (!nzchar(mder_support_argument)) {
-    mder_support_argument <- if (identical(run_label, "full")) {
-      "0.80"
-    } else {
-      abort_pipeline(
-        paste0(
-          "Set NATHEALTH_MDER_SUPPORT_CUTOFF explicitly for a namespaced ",
-          "non-full sensitivity run"
-        )
-      )
-    }
-  }
-  mder_support_cutoff <- suppressWarnings(as.numeric(mder_support_argument))
+  mder_viable_fraction <- suppressWarnings(as.numeric(
+    mder_viable_fraction_argument
+  ))
   if (
-    length(mder_support_cutoff) != 1L ||
-      !is.finite(mder_support_cutoff)
+    length(mder_viable_fraction) != 1L ||
+      !is.finite(mder_viable_fraction)
   ) {
-    abort_pipeline("NATHEALTH_MDER_SUPPORT_CUTOFF must be numeric")
+    abort_pipeline("NATHEALTH_MDER_VIABLE_FRACTION must be numeric")
   }
   result <- build_metric_derivation(
     root = execution_root,
@@ -1632,7 +1758,7 @@ if (sys.nframe() == 0L) {
     },
     profile_variant = profile_variant,
     minimum_state_support = state_support_cutoff,
-    minimum_mder_support = mder_support_cutoff,
+    minimum_mder_viable_fraction = mder_viable_fraction,
     provisional_state_support = FALSE
   )
   print(result$settings)

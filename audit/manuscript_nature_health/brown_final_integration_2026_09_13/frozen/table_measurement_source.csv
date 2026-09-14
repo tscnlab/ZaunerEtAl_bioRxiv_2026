@@ -1,0 +1,9 @@
+Aspect,Construction,Interpretation
+"Daytime","melEDI at least 250 lx, outside the three-hour Pre-sleep window","Near-eye primary measurement"
+"Pre-sleep","melEDI at most 10 lx, in the three hours before sleep","Near-eye primary measurement"
+"Sleep","melEDI at most 1 lx during recorded Sleep","Bedside measurement, not ocular or whole-bedroom exposure"
+"Numerator","Number of valid minutes meeting the inclusive window-specific threshold","Threshold equality counts as adherence"
+"Denominator","All valid minutes in that window, adherent plus non-adherent","Missing minutes are not imputed; exact zero and one proportions are retained"
+"Coverage","Valid minutes divided by the exact expected interval duration","Expected minutes define coverage, not the model denominator"
+"Independent eligibility","Any valid period is primary; at least 80% is the coverage sensitivity","One window may contribute while another is missing"
+"Day ownership","Work or Free day of the wake-start calendar date","Preceding Sleep, Daytime and following Pre-sleep form one cycle; midnight does not split it"

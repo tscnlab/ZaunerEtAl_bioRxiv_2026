@@ -1,0 +1,606 @@
+--- audit/manuscript_nature_health/revision_2026_09_11/consolidated_display_repair_order72k/helpers/prepare_word_manuscript.py
++++ PROSPECTIVE_ONLY/prepare_word_manuscript.py
+@@ -1,6 +1,6 @@
+ #!/usr/bin/env python3
+ 
+-"""Replace lossy gt-to-DOCX tables with faithful PNGs and tune page layout."""
++"""PROSPECTIVE ONLY: layout repair, not authorized for execution or promotion."""
+ 
+ from __future__ import annotations
+ 
+@@ -32,6 +32,7 @@
+     parser.add_argument("png_manifest", type=Path)
+     parser.add_argument("figure_manifest", type=Path)
+     parser.add_argument("output_docx", type=Path)
++    parser.add_argument("--part-count-contract", required=True, type=Path)
+     return parser.parse_args()
+ 
+ 
+@@ -511,16 +512,20 @@
+     max_height_inches: float,
+     alt_text: str,
+     page_break_before: bool = False,
++    fixed_width_inches: float | None = None,
+ ):
+     pixel_width, pixel_height = image_dimensions(image_path)
+     ratio = pixel_width / pixel_height
+-    width = min(max_width_inches, max_height_inches * ratio)
++    width = fixed_width_inches if fixed_width_inches is not None else min(max_width_inches, max_height_inches * ratio)
+     height = width / ratio
++    if fixed_width_inches is not None and (width > max_width_inches or height > max_height_inches):
++        raise RuntimeError(f"{alt_text}: fixed-width image exceeds its height budget; revise the declared part map, do not shrink a continuation")
+ 
+     paragraph = document.add_paragraph()
+     paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+     paragraph.paragraph_format.space_before = Pt(0)
+     paragraph.paragraph_format.space_after = Pt(0)
++    paragraph.paragraph_format.line_spacing = 1.0
+     paragraph.paragraph_format.keep_together = True
+     paragraph.paragraph_format.page_break_before = page_break_before
+     run = paragraph.add_run()
+@@ -598,6 +603,7 @@
+     paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+     paragraph.paragraph_format.space_before = Pt(0)
+     paragraph.paragraph_format.space_after = Pt(0)
++    paragraph.paragraph_format.line_spacing = 1.0
+     paragraph.paragraph_format.keep_together = True
+     paragraph.paragraph_format.keep_with_next = keep_with_next
+     run = paragraph.add_run()
+@@ -665,6 +671,7 @@
+     paragraph.paragraph_format.page_break_before = page_break_before
+     paragraph.paragraph_format.space_before = Pt(6)
+     paragraph.paragraph_format.space_after = Pt(4)
++    paragraph.paragraph_format.line_spacing = 1.0
+     run = paragraph.add_run(text)
+     run.bold = True
+     run.font.size = Pt(10)
+@@ -679,6 +686,71 @@
+     if section_properties is None:
+         raise RuntimeError("DOCX body has no final section properties")
+     return deepcopy(section_properties)
++
++
++def format_display_caption(paragraph: Paragraph, above: bool = False):
++    """Paragraph geometry only; retain every text run and its font/links."""
++    paragraph.alignment = WD_ALIGN_PARAGRAPH.LEFT
++    pf = paragraph.paragraph_format
++    pf.line_spacing = 1.0
++    pf.keep_together = True
++    pf.keep_with_next = above
++    pf.space_before = Pt(0 if above else 4)
++    pf.space_after = Pt(4)
++
++
++def keep_supplementary_tables_with_labels(document: Document, inserted):
++    for number in range(1, 11):
++        matches = find_paragraphs(document, f"Supplementary Table S{number}.")
++        if len(matches) != 2:
++            raise RuntimeError(f"S{number}: expected one heading and one caption")
++        heading, caption = matches
++        heading.paragraph_format.line_spacing = 1.0
++        heading.paragraph_format.keep_together = True
++        heading.paragraph_format.keep_with_next = True
++        heading.paragraph_format.space_after = Pt(4)
++        format_display_caption(caption)
++        # Do not chain every table part together. Only its last part stays
++        # with the caption; explicit continuation page starts remain intact.
++        Paragraph(inserted[f"supp_table_s{number}"][-1], document).paragraph_format.keep_with_next = True
++
++
++def remove_empty_portrait_transitions(document: Document):
++    """Remove only the two proven empty sections, retaining all bookmarks."""
++    body = document.element.body
++    removed = []
++    expected = {"Supplementary Table S2.", "Supplementary Table S3."}
++    for node in list(body):
++        if local_name(node) != "p" or node.xpath(".//w:t | .//w:drawing"):
++            continue
++        current = node.find("w:pPr/w:sectPr", node.nsmap)
++        if current is None:
++            continue
++        previous = node.getprevious()
++        while previous is not None and local_name(previous) in {"bookmarkStart", "bookmarkEnd"}:
++            previous = previous.getprevious()
++        following = node.getnext()
++        while following is not None and local_name(following) in {"bookmarkStart", "bookmarkEnd"}:
++            following = following.getnext()
++        if previous is None or following is None or local_name(following) != "p":
++            continue
++        preceding = previous.find("w:pPr/w:sectPr", previous.nsmap)
++        label = clean_text(Paragraph(following, document).text)
++        prefix = next((prefix for prefix in expected if label.startswith(prefix)), None)
++        if preceding is None or prefix is None:
++            continue
++        prior_size, current_size = preceding.find(qn("w:pgSz")), current.find(qn("w:pgSz"))
++        current_type = current.find(qn("w:type"))
++        if (prior_size is None or current_size is None or current_type is None
++                or prior_size.get(qn("w:orient")) != "landscape"
++                or current_size.get(qn("w:orient")) == "landscape"
++                or current_type.get(qn("w:val")) != "nextPage"):
++            raise RuntimeError("The reviewed empty-section mechanism no longer matches")
++        body.remove(node)
++        removed.append(prefix)
++    if set(removed) != expected or len(removed) != 2:
++        raise RuntimeError(f"Unexpected empty-section removal set: {removed}")
++    return removed
+ 
+ 
+ def section_break_paragraph(base_sect_pr, landscape: bool, a3: bool = False):
+@@ -732,6 +804,10 @@
+     paragraph = OxmlElement("w:p")
+     paragraph_properties = OxmlElement("w:pPr")
+     paragraph_properties.append(OxmlElement("w:suppressLineNumbers"))
++    spacing = OxmlElement("w:spacing")
++    for key, value in {"before": "0", "after": "0", "line": "20", "lineRule": "exact"}.items():
++        spacing.set(qn(f"w:{key}"), value)
++    paragraph_properties.append(spacing)
+     paragraph_properties.append(sect_pr)
+     paragraph.append(paragraph_properties)
+     return paragraph
+@@ -793,8 +869,7 @@
+     if len(caption_candidates) != 1:
+         raise RuntimeError(f"Main Table {table_number} caption was not unique")
+     caption = caption_candidates[0]
+-    caption.alignment = WD_ALIGN_PARAGRAPH.LEFT
+-    caption.paragraph_format.keep_with_next = True
++    format_display_caption(caption, above=True)
+ 
+     insertion_index = body.index(wrapper._tbl)
+     caption._p.getparent().remove(caption._p)
+@@ -855,15 +930,14 @@
+     image.paragraph_format.keep_together = True
+     image.paragraph_format.space_before = Pt(0)
+     image.paragraph_format.space_after = Pt(0)
++    image.paragraph_format.line_spacing = 1.0
+     resize_drawing_paragraph(
+         image,
+         max_width_inches=6.25,
+         max_height_inches=4.40 if figure_number == 1 else 5.35,
+         alt_text=f"Main Figure {figure_number}",
+     )
+-    caption.alignment = WD_ALIGN_PARAGRAPH.LEFT
+-    caption.paragraph_format.keep_together = True
+-    caption.paragraph_format.space_before = Pt(4)
++    format_display_caption(caption)
+ 
+     insertion_index = body.index(wrapper._tbl)
+     image._p.getparent().remove(image._p)
+@@ -889,9 +963,10 @@
+             document,
+             image,
+             max_width_inches=15.55 if label == "Supplementary Table S2" else (10.55 if landscape else 6.25),
+-            max_height_inches=8.90 if label == "Supplementary Table S2" else (6.20 if landscape else 8.75),
++            max_height_inches=9.20 if label == "Supplementary Table S2" else (6.20 if landscape else 8.75),
+             alt_text=f"{label}, part {index + 1} of {len(images)}",
+             page_break_before=index > 0,
++            fixed_width_inches=15.55 if label == "Supplementary Table S2" else (10.55 if label == "Supplementary Table S7" else None),
+         )
+         body.insert(insertion_index + index, element)
+         image_elements.append(element)
+@@ -1035,7 +1110,7 @@
+         12,
+     }
+     heading.paragraph_format.keep_with_next = True
+-    caption.paragraph_format.keep_together = True
++    format_display_caption(caption)
+     if figure_number in {7, 15}:
+         if not isinstance(image_path, list) or len(image_path) != 2:
+             raise RuntimeError("S7 and S15 each require two independent SVG sources")
+@@ -1057,6 +1132,15 @@
+             body.insert(insertion_index, tag_node)
+             body.insert(insertion_index + 1, image_node)
+             inserted.append(image_node)
++        if figure_number == 7:
++            # Keep the full shared caption with A, before the page-starting B.
++            # B is tall and has its own panels; do not shrink its source image
++            # merely to fit the shared caption underneath it.
++            body.remove(caption._p)
++            body.insert(body.index(inserted[0]) + 1, caption._p)
++            Paragraph(inserted[0], document).paragraph_format.keep_with_next = True
++        else:
++            Paragraph(inserted[-1], document).paragraph_format.keep_with_next = True
+         return tuple(inserted)
+     if figure_number == 8:
+         first_part = add_cropped_picture_paragraph(
+@@ -1167,6 +1251,11 @@
+             paragraph.paragraph_format.space_before = Pt(4)
+             paragraph.paragraph_format.space_after = Pt(0)
+     images = manifest_map(args.png_manifest)
++    declared_parts = json.loads(args.part_count_contract.read_text())
++    if not all(isinstance(value, int) and not isinstance(value, bool) and value > 0 for value in declared_parts.values()):
++        raise RuntimeError("Part-count contract is incomplete, including unresolved Brown-dependent entries")
++    if {key: len(parts) for key, parts in images.items()} != declared_parts:
++        raise RuntimeError("Capture map differs from the separately approved part-count contract")
+     figures = figure_manifest_map(args.figure_manifest)
+     required_keys = {
+         "main_table_1",
+@@ -1243,6 +1332,8 @@
+             number,
+             [figures[f"supp_figure_s{number}a"], figures[f"supp_figure_s{number}b"]] if number in {7, 15} else figures[f"supp_figure_s{number}"],
+         )
++
++    keep_supplementary_tables_with_labels(document, inserted)
+ 
+     recommendation_heading = find_exact_heading(
+         document,
+@@ -1334,6 +1425,7 @@
+     for first, last in landscape_ranges:
+         wrap_landscape(document, first, last, base_sect_pr, a3=first is s2_start)
+ 
++    removed_empty_sections = remove_empty_portrait_transitions(document)
+     set_final_portrait_section(document, base_sect_pr)
+     suppress_linked_footer_line_numbers(document)
+     display_bookmarks = add_missing_display_bookmarks(document)
+@@ -1361,8 +1453,8 @@
+     if top_level_tables(final):
+         raise RuntimeError("One or more one-cell float wrapper tables remain in output")
+     expected_images = 23 + sum(len(parts) for parts in images.values())
+-    if expected_images != 49 + len(images["supp_table_s2"]):
+-        raise RuntimeError("Expanded drawing map disagrees with frozen capture inventory")
++    if expected_images != 23 + sum(declared_parts.values()):
++        raise RuntimeError("Expanded drawing map disagrees with the approved prospective part counts")
+     if len(final.inline_shapes) != expected_images:
+         raise RuntimeError(
+             f"Expected {expected_images} images in final DOCX, found {len(final.inline_shapes)}",
+@@ -1372,6 +1464,9 @@
+         for pair in ((WD_ORIENT.PORTRAIT, WD_ORIENT.LANDSCAPE),) * 15
+         for orientation in pair
+     ] + [WD_ORIENT.PORTRAIT]
++    # Zero-based old section positions 8 and 10 were the proven empty
++    # portrait sections around S2, not odd/even page breaks.
++    expected_orientations = [value for index, value in enumerate(expected_orientations) if index not in {8, 10}]
+     actual_orientations = [section.orientation for section in final.sections]
+     if actual_orientations != expected_orientations:
+         raise RuntimeError(
+@@ -1386,6 +1481,7 @@
+                 "display_bookmarks": display_bookmarks,
+                 "new_page_sections": page_start_sections,
+                 "sections": len(final.sections),
++                "removed_empty_sections": removed_empty_sections,
+                 "top_level_tables": len(top_level_tables(final)),
+                 "inline_shapes": len(final.inline_shapes),
+             },
+@@ -1395,4 +1491,4 @@
+ 
+ 
+ if __name__ == "__main__":
+-    main()
++    raise SystemExit("PROSPECTIVE ONLY. Execution requires a separately sealed implementation order.")
+--- audit/manuscript_nature_health/revision_2026_09_11/consolidated_display_repair_order72k/helpers/capture_word_tables.mjs
++++ PROSPECTIVE_ONLY/capture_word_tables.mjs
+@@ -11,6 +11,10 @@
+ import process from "node:process";
+ import { createHash } from "node:crypto";
+ import { createRequire } from "node:module";
++
++// PROSPECTIVE ONLY. This remains blocked even if an old command is reused.
++// A separately sealed implementation order must resolve the capture route.
++throw new Error("PROSPECTIVE ONLY: no browser/capture route is authorized");
+ 
+ const require = createRequire(import.meta.url);
+ // BEGIN S2_SCREEN_READER_CONTRACT
+@@ -237,8 +241,12 @@
+   "/Users/zauner/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright",
+ );
+ 
+-const [sourceUrl, outputDir, captureSubset] = process.argv.slice(2);
+-if (captureSubset && captureSubset !== "only-s2") throw new Error("Only the approved S2-only correction subset is supported");
++const [sourceUrl, outputDir, captureSubset, s2ReductionArgument = "0"] = process.argv.slice(2);
++if (!["only-s2", "only-s7-tail", "only-s2-s7-tail"].includes(captureSubset)) throw new Error("An explicit separately released subset is required");
++if (!["0", "1"].includes(s2ReductionArgument)) throw new Error("S2 numeric reduction must be zero or one printed point");
++const s2PrintedPointReduction = Number(s2ReductionArgument);
++// CSS px to physical points after embedding at the declared 15.55-inch width.
++const s2CssReduction = s2PrintedPointReduction * 1490 / (72 * 15.55);
+ 
+ if (!sourceUrl || !outputDir) {
+   throw new Error(
+@@ -391,19 +399,17 @@
+ ];
+ 
+ // Order72k only: no broad recapture and no scientific figure rasterization.
+-const activeSpecs = specs.filter((s) => ["supp_table_s2", "supp_table_s5", "supp_table_s6", "supp_table_s10"].includes(s.key));
++const activeSpecs = specs.filter((s) => ["supp_table_s2", "supp_table_s7"].includes(s.key));
+ Object.assign(activeSpecs.find((s) => s.key === "supp_table_s2"), {
+   rowRanges: [[0, 9], [9, 17], [17, 23]],
+   columnSets: [Array.from({length: 14}, (_, i) => i)],
+   targetWidth: 1490,
+-  fixedWidths: [200, 80, 105, 86, 86, 86, 86, 86, 86, 86, 86, 86, 100, 231],
++  fixedWidths: [200, 60, 103, 96, 96, 96, 96, 96, 96, 96, 96, 96, 78, 185],
+ });
+-for (const spec of activeSpecs) {
+-  if (spec.key !== "supp_table_s2") {
+-    spec.fontRepair = true;
+-    spec.targetWidth = spec.key === "supp_table_s10" ? 904 : 902;
+-  }
+-}
++Object.assign(activeSpecs.find((s) => s.key === "supp_table_s7"), {
++  // Parts 1 and 2 are reused byte-exact. Replace old part 3 by parts 3 and 4.
++  rowRanges: [[13, 19], [19, 23]], targetWidth: 896, partOffset: 2, totalParts: 4,
++});
+ 
+ const browser = await chromium.launch({
+   headless: true,
+@@ -420,7 +426,8 @@
+ 
+ const outputManifest = [];
+ 
+-for (const spec of activeSpecs.filter((s) => !captureSubset || s.key === "supp_table_s2")) {
++for (const spec of activeSpecs.filter((s) => captureSubset === "only-s2-s7-tail" ||
++    (captureSubset === "only-s2" ? s.key === "supp_table_s2" : s.key === "supp_table_s7"))) {
+   const sourceRoot = source.locator(spec.selector).first();
+   const count = await sourceRoot.count();
+   if (count !== 1) {
+@@ -490,8 +497,8 @@
+     Array.from({ length: sourceInfo.columnCount }, (_, i) => i),
+   ];
+   const files = [];
+-  const totalParts = rowRanges.length * columnSets.length;
+-  let part = 0;
++  const totalParts = spec.totalParts ?? rowRanges.length * columnSets.length;
++  let part = spec.partOffset ?? 0;
+ 
+   for (let columnPart = 0; columnPart < columnSets.length; columnPart += 1) {
+     for (let rowPart = 0; rowPart < rowRanges.length; rowPart += 1) {
+@@ -534,6 +541,7 @@
+           continuation,
+           requestedWidth,
+           fixedWidths,
++          s2CssReduction,
+           sourceHiddenDescriptions,
+         }) => {
+           function collectS2ScreenReaderSpans(table, rowOffset = 0) {
+@@ -664,12 +672,24 @@
+               img.style.width = "100%"; img.style.height = "auto"; img.style.maxWidth = "100%"; img.style.minWidth = "0"; img.style.objectFit = "contain";
+               if (img.parentElement !== img.closest("td")) { img.parentElement.style.width = "100%"; img.parentElement.style.minWidth = "0"; }
+             }
+-            // S2 correction: preserve every character, allowing only vertical wrapping.
++            // Preserve every character and the whole source mean-plus-minus-SD span.
+             for (const cell of table.querySelectorAll("tbody tr > :nth-child(n+3):nth-child(-n+12)")) {
+-              for (const node of [cell, ...cell.querySelectorAll("*")]) {
+-                node.style.setProperty("white-space", "normal", "important");
++              cell.style.setProperty("padding-left", "4px", "important");
++              cell.style.setProperty("padding-right", "4px", "important");
++              const meanSdSpans = Array.from(cell.querySelectorAll("span")).filter((span) =>
++                span.style.whiteSpace === "nowrap" && span.textContent.includes("±"));
++              const keptNodes = new Set(meanSdSpans.flatMap((span) => [span, ...span.querySelectorAll("*")]));
++              const nodes = [cell, ...cell.querySelectorAll("*")];
++              // Snapshot first, so inherited sizes are not reduced repeatedly.
++              const fontSizes = new Map(nodes.map((node) => [node, parseFloat(getComputedStyle(node).fontSize)]));
++              for (const node of nodes) {
++                node.style.setProperty("white-space", keptNodes.has(node) ? "nowrap" : "normal", "important");
+                 node.style.setProperty("overflow-wrap", "normal", "important");
+                 node.style.setProperty("word-break", "normal", "important");
++                if (s2CssReduction) {
++                  const originalSize = fontSizes.get(node);
++                  node.style.setProperty("font-size", `${originalSize >= 12 ? originalSize - s2CssReduction : originalSize}px`, "important");
++                }
+               }
+             }
+           }
+@@ -707,6 +727,7 @@
+           continuation,
+           requestedWidth,
+           fixedWidths: spec.fixedWidths ?? null,
++          s2CssReduction,
+           sourceHiddenDescriptions: sourceInfo.s2HiddenDescriptions,
+         },
+       );
+@@ -790,7 +811,23 @@
+         });
+         if (images.some((img) => !img.naturalWidth || !img.contained || !img.ratioPreserved)) throw new Error("Distribution image containment or aspect ratio failed");
+         const numericalTextOverflow = [];
++        const meanSdUnits = [];
+         if (selector === "#tbl-near-eye-metrics") {
++          for (const cell of table.querySelectorAll("tbody tr > :nth-child(n+3):nth-child(-n+12)")) {
++            const cellBox = cell.getBoundingClientRect();
++            for (const span of cell.querySelectorAll("span")) {
++              if (span.style.whiteSpace !== "nowrap" || !span.textContent.includes("±")) continue;
++              const range = document.createRange(); range.selectNodeContents(span);
++              const rects = Array.from(range.getClientRects()).filter((rect) => rect.width > 0 && rect.height > 0);
++              const oneLine = rects.length > 0 && Math.max(...rects.map((rect) => rect.top)) - Math.min(...rects.map((rect) => rect.top)) < 1;
++              const contained = rects.every((rect) => !s2TextRectOverflows(rect, cellBox));
++              const record = {text: span.textContent, oneLine, contained, whiteSpace: getComputedStyle(span).whiteSpace};
++              if (!oneLine || !contained || record.whiteSpace !== "nowrap") throw new Error("S2 complete mean-plus-minus-SD unit wraps or exceeds its cell");
++              meanSdUnits.push(record);
++            }
++          }
++          const expectedCount = ({0:70, 9:50, 17:50})[rowStart];
++          if (meanSdUnits.length !== expectedCount) throw new Error("S2 complete mean-plus-minus-SD inventory differs from the frozen row map");
+           for (const cell of table.querySelectorAll("thead th, thead td, tbody th, tbody td, tfoot th, tfoot td")) {
+             const cellBox = cell.getBoundingClientRect();
+             const walker = document.createTreeWalker(cell, NodeFilter.SHOW_TEXT);
+@@ -808,7 +845,7 @@
+         }
+         if (numericalTextOverflow.length) throw new Error(`S2 all-cell text clipping: ${JSON.stringify(numericalTextOverflow)}`);
+         const screenReaderDescriptions = expectedHiddenDescriptions.map(({image_src, ...record}) => ({...record, hiddenStylePreserved: true, sourceImageMatched: true}));
+-        return {fonts, images, numericalTextOverflow, screenReaderDescriptions, bodyCells: Array.from(table.querySelectorAll("tbody tr")).map((row) => Array.from(row.children).map((cell) => cell.textContent))};
++        return {fonts, images, numericalTextOverflow, meanSdUnits, screenReaderDescriptions, bodyCells: Array.from(table.querySelectorAll("tbody tr")).map((row) => Array.from(row.children).map((cell) => cell.textContent))};
+       }, {selector: spec.selector, fontRepair: !!spec.fontRepair, sourceHiddenDescriptions: sourceInfo.s2HiddenDescriptions, rowStart, rowEnd});
+       if (JSON.stringify(verification.bodyCells) !== JSON.stringify(sourceInfo.bodyCells.slice(rowStart, rowEnd))) throw new Error("Frozen cell text changed in capture");
+       await fs.writeFile(path.join(outputDir, `${spec.key}_part_${String(part).padStart(2, "0")}.html`), await page.content());
+@@ -816,8 +853,13 @@
+       const capture = page.locator("#word-table-capture");
+       const filename = `${spec.key}_part_${String(part).padStart(2, "0")}.png`;
+       const destination = path.resolve(outputDir, filename);
++      const box = await capture.boundingBox();
++      const fixedWordWidth = spec.key === "supp_table_s2" ? 15.55 : 10.55;
++      const maxWordHeight = spec.key === "supp_table_s2" ? 9.20 : 6.20;
++      if (!box || Math.abs(box.width-captureInfo.width)>1 || fixedWordWidth*box.height/box.width>maxWordHeight) {
++        throw new Error("Fixed-width Word height budget exceeded; stop before PNG export, do not shrink a continuation");
++      }
+       await capture.screenshot({ path: destination });
+-      const box = await capture.boundingBox();
+       files.push({
+         path: destination,
+         part,
+@@ -825,6 +867,9 @@
+         columns: keepColumns,
+         cssWidth: captureInfo.width,
+         cssHeight: box ? Math.ceil(box.height) : null,
++        fixedWordWidthInches: fixedWordWidth,
++        maximumWordHeightInches: maxWordHeight,
++        ...(spec.key === "supp_table_s2" ? {s2PrintedPointReduction, s2CssReduction} : {}),
+         verification,
+       });
+       await page.close();
+--- scripts/manuscript_nature_health/export_editable_tables.py
++++ PROSPECTIVE_ONLY/export_editable_tables.py
+@@ -56,7 +56,7 @@
+     "Table_2": [1.00, 1.75, 1.80, 1.55, 1.55, 1.55, 0.90],
+     "Table_3": [130, 190, 140, 110, 150, 235, 265],
+     "Table_S1": [1.75, 3.65, 1.35],
+-    "Table_S2": [2.25, 0.68] + [1.00] * 10 + [0.72, 1.40],
++    "Table_S2": [200, 60, 103] + [96] * 9 + [78, 185],
+     "Table_S3": [1.35] + [1.15] * 8,
+     "Table_S4": [1.0, 1.60, 0.80, 2.35, 4.00],
+     "Table_S5": [2.45, 2.50, 2.85, 2.70],
+@@ -141,7 +141,10 @@
+ def add_run(paragraph, text, style):
+     if not text:
+         return
+-    run = paragraph.add_run(re.sub(r"\s+", " ", text))
++    text = re.sub(r"\s+", " ", text)
++    if style.get("nowrap"):
++        text = text.replace(" ", "\u00a0")
++    run = paragraph.add_run(text)
+     run.font.name = "Arial"
+     run.font.size = Pt(style.get("size", 10))
+     run.bold = style.get("bold", False)
+@@ -158,6 +161,9 @@
+         return
+     current = dict(style)
+     styles = css(element)
++    if (current.get("s2_numeric") and styles.get("white-space") == "nowrap"
++            and "±" in "".join(element.itertext())):
++        current["nowrap"] = True
+     if styles.get("font-weight") in ("bold", "600", "700", "800") or element.tag in ("b", "strong"):
+         current["bold"] = True
+     if styles.get("font-style") == "italic" or element.tag in ("em", "i"):
+@@ -235,7 +241,7 @@
+     return rows, ncols, records
+ 
+ 
+-def export_one(source_table, source_path, reference, outdir, index):
++def export_one(source_table, source_path, reference, outdir, index, s2_numeric_reduction_pt=0):
+     key, label = LABELS[index]
+     rows, ncols, records = grid_records(source_table)
+     doc = Document(reference)
+@@ -285,6 +291,7 @@
+         for c,width in zip(row.cells,widths):
+             c.width=Inches(width)
+     originals=[]
++    s2_nowrap_spans_verified=0
+     destination_cells=[]
+     for r,c,rs,cs,source in records:
+         cell=word_table.cell(r,c)
+@@ -313,7 +320,18 @@
+         p=cell.paragraphs[0]
+         format_paragraph(p,align,keep=group)
+         style={"size":10,"bold":heading or group,"colour":colour(styles.get("color")) or "333333"}
++        if key=="Table_S2" and not heading and not group and cs==1 and 2<=c<=11:
++            style.update(size=10-s2_numeric_reduction_pt,s2_numeric=True)
+         render_inline(source,p,style,width,source_path.parent)
++        if style.get("s2_numeric"):
++            spans=[node for node in source.iterdescendants()
++                   if node.tag=="span" and css(node).get("white-space")=="nowrap"
++                   and "±" in "".join(node.itertext())]
++            for span in spans:
++                token=normalise("".join(span.itertext())).replace(" ","\u00a0")
++                if token not in p.text:
++                    raise RuntimeError("Complete S2 mean-plus-minus-SD unit lost its no-break spaces")
++            s2_nowrap_spans_verified+=len(spans)
+         originals.append(compact(visible_text(source)))
+         destination_cells.append(cell)
+     notes_and_caption=[]
+@@ -355,6 +373,8 @@
+     if originals!=actual:
+         failures=[i for i,(a,b) in enumerate(zip(originals,actual)) if a!=b]
+         raise RuntimeError(f"Displayed text changed in {key}, cells {failures}")
++    if key=="Table_S2" and s2_nowrap_spans_verified!=170:
++        raise RuntimeError(f"S2 no-break inventory changed: {s2_nowrap_spans_verified}")
+     output=outdir/(key+".docx")
+     doc.save(output)
+     check=Document(output)
+@@ -370,6 +390,9 @@
+         "base_font":"Arial 10 pt", "orientation":"landscape" if wide else "portrait",
+         "paper":"A3" if key=="Table_S2" else "A4",
+         "source_table_sha256":hashlib.sha256(html.tostring(source_table)).hexdigest(),
++        **({"complete_mean_sd_nowrap_units":s2_nowrap_spans_verified,
++            "numeric_base_font_pt":10-s2_numeric_reduction_pt,
++            "numeric_reduction_pt":s2_numeric_reduction_pt} if key=="Table_S2" else {}),
+     }
+ 
+ 
+@@ -379,6 +402,7 @@
+     parser.add_argument("reference_docx",type=Path)
+     parser.add_argument("output_dir",type=Path)
+     parser.add_argument("--only",nargs="+")
++    parser.add_argument("--s2-numeric-reduction-pt",type=int,choices=(0,1),default=0)
+     args=parser.parse_args()
+     args.output_dir.mkdir(parents=True,exist_ok=True)
+     root=html.parse(str(args.source_html))
+@@ -389,7 +413,7 @@
+     for i,source in enumerate(tables):
+         if args.only and LABELS[i][0] not in args.only:
+             continue
+-        record=export_one(source,args.source_html,args.reference_docx,args.output_dir,i)
++        record=export_one(source,args.source_html,args.reference_docx,args.output_dir,i,args.s2_numeric_reduction_pt)
+         manifest.append(record)
+         print(json.dumps(record,ensure_ascii=False),flush=True)
+     manifest_path=args.output_dir/"table_manifest.json"
+@@ -399,13 +423,20 @@
+         manifest=[existing[key] for key,_ in LABELS if key in existing]
+     manifest_path.write_text(json.dumps(manifest,indent=2,ensure_ascii=False)+"\n",encoding="utf-8")
+     if len(manifest)==len(LABELS):
++        required_metadata=("README.md", "table_manifest.json", "export_provenance.json")
++        if not all((args.output_dir/name).is_file() for name in required_metadata):
++            raise RuntimeError("The full table package requires README, manifest and export provenance")
++        for record in manifest:
++            target=Path(record["path"]).resolve()
++            if (target.parent!=args.output_dir.resolve() or target.name!=record["label"]+".docx"
++                    or hashlib.sha256(target.read_bytes()).hexdigest()!=record["sha256"]):
++                raise RuntimeError("Every reused or regenerated table must be exact inside the new package directory")
+         with ZipFile(args.output_dir/"editable_manuscript_tables.zip","w",ZIP_DEFLATED) as archive:
+             for record in manifest:
+                 archive.write(record["path"],Path(record["path"]).name)
+-            for name in ("README.md", "table_manifest.json"):
+-                if (args.output_dir/name).exists():
+-                    archive.write(args.output_dir/name,name)
++            for name in required_metadata:
++                archive.write(args.output_dir/name,name)
+ 
+ 
+ if __name__=="__main__":
+-    main()
++    raise SystemExit("PROSPECTIVE ONLY. Execution requires a separately sealed implementation order.")
+--- audit/manuscript_nature_health/revision_2026_09_11/consolidated_display_repair_order72k/project/order72k_layout.css
++++ PROSPECTIVE_ONLY/order72k_layout.css
+@@ -1,16 +1,22 @@
+ 
+-/* Order72k candidate-only layout. No rule targets protected Main Table 3. */
++/* PROSPECTIVE ONLY. No rule targets protected Main Table 3. */
+ #tbl-near-eye-metrics table {width:1490px !important;min-width:1490px !important;table-layout:fixed !important;}
+ #tbl-near-eye-metrics {min-width:0 !important;max-width:100%;}
+ #tbl-near-eye-metrics tr > :first-child {width:200px !important;min-width:0 !important;}
+-#tbl-near-eye-metrics tr > :nth-child(2) {width:80px !important;min-width:0 !important;}
+-#tbl-near-eye-metrics tr > :nth-child(3) {width:105px !important;min-width:0 !important;}
+-#tbl-near-eye-metrics tr > :nth-child(n+4):nth-child(-n+12) {width:86px !important;min-width:0 !important;}
+-#tbl-near-eye-metrics tr > :nth-child(13) {width:100px !important;min-width:0 !important;}
+-#tbl-near-eye-metrics tr > :nth-child(14) {width:231px !important;min-width:0 !important;}
++#tbl-near-eye-metrics tr > :nth-child(2) {width:60px !important;min-width:0 !important;}
++#tbl-near-eye-metrics tr > :nth-child(3) {width:103px !important;min-width:0 !important;}
++#tbl-near-eye-metrics tr > :nth-child(n+4):nth-child(-n+12) {width:96px !important;min-width:0 !important;}
++#tbl-near-eye-metrics tr > :nth-child(13) {width:78px !important;min-width:0 !important;}
++#tbl-near-eye-metrics tr > :nth-child(14) {width:185px !important;min-width:0 !important;}
+ #tbl-near-eye-metrics tbody img {width:100% !important;height:auto !important;max-width:100% !important;min-width:0 !important;object-fit:contain;}
+ #tbl-near-eye-metrics tbody tr > :nth-child(n+3):nth-child(-n+12),
+ #tbl-near-eye-metrics tbody tr > :nth-child(n+3):nth-child(-n+12) * {white-space:normal !important;overflow-wrap:normal !important;word-break:normal !important;}
++#tbl-near-eye-metrics tbody tr > :nth-child(n+3):nth-child(-n+12) {padding-left:4px !important;padding-right:4px !important;}
++/* Preserve the complete existing mean-plus-minus-SD unit, not just the sign. */
++#tbl-near-eye-metrics tbody tr > :nth-child(n+3):nth-child(-n+12) span[style*="white-space:nowrap"],
++#tbl-near-eye-metrics tbody tr > :nth-child(n+3):nth-child(-n+12) span[style*="white-space:nowrap"] *,
++#tbl-near-eye-metrics tbody tr > :nth-child(n+3):nth-child(-n+12) span[style*="white-space: nowrap"],
++#tbl-near-eye-metrics tbody tr > :nth-child(n+3):nth-child(-n+12) span[style*="white-space: nowrap"] * {white-space:nowrap !important;}
+ #tbl-plan-h02-glasses-variation-shapley-gt-candidate, #tbl-plan-h02-glasses-variation-shapley-gt-candidate table, #tbl-plan-h02-glasses-variation-shapley-gt-candidate th, #tbl-plan-h02-glasses-variation-shapley-gt-candidate td, #tbl-plan-h02-glasses-variation-shapley-gt-candidate * {font-family:Arial, Helvetica, sans-serif !important;}
+ #tbl-plan-h02-chest-variation-shapley-gt-candidate, #tbl-plan-h02-chest-variation-shapley-gt-candidate table, #tbl-plan-h02-chest-variation-shapley-gt-candidate th, #tbl-plan-h02-chest-variation-shapley-gt-candidate td, #tbl-plan-h02-chest-variation-shapley-gt-candidate * {font-family:Arial, Helvetica, sans-serif !important;}
+ #tbl-plan-person-level-synthesis-gt-candidate, #tbl-plan-person-level-synthesis-gt-candidate table, #tbl-plan-person-level-synthesis-gt-candidate th, #tbl-plan-person-level-synthesis-gt-candidate td, #tbl-plan-person-level-synthesis-gt-candidate * {font-family:Arial, Helvetica, sans-serif !important;}

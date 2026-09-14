@@ -114,7 +114,16 @@ supporting_files <- file.path(
     "audit/decisions/paired_placement_comparison_display.md",
     "audit/decisions/site_display_conventions.md",
     "audit/decisions/gap_timing_unaware_dataset_terminology.md",
-    "audit/decisions/bootstrap_execution_policy.md"
+    "audit/decisions/bootstrap_execution_policy.md",
+    "audit/decisions/l10_numerical_zero_normalization.md",
+    paste0(
+      "audit/reconciliation/l10_METRIC-011/",
+      "METRIC-011_evidence_manifest.csv"
+    ),
+    paste0(
+      "audit/reconciliation/l10_METRIC-011/",
+      "primary_scientific_cell_changes.csv"
+    )
   )
 )
 
@@ -125,19 +134,38 @@ files <- sort(unique(c(
 files <- files[file.exists(files) & !dir.exists(files)]
 
 excluded <- normalizePath(
-  c(
-    output_path,
-    file.path(
-      root,
-      "audit/hypotheses/H08/H08_analysis_preparation.qmd"
-    )
-  ),
+  output_path,
   winslash = "/",
   mustWork = FALSE
 )
 normalized_files <- normalizePath(files, winslash = "/", mustWork = TRUE)
 files <- normalized_files[!normalized_files %in% excluded]
 relative <- substring(files, nchar(root) + 2L)
+
+# Stage 4 consumes the Stage 3 manifest, so its preparation page, descriptive
+# sources, physical-size QA package, and final manifest must not be swept back
+# into this Stage 3 inventory. This one-way boundary avoids a circular hash
+# dependency while the Stage 4 manifest still seals the complete package.
+stage4_output <-
+  startsWith(
+    relative,
+    "audit/hypotheses/H08/H08_analysis_preparation"
+  ) |
+  startsWith(
+    relative,
+    "artifacts/11_source_data/H08/H08_preparation_"
+  ) |
+  startsWith(
+    relative,
+    "artifacts/12_manifests/H08/physical_size_qa/"
+  ) |
+  relative %in%
+    c(
+      "artifacts/12_manifests/H08/H08_figure_physical_size_qa.csv",
+      "artifacts/12_manifests/H08/H08_preparation_report_manifest.csv"
+    )
+files <- files[!stage4_output]
+relative <- relative[!stage4_output]
 
 artifact_class <- dplyr::case_when(
   relative == "notebooks/hypotheses/H08.qmd" ~ "reader_report_source",
@@ -148,6 +176,8 @@ artifact_class <- dplyr::case_when(
   startsWith(relative, "audit/hypotheses/H08/") ~ "H08_audit_report",
   relative == mutable_handoff ~ "H08_continuing_handoff",
   startsWith(relative, "audit/decisions/") ~ "shared_reporting_decision",
+  startsWith(relative, "audit/reconciliation/l10_METRIC-011/") ~
+    "shared_metric_reconciliation_evidence",
   relative == "audit/evidence/preregistration_contract.md" ~
     "preregistration_contract",
   relative == "audit/hypotheses/H03-H11_gated_workflow.qmd" ~ "gated_workflow",

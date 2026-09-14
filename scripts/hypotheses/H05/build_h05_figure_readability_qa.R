@@ -56,8 +56,8 @@ qa <- tibble::tribble(
   ~figure_id, ~page, ~path, ~intended_html_width, ~intended_html_fraction, ~base_width_in, ~base_height_in, ~export_scale_multiplier, ~raster_dpi, ~smallest_essential_nominal_text_pt, ~smallest_central_nominal_text_pt, ~symlog_applicability, ~review_note,
   "fig-h05-near-effects", "H05 results", "artifacts/10_figures/H05/H05_reader_near_eye_effects.png", "96%", 0.96, 9, 9, 1, 300, 8.8, 9.96, "NOT_APPLICABLE", "All 17 metric labels, four factor labels, practical-scale cell values, colour legend, and grey unfit cells must remain readable and unclipped.",
   "fig-h05-near-adequacy", "H05 results", "artifacts/10_figures/H05/H05_reader_near_eye_adequacy.png", "94%", 0.94, 9, 8.5, 1, 300, 8.8, NA_real_, "NOT_APPLICABLE", "Metric and factor labels, three adequacy classes, cell marks, and legend must remain readable and distinguishable without overlap.",
-  "fig-h05-near-residual-fitted", "H05 results", "artifacts/10_figures/H05/H05_reader_near_eye_residual_fitted.png", "88%", 0.88, 9, 7.5, 1, 300, 8.8, NA_real_, "NOT_APPLICABLE", "Three facet titles, axes, points, smooths, and the diagnostic subtitle must remain readable, proportionate, and unclipped.",
-  "fig-h05-near-residual-qq", "H05 results", "artifacts/10_figures/H05/H05_reader_near_eye_residual_qq.png", "88%", 0.88, 9, 7.5, 1, 300, 8.8, NA_real_, "NOT_APPLICABLE", "Three facet titles, axes, points, reference lines, and the two-line unfit-for-inference subtitle must remain readable and fully visible.",
+  "fig-h05-near-residual-fitted", "H05 results", "artifacts/10_figures/H05/H05_reader_near_eye_residual_fitted.png", "88%", 0.88, 9, 9, 1, 300, 8.8, NA_real_, "NOT_APPLICABLE", "Four facet titles, axes, points, smooths, and the diagnostic subtitle must remain readable, proportionate, and unclipped.",
+  "fig-h05-near-residual-qq", "H05 results", "artifacts/10_figures/H05/H05_reader_near_eye_residual_qq.png", "88%", 0.88, 9, 9, 1, 300, 8.8, NA_real_, "NOT_APPLICABLE", "Four facet titles, axes, points, reference lines, and the two-line unfit-for-inference subtitle must remain readable and fully visible.",
   "fig-h05-chest-effects", "H05 results", "artifacts/10_figures/H05/H05_reader_chest_effects.png", "96%", 0.96, 9, 9, 1, 300, 8.8, 9.96, "NOT_APPLICABLE", "All 17 metric labels, four factor labels, practical-scale cell values, colour legend, and grey unfit cells must remain readable and unclipped.",
   "fig-h05-chest-adequacy", "H05 results", "artifacts/10_figures/H05/H05_reader_chest_adequacy.png", "94%", 0.94, 9, 8.5, 1, 300, 8.8, NA_real_, "NOT_APPLICABLE", "Metric and factor labels, three adequacy classes, cell marks, and legend must remain readable and distinguishable without overlap.",
   "fig-h05-paired-placement", "H05 results", "artifacts/10_figures/H05/H05_reader_paired_placement_effects.png", "90%", 0.90, 9, 8, 1, 300, 8.8, NA_real_, "NOT_APPLICABLE", "Four factor panels, equal-axis geometry, identity and null lines, and annotations must remain readable; the display must not imply equivalence.",
@@ -202,7 +202,7 @@ overall_value <- if (inspection_passed) {
 
 qa <- qa |>
   mutate(
-    inspection_date = if (inspection_passed) as.Date("2026-08-03") else as.Date(NA),
+    inspection_date = if (inspection_passed) as.Date("2026-08-11") else as.Date(NA),
     inspection_basis = paste(
       "Ten-page A4 portrait proof; each final figure placed at its",
       "QMD width within a 170-mm reference frame and inspected together",

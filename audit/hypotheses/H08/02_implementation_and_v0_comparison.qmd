@@ -1,7 +1,7 @@
 ---
 title: "H08 Stage 2: implementation, diagnostics, and V0 comparison"
 subtitle: "Visual light sensitivity and personal light exposure — author result gate"
-date: "2026-08-01"
+date: "2026-08-12"
 format:
   html:
     toc: true
@@ -126,8 +126,34 @@ v0_reproduction <- read_h08(
 v0_comparison <- read_h08(
   "09_tables", "H08", "H08_v0_to_new_comparison.csv"
 )
+metric011_result_comparison <- read_h08(
+  "09_tables", "H08", "H08_metric011_result_comparison.csv"
+)
+metric011_display_invariance <- read_h08(
+  "09_tables", "H08", "H08_metric011_display_invariance.csv"
+)
+metric011_bh_recalculation <- read_h08(
+  "09_tables", "H08", "H08_metric011_bh_recalculation.csv"
+)
+metric011_reconciliation <- read_h08(
+  "12_manifests", "H08", "H08_metric011_reconciliation.csv"
+)
 execution_environment <- read_h08(
   "12_manifests", "H08", "H08_execution_environment.csv"
+)
+
+stopifnot(
+  nrow(input_audit) == 20L,
+  all(input_audit$hash_verified),
+  nrow(metric011_result_comparison) == 2L,
+  !any(metric011_result_comparison$author_review_required),
+  nrow(metric011_display_invariance) == 6L,
+  all(metric011_display_invariance$display_identical),
+  nrow(metric011_bh_recalculation) == 36L,
+  all(metric011_bh_recalculation$adjusted_display_identical),
+  all(metric011_bh_recalculation$adjusted_conclusion_identical),
+  nrow(metric011_reconciliation) == 33L,
+  all(metric011_reconciliation$invariant_verified)
 )
 
 main_near <- master |>
@@ -236,15 +262,17 @@ result_display <- function(data) {
 }
 ```
 
-::: {.callout-warning}
-## Stage 2 gate — fitted outputs require author approval
+::: {.callout-note}
+## Accepted Stage 2 package with bounded METRIC-011 maintenance
 
-This document reports the approved Stage 2 implementation, exact fitted
-samples, 95% confidence intervals, multiplicity-adjusted tests, interpreted
-diagnostics, V0 reconciliation, and planned sensitivities. It reads frozen
-H08 artifacts and does not refit models. No Stage 3 manuscript-facing notebook
-or Stage 4 preparation record will be created until the author explicitly
-approves this result package. No resampling was run.
+The author accepted this Stage 2 result package before the Stage 3 and Stage 4
+reports were created. On 2026-08-12, shared decision METRIC-011 normalised eight
+L10 participant-day round-off remnants to exact numerical zero. The bounded
+H08 reseal refitted only the inherited primary-dataset L10 branches and their
+specified diagnostics and sensitivities, then recalculated the four affected
+nine-member BH families. It did not rerun the full analysis or any resampling.
+The retained results, displayed values, diagnostic dispositions, sensitivity
+classifications, and scientific claims remained unchanged.
 :::
 
 # Hypothesis and analytical question
@@ -271,7 +299,7 @@ From here onward, it is called simply the **primary dataset**.
 
 # Frozen implementation contract
 
-All 14 Stage 1 decisions are recorded as approved, and all 13 consumed inputs
+All 14 Stage 1 decisions are recorded as approved, and all 20 sealed inputs
 match their pinned SHA-256 values.
 
 ```{r}
@@ -293,9 +321,46 @@ bind_rows(
 ) |>
   h08_gt(
     title = "Implementation preconditions",
-    note = "Stage 2 stopped immediately if an approval or pinned hash failed."
+    note = "The accepted analysis and the bounded METRIC-011 reseal stop immediately if an approval, input pin, or invariance check fails."
   )
 ```
+
+## METRIC-011 exact-zero reseal
+
+The controlling [METRIC-011 decision](../../decisions/l10_numerical_zero_normalization.md)
+classifies floating-point remnants that are numerically zero as exact zero.
+Its independently verified evidence identified eight affected primary L10
+means: three near-eye and five chest participant-days changed from
+`4.163336342344337e-17` lx to `0` lx. All samples, non-L10 values,
+hourly and 30-minute values, gap-timing-unaware values, V0 outputs, and the
+accepted exactly identified longest-period and observed-dose sensitivities
+were protected.
+
+```{r}
+#| label: tbl-h08-metric011-reseal
+
+tibble::tribble(
+  ~Check, ~Observed, ~Interpretation,
+  "Primary L10 source cells", "8: 3 near eye; 5 chest", "Exact-zero normalisation only; no sample changed",
+  "Primary-dataset L10 model bundles", "6", "All-available, paired-placement, and preparation-common samples for both placements",
+  "Inherited L10 sensitivity bundles", "4", "Photoperiod and participant-summary fits for both placements",
+  "L10 leave-one-site-out refits", "17", "All completed; influence interpretation unchanged",
+  "Affected BH-family rows", sprintf("%d across %d families", nrow(metric011_bh_recalculation), n_distinct(metric011_bh_recalculation$family_id)), sprintf("%d adjusted values differed below display precision; no displayed p-value or decision changed", sum(!metric011_bh_recalculation$adjusted_p_identical)),
+  "Reader-display checks", sprintf("%d / %d PASS", sum(metric011_display_invariance$display_identical), nrow(metric011_display_invariance)), "Effects, p-values, diagnostics, and sensitivity summaries retained their accepted display",
+  "Protected-scope reconciliation", sprintf("%d / %d PASS", sum(metric011_reconciliation$invariant_verified), nrow(metric011_reconciliation)), "Every untargeted row, field, model object, and protected artifact matched its accepted identity"
+) |>
+  h08_gt(
+    title = "Bounded METRIC-011 reseal",
+    note = "The three sub-display adjusted-p differences comprise two L10 values and one M10 family derivative. None changed a three-decimal display or BH-adjusted conclusion."
+  )
+```
+
+The [result comparison](../../../artifacts/09_tables/H08/H08_metric011_result_comparison.csv),
+[complete-family BH record](../../../artifacts/09_tables/H08/H08_metric011_bh_recalculation.csv),
+[display-invariance record](../../../artifacts/09_tables/H08/H08_metric011_display_invariance.csv),
+and [33-scope reconciliation](../../../artifacts/12_manifests/H08/H08_metric011_reconciliation.csv)
+provide the machine-readable audit trail. Because no retained result or claim
+changed, the existing author approval remains applicable.
 
 ## VLSQ-8 scoring and scaling
 
@@ -1260,9 +1325,10 @@ physiological responses or health effects.
 
 The Stage 2 runner fitted all approved models in R 4.6.1, wrote frozen model
 frames and bundles, and exported tables, diagnostics, figures, source data,
-and manifests. It used maintained `reformulas` formula helpers. The production
-run used no bootstrap, simulation, or other resampling, so the pilot-runtime
-gate was not triggered.
+and manifests. It used maintained `reformulas` formula helpers. The later
+METRIC-011 script performed only the bounded L10 maintenance described above
+and preserved all other model objects. Neither run used bootstrap, simulation,
+or other resampling, so the pilot-runtime gate was not triggered.
 
 ```{r}
 #| label: execution-environment
@@ -1277,21 +1343,23 @@ execution_environment |>
 Primary entry points and frozen outputs:
 
 - [Stage 2 runner](../../../scripts/hypotheses/H08/run_h08_stage2.R)
+- [Bounded METRIC-011 reseal](../../../scripts/hypotheses/H08/reseal_h08_l10_metric011.R)
 - [H08 contract](../../../scripts/hypotheses/H08/h08_contract.R)
 - [H08 modelling helpers](../../../scripts/hypotheses/H08/h08_modeling.R)
 - [Focused Stage 2 test](../../../tests/hypotheses/H08/test_h08_stage2.R)
+- [Focused METRIC-011 test](../../../tests/hypotheses/H08/test_h08_metric011_reseal.R)
 - [Master result table](../../../artifacts/09_tables/H08/H08_model_results_master.csv)
 - [Complete diagnostic table](../../../artifacts/08_diagnostics/H08/H08_model_diagnostics.csv)
 - [Model-frame rows](../../../artifacts/06_model_data/H08/H08_model_frame_rows.csv)
 - [Stage 2 artifact manifest](../../../artifacts/12_manifests/H08/H08_stage2_artifacts.csv)
 - [Figure manifest and alt text](../../../artifacts/12_manifests/H08/H08_figure_manifest.csv)
 
-# Stage 2 author approval gate
+# Stage 2 package status
 
 ::: {.callout-important}
-## Approval requested before Stage 3
+## Accepted result package
 
-Please approve or revise the following as one Stage 2 result package:
+The author accepted the following as one Stage 2 result package:
 
 1. Accept the eight complete nine-member BH families and the conclusion that
    none has an adjusted p-value below 0.05.
@@ -1316,10 +1384,8 @@ Please approve or revise the following as one Stage 2 result package:
    for an H08 association, with uncertain directional patterns and no causal,
    physiological, or health-effect claim.
 
-On explicit approval, Stage 3 may create `notebooks/hypotheses/H08.qmd` from
-these accepted outputs. In accordance with REPORT-012 for this H08 task, that
-future notebook will place a compact note callout titled **Results in brief**
-directly after the hypothesis/analytical-question section and will preserve
-the multiplicity, uncertainty, chest, and sensitivity qualifications. Stage 4
-will remain gated after Stage 3. No Stage 3 or Stage 4 file has been created.
+Stage 3 and Stage 4 were subsequently completed and accepted. The Stage 3
+notebook includes the REPORT-012 **Results in brief** callout directly after
+the hypothesis and analytical question. METRIC-011 did not alter that callout
+or any of the multiplicity, uncertainty, chest, or sensitivity qualifications.
 :::

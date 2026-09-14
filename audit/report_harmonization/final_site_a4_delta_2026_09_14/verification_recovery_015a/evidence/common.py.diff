@@ -1,0 +1,21 @@
+--- audit/report_harmonization/final_site_a4_delta_2026_09_14/helpers/common.py
++++ audit/report_harmonization/final_site_a4_delta_2026_09_14/verification_recovery_015a/helpers/common.py
+@@ -2,7 +2,8 @@
+ from pathlib import Path
+ import csv, hashlib, json, os, datetime
+ ROOT=Path('/Users/zauner/Documents/Arbeit/12-TUM/MeLiDos/WP2.2.5_Data_Analysis/ZaunerEtAl_bioRxiv_2026')
+-OUT=ROOT/'audit/report_harmonization/final_site_a4_delta_2026_09_14'
++T=ROOT/'audit/report_harmonization/final_site_a4_delta_2026_09_14'
++OUT=T/'verification_recovery_015a'
+ OLD=ROOT/'audit/report_harmonization/final_site_integration_2026_09_14'
+ E=OUT/'evidence'
+ LIVE=ROOT/'_build/nathealth'
+@@ -46,7 +47,7 @@
+ PROM=ROOT/'audit/report_harmonization/final_site_promotion_2026_09_14'
+ WRITER=ROOT/'audit/manuscript_nature_health/a4_display_revision_2026_09_14'
+ DELTA=WRITER/'html_candidate_round2'
+-BUILD=OUT/'candidate_build'
++BUILD=T/'candidate_build'
+ MATRIX=CONTROL/'site_delta_candidate_order_015_target_matrix.csv'
+ def plan_rows():
+     data=rows(MATRIX);assert len(data)==6 and len({r['target'] for r in data})==6

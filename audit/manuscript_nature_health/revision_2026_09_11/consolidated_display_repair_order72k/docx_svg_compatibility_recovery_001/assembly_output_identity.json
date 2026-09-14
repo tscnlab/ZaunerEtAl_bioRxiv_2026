@@ -1,0 +1,15 @@
+{
+  "command": "RENV_CONFIG_AUTOLOADER_ENABLED=FALSE R_LIBS_USER=/Users/zauner/Library/R/arm64/4.6/library Rscript --vanilla -e 'stopifnot(getRversion() == \"4.6.1\"); p <- \"audit/manuscript_nature_health/revision_2026_09_11/consolidated_display_repair_order72k/manuscript_assembled_attempt1.docx\"; con <- file(p,\"rb\"); h <- as.character(openssl::sha256(con)); close(con); cat(jsonlite::toJSON(list(path=normalizePath(p),sha256=unname(unclass(h)),bytes=file.info(p)$size),auto_unbox=TRUE))'",
+  "result": {
+    "chunk_id": "6e9d87",
+    "wall_time_seconds": 0.000003208,
+    "exit_code": 0,
+    "original_token_count": 80,
+    "output": "{\"path\":\"/Users/zauner/Documents/Arbeit/12-TUM/MeLiDos/WP2.2.5_Data_Analysis/ZaunerEtAl_bioRxiv_2026/audit/manuscript_nature_health/revision_2026_09_11/consolidated_display_repair_order72k/manuscript_assembled_attempt1.docx\",\"sha256\":\"939283e46539d85611acc54ac1be86aac25b65136ede7f3c482e9401110fb88b\",\"bytes\":13501884}"
+  },
+  "identity": {
+    "path": "/Users/zauner/Documents/Arbeit/12-TUM/MeLiDos/WP2.2.5_Data_Analysis/ZaunerEtAl_bioRxiv_2026/audit/manuscript_nature_health/revision_2026_09_11/consolidated_display_repair_order72k/manuscript_assembled_attempt1.docx",
+    "sha256": "939283e46539d85611acc54ac1be86aac25b65136ede7f3c482e9401110fb88b",
+    "bytes": 13501884
+  }
+}

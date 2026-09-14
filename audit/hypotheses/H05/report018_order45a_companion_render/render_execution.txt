@@ -1,0 +1,21 @@
+REPORT-018 H05 order 45a render execution
+Date: 2026-08-20
+R: 4.6.1
+Quarto: 1.9.37
+Semantic audit directory: /private/tmp/H05-order45a-semantics.sKI8sq
+Semantic audit directory mode: 0700
+Semantic audit directory final file count: 0
+Command: GT_HTML_SEMANTIC_AUDIT_DIR=/private/tmp/H05-order45a-semantics.sKI8sq quarto render audit/hypotheses/H05/H05_analysis_preparation.qmd --profile nathealth
+Invocations: 1
+Dependency discovery: 38 seconds
+Last completed cell: 6/57 [tbl-h05-prep-input-identities]
+Failing cell: 8/57 [tbl-h05-prep-integrity-checks]
+Failure location: H05_analysis_preparation.qmd:445-511
+Failure expression: all(integrity_checks$Status == "PASS") is not TRUE
+Exit status: 1
+Semantic hook: not reached
+Helper: not executed
+Preparation test: not executed
+Loopback server: not started
+Rerender: not attempted
+

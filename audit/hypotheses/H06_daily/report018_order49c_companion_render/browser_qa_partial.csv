@@ -1,0 +1,14 @@
+check,observed,required,status
+canonical route HTTP,200,200,PASS
+available browser viewport,1280x720 at DPR 2,informational,PASS_PARTIAL
+required 1440x1000 viewport,unavailable in selected browser surface,1440x1000,NOT_EXECUTABLE
+required 708x1000 viewport,unavailable in selected browser surface,708x1000,NOT_EXECUTABLE
+required 720x500 200-percent-equivalent viewport,unavailable in selected browser surface,720x500,NOT_EXECUTABLE
+desktop page horizontal overflow,none,none,PASS
+desktop 17 table wrappers,17; all contained,17,PASS
+desktop table captions,17 nonempty,17,PASS
+desktop figure,complete 3011x2657; caption and alt present,complete and unclipped,PASS
+desktop Mermaid,one rendered SVG; visually complete,complete and unclipped,PASS
+desktop console,0 entries,0,PASS
+170-mm figure,643x567 preview; historical minimum text 8.667 pt,>=7 pt,PASS
+narrow table-scroll acceptance,not executable without mandated viewport,contained horizontal scrolling where needed,NOT_EXECUTABLE

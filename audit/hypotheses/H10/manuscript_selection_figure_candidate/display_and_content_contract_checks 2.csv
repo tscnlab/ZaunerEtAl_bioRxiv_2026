@@ -1,0 +1,21 @@
+domain,check,pass,evidence
+protected identities,"all ten released report, selection, canonical, source, manifest, and table pins",TRUE,10/10 exact SHA-256 identities
+candidate identity,selection-specific candidate is isolated from canonical PNG,TRUE,candidate 37c4021eab7d851df9a865c5d7788f21bff4a82935693944eb081144fa960112
+candidate geometry,candidate preserves accepted 2820 by 3900 raster geometry,TRUE,2820 x 3900
+170-mm proof,proof has exact A4 raster canvas and embeds the 170-mm candidate,TRUE,2480x3507; effective tag 10.68018093482996 pt
+frozen source,complete panel counts,TRUE,322 = 295 + 11 + 16 rows
+frozen source,exact hard-pinned CSV identity,TRUE,5f06ab98bada441d02123e56d073e52bfacae75c0277ab73803efd401c33c8fd
+value preservation,age rows preserve all frozen values and order,TRUE,cbb1768d471a8864a2c535ce4eadef0ae2ae1c719066a22202f0b5bedcd0b891
+value preservation,"11 retained main rows preserve all estimates, CIs, samples, and order",TRUE,0330d8a83961c45e2e890d9ae70aeaba60504e13b1ff8bb42d84b76b87e8dbb9
+value preservation,"16 site-specific rows preserve both interaction panels, estimates, CIs, and order",TRUE,be8f79a11295c7a5e2d296b5980d22ca166d85d010a334fcfbc17db18679ff79
+site display,"submitted site order, names, and colours preserved",TRUE,"RISE, THUAS, BAUA, MPI, TUM, FUSPCEU, IZTECH, UCR, KNUST"
+plot mappings,builder maps frozen main and interaction estimates and 95% CIs without transformation,TRUE,"x = .data$standardized_estimate | xmin = .data$standardized_conf_low | xmax = .data$standardized_conf_high | x = .data$estimate_practical | xmin = .data$conf_low_practical | xmax = .data$conf_high_practical | plot_layout(heights = c(1.0, 1.2, 1.15)) | tag_levels = ""a"" | plot.tag = element_text(face = ""bold"", size = 15) | position_jitter(width = 0, height = 0.12, seed = 1010)"
+plot geometry,three-panel relative heights and deterministic participant jitter preserved,TRUE,"panel heights 1.0, 1.2, 1.15; jitter seed 1010"
+panel tags,"lowercase a, b, c are bold in artwork source",TRUE,lowercase patchwork tag sequence; bold 15 pt; effective 10.68 pt at 170 mm
+reader-facing text,no internal H10 or BH label in the complete display-text source,TRUE,22 complete display-text fields
+reader-facing text,FDR appears in artwork text,TRUE,"Age distributions and associations retained after FDR adjustment | Main-effect standardization is for display only; practical estimates, exact samples, and FDR-adjusted p-values are reported in the accompanying table. | All main associations retained after FDR adjustment | Standardized fitted-frame effects and 95% confidence intervals; 11 retained across separate 17-metric FDR families"
+candidate caption,"bold lowercase a, b, and c plus FDR, with no internal H10 or BH label",TRUE,candidate_caption.md
+accepted selection table,six accepted columns retained and Raw p absent,TRUE,6 columns; 11 rows; FDR-adjusted p retained; Raw p absent
+accepted selection table,table copy remains byte-identical,TRUE,b511c4fcc0a95c7e58d940816dd38fe63f9c6dffde782e6f736e285ba8e31193 18766 bytes
+visual QA,all declared full-raster and 170-mm observations passed,TRUE,8/8 visual observations PASS
+scope boundary,"no report, selection source, accepted HTML, canonical asset, source CSV, or manifest drift",TRUE,all protected preimages equal postimages

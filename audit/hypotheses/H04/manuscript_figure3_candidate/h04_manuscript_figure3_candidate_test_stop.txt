@@ -1,0 +1,15 @@
+Command:
+H04_FIGURE3_CANDIDATE_DIR=/private/tmp/h04_manuscript_figure3_candidate.7bhj5n H04_FIGURE3_EVIDENCE_DIR=audit/hypotheses/H04/manuscript_figure3_candidate RENV_CONFIG_SANDBOX_ENABLED=FALSE Rscript tests/hypotheses/H04/test_h04_manuscript_figure3_candidate.R
+
+R version: 4.6.1
+Exit status: 1
+Terminal error:
+Error in text_tokens[[1]] : subscript out of bounds
+Calls: do.call ... lapply -> FUN -> <Anonymous> -> tibble_quos -> eval_tidy
+Execution halted
+
+Classification:
+The focused verifier queried SVG text children without accounting for the SVG default namespace. It therefore returned an empty node set at the first panel-d vector cell. The stop occurred in the new verifier, not in candidate generation or a scientific calculation.
+
+Post-stop source correction:
+The test now uses local-name() selectors for SVG text nodes and suppresses parse-expression printing. Air and R parse pass after that correction. The focused test was not rerun under this order.

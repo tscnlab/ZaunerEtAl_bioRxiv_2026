@@ -78,6 +78,60 @@ reader_near <- read_h05(
 reader_chest <- read_h05(
   "artifacts/11_source_data/H05/H05_reader_chest_results.csv"
 )
+mder_upper_tail <- read_h05(
+  "artifacts/08_diagnostics/H05/H05_mder_metric010_upper_tail_summary.csv"
+)
+mder_influence <- read_h05(
+  "artifacts/08_diagnostics/H05/H05_mder_metric010_influence_refits.csv"
+)
+mder_gap_influence <- read_h05(
+  paste0(
+    "artifacts/08_diagnostics/H05/",
+    "H05_mder_metric010_gap_influence_refits.csv"
+  )
+)
+mder_gap_paired <- read_h05(
+  paste0(
+    "artifacts/09_tables/H05/",
+    "H05_mder_metric010_gap_paired_placement_comparison.csv"
+  )
+)
+mder_reconciliation <- read_h05(
+  "artifacts/12_manifests/H05/H05_metric010_reconciliation.csv"
+)
+mder_gap_reconciliation <- read_h05(
+  paste0(
+    "artifacts/12_manifests/H05/",
+    "H05_metric010_gap_reseal_reconciliation.csv"
+  )
+)
+l10_reconciliation <- read_h05(
+  "artifacts/12_manifests/H05/H05_metric011_reconciliation.csv"
+)
+l10_frame_audit <- read_h05(
+  paste0(
+    "artifacts/12_manifests/H05/",
+    "H05_metric011_primary_l10_frame_audit.csv"
+  )
+)
+l10_bh_audit <- read_h05(
+  "artifacts/12_manifests/H05/H05_metric011_bh_change_audit.csv"
+)
+l10_result_change <- read_h05(
+  paste0(
+    "artifacts/12_manifests/H05/",
+    "H05_metric011_l10_result_change_audit.csv"
+  )
+)
+l10_input_cells <- read_h05(
+  "artifacts/12_manifests/H05/H05_metric011_input_cell_audit.csv"
+)
+l10_artifact_manifest <- read_h05(
+  paste0(
+    "artifacts/12_manifests/H05/",
+    "H05_metric011_artifact_update_manifest.csv"
+  )
+)
 
 stopifnot(
   nrow(approvals) == 13L,
@@ -86,6 +140,8 @@ stopifnot(
   identical(factors$factor_id, c("leba_f2", "leba_f3", "leba_f4", "leba_f5")),
   nrow(metrics) == 17L,
   all(metrics$metric_order == seq_len(17L)),
+  metrics$metric_id[metrics$metric_order == 17L] ==
+    "mder_mean_of_viable_ratios",
   nrow(runs) == 8L,
   sum(runs$inferential_family) == 3L,
   all(runs$family_n[runs$inferential_family] == 68L),
@@ -132,7 +188,8 @@ stopifnot(
   sum(primary$model_adequacy == "acceptable") == 19L,
   sum(
     primary$model_adequacy == "acceptable_with_specified_limitations"
-  ) == 49L,
+  ) ==
+    49L,
   sum(primary$model_adequacy == "not_acceptable") == 0L,
   sum(primary$p_adjusted <= 0.05) == 0L
 )
@@ -147,8 +204,9 @@ stopifnot(
   nrow(sleep_diagnostics) == 4L,
   all(sleep_diagnostics$residual_status == "WARN_STRONG_TWEEDIE_MISFIT"),
   all(sleep_diagnostics$prediction_bound_status == "WARN_PREDICTED_BOUND"),
-  all(sleep_diagnostics$model_adequacy ==
-    "acceptable_with_specified_limitations")
+  all(
+    sleep_diagnostics$model_adequacy == "acceptable_with_specified_limitations"
+  )
 )
 
 stopifnot(
@@ -167,7 +225,11 @@ paired_participant <- unique(frames[
     frames$sample_scenario == "paired_common_sample" &
     frames$metric_order %in% 1:2,
   c(
-    "placement", "metric_id", "observations", "participants", "sites",
+    "placement",
+    "metric_id",
+    "observations",
+    "participants",
+    "sites",
     "paired_participant_rows_derived"
   )
 ])
@@ -200,18 +262,181 @@ stopifnot(
       paired_display$analysis_unit__chest
   ),
   all(
-    paired_display$observations__near_eye ==
-      paired_display$observations__chest
+    paired_display$observations__near_eye == paired_display$observations__chest
   ),
   all(
-    paired_display$participants__near_eye ==
-      paired_display$participants__chest
+    paired_display$participants__near_eye == paired_display$participants__chest
   ),
   all(paired_display$sites__near_eye == 8L),
-  min(paired_display$participants__near_eye) == 110L,
+  min(paired_display$participants__near_eye) == 107L,
   max(paired_display$participants__near_eye) == 112L,
-  min(paired_display$participant_days__near_eye, na.rm = TRUE) == 505L,
+  min(paired_display$participant_days__near_eye, na.rm = TRUE) == 489L,
   max(paired_display$participant_days__near_eye, na.rm = TRUE) == 643L
+)
+
+mder_primary <- primary[
+  primary$metric_id == "mder_mean_of_viable_ratios",
+  ,
+  drop = FALSE
+]
+mder_chest <- master[
+  master$run_id == "main__chest__all_available" &
+    master$metric_id == "mder_mean_of_viable_ratios",
+  ,
+  drop = FALSE
+]
+mder_gap_near <- master[
+  master$run_id == "manuscript_prepared_data__glasses__all_available" &
+    master$metric_id == "mder_mean_of_viable_ratios",
+  ,
+  drop = FALSE
+]
+mder_gap_chest <- master[
+  master$run_id == "manuscript_prepared_data__chest__all_available" &
+    master$metric_id == "mder_mean_of_viable_ratios",
+  ,
+  drop = FALSE
+]
+stopifnot(
+  nrow(mder_primary) == 4L,
+  nrow(mder_chest) == 4L,
+  all(mder_primary$observations == 702L),
+  all(mder_primary$participants == 137L),
+  all(mder_primary$participant_days == 702L),
+  all(mder_primary$sites == 9L),
+  all(mder_chest$observations == 732L),
+  all(mder_chest$participants == 152L),
+  all(mder_chest$participant_days == 732L),
+  all(mder_chest$sites == 8L),
+  isTRUE(all.equal(
+    mder_primary$estimate_model_per_sd[mder_primary$factor_id == "leba_f2"],
+    0.0040602820470024403,
+    tolerance = 1e-12
+  )),
+  isTRUE(all.equal(
+    mder_primary$p_adjusted[mder_primary$factor_id == "leba_f5"],
+    0.16901794240238349,
+    tolerance = 1e-12
+  )),
+  all(mder_primary$p_adjusted > 0.05),
+  all(mder_chest$p_adjusted > 0.05),
+  nrow(mder_gap_near) == 4L,
+  all(mder_gap_near$observations == 687L),
+  all(mder_gap_near$participants == 137L),
+  all(mder_gap_near$participant_days == 687L),
+  all(mder_gap_near$sites == 9L),
+  all(mder_gap_near$p_adjusted > 0.05),
+  nrow(mder_gap_chest) == 4L,
+  all(mder_gap_chest$observations == 723L),
+  all(mder_gap_chest$participants == 152L),
+  all(mder_gap_chest$participant_days == 723L),
+  all(mder_gap_chest$sites == 8L),
+  nrow(mder_upper_tail) == 8L,
+  nrow(mder_influence) == 44L,
+  all(mder_influence$refit_status == "PASS"),
+  sum(mder_influence$sensitivity_interval_contains_zero) == 40L,
+  all(
+    mder_influence$sensitivity_interval_contains_zero[
+      mder_influence$run_id == "main__chest__all_available"
+    ]
+  ),
+  nrow(mder_gap_influence) == 44L,
+  all(mder_gap_influence$refit_status == "PASS"),
+  sum(mder_gap_influence$sensitivity_interval_contains_zero) == 40L,
+  nrow(mder_gap_paired) == 4L,
+  all(mder_gap_paired$exact_sample_match),
+  all(mder_gap_paired$participant_days__glasses == 478L),
+  all(mder_gap_paired$participants__glasses == 107L),
+  all(mder_gap_paired$sites__glasses == 8L),
+  all(mder_gap_paired$sign_concordant),
+  all(mder_gap_paired$component_intervals_overlap),
+  nrow(mder_reconciliation) == 20L,
+  all(mder_reconciliation$invariant_verified),
+  nrow(mder_gap_reconciliation) == 16L,
+  all(mder_gap_reconciliation$invariant_verified),
+  mder_gap_reconciliation$changed_rows[
+    mder_gap_reconciliation$check_id == "H05_F3_non_MDER_BH_derivatives"
+  ] ==
+    27L
+)
+
+l10_primary <- master[
+  master$data_scenario_id == "main" &
+    master$metric_id == "l10_mean_medi",
+  ,
+  drop = FALSE
+]
+l10_reader_near <- reader_near[
+  reader_near$metric_id == "l10_mean_medi",
+  ,
+  drop = FALSE
+]
+l10_reader_chest <- reader_chest[
+  reader_chest$metric_id == "l10_mean_medi",
+  ,
+  drop = FALSE
+]
+stopifnot(
+  nrow(l10_primary) == 16L,
+  nrow(l10_reconciliation) == 22L,
+  all(l10_reconciliation$invariant_verified),
+  nrow(l10_frame_audit) == 4L,
+  sum(l10_frame_audit$changed_l10_cells) == 16L,
+  all(l10_frame_audit$old_value_lx == 4.163336342344337e-17),
+  all(l10_frame_audit$new_value_lx == 0),
+  all(l10_frame_audit$non_value_fields_identical),
+  all(l10_frame_audit$metric_settings_provenance_updated),
+  all(l10_frame_audit$changed_keys_verified),
+  nrow(l10_input_cells) == 16L,
+  all(l10_input_cells$current_value_lx == 0),
+  setequal(
+    l10_input_cells$scenario,
+    c("all_available", "paired_common_sample")
+  ),
+  nrow(l10_result_change) == 16L,
+  !any(l10_result_change$bh_retained_after, na.rm = TRUE),
+  max(abs(l10_result_change$estimate_change_per_point)) < 4e-12,
+  all(
+    l10_result_change$after_model_adequacy ==
+      "acceptable_with_specified_limitations"
+  ),
+  nrow(l10_bh_audit) == 204L,
+  sum(l10_bh_audit$raw_p_changed) == 7L,
+  sum(l10_bh_audit$adjusted_p_changed) == 2L,
+  sum(l10_bh_audit$family_rank_changed) == 0L,
+  !any(
+    l10_bh_audit$raw_p_changed & !l10_bh_audit$permitted_raw_change
+  ),
+  !any(l10_bh_audit$raw_p_changed[
+    l10_bh_audit$family_id == "H05-F3-manuscript-prepared"
+  ]),
+  nrow(l10_reader_near) == 4L,
+  nrow(l10_reader_chest) == 4L,
+  isTRUE(all.equal(
+    l10_reader_near$estimate_model_per_point,
+    l10_primary$estimate_model_per_point[
+      l10_primary$run_id == "main__glasses__all_available"
+    ],
+    tolerance = 1e-15
+  )),
+  isTRUE(all.equal(
+    l10_reader_chest$estimate_model_per_point,
+    l10_primary$estimate_model_per_point[
+      l10_primary$run_id == "main__chest__all_available"
+    ],
+    tolerance = 1e-15
+  )),
+  nrow(l10_artifact_manifest) == 29L,
+  all(l10_artifact_manifest$status == "PASS"),
+  all(l10_artifact_manifest$r_version == "4.6.1")
+)
+l10_manifest_paths <- file.path(root, l10_artifact_manifest$path)
+stopifnot(
+  all(file.exists(l10_manifest_paths)),
+  identical(
+    unname(vapply(l10_manifest_paths, artifact_sha256, character(1))),
+    l10_artifact_manifest$sha256
+  )
 )
 
 v0_near <- v0[v0$placement == "near-eye", , drop = FALSE]
@@ -283,7 +508,27 @@ stopifnot(
   grepl("0.033", stage2_text, fixed = TRUE),
   grepl("unfit for inference", stage2_text_lower, fixed = TRUE),
   grepl("gap-timing-unaware dataset", stage2_text_lower, fixed = TRUE),
-  grepl("different response variable or model structure", stage2_text_lower, fixed = TRUE),
+  grepl("mean of viable one-minute", stage2_text_lower, fixed = TRUE),
+  grepl("702 participant-days", stage2_text_lower, fixed = TRUE),
+  grepl("732 participant-days", stage2_text_lower, fixed = TRUE),
+  grepl("687 near-eye", stage2_text_lower, fixed = TRUE),
+  grepl("723 chest", stage2_text_lower, fixed = TRUE),
+  grepl("478 days from 107 participants", stage2_text_lower, fixed = TRUE),
+  grepl("27 non-mder adjusted p-values", stage2_text_lower, fixed = TRUE),
+  grepl("26 ranks", stage2_text_lower, fixed = TRUE),
+  grepl("upper-tail", stage2_text_lower, fixed = TRUE),
+  grepl("metric-010", stage2_text_lower, fixed = TRUE),
+  grepl("metric-011", stage2_text_lower, fixed = TRUE),
+  grepl("numerical-zero", stage2_text_lower, fixed = TRUE),
+  grepl("three near-eye and five", stage2_text_lower, fixed = TRUE),
+  grepl("seven of the eight inferential raw", stage2_text_lower, fixed = TRUE),
+  grepl("no family rank changed", stage2_text_lower, fixed = TRUE),
+  grepl("zero gap l10 refits", stage2_text_lower, fixed = TRUE),
+  grepl(
+    "different response variable or model structure",
+    stage2_text_lower,
+    fixed = TRUE
+  ),
   !grepl("0.1245", stage2_text, fixed = TRUE),
   !grepl("0.0377", stage2_text, fixed = TRUE),
   !grepl("0.0325", stage2_text, fixed = TRUE),
@@ -293,7 +538,8 @@ stopifnot(
 cat(
   paste0(
     "H05 Stage 2 tests passed: 544 fixed-site cells, three complete ",
-    "68-test BH families, 612 primary leave-one-site-out refits, and exact ",
-    "V0 reconstruction.\n"
+    "68-test BH families, 612 primary leave-one-site-out refits, exact ",
+    "V0 reconstruction, bounded METRIC-010 MDER reconciliation, and the ",
+    "METRIC-011 primary L10 reseal with frozen non-L10 and gap L10 fits.\n"
   )
 )

@@ -146,9 +146,9 @@ new_metric_test_day <- function(
         "source_gap_known_state",
         "boundary_gap",
         "wear_off_context",
-        "mder_75_percent",
-        "mder_80_percent",
-        "mder_profile_fail"
+        "mder_40_percent",
+        "mder_50_percent",
+        "mder_zero_pairs"
       )
   ) {
     stop("Unknown synthetic scenario: ", scenario, call. = FALSE)
@@ -156,12 +156,12 @@ new_metric_test_day <- function(
   light <- medi * 2
   if (scenario == "baseline") {
     light[clock == 900L] <- NA_real_
-  } else if (scenario == "mder_75_percent") {
-    light[clock < 360L] <- NA_real_
-  } else if (scenario == "mder_80_percent") {
-    light[clock < 288L] <- NA_real_
-  } else if (scenario == "mder_profile_fail") {
-    light[clock >= 600L & clock < 888L] <- NA_real_
+  } else if (scenario == "mder_40_percent") {
+    light[clock < 864L] <- NA_real_
+  } else if (scenario == "mder_50_percent") {
+    light[clock < 720L] <- NA_real_
+  } else if (scenario == "mder_zero_pairs") {
+    light[clock < 288L] <- 0
   }
 
   dplyr::mutate(
@@ -416,11 +416,11 @@ scenario_table <- tibble::tribble(
   "2026-01-13",
   "wear_off_context",
   "2026-01-14",
-  "mder_75_percent",
+  "mder_40_percent",
   "2026-01-15",
-  "mder_80_percent",
+  "mder_50_percent",
   "2026-01-16",
-  "mder_profile_fail",
+  "mder_zero_pairs",
   "2026-01-17",
   "m10_all_candidates_tied",
   "2026-03-29",
@@ -907,16 +907,16 @@ unapproved_primary_error <- tryCatch(
 )
 stopifnot(unapproved_primary_error)
 
-message("Checking the approved and registered MDER-support cutoffs")
-invisible(assert_primary_mder_support_cutoff(
-  0.80,
+message("Checking the approved MDER viable-ratio fraction")
+invisible(assert_primary_mder_viable_fraction(
+  0.50,
   canonical_layout,
   paths
 ))
 unapproved_mder_primary_error <- tryCatch(
   {
-    assert_primary_mder_support_cutoff(
-      0.70,
+    assert_primary_mder_viable_fraction(
+      0.40,
       canonical_layout,
       paths
     )
@@ -924,38 +924,18 @@ unapproved_mder_primary_error <- tryCatch(
   },
   error = function(error) {
     grepl(
-      "author-approved 0.80",
+      "author-approved 0.50",
       conditionMessage(error),
       fixed = TRUE
     )
   }
 )
-unregistered_mder_sensitivity_error <- tryCatch(
-  {
-    assert_primary_mder_support_cutoff(
-      0.75,
-      run_variant_layout,
-      paths
-    )
-    FALSE
-  },
-  error = function(error) {
-    grepl(
-      "fixed registered cutoffs",
-      conditionMessage(error),
-      fixed = TRUE
-    )
-  }
-)
-invisible(assert_primary_mder_support_cutoff(
-  0.70,
+invisible(assert_primary_mder_viable_fraction(
+  0.40,
   run_variant_layout,
   paths
 ))
-stopifnot(
-  unapproved_mder_primary_error,
-  unregistered_mder_sensitivity_error
-)
+stopifnot(unapproved_mder_primary_error)
 
 message("Building the cutoff-neutral state-support gate diagnostics")
 state_gate <- build_state_support_gate(
@@ -1060,7 +1040,7 @@ result <- build_metric_derivation(
   run_label = "smoke",
   placements = "glasses",
   minimum_state_support = 0.80,
-  minimum_mder_support = 0.80,
+  minimum_mder_viable_fraction = 0.50,
   provisional_state_support = TRUE,
   synthetic_test = TRUE
 )
@@ -1287,59 +1267,59 @@ stopifnot(
   is.na(unsupported_hour$metric_value_lx)
 )
 
-message("Checking time-sensitive dose and paired-integral MDER")
+message("Checking time-sensitive dose and mean-of-viable-ratios MDER")
 low_missing <- day_metric("2026-01-04")
 high_missing <- day_metric("2026-01-05")
-mder_75 <- day_metric("2026-01-14")
-mder_80 <- day_metric("2026-01-15")
-mder_profile_fail <- day_metric("2026-01-16")
-mder_75_value <- day_value("2026-01-14", "mder_ratio_of_integrals")
-mder_75_support <- metric$support |>
-  dplyr::filter(
-    .data$local_date == as.Date("2026-01-14"),
-    .data$metric == "mder_ratio_of_integrals"
+  mder_40 <- day_metric("2026-01-14")
+  mder_50 <- day_metric("2026-01-15")
+  mder_zero_pairs <- day_metric("2026-01-16")
+  mder_40_value <- day_value(
+    "2026-01-14",
+    "mder_mean_of_viable_ratios"
   )
+  mder_40_support <- metric$support |>
+    dplyr::filter(
+      .data$local_date == as.Date("2026-01-14"),
+      .data$metric == "mder_mean_of_viable_ratios"
+    )
 stopifnot(
   is.finite(low_missing$dose_corrected_medi_lx_h),
   low_missing$dose_relevance_coverage > high_missing$dose_relevance_coverage,
   high_missing$dose_relevance_coverage < 0.80,
   is.na(high_missing$dose_corrected_medi_lx_h),
   abs(baseline$mder - 0.5) < 1e-12,
-  is.finite(mder_75$daily_geometric_mean_medi_lx),
-  is.na(mder_75$mder),
-  abs(mder_75$mder_ordinary_paired_coverage - 0.75) < 1e-12,
-  is.finite(mder_75$mder_medi_profile_coverage),
-  is.finite(mder_75$mder_light_profile_coverage),
-  mder_75$mder_minimum_support == 0.80,
-  !mder_75$mder_passes_ordinary_paired_support,
-  mder_75$mder_support_threshold_enforced,
-  !mder_75$mder_ratio_scaled_or_weighted,
-  !mder_75$mder_estimable,
-  mder_75$mder_failure_reason == "below_ordinary_paired_support",
-  nrow(mder_75_value) == 1L,
-  !mder_75_value$estimable,
-  mder_75_value$failure_reason == "below_ordinary_paired_support",
-  nrow(mder_75_support) == 1L,
-  abs(mder_75_support$ordinary_support - 0.75) < 1e-12,
-  mder_75_support$medi_profile_support == mder_75$mder_medi_profile_coverage,
-  mder_75_support$light_profile_support == mder_75$mder_light_profile_coverage,
-  mder_75_support$minimum_support == 0.80,
-  !mder_75_support$passes_ordinary_support,
-  mder_75_support$support_threshold_enforced,
-  !mder_75_support$ratio_scaled_or_weighted,
-  abs(mder_80$mder_ordinary_paired_coverage - 0.80) < 1e-12,
-  mder_80$mder_passes_ordinary_paired_support,
-  is.finite(mder_80$mder),
-  abs(mder_profile_fail$mder_ordinary_paired_coverage - 0.80) < 1e-12,
-  mder_profile_fail$mder_passes_ordinary_paired_support,
-  !mder_profile_fail$mder_passes_medi_profile_support,
-  !mder_profile_fail$mder_passes_light_profile_support,
-  is.na(mder_profile_fail$mder),
-  mder_profile_fail$mder_failure_reason == "below_medi_profile_support"
+  is.finite(mder_40$daily_geometric_mean_medi_lx),
+  is.na(mder_40$mder),
+  abs(mder_40$mder_viable_ratio_fraction - 0.40) < 1e-12,
+  mder_40$mder_minimum_viable_fraction == 0.50,
+  !mder_40$mder_passes_viable_ratio_support,
+  mder_40$mder_support_threshold_enforced,
+  !mder_40$mder_ratio_scaled_or_weighted,
+  !mder_40$mder_estimable,
+  mder_40$mder_failure_reason == "below_viable_ratio_fraction",
+  nrow(mder_40_value) == 1L,
+  !mder_40_value$estimable,
+  mder_40_value$failure_reason == "below_viable_ratio_fraction",
+  nrow(mder_40_support) == 1L,
+  abs(mder_40_support$ordinary_support - 0.40) < 1e-12,
+  is.na(mder_40_support$medi_profile_support),
+  is.na(mder_40_support$light_profile_support),
+  mder_40_support$minimum_support == 0.50,
+  !mder_40_support$passes_ordinary_support,
+  mder_40_support$support_threshold_enforced,
+  !mder_40_support$ratio_scaled_or_weighted,
+  abs(mder_50$mder_viable_ratio_fraction - 0.50) < 1e-12,
+  mder_50$mder_passes_viable_ratio_support,
+  is.finite(mder_50$mder),
+  abs(mder_zero_pairs$mder_viable_ratio_fraction - 0.80) < 1e-12,
+  mder_zero_pairs$mder_excluded_zero_either_minutes == 288L,
+  mder_zero_pairs$mder_passes_viable_ratio_support,
+  is.finite(mder_zero_pairs$mder),
+  is.na(mder_zero_pairs$mder_failure_reason)
 )
 
-message("Checking independent namespaced MDER sensitivity behavior")
-mder_70_sensitivity <- derive_metric_set(
+message("Checking independent namespaced MDER threshold behavior")
+mder_40_sensitivity <- derive_metric_set(
   coverage = coverage |>
     dplyr::filter(
       .data$local_date %in%
@@ -1350,15 +1330,15 @@ mder_70_sensitivity <- derive_metric_set(
   maps = fixed$maps,
   placement = "glasses",
   minimum_state_support = 0.80,
-  minimum_mder_support = 0.70
+  minimum_mder_viable_fraction = 0.40
 )
-mder_70_day <- mder_70_sensitivity$daily_metrics |>
+mder_40_day <- mder_40_sensitivity$daily_metrics |>
   dplyr::filter(.data$local_date == as.Date("2026-01-14"))
-state_80_day <- mder_70_sensitivity$daily_metrics |>
+state_80_day <- mder_40_sensitivity$daily_metrics |>
   dplyr::filter(.data$local_date == as.Date("2026-01-09"))
 stopifnot(
-  is.finite(mder_70_day$mder),
-  mder_70_day$mder_minimum_support == 0.70,
+  is.finite(mder_40_day$mder),
+  mder_40_day$mder_minimum_viable_fraction == 0.40,
   is.na(state_80_day$duration_below_10_pre_sleep_h)
 )
 
@@ -1417,14 +1397,33 @@ stopifnot(
   all(candidates$incomplete_state_domain_instances == 1L),
   result$settings$state_support_status ==
     "PROVISIONAL_SYNTHETIC_ONLY_NOT_FINAL",
-  result$settings$mder_support_cutoff == 0.80,
-  result$settings$mder_support_decision_id == "METRIC-003",
+  result$settings$mder_support_cutoff == 0.50,
+  result$settings$mder_support_decision_id == "METRIC-010",
   result$settings$mder_support_status == "author_approved",
-  result$settings$mder_support_candidates == "0.7|0.8|0.9",
-  result$settings$mder_support_sensitivity_cutoffs == "0.7|0.9",
+  result$settings$mder_support_candidates == "0.5",
+  is.na(result$settings$mder_support_sensitivity_cutoffs),
   result$settings$mder_failure_scope == "metric_specific_only_day_retained",
-  result$settings$mder_ratio_definition == "ratio_of_observed_paired_integrals",
+  result$settings$mder_ratio_definition ==
+    "arithmetic_mean_of_positive_finite_one_minute_ratios",
+  result$settings$mder_pair_resolution_minutes == 1L,
+  result$settings$mder_zero_pair_rule == "exclude_if_either_channel_zero",
   !result$settings$mder_ratio_scaled_or_weighted,
+  result$settings$numerical_zero_decision_id == "METRIC-011",
+  result$settings$numerical_zero_status == "author_approved",
+  result$settings$numerical_zero_scope ==
+    "offset_geometric_mean_backtransforms",
+  result$settings$numerical_zero_tolerance_multiplier == 100,
+  result$settings$numerical_zero_positive_requires_all_source_zero,
+  result$settings$numerical_zero_raw_value_preserved,
+  result$settings$numerical_zero_reclassified_cells ==
+    nrow(metric$numerical_zero_audit),
+  result$settings$numerical_zero_zero_capable_model_rule ==
+    "retain_participant_day_as_zero",
+  result$settings$numerical_zero_two_part_model_rule ==
+    paste0(
+      "retain_in_zero_occurrence_component;exclude_only_from_",
+      "strictly_positive_magnitude_component"
+    ),
   result$settings$window_minutes == 600L,
   result$settings$rolling_window_candidate_step_minutes == 1L,
   result$settings$rolling_window_profile_bin_minutes == 30L,
@@ -1489,19 +1488,30 @@ manifest <- readr::read_csv(
 placement_manifest <- manifest |>
   dplyr::filter(.data$placement == "glasses")
 stopifnot(
-  nrow(manifest) == 16L,
-  nrow(placement_manifest) == 13L,
-  all(placement_manifest$mder_support_cutoff == 0.80),
-  all(placement_manifest$mder_support_decision_id == "METRIC-003"),
+  nrow(manifest) == 17L,
+  nrow(placement_manifest) == 14L,
+  all(placement_manifest$mder_support_cutoff == 0.50),
+  all(placement_manifest$mder_support_decision_id == "METRIC-010"),
   all(placement_manifest$mder_support_status == "author_approved"),
-  all(placement_manifest$mder_support_candidates == "0.7|0.8|0.9"),
-  all(
-    placement_manifest$mder_support_sensitivity_cutoffs == "0.7|0.9"
-  ),
+  all(placement_manifest$mder_support_candidates == "0.5"),
+  all(is.na(placement_manifest$mder_support_sensitivity_cutoffs)),
   all(
     placement_manifest$mder_failure_scope == "metric_specific_only_day_retained"
   ),
   all(!placement_manifest$mder_ratio_scaled_or_weighted),
+  all(placement_manifest$numerical_zero_decision_id == "METRIC-011"),
+  all(placement_manifest$numerical_zero_status == "author_approved"),
+  all(
+    placement_manifest$numerical_zero_scope ==
+      "offset_geometric_mean_backtransforms"
+  ),
+  all(placement_manifest$numerical_zero_tolerance_multiplier == 100),
+  all(placement_manifest$numerical_zero_positive_requires_all_source_zero),
+  all(placement_manifest$numerical_zero_raw_value_preserved),
+  all(
+    placement_manifest$numerical_zero_reclassified_cells ==
+      nrow(metric$numerical_zero_audit)
+  ),
   all(placement_manifest$rolling_window_minutes == 600L),
   all(placement_manifest$rolling_window_candidate_step_minutes == 1L),
   all(placement_manifest$rolling_window_profile_bin_minutes == 30L),
@@ -1549,6 +1559,29 @@ stopifnot(
     logical(1)
   ))
 )
+numerical_zero_audit <- readr::read_csv(
+  result$output_paths$glasses$numerical_zero_audit,
+  show_col_types = FALSE
+)
+stopifnot(
+  nrow(numerical_zero_audit) == nrow(metric$numerical_zero_audit),
+  identical(names(numerical_zero_audit), names(metric$numerical_zero_audit))
+)
+if (nrow(numerical_zero_audit) > 0L) {
+  stopifnot(
+    all(numerical_zero_audit$raw_backtransformed_value_lx != 0),
+    all(numerical_zero_audit$normalized_value_lx == 0),
+    all(
+      abs(numerical_zero_audit$raw_backtransformed_value_lx) <=
+        numerical_zero_audit$numerical_zero_tolerance_lx
+    ),
+    all(
+      numerical_zero_audit$raw_backtransformed_value_lx <= 0 |
+        numerical_zero_audit$source_all_zero
+    ),
+    all(numerical_zero_audit$raw_value_preserved)
+  )
+}
 daily_sha256 <- artifact_sha256(
   result$output_paths$glasses$daily_rds
 )
@@ -1560,7 +1593,7 @@ rerun <- build_metric_derivation(
   run_label = "smoke",
   placements = "glasses",
   minimum_state_support = 0.80,
-  minimum_mder_support = 0.80,
+  minimum_mder_viable_fraction = 0.50,
   provisional_state_support = TRUE,
   synthetic_test = TRUE
 )

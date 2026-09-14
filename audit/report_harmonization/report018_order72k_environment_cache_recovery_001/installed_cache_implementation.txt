@@ -1,0 +1,302 @@
+Installed runtime extracts, read-only, Quarto 1.9.37.
+Cache routing:
+  if (typeof callback === "function") {
+    nextTick(() => {
+      new Chrome(options, notifier);
+    });
+    return notifier.once("connect", callback);
+  } else {
+    return new Promise((fulfill, reject2) => {
+      notifier.once("connect", fulfill);
+      notifier.once("error", reject2);
+      new Chrome(options, notifier);
+    });
+  }
+}
+var deno_cri_default;
+var init_deno_cri = __esm({
+  "core/cri/deno-cri/index.js"() {
+    init_mod7();
+    init_chrome();
+    init_devtools();
+    init_next_tick();
+    deno_cri_default = CDP;
+  }
+});
+
+// core/appdirs.ts
+function quartoDataDir(subdir, roaming = false) {
+  return quartoDir(userDataDir, subdir, roaming);
+}
+function quartoCacheDir(subdir) {
+  return quartoDir(userCacheDir, subdir);
+}
+function quartoRuntimeDir(subdir) {
+  return quartoDir(userRuntimeDir, subdir);
+}
+function quartoDir(sourceFn, subdir, roaming) {
+  const dir = sourceFn("quarto", roaming);
+  const fullDir = subdir ? join4(dir, subdir) : dir;
+  ensureDirSync(fullDir);
+  return fullDir;
+}
+function userDataDir(appName, roaming = false) {
+  switch (os) {
+    case "darwin":
+      return darwinUserDataDir(appName);
+    case "windows":
+      return windowsUserDataDir(appName, roaming);
+    default:
+      return xdgUserDataDir(appName);
+  }
+}
+function userCacheDir(appName) {
+  switch (os) {
+    case "darwin":
+      return darwinUserCacheDir(appName);
+    case "windows":
+      return windowsUserDataDir(appName);
+    default:
+      return xdgUserCacheDir(appName);
+  }
+}
+function userRuntimeDir(appName) {
+  switch (os) {
+    case "darwin":
+      return darwinUserCacheDir(appName);
+    case "windows":
+      return windowsUserDataDir(appName);
+    default:
+      return xdgUserRuntimeDir(appName);
+  }
+}
+function darwinUserDataDir(appName) {
+  return join4(
+    Deno.env.get("HOME") || "",
+    "Library",
+    "Application Support",
+    appName
+  );
+}
+function darwinUserCacheDir(appName) {
+  return join4(
+    Deno.env.get("HOME") || "",
+    "Library",
+    "Caches",
+    appName
+  );
+}
+function xdgUserDataDir(appName) {
+  const dataHome = Deno.env.get("XDG_DATA_HOME") || join4(Deno.env.get("HOME") || "", ".local", "share");
+  return join4(dataHome, appName);
+}
+function xdgUserCacheDir(appName) {
+  const cacheHome = Deno.env.get("XDG_CACHE_HOME") || join4(Deno.env.get("HOME") || "", ".cache");
+  return join4(cacheHome, appName);
+}
+function xdgUserRuntimeDir(appName) {
+  const runtimeDir = Deno.env.get("XDG_RUNTIME_DIR");
+  if (runtimeDir) {
+    return runtimeDir;
+  } else {
+    return xdgUserDataDir(appName);
+  }
+}
+function windowsUserDataDir(appName, roaming = false) {
+  const dir = (roaming ? Deno.env.get("APPDATA") : Deno.env.get("LOCALAPPDATA")) || "";
+  return join4(dir, appName);
+}
+var init_appdirs = __esm({
+  "core/appdirs.ts"() {
+    init_path();
+    init_fs();
+    init_platform();
+  }
+});
+
+// core/windows.ts
+async function readRegistryKey(registryPath, keyname) {
+  const defaultKeyname = keyname === "(Default)";
+  const args = ["query", registryPath];
+  if (defaultKeyname) {
+    args.push("/ve");
+  } else {
+KV opening:
+}
+var init_hash2 = __esm({
+  "core/hash.ts"() {
+    init_crypto();
+    init_blueimp_md5_2_19();
+  }
+});
+
+// core/sass/cache.ts
+async function checkVersion2(kv, path3) {
+  const version4 = await kv.get(["version"]);
+  if (version4.value === null) {
+    await kv.set(["version"], 1);
+  } else {
+    if (typeof version4.value !== "number") {
+      throw new Error(
+        `Unsupported SassCache version type in ${path3}
+Expected number, got ${typeof version4.value}`
+      );
+    }
+    if (version4.value < currentSassCacheVersion) {
+      throw new Error(
+        `Found outdated SassCache version. Please clear ${path3}.`
+      );
+    }
+    if (version4.value > currentSassCacheVersion) {
+      throw new Error(
+        `Found a SassCache version that's newer than supported. Please clear ${path3} or upgrade Quarto to ${requiredQuartoVersions[currentSassCacheVersion]} or later.`
+      );
+    }
+  }
+}
+async function sassCache(path3, temp) {
+  if (!_sassCache[path3]) {
+    debug(`Creating SassCache at ${path3}`);
+    ensureDirSync(path3);
+    const kvFile = join4(path3, "sass.kv");
+    const kv = await Deno.openKv(kvFile);
+    await checkVersion2(kv, kvFile);
+    _sassCache[path3] = new SassCache(kv, path3);
+    _sassCache[path3].cleanup(temp);
+  }
+  debug(`Returning SassCache at ${path3}`);
+  const result2 = _sassCache[path3];
+  return result2;
+}
+var SassCache, currentSassCacheVersion, requiredQuartoVersions, _sassCache;
+var init_cache2 = __esm({
+  "core/sass/cache.ts"() {
+    init_error2();
+    init_hash2();
+    init_path();
+    init_fs();
+    init_path2();
+    init_log();
+    init_cleanup();
+    SassCache = class {
+      kv;
+      path;
+      clone() {
+        return this;
+      }
+      constructor(kv, path3) {
+        this.kv = kv;
+        this.path = path3;
+      }
+      async getFromHash(hash, inputHash, force) {
+        debug(
+          `SassCache.getFromHash(hash=${hash}, inputHash=${inputHash}, force=${force})`
+        );
+        if (hash.length !== 32 || !/^[0-9a-f]{32}$/.test(hash)) {
+          throw new InternalError(`Invalid hash length: ${hash.length}`);
+        }
+        const result2 = await this.kv.get(["entry", hash]);
+        if (result2.value === null) {
+          debug(`  cache miss`);
+          return null;
+        }
+        if (typeof result2.value !== "object") {
+          throw new InternalError(
+            `Unsupported SassCache entry type
+Expected SassCacheEntry, got ${typeof result2.value}`
+          );
+        }
+        const v4 = result2.value;
+        if (typeof v4.key !== "string" || typeof v4.hash !== "string") {
+Sass selection:
+        return "";
+      }
+    } else {
+      return "";
+    }
+  };
+  return {
+    uses: read(names.uses),
+    defaults: read(names.defaults),
+    rules: read(names.rules),
+    mixins: read(names.mixins),
+    functions: read(names.functions)
+  };
+}
+async function compileWithCache(input, loadPaths, project, options) {
+  const { temp } = project;
+  const {
+    compressed,
+    cacheIdentifier,
+    addVarsBlock
+  } = options || {};
+  const handleVarsBlock = async (input2) => {
+    if (!addVarsBlock) {
+      return input2;
+    }
+    try {
+      const result2 = await memoizedGetVarsBlock(project, input2);
+      return input2 + "\n" + result2;
+    } catch (e5) {
+      if (!(e5 instanceof Error)) throw e5;
+      if (e5.name !== "SCSSParsingError") {
+        throw e5;
+      }
+      console.warn("Error adding css vars block", e5);
+      console.warn(
+        "The resulting CSS file will not have SCSS color variables exported as CSS."
+      );
+      Deno.writeTextFileSync("_quarto_internal_scss_error.scss", input2);
+      console.warn(
+        "This is likely a Quarto bug.\nPlease consider reporting it at https://github.com/quarto-dev/quarto-cli,\nalong with the _quarto_internal_scss_error.scss file that can be found in the current working directory."
+      );
+    }
+    return input2;
+  };
+  if (cacheIdentifier) {
+    const useSessionCache = input.match(/@import/);
+    const cacheDir = useSessionCache ? join4(temp.baseDir, "sass") : quartoCacheDir("sass");
+    const cache3 = await sassCache(cacheDir, useSessionCache ? temp : void 0);
+    return cache3.getOrSet(
+      input,
+      cacheIdentifier,
+      async (outputFilePath) => {
+        input = await handleVarsBlock(input);
+        await dartCompile(input, outputFilePath, temp, loadPaths, compressed);
+      }
+    );
+  } else {
+    input = await handleVarsBlock(input);
+    const outputFilePath = temp.createFile({ suffix: ".css" });
+    await dartCompile(
+      input,
+      outputFilePath,
+      temp,
+      uniq(loadPaths),
+      compressed
+    );
+    return outputFilePath;
+  }
+}
+function cleanSourceMappingUrl(cssPath) {
+  const cleaned = Deno.readTextFileSync(cssPath).replaceAll(
+    kSourceMappingRegexes[0],
+    ""
+  ).replaceAll(
+    kSourceMappingRegexes[1],
+    ""
+  );
+  Deno.writeTextFileSync(cssPath, cleaned.trim(), {
+    mode: safeModeFromFile(cssPath)
+  });
+}
+var counter, layoutBoundary, kLayerBoundaryLine, kLayerBoundaryTest, memoizedGetVarsBlock;
+var init_sass = __esm({
+  "core/sass.ts"() {
+    init_fs();
+    init_path();
+    init_appdirs();
+    init_dart_sass();
+    init_lodash();
+    init_text2();
+    init_cache2();

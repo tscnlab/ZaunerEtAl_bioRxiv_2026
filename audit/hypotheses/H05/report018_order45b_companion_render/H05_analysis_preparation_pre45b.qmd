@@ -1,0 +1,1942 @@
+---
+title: "H05 analysis preparation and provenance"
+subtitle: "From verified light-exposure metrics and questionnaire scores to reported associations"
+date: last-modified
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    code-fold: true
+    code-summary: "Show the R code used for this display"
+    code-tools: true
+    page-layout: full
+    lightbox: true
+execute:
+  echo: true
+  warning: false
+  message: false
+  error: false
+fig-cap-location: bottom
+tbl-cap-location: top
+---
+
+```{r}
+#| label: setup-h05-preparation
+#| include: false
+
+suppressPackageStartupMessages({
+  library(dplyr)
+  library(ggplot2)
+  library(gt)
+  library(knitr)
+  library(readr)
+  library(scales)
+  library(tibble)
+  library(tidyr)
+})
+
+root_candidates <- unique(c(
+  normalizePath(getwd(), winslash = "/", mustWork = TRUE),
+  normalizePath(
+    file.path(getwd(), "../../.."),
+    winslash = "/",
+    mustWork = FALSE
+  )
+))
+is_project_root <- vapply(
+  root_candidates,
+  function(path) {
+    file.exists(file.path(path, "renv.lock")) &&
+      file.exists(file.path(
+        path,
+        "scripts/hypotheses/H05/h05_contract.R"
+      ))
+  },
+  logical(1)
+)
+stopifnot(any(is_project_root))
+root <- root_candidates[which(is_project_root)[1L]]
+knitr::opts_knit$set(root.dir = root)
+
+source(file.path(root, "scripts/pipeline/paths_io.R"))
+
+if (!identical(as.character(getRversion()), "4.6.1")) {
+  stop("H05 preparation requires R 4.6.1", call. = FALSE)
+}
+
+read_h05_csv <- function(relative_path) {
+  readr::read_csv(file.path(root, relative_path), show_col_types = FALSE)
+}
+
+prep_gt <- function(table, font_size = 13) {
+  table |>
+    gt::opt_row_striping() |>
+    gt::sub_missing(missing_text = "—") |>
+    gt::tab_options(
+      table.width = gt::pct(100),
+      table.font.size = gt::px(font_size),
+      data_row.padding = gt::px(4),
+      column_labels.font.weight = "600",
+      source_notes.font.size = gt::px(11)
+    )
+}
+
+format_count <- function(value) {
+  format(value, big.mark = ",", scientific = FALSE, trim = TRUE)
+}
+
+placement_labels <- c(
+  glasses = "Near eye",
+  chest = "Chest"
+)
+placement_colors <- c(
+  "Near eye" = "#0072B2",
+  "Chest" = "#D55E00"
+)
+
+input_audit <- read_h05_csv(
+  "artifacts/06_model_data/H05/H05_input_audit.csv"
+)
+factor_registry <- read_h05_csv(
+  "artifacts/06_model_data/H05/H05_factor_registry.csv"
+)
+leba_audit <- read_h05_csv(
+  "artifacts/08_diagnostics/H05/H05_leba_score_audit.csv"
+)
+metric_registry <- read_h05_csv(
+  "artifacts/06_model_data/H05/H05_metric_registry.csv"
+)
+formula_registry <- read_h05_csv(
+  "artifacts/06_model_data/H05/H05_formula_registry.csv"
+)
+run_registry <- read_h05_csv(
+  "artifacts/06_model_data/H05/H05_run_registry.csv"
+)
+frame_index <- read_h05_csv(
+  "artifacts/06_model_data/H05/H05_model_frame_index.csv"
+)
+site_structure <- read_h05_csv(
+  "artifacts/06_model_data/H05/H05_site_structure_evidence.csv"
+)
+diagnostics <- read_h05_csv(
+  "artifacts/08_diagnostics/H05/H05_model_diagnostics.csv"
+)
+family_audit <- read_h05_csv(
+  "artifacts/09_tables/H05/H05_family_audit.csv"
+)
+master_results <- read_h05_csv(
+  "artifacts/09_tables/H05/H05_model_results_master.csv"
+)
+random_site <- read_h05_csv(
+  "artifacts/09_tables/H05/H05_random_site_sensitivity.csv"
+)
+leave_one_site_out <- read_h05_csv(
+  "artifacts/09_tables/H05/H05_leave_one_site_out_summary.csv"
+)
+paired_placement <- read_h05_csv(
+  "artifacts/09_tables/H05/H05_paired_placement_comparison.csv"
+)
+gap_timing_comparison <- read_h05_csv(
+  "artifacts/09_tables/H05/H05_manuscript_prepared_comparison.csv"
+)
+exact_period <- read_h05_csv(
+  paste0(
+    "artifacts/09_tables/H05/",
+    "H05_exactly_identified_longest_bout_sensitivity.csv"
+  )
+)
+mder_upper_tail <- read_h05_csv(
+  paste0(
+    "artifacts/08_diagnostics/H05/",
+    "H05_mder_metric010_upper_tail_summary.csv"
+  )
+)
+mder_influence <- read_h05_csv(
+  paste0(
+    "artifacts/08_diagnostics/H05/",
+    "H05_mder_metric010_influence_refits.csv"
+  )
+)
+mder_gap_influence <- read_h05_csv(
+  paste0(
+    "artifacts/08_diagnostics/H05/",
+    "H05_mder_metric010_gap_influence_refits.csv"
+  )
+)
+mder_gap_paired <- read_h05_csv(
+  paste0(
+    "artifacts/09_tables/H05/",
+    "H05_mder_metric010_gap_paired_placement_comparison.csv"
+  )
+)
+mder_reconciliation <- read_h05_csv(
+  "artifacts/12_manifests/H05/H05_metric010_reconciliation.csv"
+)
+mder_gap_reconciliation <- read_h05_csv(
+  paste0(
+    "artifacts/12_manifests/H05/",
+    "H05_metric010_gap_reseal_reconciliation.csv"
+  )
+)
+l10_frame_audit <- read_h05_csv(
+  paste0(
+    "artifacts/12_manifests/H05/",
+    "H05_metric011_primary_l10_frame_audit.csv"
+  )
+)
+l10_bh_audit <- read_h05_csv(
+  "artifacts/12_manifests/H05/H05_metric011_bh_change_audit.csv"
+)
+l10_result_change <- read_h05_csv(
+  paste0(
+    "artifacts/12_manifests/H05/",
+    "H05_metric011_l10_result_change_audit.csv"
+  )
+)
+l10_input_cells <- read_h05_csv(
+  "artifacts/12_manifests/H05/H05_metric011_input_cell_audit.csv"
+)
+l10_reconciliation <- read_h05_csv(
+  "artifacts/12_manifests/H05/H05_metric011_reconciliation.csv"
+)
+sample_support <- read_h05_csv(
+  "artifacts/11_source_data/H05/H05_preparation_sample_support.csv"
+)
+leba_distribution <- read_h05_csv(
+  paste0(
+    "artifacts/11_source_data/H05/",
+    "H05_preparation_leba_score_distribution.csv"
+  )
+)
+site_support <- read_h05_csv(
+  "artifacts/11_source_data/H05/H05_preparation_site_support.csv"
+)
+site_support_summary <- read_h05_csv(
+  paste0(
+    "artifacts/11_source_data/H05/",
+    "H05_preparation_site_support_summary.csv"
+  )
+)
+site_registry <- read_h05_csv("config/site_display_registry.csv") |>
+  arrange(.data$display_order)
+
+model_frame_archive <- readRDS(file.path(
+  root,
+  "artifacts/06_model_data/H05/H05_model_frames.rds"
+))
+model_frames <- model_frame_archive$model_frames
+
+primary_id <- "main__glasses__all_available"
+chest_id <- "main__chest__all_available"
+paired_near_id <- "main__glasses__paired_common_sample"
+paired_chest_id <- "main__chest__paired_common_sample"
+gap_near_id <- "manuscript_prepared_data__glasses__all_available"
+gap_chest_id <- "manuscript_prepared_data__chest__all_available"
+sleep_metric_id <- "duration_below_1_sleep_environment"
+mder_metric_id <- "mder_mean_of_viable_ratios"
+```
+
+## About this analysis record
+
+::: {.callout-note title="About this analysis record"}
+This page explains how verified light-exposure metrics and questionnaire scores
+were turned into the H05 results. Rendering it recalculates only file-identity,
+schema, and key checks plus lightweight descriptive summaries from the stored
+H05 model frames. It reads fitted models, estimates, intervals, model checks,
+influence screens, and predefined alternative analyses from their recorded files. It does
+not fit or refit a model, calculate predictions, repeat model checks, rerun
+leave-one-site-out analyses, bootstrap, or simulate data.
+:::
+
+H05 asks whether four Light Exposure Behaviour Assessment (LEBA) questionnaire
+factors are associated with 17 personal light-exposure metrics. The primary
+analysis uses the near-eye sensor position, which measures light close to the
+eyes. All-available chest measurements provide complementary evidence but are
+not interpreted as ocular exposure. A **participant-day** is one eligible
+local calendar day from one participant; participant-day metrics can therefore
+include repeated days from the same person.
+
+Factor effects are reported per one participant-level standard deviation (SD)
+of the score, with a 95% confidence interval (95% CI). Each inferential
+placement or dataset applies false-discovery-rate (FDR) adjustment to the
+complete family of four factors × 17 metrics = 68 tests. Participant-level and
+participant-day metrics use different model structures but share the same
+fixed-site adjustment, which estimates one adjustment coefficient for each
+study site, as well as the same questionnaire-score scaling and family
+definition.
+
+This page identifies the data and code that produced those results, explains
+why each analytical operation was necessary, and shows the stored evidence
+used to check the analysis. Read it alongside the
+[H05 results report](../../../notebooks/hypotheses/H05.qmd); the exact
+[H05 linked registration-record summary](../../../notebooks/hypotheses/H05.qmd#h05-preregistration-deviations)
+is mapped there once.
+
+## Analysis map
+
+```{mermaid}
+flowchart TD
+  A["Verified near-eye and chest metrics<br/>plus questionnaire factor scores"] --> B["Metric-specific participant or<br/>participant-day analysis frames"]
+  B --> C["Fixed-site full and reduced models<br/>68 associations per family"]
+  C --> D["Practical-scale effects, 95% CIs,<br/>and complete-family FDR adjustment"]
+  C --> E["Model checks, influence screens,<br/>and named alternative analyses"]
+  D --> F["Reader tables, figures,<br/>and paired source data"]
+  E --> F
+```
+
+The arrows describe dependencies. They do not mean that this page repeats the
+model computation.
+
+## 1. Verified inputs and questionnaire factors
+
+### File identity
+
+The analysis begins from named files whose SHA-256 identities were pinned
+before model construction. The table below is limited to inputs that determine
+the current H05 results or the site-structure decision.
+
+```{r}
+#| label: tbl-h05-prep-input-identities
+#| tbl-cap: "Verified inputs used by the H05 result-producing analysis."
+
+result_input_roles <- c(
+  "main",
+  "main_manifest",
+  "manuscript_prepared_data",
+  "manuscript_prepared_data_manifest",
+  "leba",
+  "h01_contract_source",
+  "h01_modeling_source",
+  "h01_fit_results_site_evidence",
+  "metric010_decision",
+  "primary_metric_manifest",
+  "independent_mder_audit_manifest",
+  "base_model_manifest",
+  "metric011_decision",
+  "metric011_evidence_manifest",
+  "site_context_manifest",
+  "primary_near_eye_context",
+  "primary_chest_context"
+)
+input_labels <- c(
+  main = "Primary metric dataset",
+  main_manifest = "Primary metric-data manifest",
+  manuscript_prepared_data = "Gap-timing-unaware metric dataset",
+  manuscript_prepared_data_manifest = "Gap-timing-unaware data manifest",
+  leba = "Normalised LEBA questionnaire scores",
+  h01_contract_source = "Shared metric contract",
+  h01_modeling_source = "Shared metric and model-check functions",
+  h01_fit_results_site_evidence = "Stored site-structure evidence",
+  metric010_decision = "Approved MDER estimand",
+  primary_metric_manifest = "Primary metric derivation manifest",
+  independent_mder_audit_manifest = "Independent MDER audit manifest",
+  base_model_manifest = "Shared base-model input manifest",
+  metric011_decision = "Approved L10 numerical-zero rule",
+  metric011_evidence_manifest = "Independent numerical-zero evidence manifest",
+  site_context_manifest = "Unchanged site and daylight-context manifest",
+  primary_near_eye_context = "Primary near-eye participant-day context",
+  primary_chest_context = "Primary chest participant-day context"
+)
+
+historical_h01_contract_sha256 <-
+  "9151f2ca8ef549d16df1465768ed5b33c0aa33b37dc315a13e06d795ba20de2e"
+current_h01_contract_sha256 <-
+  "dfa35f7c8a1ca8a1f2132c6930a8ac219c461ffac769a7423bf85522430da81a"
+h05_registry_fields <- c(
+  "metric_order",
+  "metric_id",
+  "analysis_unit",
+  "response_family",
+  "response_transform",
+  "effect_scale"
+)
+h01_contract_environment <- new.env(parent = globalenv())
+sys.source(
+  file.path(root, "scripts/hypotheses/H01/h01_contract.R"),
+  envir = h01_contract_environment
+)
+current_h01_metric_registry <-
+  h01_contract_environment$h01_metric_registry()[h05_registry_fields]
+stored_h05_metric_registry <- metric_registry[h05_registry_fields]
+h01_registry_equivalent <- isTRUE(all.equal(
+  as.data.frame(current_h01_metric_registry),
+  as.data.frame(stored_h05_metric_registry),
+  check.attributes = FALSE
+))
+stopifnot(
+  nrow(current_h01_metric_registry) == 17L,
+  nrow(stored_h05_metric_registry) == 17L,
+  h01_registry_equivalent
+)
+
+verified_inputs <- input_audit |>
+  filter(.data$input_role %in% result_input_roles) |>
+  mutate(
+    current_sha256 = vapply(
+      file.path(root, .data$path),
+      artifact_sha256,
+      character(1)
+    ),
+    Input = unname(input_labels[.data$input_role]),
+    Path = .data$path,
+    `SHA-256 prefix` = substr(.data$current_sha256, 1L, 16L),
+    Accepted_transition =
+      .data$input_role == "h01_contract_source" &
+        .data$expected_sha256 == historical_h01_contract_sha256 &
+        .data$current_sha256 == current_h01_contract_sha256 &
+        h01_registry_equivalent,
+    Verification_code = case_when(
+      .data$current_sha256 == .data$expected_sha256 ~ "PASS",
+      .data$Accepted_transition ~ "PASS_ACCEPTED_TRANSITION",
+      TRUE ~ "FAIL"
+    ),
+    Status = case_when(
+      .data$Verification_code == "PASS" ~ "Verified",
+      .data$Verification_code == "PASS_ACCEPTED_TRANSITION" ~
+        "Accepted transition",
+      TRUE ~ "Review needed"
+    )
+  )
+accepted_transition <- verified_inputs |>
+  filter(.data$Verification_code == "PASS_ACCEPTED_TRANSITION")
+stopifnot(
+  nrow(verified_inputs) == 17L,
+  sum(verified_inputs$Verification_code == "PASS") == 16L,
+  nrow(accepted_transition) == 1L,
+  accepted_transition$input_role == "h01_contract_source",
+  accepted_transition$expected_sha256 == historical_h01_contract_sha256,
+  accepted_transition$current_sha256 == current_h01_contract_sha256,
+  all(verified_inputs$Verification_code %in% c(
+    "PASS",
+    "PASS_ACCEPTED_TRANSITION"
+  ))
+)
+
+verified_inputs |>
+  select("Input", "Path", "SHA-256 prefix", "Status") |>
+  gt::gt() |>
+  gt::cols_width(
+    Input ~ gt::pct(25),
+    Path ~ gt::pct(53),
+    `SHA-256 prefix` ~ gt::pct(15),
+    Status ~ gt::pct(7)
+  ) |>
+  gt::tab_source_note(
+    paste0(
+      "Complete 64-character producer identities are retained in ",
+      "artifacts/06_model_data/H05/H05_input_audit.csv. The shared H01 ",
+      "contract preserves historical H05 producer SHA-256 ",
+      historical_h01_contract_sha256,
+      " and accepts current SHA-256 ",
+      current_h01_contract_sha256,
+      " after exact 17-row, six-field H05 registry verification."
+    )
+  ) |>
+  prep_gt(12)
+```
+
+### Schema, key, content, and value checks
+
+The LEBA table is keyed by site and participant identifier. Each metric frame
+is keyed either by participant or by participant plus local date. The model
+index adds run, metric, and factor identifiers, so every one of its 544 rows
+refers to one unique analysis cell.
+
+```{r}
+#| label: tbl-h05-prep-integrity-checks
+#| tbl-cap: "Bounded integrity checks performed from the stored H05 inputs and model frames."
+
+frame_duplicate_keys <- sum(vapply(
+  model_frames,
+  function(frame) anyDuplicated(frame$.model_row_id) > 0L,
+  logical(1)
+))
+required_frame_columns <- c(
+  ".model_row_id", "site", "Id", "participant_key", "local_date",
+  "participant_days_contributing", "value", "leba_f2", "leba_f3",
+  "leba_f4", "leba_f5"
+)
+frames_with_complete_schema <- sum(vapply(
+  model_frames,
+  function(frame) all(required_frame_columns %in% names(frame)),
+  logical(1)
+))
+frame_order_verified <- all(vapply(
+  model_frames,
+  function(frame) {
+    expected_order <- order(
+      frame$site,
+      frame$participant_key,
+      frame$local_date,
+      na.last = TRUE
+    )
+    identical(expected_order, seq_len(nrow(frame)))
+  },
+  logical(1)
+))
+index_key_rows <- frame_index |>
+  distinct(.data$run_id, .data$metric_id, .data$factor_id) |>
+  nrow()
+
+integrity_checks <- tibble::tribble(
+  ~Check, ~Expected, ~Observed, ~Status,
+  "Current result-input identities", "17 matches", paste0(sum(verified_inputs$Verification_code == "PASS"), " matches"), if_else(all(verified_inputs$Verification_code == "PASS"), "PASS", "FAIL"),
+  "LEBA participant key", "184 unique site–participant rows", "184 unique rows; 0 duplicates", if_else(all(leba_audit$participants == 184L), "PASS", "FAIL"),
+  "LEBA score reconstruction", "0 mismatches; 0 missing scores", paste0(sum(leba_audit$mismatch_n), " mismatches; ", sum(leba_audit$missing_scores), " missing"), if_else(sum(leba_audit$mismatch_n) == 0L && sum(leba_audit$missing_scores) == 0L, "PASS", "FAIL"),
+  "Metric registry", "17 unique ordered metrics", paste0(n_distinct(metric_registry$metric_id), " unique metrics"), if_else(n_distinct(metric_registry$metric_id) == 17L, "PASS", "FAIL"),
+  "Run registry", "8 unique runs", paste0(n_distinct(run_registry$run_id), " unique runs"), if_else(n_distinct(run_registry$run_id) == 8L, "PASS", "FAIL"),
+  "Stored run–metric frames", "136 frames", paste0(length(model_frames), " frames"), if_else(length(model_frames) == 136L, "PASS", "FAIL"),
+  "Frame schema and row keys", "136 complete; 0 duplicate keys", paste0(frames_with_complete_schema, " complete; ", frame_duplicate_keys, " duplicate-key frames"), if_else(frames_with_complete_schema == 136L && frame_duplicate_keys == 0L, "PASS", "FAIL"),
+  "Frame ordering", "Site, participant, then local date", if_else(frame_order_verified, "Order retained", "Order differs"), if_else(frame_order_verified, "PASS", "FAIL"),
+  "Run–metric–factor index", "544 unique cells", paste0(index_key_rows, " unique cells"), if_else(index_key_rows == 544L && nrow(frame_index) == 544L, "PASS", "FAIL")
+)
+stopifnot(all(integrity_checks$Status == "PASS"))
+
+integrity_checks |>
+  mutate(
+    Status = recode(
+      .data$Status,
+      PASS = "Verified",
+      FAIL = "Review needed"
+    )
+  ) |>
+  gt::gt() |>
+  gt::cols_width(
+    Check ~ gt::pct(27),
+    Expected ~ gt::pct(29),
+    Observed ~ gt::pct(35),
+    Status ~ gt::pct(9)
+  ) |>
+  prep_gt(12)
+```
+
+### Factor construction
+
+The four LEBA factors are complete-score sums. Ordered item responses run from
+1 (“Never”) to 5 (“Always”). The table identifies each behavioural factor and
+its construction rule before the factor codes are used alone. A factor score
+is non-estimable if any contributing item is missing.
+
+```{r}
+#| label: tbl-h05-prep-factor-contract
+#| tbl-cap: "LEBA factors and score-construction rules."
+
+factor_registry |>
+  transmute(
+    Factor = toupper(sub("leba_", "", .data$factor_id)),
+    Construct = .data$factor_label,
+    Items = .data$last_item - .data$first_item + 1L,
+    `Possible range` = paste0(.data$possible_min, "–", .data$possible_max),
+    `Score rule` = .data$score_rule,
+    `Missing-item rule` = .data$missing_item_rule
+  ) |>
+  gt::gt(rowname_col = "Factor") |>
+  gt::cols_width(
+    Construct ~ gt::pct(27),
+    Items ~ gt::pct(7),
+    `Possible range` ~ gt::pct(10),
+    `Score rule` ~ gt::pct(31),
+    `Missing-item rule` ~ gt::pct(25)
+  ) |>
+  prep_gt(12)
+```
+
+F2 contains one reverse-coded item; F3--F5 use the recorded item direction.
+The recorded reconstruction found no missing score and no mismatch for any of
+the 184 participants. Scores were not standardised within site. For each exact
+model frame, the participant-level mean was subtracted from the raw factor
+score, and the reported effect was expressed both per raw point and per one
+participant-level standard deviation.
+
+```{r}
+#| label: tbl-h05-prep-leba-audit
+#| tbl-cap: "Observed LEBA score support and reconstruction checks."
+
+leba_audit |>
+  transmute(
+    Factor = toupper(sub("leba_", "", .data$factor_id)),
+    Participants = .data$participants,
+    `Observed range` = paste0(.data$observed_min, "–", .data$observed_max),
+    `Unique scores` = .data$unique_scores,
+    `Tied participants` = .data$tied_participants,
+    `Missing scores` = .data$missing_scores,
+    Mismatches = .data$mismatch_n,
+    Status = if_else(
+      .data$score_verified,
+      "Verified",
+      "Review needed"
+    )
+  ) |>
+  gt::gt(rowname_col = "Factor") |>
+  gt::fmt_integer(
+    columns = c(
+      Participants, `Unique scores`, `Tied participants`,
+      `Missing scores`, Mismatches
+    )
+  ) |>
+  prep_gt()
+```
+
+```{r}
+#| label: fig-h05-prep-leba-distribution
+#| fig-cap: "Distribution of the four verified LEBA factor scores. Each panel contains all 184 questionnaire participants."
+#| fig-alt: "Four bar charts show participant counts at each observed LEBA score for F2 through F5. Each panel sums to 184 participants; the observed score ranges differ because the factors contain different numbers of items."
+#| fig-width: 10
+#| fig-height: 6.8
+
+leba_plot_data <- leba_distribution |>
+  mutate(
+    factor_code = paste0("F", .data$factor_order + 1L),
+    panel_label = paste0(.data$factor_code, ": ", .data$factor_label)
+  )
+
+ggplot(leba_plot_data, aes(x = .data$score, y = .data$participants)) +
+  geom_col(fill = "#0072B2", width = 0.85) +
+  facet_wrap(vars(.data$panel_label), scales = "free_x", ncol = 2) +
+  scale_x_continuous(breaks = scales::breaks_width(2)) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.06))) +
+  labs(x = "LEBA factor score", y = "Participants") +
+  theme_minimal(base_size = 12) +
+  theme(
+    panel.grid.minor = element_blank(),
+    strip.text = element_text(face = "bold"),
+    axis.title = element_text(face = "bold")
+  )
+```
+
+The exact aggregated counts used by the bars are available as
+[figure source data](../../../artifacts/11_source_data/H05/H05_preparation_leba_score_distribution.csv).
+
+## 2. Metric construction and analytical samples
+
+### Coverage, gaps, and metric support
+
+The primary dataset applied the general requirement of at least 50% valid
+minutes per hour and at least 80% valid hours per day, together with
+metric-specific support rules where the timing of remaining gaps affects what
+the metric can represent. Unsupported values remained missing rather than
+being interpreted as darkness. Light-level metrics use melanopic equivalent
+daylight illuminance (melEDI) in reader-facing labels, with a 0.1 lx offset
+where a logarithmic transform requires it. A Tweedie model is a positive-response
+regression model used here for non-negative, right-skewed durations while
+retaining exact zeros.
+
+A sensitivity analysis repeats the accepted comparison under a predefined
+alternative to assess whether the interpretation is stable. One predefined
+sensitivity uses the **gap-timing-unaware dataset**. It still
+passed the general 50%-per-hour and 80%-per-day coverage rules, but the timing
+of the remaining missing observations was not used for an additional
+metric-specific adjustment. For contrast at this first explanation, the
+primary dataset could be interpreted as a **time-sensitive primary metric
+dataset**. Hereafter it is called simply the primary dataset.
+
+MDER is the arithmetic mean of viable one-minute melEDI/illuminance ratios.
+Both channels must be finite and strictly positive, and at least 720 of the
+complete 1,440 local wall-clock minutes must provide a viable ratio. Repeated
+local minutes at daylight-saving fall-back are averaged channel-wise before
+forming the ratio; absent spring-forward minutes remain missing. Each viable
+minute ratio has equal weight: there is no time-profile weighting, gating, or
+scaling, and the daily value is not a ratio of daily integrals. Failure of this
+support rule makes only MDER missing; it does not delete the day from other
+metric analyses.
+
+The longest continuous period above 250 lx melEDI is an observed lower bound
+when a gap can interrupt the period. Its exact-identifiability sensitivity
+therefore retains only participant-days for which the longest **period** is
+fully observed. The L10 midpoint retains its continuous range and its
+strict-after-16:00 representation; no noon sensitivity was needed.
+
+The shared derivation rules are documented in
+[Preparation 04](../../../notebooks/preparation/04_metric_derivation.qmd), and
+the model-ready datasets are documented in
+[Preparation 06](../../../notebooks/preparation/06_model_ready_datasets.qmd).
+
+```{r}
+#| label: tbl-h05-prep-metric-contract
+#| tbl-cap: "Metric-specific analysis level, response model, transformation, and reported effect scale."
+
+metric_registry |>
+  transmute(
+    Order = .data$metric_order,
+    Metric = .data$manuscript_name,
+    `Analysis level` = recode(
+      .data$analysis_unit,
+      participant = "Participant",
+      participant_day = "Participant-day"
+    ),
+    `Response model` = recode(
+      .data$response_family,
+      gaussian = "Gaussian",
+      tweedie_log = "Tweedie, log link"
+    ),
+    Transformation = recode(
+      .data$response_transform,
+      identity = "Identity",
+      logit = "Logit",
+      log10_offset_0.1 = "log10(value + 0.1 lx)"
+    ),
+    `Reported effect` = recode(
+      .data$effect_scale,
+      difference = "Difference",
+      ratio = "Ratio",
+      odds_ratio = "Odds ratio"
+    ),
+    Unit = .data$display_unit
+  ) |>
+  gt::gt(rowname_col = "Order") |>
+  gt::cols_width(
+    Metric ~ gt::pct(31),
+    `Analysis level` ~ gt::pct(13),
+    `Response model` ~ gt::pct(16),
+    Transformation ~ gt::pct(18),
+    `Reported effect` ~ gt::pct(13),
+    Unit ~ gt::pct(9)
+  ) |>
+  prep_gt(11)
+```
+
+### Model-frame construction
+
+`h05_prepare_metric_rows()` selects one placement, preparation, sample rule,
+and metric at a time. It applies metric eligibility, checks the participant or
+participant-day key, joins LEBA by site and participant, excludes rows without
+a complete factor score, fixes the registered site order, and sorts rows by
+site, participant, and local date. Interdaily stability and intradaily
+variability contribute one row per participant. The other 15 metrics
+contribute one row per eligible participant-day.
+
+The archive contains 136 run-by-metric frames (8 × 17). Joining the four LEBA
+factors creates the 544 model-index rows without changing a metric frame's
+participants or observations.
+
+```{r}
+#| label: tbl-h05-prep-primary-samples
+#| tbl-cap: "Exact all-available primary near-eye and complementary chest samples for each metric."
+
+sample_support |>
+  mutate(
+    Placement = factor(
+      .data$placement_label,
+      levels = c("Near eye", "Chest")
+    ),
+    Metric = .data$manuscript_name,
+    Level = recode(
+      .data$analysis_unit,
+      participant = "Participant",
+      participant_day = "Participant-day"
+    )
+  ) |>
+  select(
+    "Placement", "metric_order", "Metric", "Level", "observations",
+    "participants", "participant_days", "represented_days", "sites"
+  ) |>
+  gt::gt(groupname_col = "Placement", rowname_col = "metric_order") |>
+  gt::cols_label(
+    observations = "Observations",
+    participants = "Participants",
+    participant_days = "Participant-days",
+    represented_days = "Days represented",
+    sites = "Sites"
+  ) |>
+  gt::fmt_integer(
+    columns = c(
+      observations, participants, participant_days,
+      represented_days, sites
+    ),
+    use_seps = TRUE
+  ) |>
+  gt::cols_width(
+    Metric ~ gt::pct(33),
+    Level ~ gt::pct(13),
+    observations ~ gt::pct(11),
+    participants ~ gt::pct(11),
+    participant_days ~ gt::pct(12),
+    represented_days ~ gt::pct(12),
+    sites ~ gt::pct(8)
+  ) |>
+  prep_gt(11)
+```
+
+The corresponding [exact table source](../../../artifacts/11_source_data/H05/H05_preparation_sample_support.csv)
+retains internal metric and placement identifiers as well as every displayed
+count.
+
+```{r}
+#| label: fig-h05-prep-sample-support
+#| fig-cap: "Metric-specific participant and represented-day support in the primary near-eye and complementary chest analyses. Metric numbers follow the preceding table."
+#| fig-alt: "Two line-and-point panels compare near-eye and chest sample support across 17 ordered metrics. The participant panel ranges from 137 to 154 people; represented-day support varies more strongly by metric, with near-eye generally contributing about 655 to 816 days and chest about 687 to 902 days."
+#| fig-width: 11
+#| fig-height: 6.5
+
+sample_plot_data <- sample_support |>
+  select(
+    "metric_order", "manuscript_name", "placement_label",
+    "participants", "represented_days"
+  ) |>
+  pivot_longer(
+    cols = c("participants", "represented_days"),
+    names_to = "quantity",
+    values_to = "count"
+  ) |>
+  mutate(
+    quantity = recode(
+      .data$quantity,
+      participants = "Participants",
+      represented_days = "Days represented"
+    )
+  )
+
+ggplot(
+  sample_plot_data,
+  aes(
+    x = .data$metric_order,
+    y = .data$count,
+    colour = .data$placement_label,
+    group = .data$placement_label
+  )
+) +
+  geom_line(linewidth = 0.75) +
+  geom_point(size = 2.3) +
+  facet_wrap(vars(.data$quantity), scales = "free_y", ncol = 1) +
+  scale_colour_manual(values = placement_colors) +
+  scale_x_continuous(breaks = seq_len(17L)) +
+  scale_y_continuous(labels = scales::label_comma()) +
+  labs(
+    x = "Metric order",
+    y = NULL,
+    colour = "Placement"
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(
+    panel.grid.minor = element_blank(),
+    strip.text = element_text(face = "bold"),
+    axis.title.x = element_text(face = "bold"),
+    legend.position = "top"
+  )
+```
+
+The figure uses the same
+[paired source data](../../../artifacts/11_source_data/H05/H05_preparation_sample_support.csv)
+as the exact sample table.
+
+### Site contributions
+
+The primary near-eye analysis represents all nine study sites.
+The complementary chest data represent eight. Site-specific counts vary with
+metric eligibility; the displayed range is therefore taken across the 17
+exact model frames, not from a pooled approximation.
+
+```{r}
+#| label: tbl-h05-prep-site-support
+#| tbl-cap: "Per-site sample ranges across the 17 all-available metric frames."
+
+site_support_summary |>
+  transmute(
+    Analysis = recode(
+      .data$run_label,
+      `Primary near-eye dataset` = "Primary near eye",
+      `Complementary chest dataset` = "Complementary chest"
+    ),
+    `Site order` = .data$display_order,
+    Site = .data$site_name,
+    `Metric frames` = .data$metric_frames,
+    `Participants, min–max` = paste0(
+      .data$participants_min,
+      "–",
+      .data$participants_max
+    ),
+    `Days represented, min–max` = paste0(
+      format_count(.data$represented_days_min),
+      "–",
+      format_count(.data$represented_days_max)
+    )
+  ) |>
+  gt::gt(groupname_col = "Analysis", rowname_col = "Site order") |>
+  gt::fmt_integer(columns = `Metric frames`) |>
+  gt::cols_width(
+    Site ~ gt::pct(30),
+    `Metric frames` ~ gt::pct(18),
+    `Participants, min–max` ~ gt::pct(23),
+    `Days represented, min–max` ~ gt::pct(29)
+  ) |>
+  gt::tab_source_note(
+    "Sites follow the country-coded study-site order. The full metric-by-site table retains observations, participants, participant-days, and represented days."
+  ) |>
+  prep_gt(12)
+```
+
+```{r}
+#| label: fig-h05-prep-site-range
+#| fig-cap: "Range of participants contributed by each site across the 17 primary near-eye and complementary chest metric frames. Site order and colours follow the shared site display registry."
+#| fig-alt: "Two panels show horizontal participant-count ranges for each site across 17 metrics. The primary near-eye panel contains nine sites and the complementary chest panel eight. Tübingen (DE) and Madrid (ES) contribute the largest near-eye samples, while San José (CR) contributes the smallest."
+#| fig-width: 11
+#| fig-height: 7
+
+site_levels <- rev(site_registry$display_name)
+site_colors <- site_registry$color_hex
+names(site_colors) <- site_registry$display_name
+site_plot_data <- site_support_summary |>
+  mutate(
+    site_name = factor(.data$site_name, levels = site_levels),
+    run_label = recode(
+      .data$run_label,
+      `Primary near-eye dataset` = "Primary near eye",
+      `Complementary chest dataset` = "Complementary chest"
+    )
+  )
+
+ggplot(site_plot_data, aes(y = .data$site_name, colour = .data$site_name)) +
+  geom_segment(
+    aes(
+      x = .data$participants_min,
+      xend = .data$participants_max,
+      yend = .data$site_name
+    ),
+    linewidth = 2.2,
+    lineend = "round"
+  ) +
+  geom_point(aes(x = .data$participants_min), size = 2.6) +
+  geom_point(aes(x = .data$participants_max), size = 2.6) +
+  facet_wrap(vars(.data$run_label), ncol = 2) +
+  scale_colour_manual(values = site_colors, drop = FALSE) +
+  scale_x_continuous(breaks = scales::breaks_width(5)) +
+  labs(x = "Participants across metric-specific frames", y = NULL) +
+  theme_minimal(base_size = 12) +
+  theme(
+    panel.grid.minor = element_blank(),
+    strip.text = element_text(face = "bold"),
+    axis.title.x = element_text(face = "bold"),
+    legend.position = "none"
+  )
+```
+
+The plotted range has
+[exact source data](../../../artifacts/11_source_data/H05/H05_preparation_site_support_summary.csv).
+The complete
+[metric-by-site source](../../../artifacts/11_source_data/H05/H05_preparation_site_support.csv)
+contains 1,122 rows across every predefined run.
+
+## 3. Models, estimands, and inference
+
+### Estimand, practical effects, uncertainty, and multiplicity
+
+For each metric and factor, the full model adds the centred LEBA score to the
+reduced site-adjusted model. A likelihood-ratio comparison asks whether the
+full model describes the data better than the reduced model on a common
+likelihood basis. The raw inferential *p*-value comes from that comparison. Each declared family contains
+all 17 metrics × 4 factors = 68 tests, and FDR adjustment is performed on the
+complete 68-value vector. Support is retained at adjusted *p* ≤ 0.050, decided
+before display formatting.
+
+Back-transformation converts a fitted-scale coefficient into the practical
+response scale used for interpretation. Coefficients are back-transformed and
+reported per one participant-level LEBA SD. Gaussian identity outcomes return a difference in
+the stated metric unit, log-transformed and Tweedie outcomes return a ratio,
+IS returns an odds ratio, and clock-time outcomes return a difference in
+hours. Every reported 95% CI is a two-sided Wald interval from the final model.
+No secondary significance screen is attached to descriptive sensitivities.
+
+```{r}
+#| label: tbl-h05-prep-family-audit
+#| tbl-cap: "Complete-family multiplicity audit for the three declared H05 inferential families."
+
+family_labels <- c(
+  `H05-F1-primary` = "Primary near eye",
+  `H05-F2-complementary-chest` = "Complementary chest",
+  `H05-F3-manuscript-prepared` = "Gap-timing-unaware near-eye sensitivity"
+)
+
+family_audit |>
+  transmute(
+    Family = unname(family_labels[.data$family_id]),
+    `Planned tests` = .data$planned_tests,
+    `Observed tests` = .data$observed_tests,
+    `Adjusted tests` = .data$estimable_adjusted_tests,
+    `Retained at FDR 0.050` = .data$passes_bh_0_05,
+    `Complete-vector check` = if_else(.data$vector_bh_verified, "Verified", "Review needed")
+  ) |>
+  gt::gt(rowname_col = "Family") |>
+  gt::fmt_integer(columns = where(is.numeric)) |>
+  gt::tab_source_note(
+    "Zero of 68 primary associations retained FDR-adjusted support. The same zero-retained result occurs in the complementary and gap-timing-unaware families."
+  ) |>
+  prep_gt()
+```
+
+::: {.callout-note title="Why a less conservative adjustment can accompany fewer retained associations"}
+For one unchanged vector of raw *p*-values, the complete-vector FDR adjustment
+used here cannot retain fewer associations than Bonferroni at the same 0.050
+threshold. The H05 family above is based on likelihood-ratio *p*-values from
+the fixed-site models. It is therefore not interchangeable with a family built
+from unadjusted rank correlations or another raw test. Multiplicity adjustment
+and the construction of the raw *p*-values are separate analytical decisions;
+the latter can change which associations enter the smallest ranks before
+either correction is applied.
+:::
+
+### Site specification
+
+A fixed site effect gives each study site its own adjustment coefficient. A
+random site effect instead represents between-site variation through one
+estimated variance component. The fixed-site primary specification differs
+from the registered random-site structure. The decision was based on the inherited 17-metric site-structure
+evidence: every fixed-site model converged with a positive-definite Hessian and
+none was singular, whereas the random-site descriptions contained unstable,
+non-estimable, and singular fits. Keeping site fixed also estimates each
+site's adjustment directly rather than relying on a variance component from
+only nine sites. This is an adjustment for observed site differences, not a
+claim that site causes an exposure outcome. The random-site structure remains
+a sensitivity.
+
+```{r}
+#| label: tbl-h05-prep-site-structure
+#| tbl-cap: "Evidence supporting fixed site as the primary specification."
+
+site_structure |>
+  transmute(
+    Evidence = "Inherited 17-metric near-eye site-structure assessment",
+    `Fixed-site models` = .data$fixed_site_metrics,
+    `Fixed converged` = .data$fixed_site_converged,
+    `Fixed positive Hessian` = .data$fixed_site_positive_definite_hessian,
+    `Fixed singular` = .data$fixed_site_singular,
+    `Random descriptive pass` = .data$random_site_descriptive_pass,
+    `Random unstable` = .data$random_site_descriptive_unstable,
+    `Random non-estimable` = .data$random_site_non_estimable,
+    `Random singular` = .data$random_site_singular
+  ) |>
+  gt::gt() |>
+  gt::fmt_integer(columns = where(is.numeric)) |>
+  prep_gt(11)
+```
+
+Across the H05 random-site sensitivity itself, 121 of 136 fits passed the
+descriptive stability checks and 15 were unstable. This is consistent with
+using fixed site for primary inference and random site only as a stability
+assessment.
+
+### Methods details
+
+#### Exact formulas supplied to the models
+
+The analysis uses fixed site with sum-to-zero contrasts as the primary site
+adjustment. Participant-day models add a participant random effect because
+several days can come from the same participant. This random effect represents
+remaining between-participant variation after LEBA and site are considered.
+Participant-level IS and IV models contain one row per person and therefore do
+not add that effect.
+
+The formula registry replaces the raw printed R list with a compact table while
+retaining the exact Wilkinson formulas evaluated by the model functions.
+
+```{r}
+#| label: tbl-h05-prep-exact-formulas
+#| tbl-cap: "Exact evaluated Wilkinson formulas supplied to the H05 full, reduced, and random-site sensitivity models."
+
+formula_registry |>
+  mutate(
+    `Analysis level` = recode(
+      .data$analysis_unit,
+      participant = "Participant",
+      participant_day = "Participant-day"
+    ),
+    `Model role` = recode(
+      .data$formula_id,
+      fixed_full = "Fixed-site full",
+      fixed_reduced = "Fixed-site reduced",
+      random_site = "Random-site sensitivity"
+    ),
+    Formula = paste0("`", .data$formula, "`")
+  ) |>
+  select("Analysis level", "Model role", "Formula") |>
+  gt::gt(groupname_col = "Analysis level") |>
+  gt::fmt_markdown(columns = Formula) |>
+  gt::cols_width(
+    `Model role` ~ gt::pct(24),
+    Formula ~ gt::pct(76)
+  ) |>
+  prep_gt(12)
+```
+
+#### Engines and estimation settings
+
+```{r}
+#| label: tbl-h05-prep-model-settings
+#| tbl-cap: "Model engines and estimation settings used for H05."
+
+tibble::tribble(
+  ~Model_component, ~Engine, ~Estimation, ~Reason,
+  "Participant-level Gaussian outcomes", "stats::lm", "Maximum likelihood-equivalent linear model", "One row per participant; site is a fixed effect.",
+  "Participant-day Gaussian comparisons", "lme4::lmer", "Maximum likelihood", "Full-versus-reduced likelihood-ratio tests require a common likelihood basis.",
+  "Participant-day Gaussian final effects", "lme4::lmer", "Restricted maximum likelihood", "Provides the stored final coefficient and 95% CI after the comparison model is fixed.",
+  "Participant-day positive outcomes", "glmmTMB::glmmTMB", "Tweedie family, log link, maximum likelihood", "Accommodates non-negative, right-skewed duration responses while retaining a participant random effect.",
+  "Random-site sensitivity", "lme4 or glmmTMB", "Final-model settings", "Replaces fixed site with a site random intercept without changing the response model.",
+  "Optimisation", "nloptwrap or glmmTMB control", "Derivatives retained; up to 10,000 iterations/evaluations for Tweedie", "Makes convergence and Hessian evidence available for the stored model checks."
+) |>
+  gt::gt() |>
+  gt::cols_label(
+    Model_component = "Model component"
+  ) |>
+  gt::cols_width(
+    Model_component ~ gt::pct(24),
+    Engine ~ gt::pct(16),
+    Estimation ~ gt::pct(22),
+    Reason ~ gt::pct(38)
+  ) |>
+  prep_gt(11)
+```
+
+## 4. Model checks and influence
+
+### Model-check sequence
+
+Every stored final model was checked for convergence, Hessian status,
+singularity, residual behaviour, response bounds, metric-specific timing
+support, and within-participant serial dependence where applicable. Gaussian
+models use transformed-residual and influence checks. Tweedie models add
+simulation-based uniformity, dispersion, zero-support, and outlier checks.
+Candidate influential participants were ranked by Cook's distance for ordinary
+linear models or by maximum absolute Pearson residual for mixed models; this
+screen did not silently remove observations.
+
+The compact table below excludes the sleep-environment metric because that
+outcome has a separate, stronger disposition immediately afterwards.
+
+```{r}
+#| label: tbl-h05-prep-diagnostic-overview
+#| tbl-cap: "Stored model-check disposition for non-sleep-environment primary and complementary models."
+
+diagnostic_overview <- diagnostics |>
+  filter(
+    .data$run_id %in% c(primary_id, chest_id),
+    .data$metric_id != sleep_metric_id
+  ) |>
+  mutate(
+    Placement = recode(
+      .data$run_id,
+      !!primary_id := "Primary near eye",
+      !!chest_id := "Complementary chest"
+    ),
+    Disposition = recode(
+      .data$model_adequacy,
+      acceptable = "Acceptable",
+      acceptable_with_specified_limitations = "Acceptable with stated limitations",
+      not_acceptable = "Not acceptable"
+    )
+  ) |>
+  count(.data$Placement, .data$Disposition, name = "Factor–metric models")
+
+diagnostic_overview |>
+  gt::gt(groupname_col = "Placement", rowname_col = "Disposition") |>
+  gt::fmt_integer(columns = `Factor–metric models`) |>
+  gt::tab_source_note(
+    "Counts cover 16 metrics × 4 factors per placement. A limitation label is not a significance decision."
+  ) |>
+  prep_gt()
+```
+
+::: {.callout-note title="Sleep-environment outcome: unfit for H05 inference"}
+The four primary near-eye models for **time below 1 lx melEDI during sleep**
+are unfit for H05 inference. The observed response contains exact zeros, while
+the fitted Tweedie simulations generated none; simulation-based uniformity and
+outlier checks also showed material failure, and fitted values crossed the
+admissible response support. Their coefficients, intervals, and *p*-values are
+therefore suppressed from the H05 results. The complementary chest models show
+the same material response-support and simulated-residual limitations and are
+also not used as inferential evidence.
+
+This disposition is specific to this outcome **as the H05 response under this
+model structure**. It does not mean that the sleep-environment metric cannot be
+analysed in another hypothesis that uses a different response variable,
+estimand, or model structure.
+:::
+
+```{r}
+#| label: tbl-h05-prep-sleep-disposition
+#| tbl-cap: "Response-support evidence behind the unfit H05 sleep-environment disposition."
+
+sleep_samples <- frame_index |>
+  filter(
+    .data$run_id %in% c(primary_id, chest_id),
+    .data$metric_id == sleep_metric_id,
+    .data$factor_id == "leba_f2"
+  ) |>
+  select("run_id", "observations", "participants", "participant_days", "sites")
+
+sleep_disposition <- diagnostics |>
+  filter(
+    .data$run_id %in% c(primary_id, chest_id),
+    .data$metric_id == sleep_metric_id
+  ) |>
+  group_by(.data$run_id) |>
+  summarise(
+    `Factor models` = n(),
+    `Observed zero fraction` = first(.data$observed_zero_fraction),
+    `Simulated zero fraction` = first(.data$simulated_zero_fraction),
+    `Uniformity check` = "Material failure",
+    `Prediction support` = "Material limitation",
+    `H05 inference` = "Unfit",
+    .groups = "drop"
+  ) |>
+  left_join(sleep_samples, by = "run_id", relationship = "one-to-one") |>
+  mutate(
+    Placement = recode(
+      .data$run_id,
+      !!primary_id := "Primary near eye",
+      !!chest_id := "Complementary chest"
+    )
+  ) |>
+  select(
+    "Placement", "Factor models", "observations", "participants",
+    "participant_days", "sites", "Observed zero fraction",
+    "Simulated zero fraction", "Uniformity check", "Prediction support",
+    "H05 inference"
+  )
+
+sleep_disposition |>
+  gt::gt(rowname_col = "Placement") |>
+  gt::cols_label(
+    observations = "Observations",
+    participants = "Participants",
+    participant_days = "Participant-days",
+    sites = "Sites"
+  ) |>
+  gt::fmt_integer(
+    columns = c(
+      `Factor models`, observations, participants, participant_days, sites
+    ),
+    use_seps = TRUE
+  ) |>
+  gt::fmt_percent(
+    columns = c(`Observed zero fraction`, `Simulated zero fraction`),
+    decimals = 2
+  ) |>
+  prep_gt(10)
+```
+
+## 5. Sensitivity analyses
+
+Sensitivity branches preserve the accepted primary estimand unless their
+purpose explicitly changes the sample, dataset, or site representation. They
+describe stability and do not promote a non-retained primary association.
+
+The matched placement sensitivity uses the same participants and
+participant-days at both sensor positions. It compares separately fitted
+near-eye and chest effects; it is neither an equivalence test nor a direct
+test of a placement effect.
+
+```{r}
+#| label: tbl-h05-prep-sensitivity-map
+#| tbl-cap: "H05 sensitivity branches, exact stored scope, and interpretive role."
+
+random_counts <- random_site |>
+  count(.data$random_site_status) |>
+  tibble::deframe()
+paired_sample_range <- frame_index |>
+  filter(
+    .data$run_id %in% c(paired_near_id, paired_chest_id),
+    .data$factor_id == "leba_f2"
+  ) |>
+  summarise(
+    participants_min = min(.data$participants),
+    participants_max = max(.data$participants),
+    days_min = min(.data$represented_days),
+    days_max = max(.data$represented_days),
+    sites_min = min(.data$sites),
+    sites_max = max(.data$sites)
+  )
+gap_sample_range <- frame_index |>
+  filter(
+    .data$run_id == gap_near_id,
+    .data$factor_id == "leba_f2"
+  ) |>
+  summarise(
+    participants_min = min(.data$participants),
+    participants_max = max(.data$participants),
+    days_min = min(.data$represented_days),
+    days_max = max(.data$represented_days),
+    sites = max(.data$sites)
+  )
+
+sensitivity_map <- tibble::tribble(
+  ~Analysis, ~Exact_stored_scope, ~Purpose, ~Interpretive_rule,
+  "Paired/common near eye and chest",
+  paste0(
+    "68 matched factor–metric estimands; ",
+    paired_sample_range$participants_min, "–",
+    paired_sample_range$participants_max, " participants, ",
+    paired_sample_range$days_min, "–", paired_sample_range$days_max,
+    " represented days, ", paired_sample_range$sites_min, " sites"
+  ),
+  "Separates placement from unequal all-available samples.",
+  "Compare only matched estimands; do not infer equivalence and do not fit a new model for the display.",
+  "Random site",
+  paste0(
+    "136 main all-available fits: ",
+    random_counts[["DESCRIPTIVE_PASS"]], " passed and ",
+    random_counts[["DESCRIPTIVE_UNSTABLE"]], " were unstable"
+  ),
+  "Checks the registered site-random-intercept specification.",
+  "Instability supports retaining fixed site as primary.",
+  "Leave one site out",
+  paste0(
+    sum(leave_one_site_out$successful_refits),
+    " primary fixed-site refits across 68 associations and nine omitted sites"
+  ),
+  "Identifies estimates whose direction or magnitude depends on one site.",
+  "A stability description, not another significance family.",
+  "Gap-timing-unaware near eye",
+  paste0(
+    "68 factor–metric cells; ", gap_sample_range$participants_min, "–",
+    gap_sample_range$participants_max, " participants, ",
+    gap_sample_range$days_min, "–", gap_sample_range$days_max,
+    " represented days, ", gap_sample_range$sites, " sites"
+  ),
+  "Checks sensitivity to metric-specific handling of remaining gap timing.",
+  "Uses the same model implementation and its own complete 68-test family.",
+  "Exactly identified longest period",
+  paste0(
+    nrow(exact_period), " factor models; ",
+    first(exact_period$participants), " participants, ",
+    first(exact_period$participant_days), " participant-days, ",
+    first(exact_period$sites), " sites"
+  ),
+  "Removes lower-bound ambiguity for the longest continuous period above 250 lx melEDI.",
+  "Retain only participant-days whose longest period is exactly identified.",
+  "Participant-level Spearman summaries",
+  "Participant aggregates with 95% CIs",
+  "Provides a direct rank-based description and site-stratified context.",
+  "No p-values and no secondary significance screen."
+)
+
+sensitivity_map |>
+  gt::gt() |>
+  gt::cols_label(
+    Exact_stored_scope = "Exact stored scope",
+    Interpretive_rule = "Interpretive rule"
+  ) |>
+  gt::cols_width(
+    Analysis ~ gt::pct(20),
+    Exact_stored_scope ~ gt::pct(28),
+    Purpose ~ gt::pct(24),
+    Interpretive_rule ~ gt::pct(28)
+  ) |>
+  prep_gt(11)
+```
+
+The paired/common placement figure in the results report uses near eye on the
+x-axis and chest on the y-axis, matched factor–metric estimands only, identity
+and null lines, and equal axis geometry. Its exact source is
+[H05_paired_effect_comparison_data.csv](../../../artifacts/11_source_data/H05/H05_paired_effect_comparison_data.csv).
+It describes agreement and differences without claiming equivalence. The
+stored component estimates come from the exact common sample; no model was
+fitted solely for that plot.
+
+Complete stored sensitivity records are available for the
+[paired/common placement comparison](../../../artifacts/09_tables/H05/H05_paired_placement_comparison.csv),
+[random-site analysis](../../../artifacts/09_tables/H05/H05_random_site_sensitivity.csv),
+[leave-one-site-out analysis](../../../artifacts/09_tables/H05/H05_leave_one_site_out_summary.csv),
+[gap-timing-unaware analysis](../../../artifacts/09_tables/H05/H05_manuscript_prepared_comparison.csv),
+[gap-timing-unaware matched MDER placement comparison](../../../artifacts/09_tables/H05/H05_mder_metric010_gap_paired_placement_comparison.csv),
+and [exactly identified longest-period analysis](../../../artifacts/09_tables/H05/H05_exactly_identified_longest_bout_sensitivity.csv).
+
+## 6. Current numerical-zero and MDER qualifications
+
+### Numerical-zero normalization for darkest-10-hour mean melEDI
+
+The current rule sets a geometric-mean back-transformation residual to exact
+zero only when it lies within the unit-aware floating-point tolerance and
+every finite source
+minute entering the selected window is exactly zero. For these L10 windows,
+the tolerance is 2.220446049250313 × 10^-14^ lx. Missing source minutes remain
+missing and are never imputed as zero.
+
+Under this rule, three primary near-eye and five primary chest
+participant-days are exact zero rather than approximately
+4.163336342344337 × 10^-17^ lx. This does not change a fitted sample, any
+non-L10 value, hourly or 30-minute value, participant-level value, or
+site/daylight-context value. The gap-timing-unaware L10 values were already
+exact zeros.
+
+### MDER samples and upper-tail influence
+
+The accepted MDER input is the daily arithmetic mean of viable one-minute
+melEDI/illuminance ratios described above. Its exact all-available samples,
+upper-tail screen, and bounded influence refits are summarized below. Changes
+are expressed relative to the full-model standard error (SE).
+The outer-fence rule identifies observations for sensitivity checks; it is not
+an exclusion rule.
+
+```{r}
+#| label: tbl-h05-prep-mder-diagnostics
+#| tbl-cap: "Current MDER samples, upper-tail screen, and bounded influence results."
+
+mder_current <- master_results |>
+  filter(
+    .data$run_id %in% c(primary_id, chest_id),
+    .data$metric_id == mder_metric_id
+  ) |>
+  group_by(.data$run_id) |>
+  summarise(
+    `Factor models` = n(),
+    Observations = first(.data$observations),
+    Participants = first(.data$participants),
+    `Participant-days` = first(.data$participant_days),
+    Sites = first(.data$sites),
+    `Minimum coefficient per LEBA SD` = min(.data$estimate_model_per_sd),
+    `Maximum coefficient per LEBA SD` = max(.data$estimate_model_per_sd),
+    .groups = "drop"
+  )
+mder_tail_current <- mder_upper_tail |>
+  filter(.data$run_id %in% c(primary_id, chest_id)) |>
+  select(
+    "run_id", "median", "maximum", "tukey_outer_fence", "outer_tail_days"
+  )
+mder_influence_current <- mder_influence |>
+  group_by(.data$run_id) |>
+  summarise(
+    `Influence refits` = n(),
+    `Maximum change in full-model SE` = max(
+      abs(.data$change_in_full_standard_errors)
+    ),
+    `Any sign reversal` = any(.data$sign_reversal),
+    `All sensitivity intervals include zero` = all(
+      .data$sensitivity_interval_contains_zero
+    ),
+    `All refits passed` = all(.data$refit_status == "PASS"),
+    .groups = "drop"
+  )
+gap_mder_current <- master_results |>
+  filter(
+    .data$run_id %in% c(gap_near_id, gap_chest_id),
+    .data$metric_id == mder_metric_id
+  ) |>
+  group_by(.data$run_id) |>
+  summarise(
+    `Factor models` = n(),
+    Observations = first(.data$observations),
+    Participants = first(.data$participants),
+    `Participant-days` = first(.data$participant_days),
+    Sites = first(.data$sites),
+    `Minimum coefficient per LEBA SD` = min(.data$estimate_model_per_sd),
+    `Maximum coefficient per LEBA SD` = max(.data$estimate_model_per_sd),
+    .groups = "drop"
+  )
+gap_mder_tail_current <- mder_upper_tail |>
+  filter(.data$run_id %in% c(gap_near_id, gap_chest_id)) |>
+  select(
+    "run_id", "median", "maximum", "tukey_outer_fence", "outer_tail_days"
+  )
+gap_mder_influence_current <- mder_gap_influence |>
+  group_by(.data$run_id) |>
+  summarise(
+    `Influence refits` = n(),
+    `Maximum change in full-model SE` = max(
+      abs(.data$change_in_full_standard_errors)
+    ),
+    `Any sign reversal` = any(.data$sign_reversal),
+    `All sensitivity intervals include zero` = all(
+      .data$sensitivity_interval_contains_zero
+    ),
+    `All refits passed` = all(.data$refit_status == "PASS"),
+    .groups = "drop"
+  )
+
+stopifnot(
+  nrow(mder_current) == 2L,
+  nrow(mder_upper_tail) == 8L,
+  nrow(mder_influence) == 44L,
+  all(mder_influence$refit_status == "PASS"),
+  sum(mder_influence$sensitivity_interval_contains_zero) == 40L,
+  all(
+    mder_influence$sensitivity_interval_contains_zero[
+      mder_influence$run_id == chest_id
+    ]
+  ),
+  nrow(gap_mder_current) == 2L,
+  nrow(mder_gap_influence) == 44L,
+  all(mder_gap_influence$refit_status == "PASS"),
+  sum(mder_gap_influence$sensitivity_interval_contains_zero) == 40L,
+  nrow(mder_gap_paired) == 4L,
+  all(mder_gap_paired$exact_sample_match),
+  all(mder_gap_paired$sign_concordant),
+  all(mder_gap_paired$component_intervals_overlap),
+  nrow(mder_reconciliation) == 20L,
+  all(mder_reconciliation$invariant_verified),
+  nrow(mder_gap_reconciliation) == 16L,
+  all(mder_gap_reconciliation$invariant_verified)
+)
+
+mder_current |>
+  left_join(mder_tail_current, by = "run_id", relationship = "one-to-one") |>
+  left_join(
+    mder_influence_current,
+    by = "run_id",
+    relationship = "one-to-one"
+  ) |>
+  mutate(
+    Placement = recode(
+      .data$run_id,
+      !!primary_id := "Primary near eye",
+      !!chest_id := "Complementary chest"
+    ),
+    `Any sign reversal` = if_else(.data$`Any sign reversal`, "Yes", "No"),
+    `All sensitivity intervals include zero` = if_else(
+      .data$`All sensitivity intervals include zero`, "Yes", "No"
+    ),
+    `All refits passed` = if_else(.data$`All refits passed`, "Yes", "No")
+  ) |>
+  select(
+    "Placement", "Factor models", "Observations", "Participants",
+    "Participant-days", "Sites", "median", "maximum", "outer_tail_days",
+    "Influence refits", "Maximum change in full-model SE",
+    "Any sign reversal", "All sensitivity intervals include zero",
+    "All refits passed"
+  ) |>
+  gt::gt(rowname_col = "Placement") |>
+  gt::cols_label(
+    median = "Median MDER",
+    maximum = "Maximum MDER",
+    outer_tail_days = "Days above outer fence"
+  ) |>
+  gt::fmt_integer(
+    columns = c(
+      `Factor models`, Observations, Participants, `Participant-days`, Sites,
+      outer_tail_days, `Influence refits`
+    )
+  ) |>
+  gt::fmt_number(
+    columns = c(median, maximum, `Maximum change in full-model SE`),
+    decimals = 3
+  ) |>
+  prep_gt(9)
+```
+
+```{r}
+#| label: tbl-h05-prep-gap-mder-diagnostics
+#| tbl-cap: "Gap-timing-unaware MDER samples, upper-tail screen, and bounded influence results."
+
+gap_mder_current |>
+  left_join(
+    gap_mder_tail_current,
+    by = "run_id",
+    relationship = "one-to-one"
+  ) |>
+  left_join(
+    gap_mder_influence_current,
+    by = "run_id",
+    relationship = "one-to-one"
+  ) |>
+  mutate(
+    Placement = recode(
+      .data$run_id,
+      !!gap_near_id := "Near eye",
+      !!gap_chest_id := "Chest"
+    ),
+    `Any sign reversal` = if_else(.data$`Any sign reversal`, "Yes", "No"),
+    `All sensitivity intervals include zero` = if_else(
+      .data$`All sensitivity intervals include zero`, "Yes", "No"
+    ),
+    `All refits passed` = if_else(.data$`All refits passed`, "Yes", "No")
+  ) |>
+  select(
+    "Placement", "Factor models", "Observations", "Participants",
+    "Participant-days", "Sites", "median", "maximum", "outer_tail_days",
+    "Influence refits", "Maximum change in full-model SE",
+    "Any sign reversal", "All sensitivity intervals include zero",
+    "All refits passed"
+  ) |>
+  gt::gt(rowname_col = "Placement") |>
+  gt::cols_label(
+    median = "Median MDER",
+    maximum = "Maximum MDER",
+    outer_tail_days = "Days above outer fence"
+  ) |>
+  gt::fmt_integer(
+    columns = c(
+      `Factor models`, Observations, Participants, `Participant-days`, Sites,
+      outer_tail_days, `Influence refits`
+    )
+  ) |>
+  gt::fmt_number(
+    columns = c(median, maximum, `Maximum change in full-model SE`),
+    decimals = 3
+  ) |>
+  prep_gt(9)
+```
+
+The current sample contains 702 near-eye participant-days from 137
+participants at nine sites and 732 chest participant-days from 152
+participants at eight sites. One near-eye and three chest days exceeded the
+outer fence. All 44 day- and participant-deletion refits passed, and every
+chest sensitivity interval contained zero. The four near-eye F5 sensitivity
+intervals remained below zero, consistent with its unadjusted primary
+interval, but that association is not retained after complete-family FDR
+adjustment. The small chest coefficients were more upper-tail-sensitive than
+the near-eye coefficients, including one sign reversal for a coefficient
+already close to zero. No observation was removed from the primary analysis.
+
+The gap-timing-unaware samples contain 687 near-eye participant-days
+from 137 participants and 723 chest participant-days from 152 participants.
+The paired/common comparison contains 478 days from 107 participants at eight
+sites, with all four directions concordant and all component intervals
+overlapping. One near-eye and three chest days exceeded the outer fence. All
+44 gap deletion refits passed and 40 intervals contained zero. The near-eye
+coefficients changed by at most 0.233 full-model standard errors without a
+sign reversal; the small chest F2 coefficient reversed direction in two
+deletions, and every chest interval contained zero. The gap-timing-unaware
+near-eye family retained zero of 68 associations after FDR adjustment.
+
+The [upper-tail summary](../../../artifacts/08_diagnostics/H05/H05_mder_metric010_upper_tail_summary.csv)
+and [influence-refit record](../../../artifacts/08_diagnostics/H05/H05_mder_metric010_influence_refits.csv)
+retain the exact primary inputs, samples, and influence results. The
+gap-timing-unaware analysis has a separate
+[influence record](../../../artifacts/08_diagnostics/H05/H05_mder_metric010_gap_influence_refits.csv)
+and [paired/common comparison](../../../artifacts/09_tables/H05/H05_mder_metric010_gap_paired_placement_comparison.csv).
+
+## 7. Technical provenance
+
+### What is calculated when this page opens
+
+```{r}
+#| label: tbl-h05-prep-boundary
+#| tbl-cap: "Calculations performed when this page is rendered."
+
+tibble::tribble(
+  ~Category, ~Calculated_on_render, ~Explanation,
+  "File identity and schema", "Yes", "Checks recorded SHA-256 identities, required columns, unique keys, and archive dimensions.",
+  "Descriptive support", "Yes", "Summarises stored questionnaire-score counts, metric-specific samples, and site contributions.",
+  "Model construction and estimation", "No", "Reads the formula registry, model manifest, fitted-model archive, and stored estimates.",
+  "Model checks and sensitivities", "No", "Reads the recorded model-check and sensitivity outputs; neither is repeated.",
+  "Reader figures", "Display only", "Draws three descriptive figures from the linked, exact source-data CSV files."
+) |>
+  gt::gt() |>
+  gt::cols_label(
+    Calculated_on_render = "Calculated when rendered"
+  ) |>
+  gt::cols_width(
+    Category ~ gt::pct(24),
+    Calculated_on_render ~ gt::pct(18),
+    Explanation ~ gt::pct(58)
+  ) |>
+  prep_gt()
+```
+
+### Bounded implementation history
+
+The current numerical-zero outputs were produced by a bounded update that
+preserved the fitted samples and every non-L10 scientific value. The table
+records that implementation history separately from the scientific rule and
+consequence above.
+
+```{r}
+#| label: tbl-h05-prep-l10-reseal
+#| tbl-cap: "Bounded primary L10 reseal and exact fitted-frame preservation."
+
+stopifnot(
+  nrow(l10_frame_audit) == 4L,
+  all(l10_frame_audit$non_value_fields_identical),
+  all(l10_frame_audit$changed_keys_verified),
+  nrow(l10_input_cells) == 16L,
+  nrow(distinct(
+    l10_input_cells,
+    .data$position,
+    .data$participant_key,
+    .data$local_date
+  )) == 8L,
+  all(l10_input_cells$new_value_lx == 0),
+  all(l10_input_cells$current_value_lx == 0),
+  nrow(l10_result_change) == 16L,
+  max(abs(l10_result_change$estimate_change_per_point)) < 4e-12,
+  !any(l10_result_change$bh_retained_after, na.rm = TRUE),
+  nrow(l10_bh_audit) == 204L,
+  sum(l10_bh_audit$raw_p_changed) == 7L,
+  sum(l10_bh_audit$adjusted_p_changed) == 2L,
+  sum(l10_bh_audit$family_rank_changed) == 0L,
+  nrow(l10_reconciliation) == 22L,
+  all(l10_reconciliation$invariant_verified)
+)
+
+l10_frame_audit |>
+  transmute(
+    Placement = recode(
+      .data$placement,
+      glasses = "Near eye",
+      chest = "Chest"
+    ),
+    Sample = recode(
+      .data$sample_scenario,
+      all_available = "All available",
+      paired_common_sample = "Paired/common"
+    ),
+    `Model rows` = .data$rows,
+    Participants = .data$participants,
+    Sites = .data$sites,
+    `Changed L10 days` = .data$changed_l10_cells,
+    `Other frame fields` = if_else(
+      .data$non_value_fields_identical,
+      "Identical",
+      "Changed"
+    )
+  ) |>
+  gt::gt(groupname_col = "Placement") |>
+  gt::fmt_integer(
+    columns = c(`Model rows`, Participants, Sites, `Changed L10 days`)
+  ) |>
+  gt::tab_source_note(
+    paste0(
+      "Sixteen factor–model cells were refreshed. Seven inferential raw ",
+      "p-values and two FDR-adjusted p-values changed below three-decimal ",
+      "display precision; no family rank changed, and every 68-test ",
+      "family retained zero associations."
+    )
+  ) |>
+  prep_gt(12)
+```
+
+The bounded updater replaced eight primary inferential L10 bundles, rebuilt
+eight registered random-site sensitivities and 36 primary L10
+leave-one-site-out refits, and refreshed the matched primary placement
+comparison. It ran zero gap-timing-unaware L10 and zero non-L10 refits. All 22
+frozen-scope reconciliation checks pass; the exact result-change,
+complete-family, input-cell, and preservation records are linked through the
+[L10 artifact-update manifest](../../../artifacts/12_manifests/H05/H05_metric011_artifact_update_manifest.csv).
+
+The bounded MDER updates likewise preserved all non-MDER raw tests and fitted
+objects. The primary [MDER reconciliation](../../../artifacts/12_manifests/H05/H05_metric010_reconciliation.csv)
+contains 20 preservation checks. The
+[gap MDER reconciliation](../../../artifacts/12_manifests/H05/H05_metric010_gap_reseal_reconciliation.csv)
+contains 16 checks and records 27 non-MDER FDR-adjusted *p*-value changes and
+26 rank changes caused solely by replacing the four MDER slots in the
+gap-timing-unaware family; every non-MDER raw test and fitted object is
+unchanged.
+
+### Code map and execution order
+
+#### Function modules
+
+```{r}
+#| label: tbl-h05-prep-module-map
+#| tbl-cap: "Function modules used by the H05 executable analysis."
+
+tibble::tribble(
+  ~Module, ~Reads_or_defines, ~Contribution, ~Why_separate,
+  "scripts/pipeline/paths_io.R", "Artifact-writing and SHA-256 helpers", "Writes typed artifacts with hashes, byte sizes, producers, and R version.", "Keeps file identity rules common across analyses.",
+  "scripts/pipeline/multiplicity.R", "Complete-family adjustment helpers", "Applies the 68-value Benjamini–Hochberg vectors and verifies family size.", "Separates multiplicity from individual model code.",
+  "scripts/hypotheses/H01/h01_contract.R", "Shared 17-metric definitions", "Supplies metric transforms, admissible supports, display names, and units.", "Keeps the H05 responses identical to the verified H01 metric definitions.",
+  "scripts/hypotheses/H01/h01_modeling.R", "Shared response and diagnostic functions", "Transforms responses, extracts practical-scale effects, and supplies common diagnostics.", "Prevents H05-specific implementations from drifting from H01.",
+  "scripts/hypotheses/H05/h05_contract.R", "Factors, runs, formulas, families, pinned inputs", "Defines the exact H05 estimands and analysis registry.", "Provides one auditable specification before any model is run.",
+  "scripts/hypotheses/H05/h05_modeling.R", "Frame construction, engines, summaries, diagnostics", "Implements the H05 models and sensitivity functions against the contract.", "Keeps reusable scientific operations outside the executable driver.",
+  "scripts/hypotheses/H05/refresh_h05_mder_metric010.R", "Approved current MDER inputs plus frozen H05 artifacts", "Refits only the 32 MDER cells, refreshes the three affected FDR-adjusted vectors, and runs current upper-tail and influence checks.", "Stops if any non-MDER scientific content changes.",
+  "scripts/hypotheses/H05/finalize_h05_metric010_reconciliation.R", "Installed H05 outputs and pre-amendment identities", "Finalizes the 20-row non-MDER preservation and complete-family reconciliation.", "Separates structural checksum closure from scientific fitting.",
+  "scripts/hypotheses/H05/reseal_h05_gap_mder_metric010.R", "Repaired gap MDER inputs plus accepted H05 outputs", "Refits only 16 gap MDER cells, reconstructs matched placement and influence records, and updates gap-timing-unaware-family FDR derivatives.", "Freezes every primary fit and every non-MDER fit, with a 16-check reconciliation.",
+  "scripts/hypotheses/H05/reseal_h05_l10_metric011.R", "Approved primary L10 inputs plus frozen H05 artifacts", "Refits only the 16 primary L10 cells, their model checks and bounded sensitivities, and mathematically dependent FDR fields.", "Freezes all gap L10, non-L10, and accepted MDER scientific content with a 22-check reconciliation.",
+  "scripts/hypotheses/H05/build_h05_metric011_displays.R", "Sealed L10-updated results and paired comparison", "Refreshes only the implementation-audit figures and source data that contain primary L10 values.", "Keeps display construction separate from scientific fitting."
+) |>
+  gt::gt() |>
+  gt::cols_label(
+    Reads_or_defines = "Reads or defines",
+    Why_separate = "Why separate"
+  ) |>
+  gt::cols_width(
+    Module ~ gt::pct(25),
+    Reads_or_defines ~ gt::pct(24),
+    Contribution ~ gt::pct(29),
+    Why_separate ~ gt::pct(22)
+  ) |>
+  prep_gt(11)
+```
+
+#### Executable entry points
+
+```{r}
+#| label: tbl-h05-prep-script-map
+#| tbl-cap: "H05 scripts and documents in analytical and reporting order."
+
+tibble::tribble(
+  ~Order, ~Entry_point, ~Reads, ~Produces, ~Runs_when_page_renders,
+  1L, "run_h05_stage2.R", "Verified metric datasets, LEBA scores, shared H01 functions, H05 contract", "Initial 136 frames, 204 inferential bundles, 544 core result cells, diagnostics, influence and sensitivity records", "No",
+  2L, "refresh_h05_mder_metric010.R", "Approved current MDER inputs and frozen H05 outputs", "Current MDER-only frames, fits, model checks, sensitivities, and affected complete-family FDR values", "No",
+  3L, "finalize_h05_metric010_reconciliation.R", "Installed current outputs and stored pre-amendment identities", "Final non-MDER preservation and FDR-vector reconciliation", "No",
+  4L, "reseal_h05_gap_mder_metric010.R", "Repaired gap MDER inputs and accepted H05 outputs", "Four repaired gap frames, four gap-timing-unaware-family bundles, 16 core cells, 44 influence refits, exact matched comparison, and FDR derivatives", "No",
+  5L, "reseal_h05_l10_metric011.R", "Approved numerical-zero-normalized primary L10 inputs and frozen H05 outputs", "Four primary L10 frames, 16 core cells, eight inferential bundles, model checks, bounded sensitivities, matched comparisons, and FDR derivatives", "No",
+  6L, "build_h05_metric011_displays.R", "Sealed primary L10 results and exact paired results", "L10-dependent implementation-audit display source and figures", "No",
+  7L, "build_h05_reader_artifacts.R", "Frozen H05 tables and model-check plot data", "Reader-facing result tables, seven figures, and exact paired figure source data", "No",
+  8L, "notebooks/hypotheses/H05.qmd", "Stored scientific outputs and reader assets", "The standalone H05 results report", "No",
+  9L, "build_h05_preparation_artifacts.R", "Frozen H05 frames, registries, samples, and LEBA scores", "Four descriptive source-data CSV files for this page", "No; run before rendering",
+  10L, "H05_analysis_preparation.qmd", "Stored H05 artifacts and descriptive source data", "This scientific preparation and provenance companion", "Yes",
+  11L, "build_h05_preparation_report_manifest.R", "Final source, website copy, HTML, scripts, scientific outputs, figures, and source data", "Non-circular preparation-report manifest", "No; run after rendering"
+) |>
+  gt::gt(rowname_col = "Order") |>
+  gt::cols_label(
+    Entry_point = "Entry point",
+    Runs_when_page_renders = "Runs when page renders"
+  ) |>
+  gt::cols_width(
+    Entry_point ~ gt::pct(23),
+    Reads ~ gt::pct(27),
+    Produces ~ gt::pct(36),
+    Runs_when_page_renders ~ gt::pct(14)
+  ) |>
+  prep_gt(10)
+```
+
+The scientific model run was executed from the repository root in a clean R
+4.6.1 session using the project library. The command is shown for
+reproducibility; this page does not execute it.
+
+```bash
+Rscript --vanilla scripts/hypotheses/H05/run_h05_stage2.R
+Rscript --vanilla scripts/hypotheses/H05/refresh_h05_mder_metric010.R
+Rscript --vanilla scripts/hypotheses/H05/finalize_h05_metric010_reconciliation.R
+Rscript --vanilla scripts/hypotheses/H05/reseal_h05_gap_mder_metric010.R
+Rscript --vanilla scripts/hypotheses/H05/reseal_h05_l10_metric011.R
+Rscript --vanilla scripts/hypotheses/H05/build_h05_metric011_displays.R
+Rscript --vanilla scripts/hypotheses/H05/build_h05_reader_artifacts.R
+quarto render notebooks/hypotheses/H05.qmd --profile nathealth
+Rscript --vanilla scripts/hypotheses/H05/build_h05_preparation_artifacts.R
+quarto render audit/hypotheses/H05/H05_analysis_preparation.qmd --profile nathealth
+```
+
+### Output and claim provenance
+
+The model-frame index records the exact sample and SHA-256 frame identity for
+each run, metric, and factor. The model manifest connects each of those cells
+to its full, reduced, and final model object. Result, diagnostic, and
+sensitivity CSV files then connect the stored fits to the reader tables and
+figures. Figure source-data files contain the exact values used by their plot
+layers, so a reader does not need to digitise an image.
+
+```{r}
+#| label: tbl-h05-prep-output-identities
+#| tbl-cap: "Principal stored H05 outputs and their current identities."
+
+output_registry <- tibble::tribble(
+  ~Output, ~Path, ~Producer,
+  "Model-frame archive", "artifacts/06_model_data/H05/H05_model_frames.rds", "reseal_h05_l10_metric011.R",
+  "Model-frame index", "artifacts/06_model_data/H05/H05_model_frame_index.csv", "reseal_h05_l10_metric011.R",
+  "Inferential model archive", "artifacts/07_models/H05/H05_inferential_model_objects.rds", "reseal_h05_l10_metric011.R",
+  "Model manifest", "artifacts/07_models/H05/H05_model_manifest.csv", "reseal_h05_l10_metric011.R",
+  "Master results", "artifacts/09_tables/H05/H05_model_results_master.csv", "reseal_h05_l10_metric011.R",
+  "Model diagnostics", "artifacts/08_diagnostics/H05/H05_model_diagnostics.csv", "reseal_h05_l10_metric011.R",
+  "Current MDER upper-tail summary", "artifacts/08_diagnostics/H05/H05_mder_metric010_upper_tail_summary.csv", "reseal_h05_gap_mder_metric010.R",
+  "Current MDER influence refits", "artifacts/08_diagnostics/H05/H05_mder_metric010_influence_refits.csv", "refresh_h05_mder_metric010.R",
+  "Current MDER reconciliation", "artifacts/12_manifests/H05/H05_metric010_reconciliation.csv", "finalize_h05_metric010_reconciliation.R",
+  "Gap MDER influence refits", "artifacts/08_diagnostics/H05/H05_mder_metric010_gap_influence_refits.csv", "reseal_h05_gap_mder_metric010.R",
+  "Gap MDER paired/common comparison", "artifacts/09_tables/H05/H05_mder_metric010_gap_paired_placement_comparison.csv", "reseal_h05_gap_mder_metric010.R",
+  "Gap MDER reseal reconciliation", "artifacts/12_manifests/H05/H05_metric010_gap_reseal_reconciliation.csv", "reseal_h05_gap_mder_metric010.R",
+  "L10 primary-frame audit", "artifacts/12_manifests/H05/H05_metric011_primary_l10_frame_audit.csv", "reseal_h05_l10_metric011.R",
+  "L10 complete-family audit", "artifacts/12_manifests/H05/H05_metric011_bh_change_audit.csv", "reseal_h05_l10_metric011.R",
+  "L10 preservation reconciliation", "artifacts/12_manifests/H05/H05_metric011_reconciliation.csv", "reseal_h05_l10_metric011.R",
+  "L10 artifact-update manifest", "artifacts/12_manifests/H05/H05_metric011_artifact_update_manifest.csv", "reseal_h05_l10_metric011.R",
+  "Random-site sensitivity", "artifacts/09_tables/H05/H05_random_site_sensitivity.csv", "reseal_h05_l10_metric011.R",
+  "Leave-one-site-out summary", "artifacts/09_tables/H05/H05_leave_one_site_out_summary.csv", "reseal_h05_l10_metric011.R",
+  "Paired placement comparison", "artifacts/09_tables/H05/H05_paired_placement_comparison.csv", "reseal_h05_l10_metric011.R",
+  "Paired placement source", "artifacts/11_source_data/H05/H05_paired_effect_comparison_data.csv", "build_h05_reader_artifacts.R",
+  "Reader report source", "notebooks/hypotheses/H05.qmd", "Quarto source authoring"
+) |>
+  rowwise() |>
+  mutate(
+    `SHA-256 prefix` = substr(
+      artifact_sha256(file.path(root, .data$Path)),
+      1L,
+      16L
+    ),
+    Bytes = file.info(file.path(root, .data$Path))$size
+  ) |>
+  ungroup()
+
+output_registry |>
+  gt::gt() |>
+  gt::fmt_integer(columns = Bytes, use_seps = TRUE) |>
+  gt::cols_width(
+    Output ~ gt::pct(20),
+    Path ~ gt::pct(46),
+    Producer ~ gt::pct(18),
+    `SHA-256 prefix` ~ gt::pct(12),
+    Bytes ~ gt::pct(8)
+  ) |>
+  prep_gt(10)
+```
+
+The H05 preparation-report manifest is created after the final website render.
+It records complete identities for the authoring source, the byte-identical
+website QMD copy, rendered HTML, page assets, H05 scripts and tests, scientific
+outputs, source data, shared configuration snapshot, and R environment. The
+manifest excludes itself and the handoff that quotes its identity, preventing
+a circular checksum chain.
+
+### How to examine or reproduce H05
+
+A reader can follow the analysis in five passes:
+
+1. inspect `H05_input_audit.csv`, `h05_contract.R`, and the factor, metric,
+   formula, and run registries to verify the frozen inputs and specifications;
+2. compare the exact samples above with `H05_model_frame_index.csv` and the
+   136 frames in `H05_model_frames.rds`;
+3. follow `run_h05_stage2.R` through `h05_modeling.R`, then the bounded MDER
+   and L10 reseal scripts, to connect each frame to its current model object,
+   coefficient, interval, likelihood-ratio test, diagnostic, and sensitivity
+   record;
+4. inspect the complete 68-value family audit before interpreting any
+   individual association; and
+5. read the [H05 results report](../../../notebooks/hypotheses/H05.qmd)
+   alongside its tables, figures, and paired source data.
+
+The most important boundary is that the preparation record documents a frozen
+analysis; it does not create an alternate result. If an input, metric rule,
+response model, or estimand changes, the affected scientific pipeline must be
+rerun before this page is refreshed.
+
+### Environment
+
+```{r}
+#| label: tbl-h05-prep-environment
+#| tbl-cap: "Consequential R environment recorded for H05 analysis and reporting."
+
+package_names <- c(
+  "dplyr", "readr", "digest", "lme4", "glmmTMB", "DHARMa", "ggplot2", "gt"
+)
+package_versions <- vapply(
+  package_names,
+  function(package) as.character(utils::packageVersion(package)),
+  character(1)
+)
+
+bind_rows(
+  tibble::tibble(
+    Component = "R",
+    Version = as.character(getRversion()),
+    Role = "Authoritative scientific computation and Quarto rendering"
+  ),
+  tibble::tibble(
+    Component = package_names,
+    Version = unname(package_versions),
+    Role = c(
+      "Data manipulation",
+      "Typed CSV input",
+      "SHA-256 and model-frame identities",
+      "Gaussian mixed models",
+      "Tweedie mixed models",
+      "Simulation-based residual diagnostics",
+      "Figures",
+      "Reader-facing tables"
+    )
+  )
+) |>
+  gt::gt(rowname_col = "Component") |>
+  gt::cols_width(
+    Version ~ gt::pct(18),
+    Role ~ gt::pct(62)
+  ) |>
+  gt::tab_source_note(
+    "The project renv.lock records the full dependency set; artifact manifests record R 4.6.1 with each output identity."
+  ) |>
+  prep_gt()
+```
+
+```{r}
+#| label: session-info-h05-preparation
+#| include: false
+
+sessionInfo()
+```

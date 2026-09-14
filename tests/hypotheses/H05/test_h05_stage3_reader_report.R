@@ -60,6 +60,72 @@ gap_timing_unaware_path <- file.path(
   root,
   "artifacts/11_source_data/H05/H05_gap_timing_unaware_dataset.csv"
 )
+mder_upper_tail_path <- file.path(
+  root,
+  "artifacts/08_diagnostics/H05/H05_mder_metric010_upper_tail_summary.csv"
+)
+mder_influence_path <- file.path(
+  root,
+  "artifacts/08_diagnostics/H05/H05_mder_metric010_influence_refits.csv"
+)
+mder_gap_influence_path <- file.path(
+  root,
+  paste0(
+    "artifacts/08_diagnostics/H05/",
+    "H05_mder_metric010_gap_influence_refits.csv"
+  )
+)
+mder_gap_paired_path <- file.path(
+  root,
+  paste0(
+    "artifacts/09_tables/H05/",
+    "H05_mder_metric010_gap_paired_placement_comparison.csv"
+  )
+)
+mder_reconciliation_path <- file.path(
+  root,
+  "artifacts/12_manifests/H05/H05_metric010_reconciliation.csv"
+)
+mder_gap_reconciliation_path <- file.path(
+  root,
+  paste0(
+    "artifacts/12_manifests/H05/",
+    "H05_metric010_gap_reseal_reconciliation.csv"
+  )
+)
+l10_frame_audit_path <- file.path(
+  root,
+  paste0(
+    "artifacts/12_manifests/H05/",
+    "H05_metric011_primary_l10_frame_audit.csv"
+  )
+)
+l10_bh_audit_path <- file.path(
+  root,
+  "artifacts/12_manifests/H05/H05_metric011_bh_change_audit.csv"
+)
+l10_result_change_path <- file.path(
+  root,
+  paste0(
+    "artifacts/12_manifests/H05/",
+    "H05_metric011_l10_result_change_audit.csv"
+  )
+)
+l10_input_cells_path <- file.path(
+  root,
+  "artifacts/12_manifests/H05/H05_metric011_input_cell_audit.csv"
+)
+l10_reconciliation_path <- file.path(
+  root,
+  "artifacts/12_manifests/H05/H05_metric011_reconciliation.csv"
+)
+selected_diagnostics_path <- file.path(
+  root,
+  paste0(
+    "artifacts/11_source_data/H05/",
+    "H05_reader_near_eye_selected_diagnostics.csv"
+  )
+)
 
 reader_figures <- file.path(
   root,
@@ -100,6 +166,18 @@ stopifnot(all(file.exists(c(
   stage3_handoff_path,
   paired_display_path,
   gap_timing_unaware_path,
+  mder_upper_tail_path,
+  mder_influence_path,
+  mder_gap_influence_path,
+  mder_gap_paired_path,
+  mder_reconciliation_path,
+  mder_gap_reconciliation_path,
+  l10_frame_audit_path,
+  l10_bh_audit_path,
+  l10_result_change_path,
+  l10_input_cells_path,
+  l10_reconciliation_path,
+  selected_diagnostics_path,
   reader_figures,
   reader_sources
 ))))
@@ -125,11 +203,17 @@ leave_one_site_out <- readr::read_csv(
   show_col_types = FALSE
 )
 paired <- readr::read_csv(
-  file.path(root, "artifacts/09_tables/H05/H05_paired_placement_comparison.csv"),
+  file.path(
+    root,
+    "artifacts/09_tables/H05/H05_paired_placement_comparison.csv"
+  ),
   show_col_types = FALSE
 )
 preparation <- readr::read_csv(
-  file.path(root, "artifacts/09_tables/H05/H05_manuscript_prepared_comparison.csv"),
+  file.path(
+    root,
+    "artifacts/09_tables/H05/H05_manuscript_prepared_comparison.csv"
+  ),
   show_col_types = FALSE
 )
 exact_period <- readr::read_csv(
@@ -144,6 +228,54 @@ exact_period <- readr::read_csv(
 )
 formula_registry <- readr::read_csv(
   file.path(root, "artifacts/06_model_data/H05/H05_formula_registry.csv"),
+  show_col_types = FALSE
+)
+mder_upper_tail <- readr::read_csv(
+  mder_upper_tail_path,
+  show_col_types = FALSE
+)
+mder_influence <- readr::read_csv(
+  mder_influence_path,
+  show_col_types = FALSE
+)
+mder_gap_influence <- readr::read_csv(
+  mder_gap_influence_path,
+  show_col_types = FALSE
+)
+mder_gap_paired <- readr::read_csv(
+  mder_gap_paired_path,
+  show_col_types = FALSE
+)
+mder_reconciliation <- readr::read_csv(
+  mder_reconciliation_path,
+  show_col_types = FALSE
+)
+mder_gap_reconciliation <- readr::read_csv(
+  mder_gap_reconciliation_path,
+  show_col_types = FALSE
+)
+l10_frame_audit <- readr::read_csv(
+  l10_frame_audit_path,
+  show_col_types = FALSE
+)
+l10_bh_audit <- readr::read_csv(
+  l10_bh_audit_path,
+  show_col_types = FALSE
+)
+l10_result_change <- readr::read_csv(
+  l10_result_change_path,
+  show_col_types = FALSE
+)
+l10_input_cells <- readr::read_csv(
+  l10_input_cells_path,
+  show_col_types = FALSE
+)
+l10_reconciliation <- readr::read_csv(
+  l10_reconciliation_path,
+  show_col_types = FALSE
+)
+selected_diagnostics <- readr::read_csv(
+  selected_diagnostics_path,
   show_col_types = FALSE
 )
 
@@ -161,21 +293,25 @@ stopifnot(
   all(
     near$reader_inference_status[
       near$metric_id == "duration_below_1_sleep_environment"
-    ] == "unfit_for_inference"
+    ] ==
+      "unfit_for_inference"
   ),
   all(
     chest$reader_inference_status[
       chest$metric_id == "duration_below_1_sleep_environment"
-    ] == "unfit_for_inference"
+    ] ==
+      "unfit_for_inference"
   ),
   sum(near$model_adequacy == "acceptable") == 19L,
   sum(
     near$model_adequacy == "acceptable_with_specified_limitations"
-  ) == 49L,
+  ) ==
+    49L,
   sum(chest$model_adequacy == "acceptable") == 14L,
   sum(
     chest$model_adequacy == "acceptable_with_specified_limitations"
-  ) == 54L,
+  ) ==
+    54L,
   !any(near$model_adequacy == "not_acceptable"),
   !any(chest$model_adequacy == "not_acceptable")
 )
@@ -203,17 +339,15 @@ stopifnot(
       paired_display$analysis_unit__chest
   ),
   all(
-    paired_display$observations__near_eye ==
-      paired_display$observations__chest
+    paired_display$observations__near_eye == paired_display$observations__chest
   ),
   all(
-    paired_display$participants__near_eye ==
-      paired_display$participants__chest
+    paired_display$participants__near_eye == paired_display$participants__chest
   ),
   all(paired_display$sites__near_eye == 8L),
-  min(paired_display$participants__near_eye) == 110L,
+  min(paired_display$participants__near_eye) == 107L,
   max(paired_display$participants__near_eye) == 112L,
-  min(paired_display$participant_days__near_eye, na.rm = TRUE) == 505L,
+  min(paired_display$participant_days__near_eye, na.rm = TRUE) == 489L,
   max(paired_display$participant_days__near_eye, na.rm = TRUE) == 643L
 )
 
@@ -278,12 +412,116 @@ stopifnot(
   ))
 )
 
+near_mder <- near |>
+  filter(.data$metric_id == "mder_mean_of_viable_ratios")
+chest_mder <- chest |>
+  filter(.data$metric_id == "mder_mean_of_viable_ratios")
+stopifnot(
+  nrow(near_mder) == 4L,
+  nrow(chest_mder) == 4L,
+  all(near_mder$observations == 702L),
+  all(near_mder$participants == 137L),
+  all(near_mder$participant_days == 702L),
+  all(near_mder$sites == 9L),
+  all(chest_mder$observations == 732L),
+  all(chest_mder$participants == 152L),
+  all(chest_mder$participant_days == 732L),
+  all(chest_mder$sites == 8L),
+  isTRUE(all.equal(
+    near_mder$estimate_model_per_sd[near_mder$factor_id == "leba_f2"],
+    0.0040602820470024403,
+    tolerance = 1e-12
+  )),
+  isTRUE(all.equal(
+    near_mder$p_adjusted[near_mder$factor_id == "leba_f5"],
+    0.16901794240238349,
+    tolerance = 1e-12
+  )),
+  all(near_mder$p_adjusted > 0.05),
+  all(chest_mder$p_adjusted > 0.05),
+  nrow(mder_upper_tail) == 8L,
+  nrow(mder_influence) == 44L,
+  all(mder_influence$refit_status == "PASS"),
+  sum(mder_influence$sensitivity_interval_contains_zero) == 40L,
+  all(
+    mder_influence$sensitivity_interval_contains_zero[
+      mder_influence$run_id == "main__chest__all_available"
+    ]
+  ),
+  all(
+    mder_upper_tail$observations[
+      mder_upper_tail$run_id ==
+        "manuscript_prepared_data__glasses__all_available"
+    ] ==
+      687L
+  ),
+  all(
+    mder_upper_tail$participants[
+      mder_upper_tail$run_id ==
+        "manuscript_prepared_data__glasses__all_available"
+    ] ==
+      137L
+  ),
+  all(
+    mder_upper_tail$observations[
+      mder_upper_tail$run_id == "manuscript_prepared_data__chest__all_available"
+    ] ==
+      723L
+  ),
+  all(
+    mder_upper_tail$participants[
+      mder_upper_tail$run_id == "manuscript_prepared_data__chest__all_available"
+    ] ==
+      152L
+  ),
+  nrow(mder_gap_influence) == 44L,
+  all(mder_gap_influence$refit_status == "PASS"),
+  sum(mder_gap_influence$sensitivity_interval_contains_zero) == 40L,
+  nrow(mder_gap_paired) == 4L,
+  all(mder_gap_paired$exact_sample_match),
+  all(mder_gap_paired$participant_days__glasses == 478L),
+  all(mder_gap_paired$participants__glasses == 107L),
+  all(mder_gap_paired$sign_concordant),
+  all(mder_gap_paired$component_intervals_overlap),
+  nrow(mder_reconciliation) == 20L,
+  all(mder_reconciliation$invariant_verified),
+  nrow(mder_gap_reconciliation) == 16L,
+  all(mder_gap_reconciliation$invariant_verified),
+  nrow(l10_frame_audit) == 4L,
+  all(l10_frame_audit$non_value_fields_identical),
+  all(l10_frame_audit$changed_keys_verified),
+  nrow(l10_input_cells) == 16L,
+  nrow(dplyr::distinct(
+    l10_input_cells,
+    .data$position,
+    .data$participant_key,
+    .data$local_date
+  )) ==
+    8L,
+  sum(l10_input_cells$position == "glasses") == 6L,
+  sum(l10_input_cells$position == "chest") == 10L,
+  all(l10_input_cells$new_value_lx == 0),
+  all(l10_input_cells$current_value_lx == 0),
+  nrow(l10_result_change) == 16L,
+  max(abs(l10_result_change$estimate_change_per_point)) < 4e-12,
+  !any(l10_result_change$bh_retained_after, na.rm = TRUE),
+  nrow(l10_bh_audit) == 204L,
+  sum(l10_bh_audit$raw_p_changed) == 7L,
+  sum(l10_bh_audit$adjusted_p_changed) == 2L,
+  sum(l10_bh_audit$family_rank_changed) == 0L,
+  nrow(l10_reconciliation) == 22L,
+  all(l10_reconciliation$invariant_verified),
+  nrow(selected_diagnostics) == 2L * sum(c(816L, 761L, 702L, 778L)),
+  "mder_mean_of_viable_ratios" %in% selected_diagnostics$metric_id
+)
+
 sleep <- diagnostics |>
   filter(
-    .data$run_id %in% c(
-      "main__glasses__all_available",
-      "main__chest__all_available"
-    ),
+    .data$run_id %in%
+      c(
+        "main__glasses__all_available",
+        "main__chest__all_available"
+      ),
     .data$metric_id == "duration_below_1_sleep_environment"
   )
 stopifnot(
@@ -301,18 +539,20 @@ stopifnot(
   sum(
     random_site$placement == "glasses" &
       random_site$random_site_status == "DESCRIPTIVE_UNSTABLE"
-  ) == 7L,
+  ) ==
+    7L,
   sum(
     random_site$placement == "chest" &
       random_site$random_site_status == "DESCRIPTIVE_UNSTABLE"
-  ) == 8L,
+  ) ==
+    8L,
   sum(leave_one_site_out$successful_refits) == 612L,
-  sum(leave_one_site_out$stability_class == "stable") == 21L,
+  sum(leave_one_site_out$stability_class == "stable") == 20L,
   sum(
-    leave_one_site_out$stability_class ==
-      "direction_stable_magnitude_sensitive"
-  ) == 27L,
-  sum(leave_one_site_out$stability_class == "direction_unstable") == 20L,
+    leave_one_site_out$stability_class == "direction_stable_magnitude_sensitive"
+  ) ==
+    27L,
+  sum(leave_one_site_out$stability_class == "direction_unstable") == 21L,
   sum(paired$sign_concordant & paired$component_intervals_overlap) == 59L,
   sum(!paired$sign_concordant & paired$component_intervals_overlap) == 9L,
   sum(preparation$sign_concordant & preparation$component_intervals_overlap) ==
@@ -413,13 +653,19 @@ stopifnot(
   !inherits(question_section, "xml_missing"),
   length(answer_callouts) == 1L,
   !inherits(question_answer_callout, "xml_missing"),
-  grepl("None of the 68 primary near-eye associations", answer_text, fixed = TRUE),
+  grepl(
+    "None of the 68 primary near-eye associations",
+    answer_text,
+    fixed = TRUE
+  ),
   grepl("95% CI 1.084–1.405", answer_text, fixed = TRUE),
   grepl("95% CI 1.079–1.514", answer_text, fixed = TRUE),
   grepl("BH-adjusted p = 0.124", answer_text, fixed = TRUE),
   grepl("Complementary chest results", answer_text, fixed = TRUE),
   grepl("gap-timing-unaware dataset", answer_text, fixed = TRUE),
   grepl("Uncertainty remains", answer_text, fixed = TRUE),
+  grepl("chest MDER coefficients", answer_text, fixed = TRUE),
+  grepl("zero-crossing sensitivity intervals", answer_text, fixed = TRUE),
   grepl("unfit for H05 inference", answer_text, fixed = TRUE),
   !grepl("Results in brief", main_text, fixed = TRUE),
   grepl(
@@ -441,14 +687,53 @@ stopifnot(
   grepl("183–187", main_text, fixed = TRUE),
   grepl("241–244", main_text, fixed = TRUE),
   grepl("gap-timing-unaware dataset", main_text_lower, fixed = TRUE),
+  grepl("arithmetic mean of viable one-minute", main_text_lower, fixed = TRUE),
+  grepl(
+    "complete 1,440 local wall-clock minutes",
+    main_text_lower,
+    fixed = TRUE
+  ),
+  grepl("not a ratio of daily integrals", main_text_lower, fixed = TRUE),
+  grepl("702 participant-days from 137", main_text_lower, fixed = TRUE),
+  grepl("732 participant-days from 152", main_text_lower, fixed = TRUE),
+  grepl("687 near-eye days from 137", main_text_lower, fixed = TRUE),
+  grepl("723 chest days from 152", main_text_lower, fixed = TRUE),
+  grepl("478 days from 107 participants", main_text_lower, fixed = TRUE),
+  grepl("one near-eye day and three chest days", main_text_lower, fixed = TRUE),
+  grepl("all 44", main_text_lower, fixed = TRUE),
+  grepl("also had 44 successful", main_text_lower, fixed = TRUE),
+  grepl("upper-tail-sensitive", main_text_lower, fixed = TRUE),
   grepl("50%-per-hour", main_text_lower, fixed = TRUE),
   grepl("80%-per-day", main_text_lower, fixed = TRUE),
   grepl("time-sensitive primary metric dataset", main_text_lower, fixed = TRUE),
+  grepl("numerical-zero rule", main_text_lower, fixed = TRUE),
+  grepl(
+    "three primary near-eye and five primary chest",
+    main_text_lower,
+    fixed = TRUE
+  ),
+  grepl("approximately 4.16 × 10", main_text_lower, fixed = TRUE),
+  grepl("did not change a fitted sample", main_text_lower, fixed = TRUE),
+  grepl("two adjusted p-values changed", main_text_lower, fixed = TRUE),
+  grepl("no family rank changed", main_text_lower, fixed = TRUE),
+  grepl(
+    "already exact zeros and were not refitted",
+    main_text_lower,
+    fixed = TRUE
+  ),
   !grepl("manuscript-prepared", main_text_lower, fixed = TRUE),
   !grepl("alternative coverage, gap-handling", main_text_lower, fixed = TRUE),
-  grepl("specific to this h05 sleep-environment response", main_text_lower, fixed = TRUE),
+  grepl(
+    "specific to this h05 sleep-environment response",
+    main_text_lower,
+    fixed = TRUE
+  ),
   grepl("another hypothesis", main_text_lower, fixed = TRUE),
-  grepl("different response variable or model structure", main_text_lower, fixed = TRUE),
+  grepl(
+    "different response variable or model structure",
+    main_text_lower,
+    fixed = TRUE
+  ),
   grepl("unfit for inference", main_text_lower, fixed = TRUE),
   grepl("longest period", main_text_lower, fixed = TRUE),
   !grepl("\\bbout\\b", main_text_lower, perl = TRUE)
@@ -471,6 +756,10 @@ expected_tables <- c(
   "tbl-h05-near-results-b",
   "tbl-h05-near-adequacy-counts",
   "tbl-h05-near-limitations",
+  "tbl-h05-mder-primary-scenarios",
+  "tbl-h05-mder-gap-scenarios",
+  "tbl-h05-mder-upper-tail",
+  "tbl-h05-mder-influence",
   "tbl-h05-near-sleep-diagnostics",
   "tbl-h05-chest-samples",
   "tbl-h05-chest-results-a",
@@ -546,8 +835,8 @@ stopifnot(
   grepl("chest effects on the vertical axis", paired_alt, fixed = TRUE),
   grepl("identity line", paired_alt, fixed = TRUE),
   grepl("null lines", paired_alt, fixed = TRUE),
-  grepl("110 to 112 participants", paired_alt, fixed = TRUE),
-  grepl("505 to 643 matched participant-days", paired_alt, fixed = TRUE),
+  grepl("107 to 112 participants", paired_alt, fixed = TRUE),
+  grepl("489 to 643 matched participant-days", paired_alt, fixed = TRUE),
   grepl("does not establish equivalence", paired_alt, fixed = TRUE)
 )
 
@@ -557,13 +846,16 @@ result_table_ids <- c(
   "tbl-h05-chest-results-a",
   "tbl-h05-chest-results-b"
 )
-result_bold_text <- unlist(lapply(result_table_ids, function(id) {
-  nodes <- xml2::xml_find_all(
-    main,
-    paste0(".//*[@id='", id, "']//strong")
-  )
-  trimws(xml2::xml_text(nodes))
-}), use.names = FALSE)
+result_bold_text <- unlist(
+  lapply(result_table_ids, function(id) {
+    nodes <- xml2::xml_find_all(
+      main,
+      paste0(".//*[@id='", id, "']//strong")
+    )
+    trimws(xml2::xml_text(nodes))
+  }),
+  use.names = FALSE
+)
 stopifnot(!any(grepl("^(<0\\.001|[01]\\.[0-9]{3})$", result_bold_text)))
 
 expected_source_links <- c(
@@ -581,6 +873,11 @@ expected_source_links <- c(
   "H05_random_site_sensitivity.csv",
   "H05_leave_one_site_out_summary.csv",
   "H05_gap_timing_unaware_dataset.csv",
+  "H05_mder_metric010_upper_tail_summary.csv",
+  "H05_mder_metric010_influence_refits.csv",
+  "H05_mder_metric010_gap_influence_refits.csv",
+  "H05_mder_metric010_gap_paired_placement_comparison.csv",
+  "H05_metric010_gap_reseal_reconciliation.csv",
   "H05_exactly_identified_longest_bout_sensitivity.csv"
 )
 hrefs <- xml2::xml_attr(xml2::xml_find_all(main, ".//a[@href]"), "href")
@@ -616,6 +913,12 @@ expected_manifest_paths <- c(
   "audit/decisions/paired_placement_comparison_display.md",
   "audit/decisions/gap_timing_unaware_dataset_terminology.md",
   "audit/decisions/manuscript_prepared_data_sensitivity.md",
+  "audit/decisions/mder_mean_of_viable_ratios.md",
+  "audit/decisions/l10_numerical_zero_normalization.md",
+  paste0(
+    "audit/reconciliation/l10_METRIC-011/",
+    "METRIC-011_evidence_manifest.csv"
+  ),
   "audit/decisions/answer_in_brief_callout.md",
   "audit/decisions/figure_readability_and_layout.md",
   "audit/decisions/report011_physical_size_revalidation.md",
@@ -626,6 +929,44 @@ expected_manifest_paths <- c(
   "audit/ledgers/change_log.csv",
   "scripts/pipeline/p_value_display.R",
   "artifacts/12_manifests/H05/H05_stage2_artifacts.csv",
+  "artifacts/12_manifests/H05/H05_metric010_reconciliation.csv",
+  "artifacts/12_manifests/H05/H05_metric010_gap_reseal_reconciliation.csv",
+  paste0(
+    "artifacts/08_diagnostics/H05/",
+    "H05_mder_metric010_upper_tail_summary.csv"
+  ),
+  paste0(
+    "artifacts/08_diagnostics/H05/",
+    "H05_mder_metric010_influence_refits.csv"
+  ),
+  paste0(
+    "artifacts/08_diagnostics/H05/",
+    "H05_mder_metric010_gap_influence_refits.csv"
+  ),
+  paste0(
+    "artifacts/09_tables/H05/",
+    "H05_mder_metric010_gap_paired_placement_comparison.csv"
+  ),
+  "scripts/hypotheses/H05/refresh_h05_mder_metric010.R",
+  "scripts/hypotheses/H05/finalize_h05_metric010_reconciliation.R",
+  "scripts/hypotheses/H05/reseal_h05_gap_mder_metric010.R",
+  "scripts/hypotheses/H05/reseal_h05_l10_metric011.R",
+  "scripts/hypotheses/H05/build_h05_metric011_displays.R",
+  "artifacts/12_manifests/H05/H05_metric011_reconciliation.csv",
+  paste0(
+    "artifacts/12_manifests/H05/",
+    "H05_metric011_primary_l10_frame_audit.csv"
+  ),
+  "artifacts/12_manifests/H05/H05_metric011_bh_change_audit.csv",
+  paste0(
+    "artifacts/12_manifests/H05/",
+    "H05_metric011_l10_result_change_audit.csv"
+  ),
+  "artifacts/12_manifests/H05/H05_metric011_input_cell_audit.csv",
+  paste0(
+    "artifacts/12_manifests/H05/",
+    "H05_metric011_artifact_update_manifest.csv"
+  ),
   "artifacts/10_figures/H05/H05_reader_near_eye_effects.png",
   "artifacts/10_figures/H05/H05_reader_chest_effects.png",
   "artifacts/11_source_data/H05/H05_reader_near_eye_results.csv",
@@ -665,6 +1006,7 @@ stopifnot(
 
 message(
   "H05 reader-report tests passed: 68 near-eye and 68 chest models, ",
-  "zero multiplicity-retained associations, 26 bounded tables, seven ",
-  "accessible figures, and all material diagnostic qualifications"
+  "zero multiplicity-retained associations, 30 bounded tables, seven ",
+  "accessible figures, current MDER influence checks, and all material ",
+  "diagnostic qualifications"
 )

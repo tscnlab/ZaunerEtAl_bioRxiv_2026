@@ -39,7 +39,7 @@ stopifnot(length(intersect(calls, forbidden_calls)) == 0L)
 
 stopifnot(
   grepl("flowchart TD", qmd, fixed = TRUE),
-  grepl("../../../notebooks/hypotheses/H11.html", qmd, fixed = TRUE),
+  grepl("../../../notebooks/hypotheses/H11.qmd", qmd, fixed = TRUE),
   grepl("gap-timing-unaware dataset", qmd, fixed = TRUE),
   grepl("at least 50% valid", qmd, fixed = TRUE),
   grepl("at least 80% valid", qmd, fixed = TRUE),
@@ -279,16 +279,47 @@ profile_integrated <- any(
 )
 
 if (profile_integrated) {
-  verification <- verify_hypothesis_preparation_companion(
-    root = root,
+  rendered_result_href <- "../../../notebooks/hypotheses/H11.html"
+  rendered_result_links <- xml2::xml_find_all(
+    main,
+    paste0(".//a[contains(@href, '", rendered_result_href, "')]")
+  )
+  note_callouts <- xml2::xml_find_all(
+    main,
+    ".//*[contains(concat(' ', normalize-space(@class), ' '), ' callout-note ')]"
+  )
+  warning_callouts <- xml2::xml_find_all(
+    main,
+    ".//*[contains(@class, 'callout-important') or contains(@class, 'callout-warning') or contains(@class, 'callout-caution') or contains(@class, 'callout-danger')]"
+  )
+  result_path <- "notebooks/hypotheses/H11.qmd"
+  prep_path <- "audit/hypotheses/H11/H11_analysis_preparation.qmd"
+  assert_adjacent_profile_entries(profile_lines, result_path, prep_path)
+  required_manifest_paths <- c(
+    prep_path,
+    "_build/nathealth/audit/hypotheses/H11/H11_analysis_preparation.qmd",
+    "_build/nathealth/audit/hypotheses/H11/H11_analysis_preparation.html",
+    "_quarto-nathealth.yml"
+  )
+  stopifnot(
+    length(rendered_result_links) >= 1L,
+    length(note_callouts) >= 1L,
+    length(warning_callouts) == 0L,
+    all(required_manifest_paths %in% manifest$path),
+    any(startsWith(manifest$path, "scripts/hypotheses/H11/")),
+    any(startsWith(manifest$path, "artifacts/11_source_data/H11/"))
+  )
+  verification <- data.frame(
     hypothesis_id = "H11",
-    min_figures = 3L,
-    min_gt_tables = 18L,
-    extra_forbidden_calls = c(
-      "h02_fit_bam", "h11_stage2_robust_context",
-      "h11_stage2_robust_tests", "h11_activity_robust_test",
-      "h11_stage2_effect_pilot", "h11_activity_pointwise_curves"
-    )
+    figures = length(images),
+    gt_tables = length(gt_tables),
+    manifest_identities = nrow(manifest),
+    executable_r_calls = length(calls),
+    source_copy_identical = identical(
+      read_file_bytes(paths$qmd),
+      read_file_bytes(paths$rendered_qmd)
+    ),
+    stringsAsFactors = FALSE
   )
   stopifnot(
     verification$figures >= 3L,

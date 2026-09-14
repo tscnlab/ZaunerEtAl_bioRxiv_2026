@@ -1,0 +1,23 @@
+{
+  "timestamp": "2026-09-14T19:15:30.976Z",
+  "call_id": "call_IpFHxpry4A1NP9tUWlZP1Ojs",
+  "tool_arguments": {
+    "code": "let order017LivePW=await recoveryBrowser.tabs.get(order017Live.id); await order017LivePW.playwright.getByRole('link',{name:'Supporting material',exact:true}).click(); let liveMenuAX=await order017Live.getAXState({emit:false,disableDiffing:true}); nodeRepl.write(liveMenuAX.split('\\n').filter(s=>/Supporting material|Supplementary information|Sensitivity checks/.test(s))); await order017Live.getScreenshot();",
+    "title": "Verify the live Supporting material menu"
+  },
+  "text_blocks": [
+    "Wall time: 1.7837 seconds\nOutput:",
+    "[\n  '\\t\\t\\t\\t\\t6299 link (expanded) Description: Supporting material, Value: 127.0.0.1:64656/, ID: nav-menu-supporting-material, Secondary Actions: Collapse',\n  '\\t\\t\\t\\t\\t6300 content list Supporting material',\n  '\\t\\t\\t\\t\\t\\t6301 link Description: Supplementary information, Value: 127.0.0.1:64656/sup…',\n  '\\t\\t\\t6297 link Description: Supplementary information, Value: …',\n  'The focused UI element is 6299 link (expanded) Description: Supporting material, URL: 127.0.0.1:64656/, ID: nav-menu-supporting-material, Secondary Actions: Collapse'\n]"
+  ],
+  "images": [
+    {
+      "timestamp": "2026-09-14T19:15:30.976Z",
+      "call_id": "call_IpFHxpry4A1NP9tUWlZP1Ojs",
+      "within_call_index": 1,
+      "image_path": "evidence/live_qa/browser_captures/2026-09-14T191530976Z_call_IpFHxpry4A1NP9tUWlZP1Ojs_1.jpg",
+      "metadata_path": "evidence/live_qa/browser_captures/2026-09-14T191530976Z_call_IpFHxpry4A1NP9tUWlZP1Ojs.json",
+      "bytes": 147442,
+      "sha256": "5aa13c6ace37f188c35cdba86e1200d1453b8cecb64571ea0e523396c9a22575"
+    }
+  ]
+}

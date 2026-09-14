@@ -1,6 +1,6 @@
 ---
 title: "H11: Biological sex and daily personal light-exposure patterns"
-subtitle: "Sex-specific 24-hour melEDI curves at near-eye and chest level"
+subtitle: "Sex-specific 24-hour melanopic light-exposure curves at near-eye and chest level"
 format:
   html:
     toc: true
@@ -190,12 +190,13 @@ format_clock <- function(value) {
   substr(as.character(value), 1L, 5L)
 }
 
-h11_gt <- function(table, font_size = 13) {
+h11_gt <- function(table, font_size = 12) {
   table |>
     gt::opt_row_striping() |>
-    gt::sub_missing(missing_text = "—") |>
+    gt::sub_missing(missing_text = "Not available") |>
     gt::tab_options(
       table.width = gt::pct(100),
+      container.overflow.x = TRUE,
       table.font.size = gt::px(font_size),
       data_row.padding = gt::px(5),
       column_labels.font.weight = "600",
@@ -240,15 +241,11 @@ global_test_table <- function(data) {
       `Numerator df` = .data$fractional_numerator_df,
       `Denominator df` = .data$denominator_df,
       `Raw p` = format_p_vector(.data$p_raw, .data$p_raw < 0.05),
-      `Adjusted p` = format_p_vector(
+      `FDR-adjusted p` = format_p_vector(
         .data$p_adjusted,
         .data$p_adjusted < 0.05
       ),
-      Conclusion = if_else(
-        .data$p_adjusted < 0.05,
-        "Separately resolved",
-        "Not separately resolved"
-      )
+      Support = tools::toTitleCase(.data$support_status)
     ) |>
     gt::gt(rowname_col = "Placement") |>
     gt::fmt_number(
@@ -256,13 +253,91 @@ global_test_table <- function(data) {
       decimals = 3
     ) |>
     gt::fmt_number(columns = `Denominator df`, decimals = 0) |>
-    gt::fmt_markdown(columns = c(`Raw p`, `Adjusted p`)) |>
+    gt::fmt_markdown(columns = c(`Raw p`, `FDR-adjusted p`)) |>
     gt::tab_source_note(
       source_note = paste(
         "The complete 48-bin Female-minus-Male curve is tested jointly.",
-        "Raw p is bold at raw p < 0.050; adjusted p is bold independently",
-        "at adjusted p < 0.050. The global family contains one test per",
+        "Raw p is bold at raw p < 0.050; FDR-adjusted p is bold",
+        "independently at adjusted p < 0.050. The global family contains one test per",
         "placement and dataset, so its adjusted and raw values coincide."
+      )
+    ) |>
+    h11_gt(12)
+}
+
+principal_global_test_table <- function(test_data, sample_data) {
+  placement_order <- c("Near eye", "Chest")
+  accepted_tests <- test_data |>
+    filter(.data$dataset_label == "Primary dataset") |>
+    arrange(match(.data$placement_label, .env$placement_order))
+  accepted_samples <- sample_data |>
+    filter(.data$dataset_label == "Primary dataset") |>
+    arrange(match(.data$placement_label, .env$placement_order))
+
+  stopifnot(
+    nrow(accepted_tests) == 2L,
+    nrow(accepted_samples) == 2L,
+    identical(accepted_tests$placement_label, placement_order),
+    identical(accepted_samples$placement_label, placement_order),
+    identical(accepted_tests$run_id, accepted_samples$run_id),
+    identical(accepted_tests$reader_role, c("Primary", "Complementary"))
+  )
+
+  accepted_tests |>
+    transmute(
+      Placement = .data$placement_label,
+      Role = .data$reader_role,
+      Test = "Complete Female-minus-Male 24-hour curve",
+      `F statistic` = .data$F_statistic,
+      `Numerator df` = .data$fractional_numerator_df,
+      `Denominator df` = .data$denominator_df,
+      `Raw p` = format_p_vector(.data$p_raw, .data$p_raw < 0.05),
+      `FDR-adjusted p` = format_p_vector(
+        .data$p_adjusted,
+        .data$p_adjusted < 0.05
+      ),
+      Support = tools::toTitleCase(.data$support_status)
+    ) |>
+    gt::gt(rowname_col = "Placement") |>
+    gt::fmt_number(
+      columns = c(`F statistic`, `Numerator df`),
+      decimals = 3
+    ) |>
+    gt::fmt_number(columns = `Denominator df`, decimals = 0) |>
+    gt::fmt_markdown(columns = c(`Raw p`, `FDR-adjusted p`)) |>
+    gt::cols_width(
+      Role ~ gt::pct(11),
+      Test ~ gt::pct(23),
+      `F statistic` ~ gt::pct(9),
+      `Numerator df` ~ gt::pct(10),
+      `Denominator df` ~ gt::pct(11),
+      `Raw p` ~ gt::pct(8),
+      `FDR-adjusted p` ~ gt::pct(11),
+      Support ~ gt::pct(9)
+    ) |>
+    gt::tab_source_note(
+      source_note = paste0(
+        "Primary near-eye fitted sample: ",
+        accepted_samples$participants[[1L]], " participants, ",
+        format(accepted_samples$participant_days[[1L]], big.mark = ","),
+        " participant-days, ",
+        format(accepted_samples$observations_30_minute[[1L]], big.mark = ","),
+        " 30-minute observations, and ", accepted_samples$sites[[1L]],
+        " sites. Complementary chest fitted sample: ",
+        accepted_samples$participants[[2L]], " participants, ",
+        format(accepted_samples$participant_days[[2L]], big.mark = ","),
+        " participant-days, ",
+        format(accepted_samples$observations_30_minute[[2L]], big.mark = ","),
+        " 30-minute observations, and ", accepted_samples$sites[[2L]],
+        " sites."
+      )
+    ) |>
+    gt::tab_source_note(
+      source_note = paste(
+        "Each row is one joint complete-curve test. Raw p is bold at raw p <",
+        "0.050; FDR-adjusted p is bold independently at adjusted p < 0.050.",
+        "Each labelled global family contains one test, so the stored raw and",
+        "adjusted values coincide."
       )
     ) |>
     h11_gt(12)
@@ -283,7 +358,7 @@ decomposition_table <- function(data) {
       `F statistic` = .data$F_statistic,
       `Numerator df` = .data$fractional_numerator_df,
       `Raw p` = format_p_vector(.data$p_raw, .data$p_raw < 0.05),
-      `BH-adjusted p` = format_p_vector(
+      `FDR-adjusted p` = format_p_vector(
         .data$p_adjusted,
         .data$p_adjusted < 0.05
       ),
@@ -299,11 +374,11 @@ decomposition_table <- function(data) {
       columns = c(`F statistic`, `Numerator df`),
       decimals = 3
     ) |>
-    gt::fmt_markdown(columns = c(`Raw p`, `BH-adjusted p`)) |>
+    gt::fmt_markdown(columns = c(`Raw p`, `FDR-adjusted p`)) |>
     gt::tab_source_note(
       source_note = paste(
         "Within each placement and dataset, level and shape form a two-test",
-        "Benjamini–Hochberg family. Raw and adjusted p-values are labelled",
+        "false-discovery-rate family. Raw and adjusted p-values are labelled",
         "and bolded independently at their respective p < 0.050 rules.",
         "These secondary tests ask whether the globally tested curve can be",
         "resolved into an independently supported level or shape component;",
@@ -322,7 +397,7 @@ effect_size_table <- function(placement) {
 
   tibble::tibble(
     Estimator = c(
-      "Conditional level ratio: Female / Male",
+      "Conditional shifted-value ratio: Female / Male",
       "Across-clock fitted-curve variation"
     ),
     `Estimate (95% CI)` = c(
@@ -338,7 +413,7 @@ effect_size_table <- function(placement) {
       )
     ),
     Unit = c(
-      "Shifted melEDI ratio",
+      "Shifted-value melEDI ratio",
       "Squared log10(melEDI + 0.1) units"
     ),
     Interpretation = c(
@@ -417,7 +492,7 @@ activity_comparison_table <- function() {
       `Numerator df` = .data$fractional_numerator_df,
       `Denominator df` = .data$denominator_df,
       `Raw p` = format_p_vector(.data$p_raw, .data$p_raw < 0.05),
-      `BH-adjusted p` = format_p_vector(
+      `FDR-adjusted p` = format_p_vector(
         .data$p_adjusted,
         .data$p_adjusted < 0.05
       ),
@@ -437,17 +512,17 @@ activity_comparison_table <- function() {
       decimals = 3
     ) |>
     gt::fmt_number(columns = `Denominator df`, decimals = 0) |>
-    gt::fmt_markdown(columns = c(`Raw p`, `BH-adjusted p`)) |>
+    gt::fmt_markdown(columns = c(`Raw p`, `FDR-adjusted p`)) |>
     gt::tab_source_note(
       source_note = paste(
         "The two activity-complete models use the same observations within",
         "placement; the accepted all-available model uses the larger accepted",
-        "sample. Each row is a one-test family, so raw and BH-adjusted p-values",
+        "sample. Each row is a one-test family, so raw and FDR-adjusted p-values",
         "coincide. Raw and adjusted values are bolded independently at their",
         "respective p < 0.050 rules. The activity comparison is exploratory."
       )
     ) |>
-    h11_gt(11)
+    h11_gt(12)
 }
 
 activity_diagnostic_table <- function() {
@@ -477,7 +552,7 @@ activity_diagnostic_table <- function() {
         "concentration of the participant-cluster robust covariance."
       )
     ) |>
-    h11_gt(11)
+    h11_gt(12)
 }
 
 stopifnot(
@@ -532,45 +607,48 @@ The preregistered hypothesis was:
 
 > “H11: Diurnal exposure patterns differ by sex.”
 
-The analytical question is whether the fitted 24-hour personal melEDI profile
-differs between participants recorded as Female and Male after accounting for
-site-specific temporal patterns, repeated observations within participant and
-day, and short-lag residual dependence.
+The recorded predictor is **biological sex**, coded Female or Male. Gender
+identity is a distinct construct and was not analysed. The analytical question
+is whether the fitted 24-hour personal melanopic equivalent daylight
+illuminance (melEDI) profile differs between participants recorded as Female
+and Male after accounting for site-specific temporal patterns, repeated
+observations within participants and days, and short-lag residual dependence.
 
 ::: {.callout-tip title="Answer in brief"}
-The primary near-eye Female–Male curve differed globally (BH-adjusted *p* =
-`r format_p_inline(near_global$p_adjusted, near_global$p_adjusted < 0.05)`),
-and the complementary chest curve also differed globally (BH-adjusted *p* =
+After false-discovery-rate (FDR) adjustment, the primary near-eye
+Female-minus-Male curve differed globally (adjusted *p* =
+`r format_p_inline(near_global$p_adjusted, near_global$p_adjusted < 0.05)`), and
+the complementary chest curve also differed globally (adjusted *p* =
 `r format_p_inline(chest_global$p_adjusted,
 chest_global$p_adjusted < 0.05)`). The secondary level/shape analysis could not
 cleanly assign either globally supported curve to an independently resolved
 level or shape component; this does not overturn the global results. In the
 exploratory activity-complete sample, near eye was already unsupported before
-activity adjustment (*p* = `r format_p_inline(near_activity_unadjusted$p_raw,
+activity adjustment (raw *p* = `r format_p_inline(near_activity_unadjusted$p_raw,
 near_activity_unadjusted$p_raw < 0.05)`) and remained unsupported after it
-(*p* = `r format_p_inline(near_activity_adjusted$p_raw,
-near_activity_adjusted$p_raw < 0.05)`). At chest, the corresponding *p*-value
+(raw *p* = `r format_p_inline(near_activity_adjusted$p_raw,
+near_activity_adjusted$p_raw < 0.05)`). At chest, the corresponding raw *p*-value
 changed from `r format_p_inline(chest_activity_unadjusted$p_raw,
 chest_activity_unadjusted$p_raw < 0.05)` to
 `r format_p_inline(chest_activity_adjusted$p_raw,
 chest_activity_adjusted$p_raw < 0.05)`. This sensitivity is compatible with
-attenuation but cannot identify activity as a mechanism. All fitted models
-were acceptable with specified limitations.
+attenuation but cannot identify activity as a mechanism. Model checks classified
+all accepted fits as acceptable with specified limitations.
 :::
 
 ## What was analysed
 
-The recorded predictor is **biological sex**, coded Female or Male. Gender is
-a distinct construct and was not measured by this variable, so this analysis
-does not make a claim about gender differences.
+The near-eye sensor position is primary because it measures the light field
+closer to the eyes. The chest sensor position is analysed separately as
+complementary evidence and is not a measure of ocular exposure. The placements
+are neither pooled nor treated as independent replicates. The response is the
+30-minute arithmetic mean melEDI, modelled as `log10(melEDI + 0.1)`.
 
-Near-eye measurements are primary because they more closely represent the
-light field near the eyes. Chest measurements are analysed separately as
-complementary evidence; the placements are neither pooled nor treated as
-independent replicates. The response is the 30-minute arithmetic mean melEDI,
-modelled as `log10(melEDI + 0.1)`. The estimand is the complete fitted Female-
-minus-Male 24-hour curve at equal clock-time weighting and equal-site
-conditioning.
+The estimand is the complete fitted Female-minus-Male 24-hour curve at equal
+clock-time weighting. Its site-average fitted mean averages across included
+sites and gives each site equal weight. The participant is the independent
+unit for robust inference. A participant-day is one participant's included
+observations on one local calendar day.
 
 ```{r}
 #| label: tbl-h11-primary-samples
@@ -587,15 +665,37 @@ model contains 154 participants (86 Female, 68 Male), 902 participant-days,
 41,842 observations, and eight sites. These are the accepted temporal-model
 samples; no extra H11-specific row deletion was applied.
 
+::: {.callout-note title="Key terms"}
+- **Site-average fitted mean:** the fitted mean averaged across included sites,
+  with each site given equal weight.
+- **Complete-curve test:** one joint test of the time-constant and time-varying
+  Female-minus-Male contributions across the whole 24-hour curve.
+- **Pointwise 95% confidence interval (95% CI):** Confidence intervals apply at the displayed clock times.
+  These are pointwise, not simultaneous bands across the full day, and do not
+  support a significant-period claim.
+- **Shifted-value ratio:** both fitted melEDI values are shifted by the model's
+  0.1-lx offset before the Female-to-Male ratio is calculated.
+- **AR(1):** a representation of autocorrelation in which residual similarity
+  is stronger for measurements closer together in time.
+- **Symlog:** a display scale that is linear from 0 to 1 lx and base-10
+  logarithmic above 1 lx, with labels retained in original units.
+:::
+
 ### Model and inference
 
-The model inherits the finalized temporal structure: a cyclic common daily
-curve, a cyclic Female-specific deviation, sum-to-zero site-specific temporal
-deviations, participant-specific temporal curves, and participant-day random
-intercepts. One run-specific AR(1) parameter is estimated from a zero-rho pass,
-and sequence starts prevent correlation from crossing participant-day or gap
-boundaries. Models use Gaussian identity-link GAMs fitted by fREML with
-`discrete = TRUE`.
+The nonlinear generalized additive model (GAM) allows the daily melEDI pattern
+to vary smoothly and nonlinearly over clock time. Its cyclic common daily curve
+and cyclic Female-specific deviation join smoothly across midnight. The model
+also includes site-specific temporal deviations, participant-specific time
+curves, and participant-day random effects. The latter two represent remaining
+repeated-measure variation after the shared time, biological-sex, and site
+structure is considered.
+
+Autocorrelation is residual similarity between measurements close together in
+time. An AR(1) structure represents this dependence as stronger at shorter
+lags. Sequence starts prevent that correlation from crossing participant-day
+or gap boundaries. The detailed estimation and robust-covariance specification
+is documented in the preparation and provenance companion.
 
 The following evaluated R cell reads and prints the exact Wilkinson formula
 supplied to every accepted H11 full model. Here, `response` is the transformed
@@ -610,113 +710,38 @@ accepted_h11_formula <- stats::as.formula(formula_registry$formula[[1L]])
 accepted_h11_formula
 ```
 
-The confirmatory test jointly evaluates the 48-bin Female-minus-Male curve.
-Scores and residuals are whitened using the fitted AR boundary contract,
-summed by participant, and entered into a participant-cluster CR1 sandwich
-covariance with the smoothing-bias component retained. A finite-cluster F
-reference uses the effective fractional rank of the tested covariance. The
-global curve is one decision per placement and dataset. Planned level and
-shape decompositions form a separate two-test BH family within each placement.
-Those secondary tests assess component attribution; they do not repeat the
-global test, and failure to resolve either component does not invalidate a
+The complete-curve, or global, test jointly evaluates the time-constant and
+time-varying contributions to the 48-bin Female-minus-Male curve. It produces
+one decision per placement and dataset. FDR adjustment is applied within
+separately labelled test families. Each global family has
+one test. The planned level and shape attribution tests form a separate
+two-test FDR family within each placement. Those secondary tests do not repeat
+the global test, and failure to resolve either component does not invalidate a
 supported global curve.
 
-All curve and contrast confidence intervals are participant-cluster-robust
-**pointwise 95% intervals**. They describe uncertainty at one displayed clock
-bin at a time and do not support a simultaneous significant-period claim.
-
-### Deviations and operational clarifications
-
-The analysis differs from, or makes operationally explicit, the preregistered
-plan in the following ways.
+All curve and contrast intervals are participant-cluster-robust pointwise 95%
+CIs. Confidence intervals apply at the displayed clock times. They are not
+simultaneous and do not support a significant-period claim.
 
 ```{r}
-#| label: tbl-h11-data-deviations
-#| tbl-cap: "H11 data, placement, and estimand deviations or clarifications."
+#| label: tbl-h11-global-tests
+#| tbl-cap: "Global complete-curve tests and separately prespecified sensitivity decisions: primary near-eye and complementary chest analyses."
 
-tibble::tribble(
-  ~Aspect, ~Preregistered, ~Analysed, ~Consequence,
-  "Outcome and epoch",
-  "Hourly geometric-mean melEDI",
-  "Thirty-minute arithmetic-mean melEDI, transformed as log10(melEDI + 0.1)",
-  "The estimand, row count, scale, and dependence structure differ; the registered hourly outcome remains an unresolved sensitivity.",
-  "Placement role",
-  "Chest primary; near eye as robustness placement",
-  "Near eye primary; chest complementary",
-  "The measurement closer to the eye carries the primary interpretation.",
-  "Day inclusion",
-  "Coverage-based exclusions; no deletion solely because a binned profile is constant",
-  "Inherited coverage rules plus upstream exclusion of otherwise eligible verified exact-all-zero device days; supported constant profiles retained",
-  "The fitted samples reconcile to the accepted temporal-analysis samples.",
-  "Analysis hierarchy",
-  "Repeated hourly observations with participant and site effects",
-  "Thirty-minute observations nested in participant-day and participant, conditional on observed sites",
-  "Participant-specific curves and participant-day intercepts change weighting and uncertainty."
-) |>
-  gt::gt(rowname_col = "Aspect") |>
-  gt::cols_width(
-    Preregistered ~ gt::pct(24),
-    Analysed ~ gt::pct(32),
-    Consequence ~ gt::pct(31)
-  ) |>
-  h11_gt(12)
+principal_global_test_table(global_tests, samples)
 ```
 
-```{r}
-#| label: tbl-h11-model-deviations
-#| tbl-cap: "H11 model, inference, and reporting deviations or clarifications."
-
-tibble::tribble(
-  ~Aspect, ~Preregistered, ~Analysed, ~Consequence,
-  "Sex and time terms",
-  "Parametric sex effect plus cyclic sex-specific time smooth",
-  "Parametric Female level plus cyclic Female-minus-Male deviation; common daily curve retained",
-  "The joint null covers both a time-constant level and a time-varying shape difference.",
-  "Site and participant structure",
-  "Site factor smooth, site random effect, and participant random-effect smooth",
-  "Inherited sum-to-zero site temporal deviations, participant-specific time curves, and participant-day random intercept; no site random intercept",
-  "Inference is conditional on these observed sites and the richer repeated-measure structure.",
-  "Additional context",
-  "No photoperiod-state or activity-adjusted causal estimand",
-  "No photoperiod-state term or activity adjustment in the accepted test; an exploratory same-sample activity-context adjustment was added",
-  "Sample restriction and observational adjustment are shown separately; no behavioural, causal, or mediational interpretation is made.",
-  "Inference and multiplicity",
-  "Delta AIC of at least 2; AR(1) if needed; FDR if multiple tests",
-  "Participant-cluster robust global curve test; separate two-test BH level/shape decomposition",
-  "The confirmatory claim is the complete curve, not a selected pointwise interval or raw component p-value.",
-  "Effect magnitude",
-  "Not operationally defined",
-  "Female-to-Male shifted ratios and robust fitted-curve variation, reported only after a supported global result",
-  "Fitted-curve variation is not described as variance explained."
-) |>
-  gt::gt(rowname_col = "Aspect") |>
-  gt::cols_width(
-    Preregistered ~ gt::pct(24),
-    Analysed ~ gt::pct(32),
-    Consequence ~ gt::pct(31)
-  ) |>
-  h11_gt(12)
-```
+Both complete curves were supported. For near eye, raw *p* and FDR-adjusted
+*p* were `r format_p_inline(near_global$p_raw, near_global$p_raw < 0.05)`.
+For chest, raw *p* and FDR-adjusted *p* were
+`r format_p_inline(chest_global$p_raw, chest_global$p_raw < 0.05)`. Within each
+one-test global family, the stored raw and adjusted values are identical.
 
 ## Primary near-eye result
 
 ```{r}
-#| label: tbl-h11-near-global
-#| tbl-cap: "Primary near-eye global complete-curve test."
-
-global_test_table(near_global)
-```
-
-The complete near-eye Female-minus-Male curve was supported: raw *p* =
-`r format_p_inline(near_global$p_raw, near_global$p_raw < 0.05)` and
-BH-adjusted *p* = `r format_p_inline(near_global$p_adjusted,
-near_global$p_adjusted < 0.05)`. This is a joint test of the time-constant and
-time-varying sex contributions.
-
-```{r}
 #| label: fig-h11-near-eye-curves
-#| fig-cap: "Primary near-eye sex-specific fitted melEDI curves and Female-to-Male shifted ratio. Ribbons and contrast intervals are participant-cluster-robust pointwise 95% confidence intervals, not simultaneous bands. The melEDI panel uses the approved symlog scale, linear from 0 to 1 lx and base-10 logarithmic above 1 lx, with labels in original units. The fitted sample contains 141 participants, 816 participant-days, 37,756 30-minute observations, and nine sites. Grey curve-panel shading gives equal-site mean civil-night context and is not a model covariate."
-#| fig-alt: "A two-panel near-eye figure. The upper panel shows Female and Male fitted melEDI curves across 24 hours with pink and blue lines and pointwise confidence ribbons on a symlog axis that is linear from zero to one lux and logarithmic above one lux; both rise in the morning and decline at night, with the Female curve lower around morning and late afternoon. The lower panel shows the Female-to-Male shifted ratio with a horizontal null line at one; the deepest ratio is about 0.47 near 08:45. Intervals are pointwise, not simultaneous."
+#| fig-cap: "Primary near-eye sex-specific fitted melEDI curves and Female-to-Male shifted-value ratio. Ribbons and contrast intervals are participant-cluster-robust pointwise 95% confidence intervals. Confidence intervals apply at the displayed clock times. They are not simultaneous bands and do not support a significant-period claim. The melEDI panel uses the approved symlog scale, linear from 0 to 1 lx and base-10 logarithmic above 1 lx, with labels in original units. The fitted sample contains 141 participants, 816 participant-days, 37,756 30-minute observations, and nine sites. Grey curve-panel shading gives site-average civil-night context, with each included site weighted equally; it is not a model covariate."
+#| fig-alt: "A two-panel near-eye figure. The upper panel shows Female and Male fitted melEDI curves across 24 hours with pink and blue lines and pointwise confidence ribbons on a symlog axis that is linear from zero to one lux and logarithmic above one lux; both rise in the morning and decline at night, with the Female curve lower around morning and late afternoon. The lower panel shows the Female-to-Male shifted-value ratio with a horizontal null line at one; the deepest ratio is about 0.47 near 08:45. Intervals are pointwise, not simultaneous."
 #| out-width: "100%"
 #| fig-align: center
 
@@ -739,33 +764,10 @@ in the displayed 30-minute bins from 07:00–10:00 and 16:00–18:30, with Femal
 lower. These clock ranges are descriptive collections of pointwise intervals;
 they are not a familywise significant period.
 
-### Can the global result be separated into level and shape?
+### Conditional effect-size context
 
-```{r}
-#| label: tbl-h11-near-decomposition
-#| tbl-cap: "Primary near-eye level and shape decomposition."
-
-decomposition |>
-  filter(
-    .data$run_id == .env$near_id,
-    .data$dataset_label == "Primary dataset"
-  ) |>
-  decomposition_table()
-```
-
-The secondary decomposition did not cleanly resolve the globally supported
-curve into an independently supported level or shape component. The shape
-component had raw *p* = **0.043** but BH-adjusted *p* = 0.075; the level
-component had raw and adjusted *p* = 0.075. The global result is not formed by
-adding or combining these two *p*-values: it is a separate joint test of the
-complete curve. Evidence can be distributed across correlated level and shape
-directions, so this component result expresses uncertainty about attribution;
-it does not make the global result invalid.
-
-### Effect-size context
-
-Because the global near-eye test was supported, the prespecified conditional
-effect-size reporting gate opened.
+Because the global near-eye test was supported, the conditional effect-size
+estimators are reported.
 
 ```{r}
 #| label: tbl-h11-near-effect-size
@@ -781,21 +783,9 @@ model scale despite a statistically supported structured curve difference.
 ## Complementary chest result
 
 ```{r}
-#| label: tbl-h11-chest-global
-#| tbl-cap: "Complementary chest global complete-curve test."
-
-global_test_table(chest_global)
-```
-
-The complete chest curve was also supported: raw *p* =
-`r format_p_inline(chest_global$p_raw, chest_global$p_raw < 0.05)` and adjusted
-*p* = `r format_p_inline(chest_global$p_adjusted,
-chest_global$p_adjusted < 0.05)`.
-
-```{r}
 #| label: fig-h11-chest-curves
-#| fig-cap: "Complementary chest sex-specific fitted melEDI curves and Female-to-Male shifted ratio. Ribbons and contrast intervals are participant-cluster-robust pointwise 95% confidence intervals, not simultaneous bands. The melEDI panel uses the approved symlog scale, linear from 0 to 1 lx and base-10 logarithmic above 1 lx, with labels in original units. The fitted sample contains 154 participants, 902 participant-days, 41,842 30-minute observations, and eight sites."
-#| fig-alt: "A two-panel chest figure. The upper panel shows Female and Male fitted melEDI curves across 24 hours with pointwise ribbons on a symlog axis that is linear from zero to one lux and logarithmic above one lux. The lower panel shows an almost horizontal Female-to-Male shifted ratio near 0.79, below the null line at one; every displayed pointwise interval excludes one, but the intervals are not simultaneous."
+#| fig-cap: "Complementary chest sex-specific fitted melEDI curves and Female-to-Male shifted-value ratio. Ribbons and contrast intervals are participant-cluster-robust pointwise 95% confidence intervals. Confidence intervals apply at the displayed clock times. They are not simultaneous bands and do not support a significant-period claim. The melEDI panel uses the approved symlog scale, linear from 0 to 1 lx and base-10 logarithmic above 1 lx, with labels in original units. The fitted sample contains 154 participants, 902 participant-days, 41,842 30-minute observations, and eight sites."
+#| fig-alt: "A two-panel chest figure. The upper panel shows Female and Male fitted melEDI curves across 24 hours with pointwise ribbons on a symlog axis that is linear from zero to one lux and logarithmic above one lux. The lower panel shows an almost horizontal Female-to-Male shifted-value ratio near 0.79, below the null line at one; every displayed pointwise interval excludes one, but the intervals are not simultaneous."
 #| out-width: "100%"
 #| fig-align: center
 
@@ -812,9 +802,52 @@ chest_context$minimum_ratio_upper_95)`. All 48 displayed pointwise intervals
 excluded one. Because the intervals are pointwise, this observation does not
 establish a simultaneous all-day difference.
 
+### Conditional effect-size context
+
+```{r}
+#| label: tbl-h11-chest-effect-size
+#| tbl-cap: "Complementary chest biological-sex effect-size estimators."
+
+effect_size_table("Chest")
+```
+
+The chest shifted-value ratio is visually almost time-constant. Its conditional
+interpretation remains subordinate to the complete-curve result because the
+model also contains the cyclic Female-minus-Male deviation.
+
+## Can the global results be separated into level and shape?
+
+These secondary attribution tests are subordinate to the complete-curve tests
+in @tbl-h11-global-tests. They ask whether each globally supported curve can be
+assigned cleanly to an independently supported level or shape component.
+
+### Primary near eye
+
+```{r}
+#| label: tbl-h11-near-decomposition
+#| tbl-cap: "Primary near-eye level and shape attribution."
+
+decomposition |>
+  filter(
+    .data$run_id == .env$near_id,
+    .data$dataset_label == "Primary dataset"
+  ) |>
+  decomposition_table()
+```
+
+The secondary attribution did not cleanly resolve the globally supported curve
+into an independently supported level or shape component. The shape component
+had raw *p* = **0.043** but FDR-adjusted *p* = 0.075; the level component had
+raw and adjusted *p* = 0.075. The global result is not formed by adding or
+combining these two *p*-values. Evidence can be distributed across correlated
+level and shape directions, so this result expresses uncertainty about
+attribution and does not make the global result invalid.
+
+### Complementary chest
+
 ```{r}
 #| label: tbl-h11-chest-decomposition
-#| tbl-cap: "Complementary chest level and shape decomposition."
+#| tbl-cap: "Complementary chest level and shape attribution."
 
 decomposition |>
   filter(
@@ -824,18 +857,11 @@ decomposition |>
   decomposition_table()
 ```
 
-The chest global result is visually level-like, but the secondary decomposition
-did not resolve that joint result independently to the level term: its raw
-*p* = **0.029** and BH-adjusted *p* = 0.057. The shape component had raw and
-adjusted *p* = 0.986. This limits attribution to a specific component; it does
-not overturn the separately supported global curve result.
-
-```{r}
-#| label: tbl-h11-chest-effect-size
-#| tbl-cap: "Complementary chest biological-sex effect-size estimators."
-
-effect_size_table("Chest")
-```
+The chest global result is visually level-like, but the secondary attribution
+did not resolve that result independently to the level term: its raw *p* =
+**0.029** and FDR-adjusted *p* = 0.057. The shape component had raw and adjusted
+*p* = 0.986. This limits component attribution and does not overturn the
+separately supported complete-curve result.
 
 ### Why there is no direct placement identity plot
 
@@ -880,8 +906,9 @@ days, 36,711 observations, and eight sites.
 The following evaluated R cell prints the exact Wilkinson formulas used for
 the same-sample comparison. The adjusted model adds both the activity level and
 activity-specific cyclic temporal deviations. A single placement-specific
-rho estimated from the preliminary adjusted model was held fixed in both final
-fits so that the comparison did not change its autocorrelation assumption.
+AR(1) correlation parameter estimated from the preliminary adjusted model was
+held fixed in both final fits so that the comparison did not change its
+autocorrelation assumption.
 
 ```{r}
 #| label: h11-activity-exact-model-formulas
@@ -918,14 +945,14 @@ At chest, the exact same-sample raw *p*-value changed from
 `r format_p_inline(chest_activity_unadjusted$p_raw,
 chest_activity_unadjusted$p_raw < 0.05)` without activity to
 `r format_p_inline(chest_activity_adjusted$p_raw,
-chest_activity_adjusted$p_raw < 0.05)` with activity. The exact adjusted value
-is 0.050214. This small threshold crossing is compatible with attenuation, but
-it is not evidence that activity mediates or explains the observed sex
-association.
+chest_activity_adjusted$p_raw < 0.05)` with activity. The adjusted value is
+displayed as FDR-adjusted *p* = 0.050. This small threshold crossing is
+compatible with attenuation, but it is not evidence that activity mediates or
+explains the observed sex association.
 
 ```{r}
 #| label: fig-h11-activity-context
-#| fig-cap: "Exploratory activity-context sensitivity of the Female-to-Male shifted melEDI ratio. Solid blue curves show the unadjusted H11 model on the activity-complete sample; dashed orange curves show the activity-adjusted model on the identical observations. Ribbons are participant-cluster-robust pointwise 95% confidence intervals, not simultaneous bands. The fitted samples contain 126 near-eye participants with 30,499 observations and 150 chest participants with 36,711 observations."
+#| fig-cap: "Exploratory activity-context sensitivity of the Female-to-Male shifted-value melEDI ratio. Solid blue curves show the unadjusted H11 model on the activity-complete sample; dashed orange curves show the activity-adjusted model on the identical observations. Ribbons are participant-cluster-robust pointwise 95% confidence intervals, not simultaneous bands. The fitted samples contain 126 near-eye participants with 30,499 observations and 150 chest participants with 36,711 observations."
 #| fig-alt: "Two stacked panels compare same-sample unadjusted and activity-adjusted Female-to-Male ratio curves. Near eye shows a morning trough that becomes shallower after adjustment, with both wide pointwise ribbons crossing one. Chest ratios are nearly horizontal near 0.81 before and 0.83 after adjustment; the adjusted pointwise interval reaches the null ratio of one."
 #| out-width: "100%"
 #| fig-align: center
@@ -949,21 +976,20 @@ limit was 1.000034. No displayed activity-adjusted pointwise interval excluded
 one at either placement. These intervals remain pointwise and do not define a
 simultaneously significant period.
 
-Under the approved gate, an additional activity-adjusted sex effect-size
-estimator was required only if the adjusted global sex curve had raw *p* <
-0.050. That gate remained closed at both placements, so no effect-size
-bootstrap was run for this sensitivity.
+An additional activity-adjusted sex effect-size estimator was required only if
+the adjusted global sex curve had raw *p* < 0.050. That condition was not met at
+either placement, so no activity-adjusted effect-size estimate is reported.
 
 ```{r}
 #| label: tbl-h11-activity-diagnostics
-#| tbl-cap: "Diagnostics for the exploratory same-sample activity-context models."
+#| tbl-cap: "Model checks for the exploratory same-sample activity-context models."
 
 activity_diagnostic_table()
 ```
 
 All four same-sample fits were **acceptable with specified limitations**. They
 converged without serious warnings, retained cyclic closure and the inherited
-site constraint, and had no severe basis-dimension flag. Final boundary-aware
+site constraint, and had no severe model-flexibility flag. Final boundary-aware
 lag-1 residual correlations were 0.144 and 0.084 near eye and 0.131 and 0.075
 at chest for the unadjusted and adjusted fits, respectively. The sensitivity
 is limited to uniquely mapped single-activity diary hours and remains
@@ -995,15 +1021,15 @@ respectively.
 
 ```{r}
 #| label: tbl-h11-sensitivity-global
-#| tbl-cap: "Global complete-curve tests in the gap-timing-unaware dataset."
+#| tbl-cap: "Global complete-curve tests and separately prespecified sensitivity decisions: gap-timing-unaware dataset."
 
 global_tests |>
   filter(.data$reader_role == "Sensitivity") |>
   global_test_table()
 ```
 
-Near eye remained supported (raw and adjusted *p* = **0.026**) and chest
-remained supported (raw and adjusted *p* = **0.037**).
+Near eye remained supported (raw and FDR-adjusted *p* = **0.026**) and chest
+remained supported (raw and FDR-adjusted *p* = **0.037**).
 
 ```{r}
 #| label: tbl-h11-sensitivity-decomposition
@@ -1016,7 +1042,7 @@ decomposition |>
 
 The secondary sensitivity decompositions likewise did not resolve the globally
 supported curves into independently supported level or shape components after
-BH adjustment. This does not alter either sensitivity global result.
+FDR adjustment. This does not alter either sensitivity global result.
 
 ::: {.panel-tabset}
 
@@ -1024,7 +1050,7 @@ BH adjustment. This does not alter either sensitivity global result.
 
 ```{r}
 #| label: fig-h11-sensitivity-near-eye
-#| fig-cap: "Near-eye sex-specific curves in the gap-timing-unaware dataset: 141 participants, 809 participant-days, 37,603 observations, and nine sites. Intervals are participant-cluster-robust pointwise 95% confidence intervals, not simultaneous bands. The melEDI panel uses the approved symlog scale, linear from 0 to 1 lx and base-10 logarithmic above 1 lx, with labels in original units."
+#| fig-cap: "Near-eye sex-specific curves in the gap-timing-unaware dataset: 141 participants, 809 participant-days, 37,603 observations, and nine sites. Intervals are participant-cluster-robust pointwise 95% confidence intervals. Confidence intervals apply at the displayed clock times. They are not simultaneous bands and do not support a significant-period claim. The melEDI panel uses the approved symlog scale, linear from 0 to 1 lx and base-10 logarithmic above 1 lx, with labels in original units."
 #| fig-alt: "A two-panel sensitivity figure for near-eye melEDI. Female and Male daily curves resemble those in the primary dataset on a symlog axis that is linear from zero to one lux and logarithmic above one lux. The Female-to-Male ratio reaches about 0.48 near 08:45, and pointwise intervals exclude one in morning and late-afternoon bins; these are not simultaneous intervals."
 #| out-width: "100%"
 #| fig-align: center
@@ -1046,7 +1072,7 @@ pointwise clock ranges excluded one as in the primary dataset.
 
 ```{r}
 #| label: fig-h11-sensitivity-chest
-#| fig-cap: "Chest sex-specific curves in the gap-timing-unaware dataset: 154 participants, 894 participant-days, 41,664 observations, and eight sites. Intervals are participant-cluster-robust pointwise 95% confidence intervals, not simultaneous bands. The melEDI panel uses the approved symlog scale, linear from 0 to 1 lx and base-10 logarithmic above 1 lx, with labels in original units."
+#| fig-cap: "Chest sex-specific curves in the gap-timing-unaware dataset: 154 participants, 894 participant-days, 41,664 observations, and eight sites. Intervals are participant-cluster-robust pointwise 95% confidence intervals. Confidence intervals apply at the displayed clock times. They are not simultaneous bands and do not support a significant-period claim. The melEDI panel uses the approved symlog scale, linear from 0 to 1 lx and base-10 logarithmic above 1 lx, with labels in original units."
 #| fig-alt: "A two-panel sensitivity figure for chest melEDI. Female and Male curves have similar shape on a symlog axis that is linear from zero to one lux and logarithmic above one lux, while the Female-to-Male ratio is nearly constant at about 0.80. All displayed pointwise intervals exclude one, but they are not simultaneous."
 #| out-width: "100%"
 #| fig-align: center
@@ -1070,11 +1096,14 @@ near-eye and chest curves remain supported. The secondary level/shape analyses
 do not cleanly attribute either global result to one independently resolved
 component.
 
-## Diagnostics
+## Model checks
+
+The following model checks (model diagnostics) assess fit quality and the
+remaining limitations of the accepted models.
 
 ```{r}
 #| label: tbl-h11-diagnostic-assessment
-#| tbl-cap: "Diagnostic assessment for every fitted H11 model."
+#| tbl-cap: "Model-check assessment for every fitted H11 model."
 
 diagnostic_table()
 ```
@@ -1154,12 +1183,14 @@ test. Exact zeros, heavy tails, heteroscedasticity, and concurvity remain under
 the Gaussian log-scale mean model. Results are conditional on the observed
 sites; the site sample is too small for broad site-population generalisation,
 and leave-one-site-out refits remain unresolved. The registered hourly
-geometric-mean outcome, a fitted common-placement sample, an all-zero-inclusive
-preparation, and alternative temporal model forms remain unresolved. The
-activity-context sensitivity is now reported, but it is limited to uniquely
-mapped single-activity diary hours and cannot distinguish covariate adjustment
-from selection into the activity-complete sample without the explicit
-same-sample comparison shown above.
+geometric-mean outcome remains the documented preregistered specification but
+is outside the accepted H11 analysis rather than an outstanding sensitivity. A
+fitted common-placement sample, an all-zero-inclusive preparation, and
+alternative temporal model forms remain unresolved. The activity-context
+sensitivity is now reported, but it is limited to uniquely mapped single-
+activity diary hours and cannot distinguish covariate adjustment from selection
+into the activity-complete sample without the explicit same-sample comparison
+shown above.
 
 ## Interpretation
 
@@ -1187,11 +1218,106 @@ biological sex causally determines light exposure. Differences may reflect
 behavioural, occupational, environmental, or other correlated factors that
 this observational model does not identify.
 
-## Source data
+## Preregistration deviations {#h11-preregistration-deviations}
+
+The analysis differs from, or makes operationally explicit, the preregistered
+plan in the following ways. The registered hourly geometric-mean outcome
+remains preregistration provenance but is outside and superseded by the
+author-approved final H11 analysis. It is not an outstanding or unresolved
+sensitivity.
+
+```{r}
+#| label: tbl-h11-data-deviations
+#| tbl-cap: "H11 data, placement, and estimand deviations or clarifications."
+
+tibble::tribble(
+  ~Aspect, ~Preregistered, ~Analysed, ~Consequence,
+  "Outcome and epoch",
+  "Hourly geometric-mean melEDI",
+  "Thirty-minute arithmetic-mean melEDI, transformed as log10(melEDI + 0.1)",
+  paste(
+    "The accepted H11 estimand, row count, scale, and dependence structure",
+    "follow the author-approved H02 adaptation and therefore differ from",
+    "preregistration; the registered hourly outcome remains the documented",
+    "preregistered specification, not an outstanding H11 sensitivity."
+  ),
+  "Placement role",
+  "Chest primary; near eye as robustness placement",
+  "Near eye primary; chest complementary",
+  "The measurement closer to the eye carries the primary interpretation.",
+  "Day inclusion",
+  "Coverage-based exclusions; no deletion solely because a binned profile is constant",
+  "Inherited coverage rules plus upstream exclusion of otherwise eligible verified exact-all-zero device days; supported constant profiles retained",
+  "The fitted samples reconcile to the accepted temporal-analysis samples.",
+  "Analysis hierarchy",
+  "Repeated hourly observations with participant and site effects",
+  "Thirty-minute observations nested in participant-day and participant, conditional on observed sites",
+  "Participant-specific curves and participant-day intercepts change weighting and uncertainty."
+) |>
+  gt::gt(rowname_col = "Aspect") |>
+  gt::cols_width(
+    Preregistered ~ gt::pct(24),
+    Analysed ~ gt::pct(32),
+    Consequence ~ gt::pct(31)
+  ) |>
+  h11_gt(12)
+```
+
+```{r}
+#| label: tbl-h11-model-deviations
+#| tbl-cap: "H11 model, inference, and reporting deviations or clarifications."
+
+tibble::tribble(
+  ~Aspect, ~Preregistered, ~Analysed, ~Consequence,
+  "Sex and time terms",
+  "Parametric sex effect plus cyclic sex-specific time smooth",
+  "Parametric Female level plus cyclic Female-minus-Male deviation; common daily curve retained",
+  "The joint null covers both a time-constant level and a time-varying shape difference.",
+  "Site and participant structure",
+  "Site factor smooth, site random effect, and participant random-effect smooth",
+  "Inherited sum-to-zero site temporal deviations, participant-specific time curves, and participant-day random intercept; no site random intercept",
+  "Inference is conditional on these observed sites and the richer repeated-measure structure.",
+  "Additional context",
+  "No photoperiod-state or activity-adjusted causal estimand",
+  "No photoperiod-state term or activity adjustment in the accepted test; an exploratory same-sample activity-context adjustment was added",
+  "Sample restriction and observational adjustment are shown separately; no behavioural, causal, or mediational interpretation is made.",
+  "Inference and multiplicity",
+  "Delta AIC of at least 2; AR(1) if needed; FDR if multiple tests",
+  "Participant-cluster robust global curve test; separate two-test BH level/shape decomposition",
+  "The confirmatory claim is the complete curve, not a selected pointwise interval or raw component p-value.",
+  "Effect magnitude",
+  "Not operationally defined",
+  "Female-to-Male shifted ratios and robust fitted-curve variation, reported only after a supported global result",
+  "Fitted-curve variation is not described as variance explained."
+) |>
+  gt::gt(rowname_col = "Aspect") |>
+  gt::cols_width(
+    Preregistered ~ gt::pct(24),
+    Analysed ~ gt::pct(32),
+    Consequence ~ gt::pct(31)
+  ) |>
+  h11_gt(12)
+```
+
+Retained samples include documented participants outside the preregistered age
+or employment criteria. Comparable exclusion-sensitivity coverage is not
+uniform across all affected hypotheses.
+
+- Current sample-eligibility qualification: [`DEV-003`](../preregistration_deviations.qmd#dev-003).
+- Outcome and epoch: [`DEV-042`](../preregistration_deviations.qmd#dev-042).
+- Placement role: [`DEV-001`](../preregistration_deviations.qmd#dev-001).
+- Day inclusion: [`DEV-019`](../preregistration_deviations.qmd#dev-019) and [`DEV-057`](../preregistration_deviations.qmd#dev-057).
+- Analysis hierarchy: [`DEV-044`](../preregistration_deviations.qmd#dev-044) and [`DEV-045`](../preregistration_deviations.qmd#dev-045).
+- Biological-sex and time terms: [`DEV-043`](../preregistration_deviations.qmd#dev-043).
+- Site and participant structure: [`DEV-044`](../preregistration_deviations.qmd#dev-044) and [`DEV-045`](../preregistration_deviations.qmd#dev-045).
+- Exploratory activity context: [`DEV-047`](../preregistration_deviations.qmd#dev-047).
+- Complete-curve inference and multiplicity: [`DEV-048`](../preregistration_deviations.qmd#dev-048).
+
+## Source data and technical provenance
 
 The scientific preparation, model construction, and provenance checks are
 documented in the
-[H11 analysis preparation and provenance](../../audit/hypotheses/H11/H11_analysis_preparation.html).
+[H11 analysis preparation and provenance](../../audit/hypotheses/H11/H11_analysis_preparation.qmd).
 
 Exact full-precision reader sources are available for the
 [fitted samples](../../artifacts/09_tables/H11/stage3/H11_reader_samples.csv),

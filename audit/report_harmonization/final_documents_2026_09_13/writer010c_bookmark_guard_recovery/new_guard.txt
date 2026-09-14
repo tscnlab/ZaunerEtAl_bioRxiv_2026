@@ -1,0 +1,13 @@
+    intervening = []
+    sibling = target.getprevious()
+    while sibling is not None and sibling is not preceding:
+        intervening.append(sibling)
+        sibling = sibling.getprevious()
+    assert sibling is preceding
+    assert len(intervening) == 1
+    assert intervening[0].tag == "{" + W + "}bookmarkStart"
+    assert dict(intervening[0].attrib) == {
+        "{" + W + "}id": "338",
+        "{" + W + "}name": "X7652973548e0e92457fc1c236fcb0c86891495d",
+    }
+    assert len(intervening[0]) == 0

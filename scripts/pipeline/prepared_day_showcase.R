@@ -603,7 +603,7 @@ make_prepared_day_showcase_plot <- function(plot_data) {
     jco_color = FALSE,
     x.axis.breaks = hms::hms(hours = seq(0, 20, by = 4)),
     y.axis.breaks = c(0, 1, 10, 250, 1000, 10000, 100000),
-    y.scale = LightLogR::symlog_trans(),
+    y.scale = LightLogR::symlog_trans(base = 10, thr = 1, scale = 1),
     y.axis.label = "melEDI (lx; 1-minute values)",
     x.axis.label = "Local clock time"
   )

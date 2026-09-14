@@ -1,0 +1,32 @@
+{
+  "timestamp": "2026-09-14T19:16:02.410Z",
+  "call_id": "call_wZfKp8dJ4O4I7nA1izfDZUlt",
+  "tool_arguments": {
+    "code": "await order017LivePW.playwright.getByRole('list',{name:'Supporting material',exact:true}).getByRole('link',{name:'Supplementary information',exact:true}).click(); let liveSIAX=await order017Live.getAXState({emit:false,disableDiffing:true}); nodeRepl.write({check:'L017-SI-desktop',url:await order017LivePW.url(),hasPassageChanges:liveSIAX.includes('Passage changes'),downloads:liveSIAX.split('\\n').filter(s=>/Manuscript downloads|Return to|Complete manuscript|\\.docx|\\.xlsx/.test(s)).slice(0,26)}); await order017Live.getScreenshot(); await recoveryViewport.set({width:708,height:1000}); await order017Live.getAXState({emit:false}); await order017Live.getScreenshot();",
+    "title": "Verify retained Supplementary Information downloads at both widths"
+  },
+  "text_blocks": [
+    "Wall time: 2.1520 seconds\nOutput:",
+    "{\n  check: 'L017-SI-desktop',\n  url: 'http://127.0.0.1:64656/supplementary_information.html',\n  hasPassageChanges: false,\n  downloads: [\n    '\\t\\t\\t\\t40 container Manuscript downloads',\n    '\\t\\t\\t\\t\\t41 heading Manuscript downloads, Value: 2, ID: site-downloads-title',\n    '\\t\\t\\t\\t\\t\\t42 text Manuscript downloads',\n    '\\t\\t\\t\\t\\t43 link Description: Download the complete manuscript (Word), Value: 127.0.0.1:64656/ZaunerEtAl2026_NatHealth_phase3_brown.docx',\n    '\\t\\t\\t\\t\\t\\t\\t48 link Description: Table 1 (editable Word), Value: 127.0.0.1:64656/editable_tables/Table_1.docx',\n    '\\t\\t\\t\\t\\t\\t\\t51 link Description: Table 2 (editable Word), Value: 127.0.0.1:64656/editable_tables/Table_2.docx',\n    '\\t\\t\\t\\t\\t\\t\\t54 link Description: Table 3 (editable Word), Value: 127.0.0.1:64656/editable_tables/Table_3.docx',\n    '\\t\\t\\t\\t\\t\\t\\t57 link Description: Table S1 (editable Word), Value: 127.0.0.1:64656/editable_tables/Table_S1.docx',\n    '\\t\\t\\t\\t\\t\\t\\t60 link Description: Table S2 (editable Word), Value: 127.0.0.1:64656/editable_tables/Table_S2.docx',\n    '\\t\\t\\t\\t\\t\\t\\t63 link Description: Table S3 (editable Word), Value: 127.0.0.1:64656/editable_tables/Table_S3.docx',\n    '\\t\\t\\t\\t\\t\\t\\t66 link Description: Table S4 (editable Word), Value: 127.0.0.1:64656/editable_tables/Table_S4.docx',\n    '\\t\\t\\t\\t\\t\\t\\t69 link Description: Table S5 (editable Word), Value: 127.0.0.1:64656/editable_tables/Table_S5.docx',\n    '\\t\\t\\t\\t\\t\\t\\t72 link Description: Table S6 (editable Word), Value: 127.0.0.1:64656/editable_tables/Table_S6.docx',\n    '\\t\\t\\t\\t\\t\\t\\t75 link Description: Table S7 (editable Word), Value: 127.0.0.1:64656/editable_tables/Table_S7.docx',\n    '\\t\\t\\t\\t\\t\\t\\t78 link Description: Table S8 (editable Word), Value: 127.0.0.1:64656/editable_tables/Table_S8.docx',\n    '\\t\\t\\t\\t\\t\\t\\t81 link Description: Table S9 (editable Word), Value: 127.0.0.1:64656/editable_tables/Table_S9.docx',\n    '\\t\\t\\t\\t\\t\\t\\t84 link Description: Table S10 (editable Word), Value: 127.0.0.1:64656/editable_tables/Table_S10.docx',\n    '\\t\\t\\t\\t\\t\\t\\t87 link Description: Table S11a (editable Word), Value: 127.0.0.1:64656/editable_tables/Table_S11a.docx',\n    '\\t\\t\\t\\t\\t\\t\\t90 link Description: Table S11b (editable Word), Value: 127.0.0.1:64656/editable_tables/Table_S11b.docx',\n    '\\t\\t\\t\\t\\t\\t\\t93 link Description: Table S12 (editable Word), Value: 127.0.0.1:64656/editable_tables/Table_S12.docx',\n    '\\t\\t\\t\\t\\t\\t\\t96 link Description: Table S13 (editable Word), Value: 127.0.0.1:64656/editable_tables/Table_S13.docx',\n    '\\t\\t\\t\\t\\t\\t\\t99 link Description: Table S14 (editable Word), Value: 127.0.0.1:64656/editable_tables/Table_S14.docx',\n    '\\t\\t\\t\\t\\t\\t\\t102 link Description: Table S15 (editable Word), Value: 127.0.0.1:64656/editable_tables/Table_S15.docx',\n    '\\t\\t\\t\\t\\t103 link Description: Return to the complete manuscript, Value: 127.0.0.1:64656/index.html'\n  ]\n}"
+  ],
+  "images": [
+    {
+      "timestamp": "2026-09-14T19:16:02.410Z",
+      "call_id": "call_wZfKp8dJ4O4I7nA1izfDZUlt",
+      "within_call_index": 1,
+      "image_path": "evidence/live_qa/browser_captures/2026-09-14T191602410Z_call_wZfKp8dJ4O4I7nA1izfDZUlt_1.jpg",
+      "metadata_path": "evidence/live_qa/browser_captures/2026-09-14T191602410Z_call_wZfKp8dJ4O4I7nA1izfDZUlt.json",
+      "bytes": 111052,
+      "sha256": "4b1d59721173c5920875379a1f79a2dd9c17e79cd6bcd7ebadeed51c705d90d4"
+    },
+    {
+      "timestamp": "2026-09-14T19:16:02.410Z",
+      "call_id": "call_wZfKp8dJ4O4I7nA1izfDZUlt",
+      "within_call_index": 2,
+      "image_path": "evidence/live_qa/browser_captures/2026-09-14T191602410Z_call_wZfKp8dJ4O4I7nA1izfDZUlt_2.jpg",
+      "metadata_path": "evidence/live_qa/browser_captures/2026-09-14T191602410Z_call_wZfKp8dJ4O4I7nA1izfDZUlt.json",
+      "bytes": 71178,
+      "sha256": "f6090704c502df41710b6475a98fa12affba6e01602fb09edba9d7c69470f00a"
+    }
+  ]
+}

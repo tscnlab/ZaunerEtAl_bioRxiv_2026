@@ -1,0 +1,7 @@
+Analysis,Component,Definition,Implementation
+"Main analysis","Beta-binomial mean","Window * Site * Day type, plus one participant intercept","Logit mean link; Laplace likelihood"
+"Main analysis","Extra all-no mass","Window + Day type","Multinomial mixture weights; no retained process-specific intercept"
+"Main analysis","Extra all-yes mass","Supported window * Day type; Daytime extra all-yes mass fixed at zero","Multinomial mixture weights; no retained process-specific intercept"
+"Main analysis","Dispersion","Window-specific beta-binomial precision","Log link; not an independent-minute binomial model"
+"Exploratory extension","Mean adjustment","Full window/site/day-type adjustment plus within- and between-Daytime adherence and centered Free-Daytime fraction","The two association levels are fitted simultaneously"
+"Exploratory extension","Participant variation","A participant intercept; no retained association-cycle intercept","Serial dependence assessed separately"

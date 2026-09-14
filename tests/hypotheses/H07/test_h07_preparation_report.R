@@ -58,6 +58,7 @@ stopifnot(
   grepl("No independent temperature", qmd_compact, fixed = TRUE),
   grepl("discrete = FALSE", qmd_compact, fixed = TRUE),
   grepl("not a `bam()` fit", qmd_compact, fixed = TRUE),
+  grepl("METRIC-011", qmd_compact, fixed = TRUE),
   grepl("::: {.callout-note", qmd_compact, fixed = TRUE),
   !grepl("::: {.callout-warning", qmd_compact, fixed = TRUE),
   !grepl("::: {.callout-important", qmd_compact, fixed = TRUE)
@@ -185,7 +186,7 @@ gt_tables <- xml2::xml_find_all(
   main,
   ".//table[contains(concat(' ', normalize-space(@class), ' '), ' gt_table ')]"
 )
-stopifnot(length(gt_tables) >= 20L)
+stopifnot(length(gt_tables) >= 21L)
 
 source_data_contract <- c(
   "H07_preparation_metric_contract.csv" = 9L,
@@ -225,6 +226,14 @@ diagnostic_summary <- readr::read_csv(
 )
 pattern_summary <- readr::read_csv(
   file.path(source_dir, "H07_preparation_pattern_summary.csv"),
+  show_col_types = FALSE
+)
+metric011_summary <- readr::read_csv(
+  file.path(
+    root,
+    "artifacts/12_manifests/H07/",
+    "H07_METRIC-011_reconciliation_summary.csv"
+  ),
   show_col_types = FALSE
 )
 stopifnot(
@@ -267,7 +276,16 @@ stopifnot(
   sum(
     pattern_summary$derivative_defined_pattern &
       pattern_summary$placement == "chest"
-  ) == 7L
+  ) == 7L,
+  all(metric011_summary$status == "PASS"),
+  metric011_summary$observed[
+    metric011_summary$check_id == "SCIENTIFIC_CONCLUSION_CHANGED"
+  ] == "FALSE",
+  metric011_summary$observed[
+    metric011_summary$check_id == "BOUNDED_ARTIFACT_APPLY"
+  ] == metric011_summary$expected[
+    metric011_summary$check_id == "BOUNDED_ARTIFACT_APPLY"
+  ]
 )
 
 qa <- readr::read_csv(
@@ -347,7 +365,7 @@ if (profile_integrated) {
     root = root,
     hypothesis_id = "H07",
     min_figures = 2L,
-    min_gt_tables = 20L,
+    min_gt_tables = 21L,
     extra_forbidden_calls = c(
       "gratia::derivatives", "derivatives", "h07_stage2_fit_checkpoint",
       "h07_revised_derivatives", "h07_derivative_draws",
@@ -356,7 +374,7 @@ if (profile_integrated) {
   )
   stopifnot(
     verification$figures >= 2L,
-    verification$gt_tables >= 20L,
+    verification$gt_tables >= 21L,
     verification$manifest_identities >= 100L,
     isTRUE(verification$source_copy_identical)
   )

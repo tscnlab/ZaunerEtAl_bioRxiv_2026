@@ -1,0 +1,34 @@
+--- order70_integrate_verify_promote.R.order70c
++++ order70_integrate_verify_promote.R.order70d
+@@ -921,7 +921,21 @@
+ }
+ 
+ run_candidate <- function() {
+-  stopifnot(length(list.files(candidate_root, all.files = TRUE, no.. = TRUE)) == 0L)
++  candidate_root_members <- sort(list.files(
++    candidate_root,
++    all.files = TRUE,
++    no.. = TRUE
++  ))
++  stopifnot(
++    identical(candidate_root_members, "candidate_build"),
++    dir.exists(candidate_build)
++  )
++  retained_candidate <- inventory_files(candidate_build)
++  stopifnot(
++    nrow(retained_candidate) == 892L,
++    symlink_count(candidate_build) == 0L,
++    same_inventory(accepted_inventory, retained_candidate)
++  )
+   live <- check_prebuild()
+   write_csv_atomic(live, file.path(evidence_dir, "accepted_build_preflight_inventory.csv"))
+   write_raw_atomic(read_raw_file(corpus_path), file.path(evidence_dir, "corpus_manifest_pre.csv"))
+@@ -932,7 +946,6 @@
+   stopifnot(all(protected$exact))
+   write_csv_atomic(protected, file.path(evidence_dir, "dispatch_preflight_reproduction.csv"))
+ 
+-  copy_tree_exact(build_root, candidate_build)
+   transform <- build_candidate_index(read_text(production_index), read_text(canonical_html))
+   write_text_atomic(transform$text, file.path(candidate_build, "index.html"))
+   copy_atomic(canonical_docx, file.path(candidate_build, basename(production_docx)))
+

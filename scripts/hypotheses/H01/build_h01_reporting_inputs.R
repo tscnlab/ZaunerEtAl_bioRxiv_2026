@@ -241,9 +241,19 @@ primary_diagnostics <- diagnostics |>
 
 v0_primary <- v0_model |>
   dplyr::filter(.data$placement == "glasses") |>
+  dplyr::mutate(
+    submitted_metric_id = .data$metric_id,
+    metric_id = dplyr::if_else(
+      .data$metric_order == 17L &
+        .data$metric_id == "mder_ratio_of_integrals",
+      "mder_mean_of_viable_ratios",
+      .data$metric_id
+    )
+  ) |>
   dplyr::select(
     .data$metric_order,
     .data$metric_id,
+    .data$submitted_metric_id,
     .data$family_v0,
     .data$response_v0,
     .data$site_p_adjusted_v0,
@@ -338,10 +348,13 @@ site_followups <- site_deviations |>
     .data$overall_site_p_adjusted,
     .data$interval_method
   )
+supported_site_metrics <- primary_tests |>
+  dplyr::filter(.data$test_id == "site", .data$p_adjusted < 0.05) |>
+  dplyr::pull(.data$metric_id)
 if (
-  nrow(site_followups) != 72L ||
+  nrow(site_followups) != 9L * length(supported_site_metrics) ||
     any(site_followups$contrast_family_n != 9L) ||
-    dplyr::n_distinct(site_followups$metric_id) != 8L
+    !setequal(unique(site_followups$metric_id), supported_site_metrics)
 ) {
   stop("The hierarchical H01 site follow-up table is incomplete", call. = FALSE)
 }
@@ -551,7 +564,7 @@ v0_name_map <- tibble::tribble(
   14L, "first_timing_above_250", "First timing above 250",
   15L, "last_timing_above_250", "Last timing above 250",
   16L, "dose_time_sensitive_corrected_medi", "Dose",
-  17L, "mder_ratio_of_integrals", "MDER"
+  17L, "mder_mean_of_viable_ratios", "MDER"
 )
 
 v0_html_path <- file.path(root, "docs/RQ1.html")
@@ -1205,6 +1218,15 @@ manifest_inputs <- c(
   ),
   "artifacts/09_tables/H01/v0/H01_v0_model_results.csv",
   "artifacts/09_tables/H01/v0/H01_v0_exact_samples.csv",
+  "audit/decisions/mder_mean_of_viable_ratios.md",
+  paste0(
+    "audit/hypotheses/H01/mder_METRIC-010/bootstrap_production/",
+    "H01_METRIC-010_bootstrap_production_manifest.csv"
+  ),
+  paste0(
+    "audit/hypotheses/H01/mder_METRIC-010/production_integration/",
+    "H01_METRIC-010_production_integration_summary.csv"
+  ),
   "artifacts/11_source_data/descriptives/latitude_photoperiod.csv",
   "config/site_display_registry.csv",
   "docs/RQ1.html",
@@ -1225,19 +1247,22 @@ manifest_files <- c(
 manifest <- dplyr::bind_rows(lapply(
   sort(unique(manifest_files)),
   function(path) {
+    artifact_path <- path
+    relative_path <- substring(artifact_path, nchar(root) + 2L)
+    is_reporting_output <- artifact_path %in% c(
+      output_paths,
+      latitude_path,
+      bounds_path,
+      figure_png,
+      figure_svg,
+      provenance_path
+    )
     tibble::tibble(
-      path = substring(path, nchar(root) + 2L),
-      sha256 = artifact_sha256(path),
-      bytes = as.numeric(file.info(path)$size),
+      path = relative_path,
+      sha256 = artifact_sha256(artifact_path),
+      bytes = as.numeric(file.info(artifact_path)$size),
       role = dplyr::if_else(
-        path %in% c(
-          output_paths,
-          latitude_path,
-          bounds_path,
-          figure_png,
-          figure_svg,
-          provenance_path
-        ),
+        is_reporting_output,
         "H01 reporting output",
         "H01 reporting input"
       ),
@@ -1247,6 +1272,98 @@ manifest <- dplyr::bind_rows(lapply(
   }
 ))
 write_csv_artifact(manifest, manifest_path, producer = producer)
+
+# The canonical model-results manifest predates the reporting layer but includes
+# these H01 reporting outputs. Reseal only rows owned by this builder, and fail
+# closed if any other canonical artifact has drifted.
+model_results_manifest_path <- file.path(
+  root,
+  "artifacts/12_manifests/H01_model_results_artifacts.csv"
+)
+model_results_manifest <- readr::read_csv(
+  model_results_manifest_path,
+  show_col_types = FALSE,
+  progress = FALSE
+)
+model_results_paths <- file.path(root, model_results_manifest$path)
+stopifnot(all(file.exists(model_results_paths)))
+model_results_hashes <- vapply(
+  model_results_paths,
+  artifact_sha256,
+  character(1)
+)
+model_results_drift <- model_results_hashes != model_results_manifest$sha256
+owned_reporting_paths <- substring(
+  c(
+    output_paths,
+    latitude_path,
+    bounds_path,
+    figure_png,
+    figure_svg,
+    provenance_path
+  ),
+  nchar(root) + 2L
+)
+stopifnot(
+  all(model_results_manifest$path[model_results_drift] %in% owned_reporting_paths)
+)
+owned_rows <- model_results_manifest$path %in% owned_reporting_paths
+model_results_manifest$sha256[owned_rows] <- model_results_hashes[owned_rows]
+model_results_manifest$bytes[owned_rows] <- as.numeric(
+  file.info(model_results_paths[owned_rows])$size
+)
+model_results_manifest$producer[owned_rows] <- producer
+model_results_manifest$r_version[owned_rows] <- as.character(getRversion())
+readr::write_csv(model_results_manifest, model_results_manifest_path, na = "")
+
+# The METRIC-010 integration seal pins the canonical model-results manifest.
+# Update only that directly dependent row after the bounded reporting reseal.
+integration_manifest_path <- file.path(
+  root,
+  paste0(
+    "audit/hypotheses/H01/mder_METRIC-010/production_integration/",
+    "H01_METRIC-010_production_integration_manifest.csv"
+  )
+)
+if (file.exists(integration_manifest_path)) {
+  integration_manifest <- readr::read_csv(
+    integration_manifest_path,
+    show_col_types = FALSE,
+    progress = FALSE
+  )
+  integration_files <- file.path(root, integration_manifest$path)
+  stopifnot(all(file.exists(integration_files)))
+  integration_hashes <- vapply(
+    integration_files,
+    artifact_sha256,
+    character(1)
+  )
+  integration_drift <-
+    integration_hashes != integration_manifest$sha256
+  model_results_relative <- substring(
+    model_results_manifest_path,
+    nchar(root) + 2L
+  )
+  stopifnot(
+    all(
+      integration_manifest$path[integration_drift] == model_results_relative
+    )
+  )
+  integration_row <- which(
+    integration_manifest$path == model_results_relative
+  )
+  stopifnot(length(integration_row) == 1L)
+  integration_manifest$sha256[integration_row] <-
+    integration_hashes[integration_row]
+  integration_manifest$bytes[integration_row] <- as.numeric(
+    file.info(model_results_manifest_path)$size
+  )
+  integration_manifest$producer[integration_row] <- producer
+  integration_manifest$r_version[integration_row] <- as.character(
+    getRversion()
+  )
+  readr::write_csv(integration_manifest, integration_manifest_path, na = "")
+}
 
 message(
   "Built H01 reporting preview: ",

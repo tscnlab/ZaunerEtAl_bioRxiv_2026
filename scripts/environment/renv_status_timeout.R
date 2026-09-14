@@ -234,6 +234,7 @@ run_renv_status_with_timeout <- function(
     R_LIBS_USER = library,
     RENV_CONFIG_CACHE_ENABLED = "FALSE",
     RENV_PATHS_SANDBOX = sandbox_path,
+    TAR = "internal",
     NH_RENV_STATUS_PROJECT = project,
     NH_RENV_STATUS_LIBRARIES = paste(
       libraries,

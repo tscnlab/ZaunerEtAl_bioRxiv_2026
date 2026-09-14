@@ -1,0 +1,30 @@
+[
+  [
+    "\"18_construct_chest_b.R\"},",
+    "\"18_construct_chest_b.R\", \"19_fit_chest_b.R\"},"
+  ],
+  [
+    "    \"CHEST-ANY\",",
+    "    \"CHEST-ANY\",\n    \"CHEST-ANY-PREFIT-RECOVERY-001\","
+  ],
+  [
+    "frozen_continuation_inputs = {",
+    "# One exact prefit recovery; the failed job consumed no optimization slot.\nchest_prefit_job = \"CHEST-ANY-PREFIT-RECOVERY-001\"\nchest_prefit_driver = \"19_fit_chest_b_v2.R\"\nchest_prefit_sha = \"b19cbd0207c9f2bc1724a27122c6388087cadba91851cd2a04f376072e872c21\"\nif job_id == chest_prefit_job:\n    assert driver_path.name == chest_prefit_driver and not driver_args\n    assert hashlib.sha256(driver_path.read_bytes()).hexdigest() == chest_prefit_sha\n    registration = root / \"preflight/chest_prefit_recovery_001/chest_fit_job_registry.csv\"\n    with registration.open(newline=\"\") as f:\n        rows = list(csv.DictReader(f))\n    assert len(rows) == 1 and rows[0][\"job_id\"] == \"CHEST-ANY\"\n    assert Path(rows[0][\"driver_path\"]).resolve() == driver_path\n    assert rows[0][\"driver_sha256\"] == chest_prefit_sha\n    assert rows[0][\"model_id\"] == \"BA-LB-CHEST-ANY\" and rows[0][\"model_fit_count\"] == \"1\"\n    assert not Path(rows[0][\"model_path\"]).exists() and not Path(rows[0][\"manifest_path\"]).exists()\nelse:\n    assert not job_id.startswith(\"CHEST-ANY\"), \"No second chest fit or recovery alias.\"\n    assert driver_path.name != chest_prefit_driver, \"The chest driver has one exact execution only.\"\n    assert (jobs_root / chest_prefit_job / \"finish.json\").is_file(), \"Require the exact chest prefit recovery before later jobs.\"\nfrozen_continuation_inputs = {"
+  ],
+  [
+    "for frozen_path, expected_hash in frozen_continuation_inputs.items():",
+    "frozen_continuation_inputs.update({'/Users/zauner/.codex/worktrees/82ab/ZaunerEtAl_bioRxiv_2026/audit/analyses/brown_adherence/main_linkage_b_amendment/stage2/completion_v2/continued_final_package_007/final_manifest.csv': '946038dbd06d694d27873f47bac8d742dd0cf27be55a2e2d8090ebd522b30865', '/Users/zauner/.codex/worktrees/82ab/ZaunerEtAl_bioRxiv_2026/audit/analyses/brown_adherence/main_linkage_b_amendment/stage2/code/19_fit_chest_b.R': '7ad21ac552b0c116f1afb38d04fd41e1c1b498e51c369760ed7a8ecb057ecc15', '/Users/zauner/.codex/worktrees/82ab/ZaunerEtAl_bioRxiv_2026/audit/analyses/brown_adherence/main_linkage_b_amendment/stage2/preflight/chest_support_recovery_001/chest_fit_job_registry.csv': 'ba3cc739b7273c13cdba5e435b541c036ad4d8e619468ac764abdcef102e6b71', '/Users/zauner/Documents/Arbeit/12-TUM/MeLiDos/WP2.2.5_Data_Analysis/ZaunerEtAl_bioRxiv_2026/audit/decisions/brown_main_linkage_b_stage2_chest_prefit_recovery_001/audit_compute_accounting.csv': 'c3d1db71c96b63b81db32b90c8a68515f9c0d87cb5198f5def0946b4110e78f8'})\nfor frozen_path, expected_hash in frozen_continuation_inputs.items():"
+  ],
+  [
+    "independent_audit_seconds = 35.4437246250119",
+    "independent_audit_seconds = 37.339253292007136"
+  ],
+  [
+    "    elif previous.name == chest_recovery_job:",
+    "    elif previous.name == \"CHEST-ANY\":\n        historical_pins = {'start.json': '0c6455fcec88cf6fb62e0a2ee76e8626adec91abdbf8e06f1ab5ce012eea631f', 'finish.json': '69d3de80c8d66fc48df26e7da98dc4e9d9cf7c5739a75302d7034cce339a3531', 'execution.log': '99d2331679925dbe4c2348f5c2975e9b76896e18fb81068836ff5d6a666eac13'}\n        for name, expected_sha256 in historical_pins.items():\n            assert hashlib.sha256((previous / name).read_bytes()).hexdigest() == expected_sha256\n        assert record[\"job_id\"] == \"CHEST-ANY\" and record[\"driver_sha256\"] == \"7ad21ac552b0c116f1afb38d04fd41e1c1b498e51c369760ed7a8ecb057ecc15\"\n        assert record[\"supervisor_sha256\"] == \"7d954c50a1b2a3fd2aef68ce635697e0957b5670a0241f89fe8fdeed525c6826\"\n        assert record[\"exit_code\"] == 1 and not record[\"timed_out\"] and record[\"child_reaped\"]\n        assert record[\"elapsed_seconds\"] == 0.9314868329965975\n    elif previous.name == chest_prefit_job:\n        assert record[\"job_id\"] == chest_prefit_job and record[\"driver_sha256\"] == chest_prefit_sha\n        assert Path(record[\"command\"][2]).name == chest_prefit_driver and len(record[\"command\"]) == 3\n        assert record[\"exit_code\"] == 0 and not record[\"timed_out\"] and record[\"child_reaped\"], \"A new prefit recovery failure needs a stopped disposition.\"\n    elif previous.name == chest_recovery_job:"
+  ],
+  [
+    "    \"construction_recovery_authority\": \"BA-018-CHEST-SUPPORT-RECOVERY-001\",",
+    "    \"construction_recovery_authority\": \"BA-018-CHEST-SUPPORT-RECOVERY-001\",\n    \"prefit_recovery_authority\": \"BA-018-CHEST-PREFIT-RECOVERY-001\","
+  ]
+]

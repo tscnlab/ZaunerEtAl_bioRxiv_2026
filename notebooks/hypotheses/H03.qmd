@@ -6,6 +6,7 @@ format:
     toc: true
     toc-depth: 2
     code-tools: false
+    lightbox: true
 execute:
   echo: false
   warning: false
@@ -203,13 +204,14 @@ format_ratio_ci <- function(estimate, low, high, digits = 3L) {
     ")"
   )
 }
-h03_gt <- function(table, font_size = 13) {
+h03_gt <- function(table, font_size = 12) {
   table |>
     gt::opt_row_striping() |>
     gt::sub_missing(missing_text = "—") |>
     gt::tab_options(
       table.width = gt::pct(100),
       table.font.size = gt::px(font_size),
+      container.overflow.x = TRUE,
       data_row.padding = gt::px(5),
       column_labels.font.weight = "600",
       source_notes.font.size = gt::px(11)
@@ -369,31 +371,12 @@ The seven light-source categories were associated with near-eye melEDI,
 *F*(6, 139) = `r sprintf("%.2f", near_category_test$f_statistic)`,
 *p* **`r format_p(near_category_test$p_raw)`**. The association between
 light-source category and melEDI was allowed to differ by study site in a
-light-source-category-by-site interaction model. Because that interaction was
-supported, all descriptive means and ratios below come from this model; only
-the preregistered primary omnibus comes from the additive population-mean
-model. These are site-average estimates: each site receives equal weight on
-the fitted log-mean scale, followed by one back-transformation to melEDI in
-lux. They are shown with 95% confidence intervals (95% CIs):
-
-- `r answer_category_line(1L)`
-- `r answer_category_line(2L)`
-- `r answer_category_line(3L)`
-- `r answer_category_line(4L)`
-- `r answer_category_line(5L)`
-- `r answer_category_line(6L)`
-- `r answer_category_line(7L)`
-
-The three largest higher and three largest lower supported near-eye site
-deviations among those labelled after the predeclared false-discovery-rate
-(FDR) adjustment were:
-
-- `r answer_site_line(1L)`
-- `r answer_site_line(2L)`
-- `r answer_site_line(3L)`
-- `r answer_site_line(4L)`
-- `r answer_site_line(5L)`
-- `r answer_site_line(6L)`
+category-by-site interaction model. Because that interaction was supported,
+descriptive category and site summaries come from this model; only the
+preregistered primary omnibus comes from the additive population-mean model.
+Outdoor daylight had the highest site-average near-eye melEDI, while sleep
+darkness had the lowest. Supported site-specific deviations showed that the
+magnitude of the category association varied materially across study sites.
 
 Complementary chest summaries had the same broad ordering for the six
 categories for which a site-average estimate could be calculated across all
@@ -431,47 +414,6 @@ missingness, or coverage were ignored. For this contrast only, the approved
 preparation could be interpreted as a time-sensitive primary metric dataset.
 Below, it is called simply the primary dataset.
 
-```{r}
-#| label: tbl-h03-overall-samples
-#| tbl-cap: "Exact fitted samples for the primary and complementary models."
-
-main_samples |>
-  transmute(
-    Placement = as.character(.data$Placement),
-    `Participant-hours` = .data$observations,
-    Participants = .data$participants,
-    `Participant-days` = .data$participant_days,
-    Sites = .data$sites,
-    `Exact-zero hours` = .data$exact_zero_hours
-  ) |>
-  gt::gt() |>
-  gt::fmt_integer(columns = where(is.numeric), use_seps = TRUE) |>
-  h03_gt()
-```
-
-```{r}
-#| label: tbl-h03-category-support
-#| tbl-cap: "Exact fitted support for every light-source category."
-
-primary |>
-  mutate(Placement = factor(.data$placement, levels = c("Near-eye", "Chest"))) |>
-  arrange(.data$Placement, .data$category_order) |>
-  transmute(
-    Placement,
-    Category = .data$short_label,
-    `Participant-hours` = .data$hours,
-    Participants = .data$participants,
-    `Participant-days` = .data$participant_days,
-    Sites = .data$sites
-  ) |>
-  gt::gt(groupname_col = "Placement") |>
-  gt::fmt_integer(
-    columns = c(`Participant-hours`, Participants, `Participant-days`, Sites),
-    use_seps = TRUE
-  ) |>
-  h03_gt(12)
-```
-
 All seven categories meet the pooled support rule. Outdoor electric light is
 the sparsest category, with 203 near-eye and 219 chest hours. Sparse
 category-by-site cells remain in the pooled models but are labelled
@@ -491,7 +433,7 @@ distributions account for the fact that observations from the same participant
 may be related. This changes uncertainty; it does not remove temporal patterns
 from residuals.
 
-A separate light-source-category-by-site interaction model allows the
+A separate category-by-site interaction model allows the
 association between light-source category and melEDI to differ by study site.
 Near eye uses the full `site * light_source` interaction, while chest uses an
 equivalent observed-cell parameterization because one site-category cell is
@@ -524,8 +466,8 @@ category-by-site interaction model. The principal display is
 
 ```{r}
 #| label: fig-h03-primary-estimates
-#| fig-cap: "Site-average one-hour melEDI and ratios to indoor electric light from the light-source-category-by-site interaction model; bars are participant-cluster-robust 95% CIs."
-#| fig-alt: "Two-panel plot of site-average estimates from the light-source-category-by-site interaction model for seven light-source categories. Outdoor daylight is highest and sleep darkness lowest. Near-eye outdoor electric is about one tenth of indoor electric. The complementary chest external-light estimate is absent because a site-average estimate cannot be calculated across all eight chest sites."
+#| fig-cap: "Site-average one-hour melEDI and ratios to indoor electric light from the category-by-site interaction model; bars are participant-cluster-robust 95% CIs."
+#| fig-alt: "Two-panel plot of site-average estimates from the category-by-site interaction model for seven light-source categories. Outdoor daylight is highest and sleep darkness lowest. Near-eye outdoor electric is about one tenth of indoor electric. The complementary chest external-light estimate is absent because a site-average estimate cannot be calculated across all eight chest sites."
 #| out-width: "100%"
 
 knitr::include_graphics(file.path(
@@ -536,7 +478,7 @@ knitr::include_graphics(file.path(
 
 ```{r}
 #| label: tbl-h03-primary-results
-#| tbl-cap: "Site-average category means and ratios to indoor electric light from the light-source-category-by-site interaction model."
+#| tbl-cap: "Site-average category means and ratios to indoor electric light from the category-by-site interaction model."
 
 interaction_category |>
   mutate(
@@ -573,7 +515,7 @@ interaction_category |>
   gt::tab_source_note(
     gt::md(paste(
       "These descriptive site-average estimates use the accepted",
-      "light-source-category-by-site interaction model. Each site receives",
+      "category-by-site interaction model. Each site receives",
       "equal weight on the fitted log-mean scale before back-transformation",
       "to melEDI in lux. The 95% CIs account for related observations within",
       "participants using participant-clustered HC1 covariance. No p-value is",
@@ -806,7 +748,7 @@ site_factor_table <- site_factor_table_data |>
     `External light during sleep` = gt::md("External light<br>during sleep")
   ) |>
   gt::cols_width(Location ~ gt::px(165)) |>
-  h03_gt(10.5) |>
+  h03_gt(12) |>
   gt::tab_style(
     style = list(
       gt::cell_fill(color = "#E8EEF3"),
@@ -836,8 +778,8 @@ site_factor_table <- site_factor_table_data |>
     gt::md(paste(
       "The blue-grey site-average row gives both the expected mean and",
       "ratio to indoor electric for every category; the empty row separates",
-      "it from the site-specific deviations. Coloured circles use the submitted",
-      "site palette. Site cells are deviation ratios around the corresponding",
+      "it from the site-specific deviations. Coloured circles use the shared",
+      "country-coded site order and colours. Site cells are deviation ratios around the corresponding",
       "category mean. Bold site ratios pass the FDR adjustment across 53",
       "supported deviations."
     ))
@@ -929,7 +871,7 @@ glm_r_squared |>
       "effect tests."
     ))
   ) |>
-  h03_gt(11)
+  h03_gt(12)
 ```
 
 Under the near-eye working quasi-deviance definition, overall R² was 0.522;
@@ -947,6 +889,9 @@ neither a participant-day intercept nor a temporal correlation term. It was
 fitted only for variance description and does not replace the accepted
 population-mean analysis or estimate participant-specific light-source
 slopes.
+
+The model construction and stored-output provenance are documented in the
+[exploratory participant random-intercept assessment](../../audit/hypotheses/H03/H03_analysis_preparation.qmd#sec-h03-prep-participant-random-intercept).
 
 ```{r}
 #| label: tbl-h03-participant-random-intercept
@@ -978,19 +923,19 @@ participant_random_intercept_table <- tibble::tribble(
   ) |>
   dplyr::bind_rows(tibble::tribble(
   ~Component, ~Quantity, ~Estimate, ~Interpretation,
-  "Participant heterogeneity", "Adjusted participant ICC",
+  "Participant-level variation", "Adjusted participant ICC",
   participant_random_intercept$adjusted_participant_icc[[1L]],
   "Participant share after excluding fixed-effect variance",
-  "Participant heterogeneity", "Unadjusted participant ICC",
+  "Participant-level variation", "Unadjusted participant ICC",
   participant_random_intercept$unadjusted_participant_icc[[1L]],
   "Participant share of total model-based variance",
-  "Participant heterogeneity", "Participant SD on log scale",
+  "Participant-level variation", "Participant SD on log scale",
   participant_random_intercept$participant_intercept_sd_log[[1L]],
   "Spread of stable participant intercepts",
-  "Participant heterogeneity", "One-SD multiplicative factor",
+  "Participant-level variation", "One-SD multiplicative factor",
   participant_random_intercept$participant_factor_per_sd[[1L]],
   "Expected-mean factor for a participant one SD above average",
-  "Participant heterogeneity", "Participant/fixed variance ratio",
+  "Participant-level variation", "Participant/fixed variance ratio",
   participant_random_intercept$participant_to_fixed_variance_ratio[[1L]],
   "Participant-intercept variance divided by fixed-predictor variance"
   )) |>
@@ -1016,7 +961,7 @@ participant_random_intercept_table |>
       "enters only after both main effects."
     ))
   ) |>
-  h03_gt(11)
+  h03_gt(12)
 ```
 
 Marginal R² was `r sprintf("%.3f", participant_random_intercept$marginal_r_squared[[1L]])`
@@ -1082,6 +1027,21 @@ rank, and had finite positive-definite participant-cluster covariances. Their
 working distribution nevertheless does not reproduce important features of
 individual-hour data.
 
+Hours close together in time still show similar unexplained deviations: the
+technical lag-one residual correlations are 0.478 near eye and 0.615 at chest.
+Participant clustering protects coefficient uncertainty against arbitrary
+dependence within a participant, but it does not whiten residuals or turn the
+working Tweedie family into a calibrated probability model.
+
+The discrepancy is clearest for zeros. Exact zeros comprise 27.8% of hours,
+whereas the working Tweedie relationship implies 85.2% near eye and 94.8% at
+chest. The model is therefore interpreted only as a log-mean model with
+participant-robust inference, not as an individual-hour prediction model or a
+model of zero probability.
+
+<details>
+<summary>Show detailed primary model checks</summary>
+
 ```{r}
 #| label: tbl-h03-primary-diagnostics
 #| tbl-cap: "Numerical, residual, temporal, and zero-mass model checks."
@@ -1116,20 +1076,8 @@ diagnostics |>
     `Working zero fraction` = sprintf("%.3f", .data$working_zero)
   ) |>
   gt::gt() |>
-  h03_gt(11)
+  h03_gt(12)
 ```
-
-Hours close together in time still show similar unexplained deviations: the
-technical lag-one residual correlations are 0.478 near eye and 0.615 at chest.
-Participant clustering protects coefficient uncertainty against arbitrary
-dependence within a participant, but it does not whiten residuals or turn the
-working Tweedie family into a calibrated probability model.
-
-The discrepancy is clearest for zeros. Exact zeros comprise 27.8% of hours,
-whereas the working Tweedie relationship implies 85.2% near eye and 94.8% at
-chest. The model is therefore interpreted only as a log-mean model with
-participant-robust inference, not as an individual-hour prediction model or a
-model of zero probability.
 
 ```{r}
 #| label: fig-h03-primary-diagnostics
@@ -1142,6 +1090,8 @@ knitr::include_graphics(file.path(
   "artifacts/10_figures/H03/H03_primary_residual_diagnostics.png"
 ))
 ```
+
+</details>
 
 Deleting each available site and the five participants with the largest score
 contributions at each placement produced 27 refits. No category-omnibus
@@ -1160,6 +1110,9 @@ or measurement-context boundary; exclude site-category cells that fail the
 predefined support rule; set the quasi-Tweedie working variance power to 1.30
 or 1.80; or add participant-level category proportions to separate within-
 participant from between-participant information.
+
+<details>
+<summary>Show detailed sensitivity results</summary>
 
 ```{r}
 #| label: tbl-h03-sensitivities
@@ -1239,8 +1192,10 @@ sensitivity_counts |>
   gt::tab_source_note(
     gt::md("Each raw omnibus p-value is bold at its stated 0.050 label.")
   ) |>
-  h03_gt(10.5)
+  h03_gt(12)
 ```
+
+</details>
 
 The gap-timing-unaware dataset retained 17,616 near-eye and 19,220 chest
 hours; all seven category rows were stable at both placements. Excluding
@@ -1304,6 +1259,9 @@ averages over all contributed times and forms a site-average on its fitted
 log-mean scale. The temporal curves condition on clock time and show only the
 global and light-source components. Their values therefore need not average
 to the primary category estimates.
+
+<details>
+<summary>Show exploratory nonlinear time-of-day details</summary>
 
 ```{r}
 #| label: fig-h03-temporal-near-eye
@@ -1383,7 +1341,7 @@ temporal_summary |>
       "resampling intervals."
     ))
   ) |>
-  h03_gt(11)
+  h03_gt(12)
 ```
 
 ```{r}
@@ -1418,15 +1376,6 @@ temporal_allocation |>
   ) |>
   h03_gt()
 ```
-
-Global time of day received 60.4% of the near-eye and 58.3% of the chest point
-allocation. Light-source deviations received 24.2% and 26.4%, site deviations
-5.2% and 6.5%, participant curves 7.6% and 5.7%, and participant-day shifts
-2.5% and 3.1%. The Shapley allocation averages a component's contribution
-across all orders in which components could be added, allocating shared
-fitted-model information rather than counting it repeatedly. These are point
-summaries without uncertainty intervals and are not independent or causal
-percentages of raw melEDI variance.
 
 ### Temporal model checks
 
@@ -1483,25 +1432,8 @@ temporal_summary |>
   gt::tab_source_note(
     gt::md("The deterministic k-index check used zero permutation replicates.")
   ) |>
-  h03_gt(10.5)
+  h03_gt(12)
 ```
-
-Both final fits converged at full coefficient rank with positive-definite
-smoothing-parameter Hessians. The chest fit with zero AR correlation, used
-only to estimate the fixed AR value, did not converge; the final fixed-AR fit
-did. The global smooths used 9.36 and 9.47 effective degrees of freedom out of
-ten available, with deterministic k-indices of 0.890 and 0.884. The smooths
-are therefore close to their basis capacity, and no permutation *p*-value was
-computed.
-
-The AR adjustment reduces but does not eliminate the tendency for nearby hours
-to retain similar unexplained deviations: the technical lag-one residual
-correlations are 0.146 near eye and 0.144 at chest. Residual spread remains
-fitted-value dependent, and the working zero fractions of 0.465 and 0.508
-exceed the observed fractions of 0.278 and 0.277. These limitations confine
-the temporal analysis to descriptive conditional-mean context. The ribbons
-are pointwise 95% intervals; they are not simultaneous bands and do not
-support curve-wide significance claims.
 
 ```{r}
 #| label: fig-h03-temporal-diagnostics
@@ -1521,6 +1453,34 @@ knitr::include_graphics(file.path(
 and [zero calibration](../../artifacts/11_source_data/H03/H03_reader_temporal_zero_calibration.csv)
 provide the exact model-check source values.
 
+</details>
+
+Global time of day received 60.4% of the near-eye and 58.3% of the chest point
+allocation. Light-source deviations received 24.2% and 26.4%, site deviations
+5.2% and 6.5%, participant curves 7.6% and 5.7%, and participant-day shifts
+2.5% and 3.1%. The Shapley allocation averages a component's contribution
+across all orders in which components could be added, allocating shared
+fitted-model information rather than counting it repeatedly. These are point
+summaries without uncertainty intervals and are not independent or causal
+percentages of raw melEDI variance.
+
+Both final fits converged at full coefficient rank with positive-definite
+smoothing-parameter Hessians. The chest fit with zero AR correlation, used
+only to estimate the fixed AR value, did not converge; the final fixed-AR fit
+did. The global smooths used 9.36 and 9.47 effective degrees of freedom out of
+ten available, with deterministic k-indices of 0.890 and 0.884. The smooths
+are therefore close to their basis capacity, and no permutation *p*-value was
+computed.
+
+The AR adjustment reduces but does not eliminate the tendency for nearby hours
+to retain similar unexplained deviations: the technical lag-one residual
+correlations are 0.146 near eye and 0.144 at chest. Residual spread remains
+fitted-value dependent, and the working zero fractions of 0.465 and 0.508
+exceed the observed fractions of 0.278 and 0.277. These limitations confine
+the temporal analysis to descriptive conditional-mean context. The ribbons
+are pointwise 95% intervals; they are not simultaneous bands and do not
+support curve-wide significance claims.
+
 ## Exploratory linear latitude context
 
 Latitude cannot be estimated alongside a saturated fixed-site term because
@@ -1534,10 +1494,13 @@ geo_medi_1h ~ 0 + light_source +
 
 The coefficient for each category is the multiplicative change in expected
 one-hour melEDI per 10° farther from the equator. Centering at the site-average
-mean absolute latitude—39.2° near eye and 38.1° at chest—changes the
+mean absolute latitude, 39.2° near eye and 38.1° at chest, changes the
 intercepts but not the slopes. Uncertainty is clustered at site, not
 participant, because latitude varies only across nine near-eye and eight chest
 sites. Seven slope p-values receive an FDR adjustment within each placement.
+
+<details>
+<summary>Show exploratory latitude details</summary>
 
 ```{r}
 #| label: tbl-h03-latitude-slopes
@@ -1593,26 +1556,13 @@ latitude_slopes |>
       "kept its full-model direction and its point-estimate range."
     ))
   ) |>
-  h03_gt(10.5)
+  h03_gt(12)
 ```
-
-Near eye showed FDR-labelled positive gradients for indoor electric light
-(ratio 1.197 per +10°, 95% CI 1.081–1.326), indoor daylight (1.253,
-1.131–1.388), outdoor daylight (1.354, 1.105–1.661), and sleep darkness
-(1.428, 1.076–1.895). Each retained a positive slope in all nine
-leave-one-site-out fits. At chest, only indoor electric light retained the FDR
-label (1.142, 1.061–1.229) and remained positive in all eight omissions.
-
-Both latitude models converged without warnings and retained design rank
-14/14. Their site-cluster covariance ranks were necessarily limited to eight
-and seven because only nine and eight independent site clusters were
-available. Accordingly, the report gives coefficient-wise slope tests and no
-joint seven-slope Wald test.
 
 ```{r}
 #| label: fig-h03-latitude-slopes
 #| fig-cap: "Exploratory factor change in expected melEDI per 10° increase in absolute latitude; points filled in their light-source colour pass the seven-slope within-placement FDR label."
-#| fig-alt: "Two-panel forest plot of category-specific ratios per ten degrees farther from the equator. Point outlines and intervals use the corresponding light-source colour. Four near-eye slopes—indoor electric, indoor daylight, outdoor daylight, and sleep darkness—are filled in that colour because their FDR-adjusted p-values are below 0.050. Only indoor electric is filled at chest. Outdoor electric, display, and external-light intervals are wider."
+#| fig-alt: "Two-panel forest plot of category-specific ratios per ten degrees farther from the equator. Point outlines and intervals use the corresponding light-source colour. Four near-eye slopes (indoor electric, indoor daylight, outdoor daylight, and sleep darkness) are filled in that colour because their FDR-adjusted p-values are below 0.050. Only indoor electric is filled at chest. Outdoor electric, display, and external-light intervals are wider."
 #| out-width: "100%"
 
 knitr::include_graphics(file.path(
@@ -1626,6 +1576,21 @@ knitr::include_graphics(file.path(
 [leave-one-site-out fits](../../artifacts/08_diagnostics/H03/H03_reader_latitude_leave_one_site_out.csv),
 and [model checks](../../artifacts/08_diagnostics/H03/H03_reader_latitude_model_diagnostics.csv)
 provide the exact exploratory outputs.
+
+</details>
+
+Near eye showed FDR-labelled positive gradients for indoor electric light
+(ratio 1.197 per +10°, 95% CI 1.081–1.326), indoor daylight (1.253,
+1.131–1.388), outdoor daylight (1.354, 1.105–1.661), and sleep darkness
+(1.428, 1.076–1.895). Each retained a positive slope in all nine
+leave-one-site-out fits. At chest, only indoor electric light retained the FDR
+label (1.142, 1.061–1.229) and remained positive in all eight omissions.
+
+Both latitude models converged without warnings and retained design rank
+14/14. Their site-cluster covariance ranks were necessarily limited to eight
+and seven because only nine and eight independent site clusters were
+available. Accordingly, the report gives coefficient-wise slope tests and no
+joint seven-slope Wald test.
 
 These are ecological associations across a small number of sites. Absolute
 latitude may stand in for season, climate, built environment, behaviour, or
@@ -1654,7 +1619,77 @@ inference. The linear absolute-latitude context identifies several exploratory
 ecological gradients, but the small number of sites and site-level confounding
 preclude a causal latitude interpretation.
 
-## Preregistration deviations {#h03-preregistration-deviations}
+## Detailed analysis record
+
+### Exact sample and category support
+
+```{r}
+#| label: tbl-h03-overall-samples
+#| tbl-cap: "Exact fitted samples for the primary and complementary models."
+
+main_samples |>
+  transmute(
+    Placement = as.character(.data$Placement),
+    `Participant-hours` = .data$observations,
+    Participants = .data$participants,
+    `Participant-days` = .data$participant_days,
+    Sites = .data$sites,
+    `Exact-zero hours` = .data$exact_zero_hours
+  ) |>
+  gt::gt() |>
+  gt::fmt_integer(columns = where(is.numeric), use_seps = TRUE) |>
+  h03_gt()
+```
+
+```{r}
+#| label: tbl-h03-category-support
+#| tbl-cap: "Exact fitted support for every light-source category."
+
+primary |>
+  mutate(Placement = factor(.data$placement, levels = c("Near-eye", "Chest"))) |>
+  arrange(.data$Placement, .data$category_order) |>
+  transmute(
+    Placement,
+    Category = .data$short_label,
+    `Participant-hours` = .data$hours,
+    Participants = .data$participants,
+    `Participant-days` = .data$participant_days,
+    Sites = .data$sites
+  ) |>
+  gt::gt(groupname_col = "Placement") |>
+  gt::fmt_integer(
+    columns = c(`Participant-hours`, Participants, `Participant-days`, Sites),
+    use_seps = TRUE
+  ) |>
+  h03_gt(12)
+```
+
+### Complete category and supported site summaries
+
+These are site-average estimates: each site receives equal weight on the
+fitted log-mean scale, followed by one back-transformation to melEDI in lux.
+They are shown with 95% confidence intervals (95% CIs):
+
+- `r answer_category_line(1L)`
+- `r answer_category_line(2L)`
+- `r answer_category_line(3L)`
+- `r answer_category_line(4L)`
+- `r answer_category_line(5L)`
+- `r answer_category_line(6L)`
+- `r answer_category_line(7L)`
+
+The three largest higher and three largest lower supported near-eye site
+deviations among those labelled after the predeclared false-discovery-rate
+(FDR) adjustment were:
+
+- `r answer_site_line(1L)`
+- `r answer_site_line(2L)`
+- `r answer_site_line(3L)`
+- `r answer_site_line(4L)`
+- `r answer_site_line(5L)`
+- `r answer_site_line(6L)`
+
+### Preregistration deviations {#h03-preregistration-deviations}
 
 - **Study-site structure ([DEV-013](../preregistration_deviations.qmd#dev-013)).**
   The registered random-effects architecture was not retained because site
@@ -1681,7 +1716,7 @@ preclude a causal latitude interpretation.
   complete contrast family; category and site-interaction questions remain
   separate families.
 
-## Sources, technical formulas, and provenance
+### Sources, technical formulas, and provenance
 
 ```{r}
 #| label: tbl-h03-formulas

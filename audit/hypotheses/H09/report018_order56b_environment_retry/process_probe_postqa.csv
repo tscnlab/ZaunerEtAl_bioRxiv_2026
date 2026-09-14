@@ -1,0 +1,5 @@
+process_class,pattern,match_count,probe_exit,status
+loopback_listener,TCP:53458 LISTEN,0,1,PASS
+loopback_server,[p]ython3 -m http.server 0 --bind 127.0.0.1 --directory _build/nathealth,0,1,PASS
+quarto_render,[q]uarto.*render.*H09.qmd,0,1,PASS
+semantic_hook,[p]ost_render_gt_html_semantics.R,0,1,PASS

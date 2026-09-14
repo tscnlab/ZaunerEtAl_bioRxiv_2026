@@ -1,6 +1,6 @@
 ---
 title: "H03 analysis preparation and provenance"
-subtitle: "From verified one-hour records and reported light sources to site-standardized exposure contrasts"
+subtitle: "From verified one-hour records and reported light sources to site-average exposure contrasts"
 date: last-modified
 format:
   html:
@@ -10,6 +10,7 @@ format:
     code-summary: "Show the R code used for this display"
     code-tools: true
     page-layout: full
+    lightbox: true
 execute:
   echo: true
   warning: false
@@ -190,6 +191,73 @@ temporal_environment <- read_h03_csv(
     "H03_temporal_execution_environment.csv"
   )
 )
+participant_random_intercept_summary <- read_h03_csv(
+  paste0(
+    "artifacts/09_tables/H03/",
+    "H03_near_eye_participant_random_intercept_summary.csv"
+  )
+)
+participant_random_intercept_shapley <- read_h03_csv(
+  paste0(
+    "artifacts/09_tables/H03/",
+    "H03_near_eye_participant_random_intercept_marginal_r2_shapley.csv"
+  )
+)
+participant_random_intercept_model_checks <- read_h03_csv(
+  paste0(
+    "artifacts/08_diagnostics/H03/",
+    "H03_near_eye_participant_random_intercept_shapley_models.csv"
+  )
+)
+participant_random_intercept_diagnostics <- read_h03_csv(
+  paste0(
+    "artifacts/08_diagnostics/H03/",
+    "H03_near_eye_participant_random_intercept_diagnostics.csv"
+  )
+)
+participant_random_intercept_environment <- read_h03_csv(
+  paste0(
+    "artifacts/12_manifests/H03/",
+    "H03_near_eye_participant_random_intercept_environment.csv"
+  )
+)
+participant_random_intercept_manifest <- read_h03_csv(
+  paste0(
+    "artifacts/12_manifests/H03/",
+    "H03_near_eye_participant_random_intercept_manifest.csv"
+  )
+)
+
+participant_random_intercept_expected_files <- c(
+  "H03_near_eye_participant_random_intercept_assessment.rds",
+  "H03_near_eye_participant_random_intercept_diagnostics.csv",
+  "H03_near_eye_participant_random_intercept_shapley_models.csv",
+  "H03_near_eye_participant_random_intercept_marginal_r2_shapley.csv",
+  "H03_near_eye_participant_random_intercept_summary.csv",
+  "H03_near_eye_participant_random_intercept_environment.csv"
+)
+participant_random_intercept_paths <- normalizePath(
+  participant_random_intercept_manifest$path,
+  winslash = "/",
+  mustWork = TRUE
+)
+stopifnot(
+  nrow(participant_random_intercept_manifest) == 6L,
+  setequal(
+    basename(participant_random_intercept_paths),
+    participant_random_intercept_expected_files
+  ),
+  all(vapply(
+    participant_random_intercept_paths,
+    artifact_sha256,
+    character(1)
+  ) == participant_random_intercept_manifest$sha256),
+  all(
+    file.info(participant_random_intercept_paths)$size ==
+      participant_random_intercept_manifest$bytes
+  ),
+  all(participant_random_intercept_manifest$r_version == "4.6.1")
+)
 
 model_frame_archive <- readRDS(file.path(
   root,
@@ -201,37 +269,39 @@ stopifnot(
 )
 ```
 
-::: {.callout-note title="About this analysis record"}
-This page explains how verified one-hour melEDI records and normalized
-self-reported primary-light-source categories were turned into the H03
-results. The companion [H03 results
-report](../../../notebooks/hypotheses/H03.html) presents the scientific
-findings.
-
-Rendering this page recalculates only current file identities, schema and key
-checks, and lightweight descriptive summaries from the frozen H03 model
-frames. It reads model estimates, confidence intervals, omnibus tests,
-diagnostics, influence refits, sensitivity results, exploratory smooths, and
-latitude results from their recorded files. It does not fit or refit a model,
-calculate predictions, re-estimate residual autocorrelation, rerun a
-leave-one-site-out analysis, bootstrap, simulate data, or recalculate a
-variance allocation.
-:::
-
-## Purpose
+## About this analysis record
 
 H03 asks whether all seven prespecified self-reported primary-light-source
 categories are associated with measured one-hour personal light exposure.
-Near-eye melEDI is primary; chest melEDI is complementary. The central
-estimand is the site-standardized geometric expected melEDI for each category
-and its ratio to indoor electric light. “Site-standardized” means that each
-included site contributes the same weight on the fitted log-mean scale,
-followed by one back-transformation.
+The primary near-eye sensor position measures light close to the eyes. The
+complementary chest sensor position measures light at the chest and is not a
+measure of ocular exposure. The outcome is melanopic equivalent daylight
+illuminance (melEDI). The central estimand is the site-average geometric
+expected melEDI for each category and its ratio to indoor electric light. A
+site-average estimate gives each included site equal weight on the fitted
+log-mean scale; one back-transformation then returns the estimate to melEDI in
+lux.
 
 This page identifies the data and code that produced the result, explains why
 each analytical operation was needed, and shows the recorded evidence used to
 check it. The analysis is observational and does not identify causal effects,
 health outcomes, or equivalence between measurement placements.
+
+The [H03 results report](../../../notebooks/hypotheses/H03.qmd) presents the
+scientific findings and its [linked registration-record summary](../../../notebooks/hypotheses/H03.qmd#h03-preregistration-deviations).
+The metric and model-ready input definitions are also
+documented in [Preparation 04](../../../notebooks/preparation/04_metric_derivation.qmd)
+and [Preparation 06](../../../notebooks/preparation/06_model_ready_datasets.qmd).
+
+::: {.callout-note title="Scope of this analysis record"}
+This page reads accepted estimates, 95% confidence intervals (95% CIs),
+omnibus tests, model checks, influence refits, sensitivity results,
+exploratory smooths, and latitude results from their recorded files. Its
+bounded display work does not
+fit or refit a model, calculate predictions, re-estimate residual
+autocorrelation, rerun a leave-one-site-out analysis, bootstrap, simulate
+data, or recalculate a variance allocation.
+:::
 
 ## Analysis map
 
@@ -239,16 +309,16 @@ health outcomes, or equivalence between measurement placements.
 flowchart TD
   A["Verified near-eye and chest<br/>one-hour geometric melEDI"] --> D["One-to-one local-hour join"]
   B["Normalized primary-light-source diary<br/>seven ordered categories"] --> D
-  C["Submitted site registry<br/>names, order and colours"] --> D
+  C["Shared country-coded site registry,<br/>order, and colours"] --> D
   D --> E["Eligibility, key, value,<br/>missingness and overlap checks"]
   E --> F["Primary model frames<br/>participant-hours within days"]
   F --> G["Additive quasi-Tweedie GLMs<br/>site plus light source"]
-  F --> H["Site-by-category heterogeneity<br/>supported observed cells"]
-  G --> I["Indoor-electric ratios,<br/>95% intervals and omnibus test"]
-  H --> J["Site-standardized category means,<br/>site deviations and within-site ratios"]
+  F --> H["Category-by-site interaction<br/>supported observed cells"]
+  G --> I["Indoor-electric ratios,<br/>95% CIs and omnibus test"]
+  H --> J["Site-average category means,<br/>site deviations and within-site ratios"]
   G --> K["Residual, zero-mass,<br/>temporal and influence checks"]
-  F --> L["Paired, gap, boundary,<br/>support, power and within/between checks"]
-  F --> M["Exploratory time-of-day GAMs<br/>and absolute-latitude GLMs"]
+  F --> L["Same-hour, gap, boundary,<br/>support, power and within/between checks"]
+  F --> M["Exploratory nonlinear time-of-day GAMs<br/>and linear absolute-latitude GLMs"]
   I --> N["H03 results report"]
   J --> N
   K --> N
@@ -262,36 +332,13 @@ flowchart TD
 The arrows describe dependencies. They do not mean that this page repeats
 model estimation.
 
-## What is calculated when this page opens
-
-```{r}
-#| label: tbl-h03-prep-boundary
-#| tbl-cap: "Calculations performed when this page is rendered."
-
-tibble::tribble(
-  ~Category, ~Calculated_on_render, ~Explanation,
-  "File identity and schema", "Yes", "Checks recorded SHA-256 identities, required columns, unique local-hour keys, and frozen-frame dimensions.",
-  "Descriptive support", "Yes", "Summarises stored category, site, local-hour, participant-day, exact-zero, and sequence support.",
-  "Model construction and estimation", "No", "Reads the formula registry, fitted-model archives, estimates, intervals, and omnibus tests.",
-  "Diagnostics and sensitivities", "No", "Reads recorded diagnostics, influence refits, model-performance summaries, and sensitivity outputs.",
-  "Reader figures", "Display only", "Draws four descriptive figures from linked exact source-data CSV files."
-) |>
-  gt::gt() |>
-  gt::cols_width(
-    Category ~ gt::pct(24),
-    Calculated_on_render ~ gt::pct(18),
-    Explanation ~ gt::pct(58)
-  ) |>
-  h03_gt()
-```
-
 ## 1. Verified inputs
 
 ### File identity
 
 Six inputs determine the current analysis frames and displays: two accepted
 one-hour outcome files, the normalized diary, the predefined alternative
-preparation, the category dictionary, and the submitted-manuscript site
+preparation, the category dictionary, and the shared country-coded site
 registry. Their complete SHA-256 identities were recorded before estimation.
 
 ```{r}
@@ -312,7 +359,7 @@ input_labels <- c(
   normalized_diary = "Normalized light-source diary",
   gap_timing_unaware = "Gap-timing-unaware one-hour outcomes",
   category_dictionary = "Light-source category dictionary",
-  site_registry = "Submitted site-display registry"
+  site_registry = "Shared country-coded site registry"
 )
 
 verified_inputs <- input_audit |>
@@ -326,25 +373,30 @@ verified_inputs <- input_audit |>
       basename(.data$path)
     ),
     `SHA-256 prefix` = substr(.data$current_sha256, 1L, 16L),
-    Verified = if_else(
+    verification_state = if_else(
       .data$current_sha256 == .data$sha256,
       "PASS",
       "FAIL"
+    ),
+    Verification = recode(
+      .data$verification_state,
+      PASS = "Verified",
+      FAIL = "Review needed"
     )
   )
 stopifnot(
   nrow(verified_inputs) == 6L,
-  all(verified_inputs$Verified == "PASS")
+  all(verified_inputs$verification_state == "PASS")
 )
 
 verified_inputs |>
-  select("Input", "Path", "SHA-256 prefix", "Verified") |>
+  select("Input", "Path", "SHA-256 prefix", "Verification") |>
   gt::gt() |>
   gt::cols_width(
     Input ~ gt::pct(27),
     Path ~ gt::pct(51),
     `SHA-256 prefix` ~ gt::pct(15),
-    Verified ~ gt::pct(7)
+    Verification ~ gt::pct(7)
   ) |>
   gt::tab_source_note(
     "Complete 64-character identities are retained in artifacts/06_model_data/H03/H03_input_audit.csv."
@@ -366,7 +418,7 @@ an hour across categories.
 
 ```{r}
 #| label: tbl-h03-prep-integrity
-#| tbl-cap: "Bounded integrity checks of the frozen primary H03 model frames."
+#| tbl-cap: "Bounded integrity checks of the accepted primary H03 model frames."
 
 integrity_display <- frame_integrity |>
   transmute(
@@ -496,6 +548,8 @@ data](../../../artifacts/11_source_data/H03/H03_preparation_positive_response_di
 
 ### Primary samples and repeated observations
 
+A participant-hour is one accepted participant-by-local-hour record; a
+participant-day comprises one participant's accepted hours on one local date.
 The primary near-eye frame contains 17,935 participant-hours from 140
 participants, 801 participant-days, and nine sites. The complementary chest
 frame contains 19,512 participant-hours from 151 participants, 880
@@ -735,7 +789,7 @@ site_category_support |>
 ```{r}
 #| label: fig-h03-prep-site-category-support
 #| fig-cap: "Participant-hour support for every site-by-light-source cell. Fill shows the observed hour count; an open circle marks an observed cell that failed the predefined 20-hour, five-participant, or five-shared-participant rule, and × marks no observations."
-#| fig-alt: "Two stacked heatmaps show seven light-source categories by submitted-manuscript site. Darker cells have more participant-hours. Outdoor electric and external light during sleep contain most open-circle sparse cells. Chest has no observations for the near-eye-only Munich site, shown by crosses."
+#| fig-alt: "Two stacked heatmaps show seven light-source categories by country-coded study site. Darker cells have more participant-hours. Outdoor electric and external light during sleep contain most open-circle sparse cells. Chest has no observations for the near-eye-only Munich (DE) site, shown by crosses."
 #| fig-width: 11
 #| fig-height: 8.2
 
@@ -902,7 +956,7 @@ ggplot(
 The exact tile and marker values are available as [figure source
 data](../../../artifacts/11_source_data/H03/H03_preparation_clock_category_support.csv).
 
-## 3. Primary model construction and inference
+## 3. Population-mean and category-by-site interaction models
 
 ### Additive population-mean model
 
@@ -920,13 +974,14 @@ treatment reference. The formula contains no random effect. Repeated
 participant-hours are addressed for inference with participant-clustered HC1
 sandwich covariance, finite denominator degrees of freedom equal to the
 number of participant clusters minus one, and two-sided 95% confidence
-intervals.
+intervals (95% CIs). This interval calculation accounts for the fact that
+observations from the same participant may be related.
 
 Cluster-robust covariance protects coefficient uncertainty against unspecified
 within-participant dependence under its large-cluster assumptions; it does
 not remove serial structure from residuals or change the fitted conditional
 mean. Participant-day repetition and within-day temporal dependence are
-therefore also examined directly in diagnostics and sensitivity analyses.
+therefore also examined directly in model checks and sensitivity analyses.
 
 ```{r}
 #| label: tbl-h03-prep-primary-specification
@@ -940,7 +995,7 @@ tibble::tribble(
   "Reference", "Indoor electric light", "Indoor electric light",
   "Site", "Nine-level fixed factor; sum contrasts", "Eight-level fixed factor; sum contrasts",
   "Uncertainty", "Participant-clustered HC1; df = 139", "Participant-clustered HC1; df = 150",
-  "Reported category mean", "Equal-site average on log-mean scale, back-transformed once", "Equal-site average on log-mean scale, back-transformed once",
+  "Reported category mean", "Site-average estimate on log-mean scale, back-transformed once", "Site-average estimate on log-mean scale, back-transformed once",
   "Role", "Primary inference", "Complementary evidence"
 ) |>
   gt::gt() |>
@@ -953,16 +1008,17 @@ tibble::tribble(
   h03_gt(11)
 ```
 
-### Omnibus test, category contrasts, and standardization
+### Omnibus test, category contrasts, and site-average estimates
 
 The primary omnibus is a six-restriction Wald F test that all six
 non-reference light-source coefficients equal zero. The near-eye test is the
 preregistered primary inference; the chest test is complementary. The six
-non-reference ratios to indoor electric light form one Benjamini–Hochberg
-(BH) family within placement. Category means and ratios average sites equally
-on the fitted log-mean scale and are back-transformed once; this is a
-site-standardized geometric expectation, not the arithmetic mean of
-response-scale site predictions.
+non-reference ratios to indoor electric light form one multiplicity family
+within placement and receive a false-discovery-rate (FDR) adjustment using the
+Benjamini–Hochberg method. Category means and ratios are site-average
+estimates: each site receives equal weight on the fitted log-mean scale before
+one back-transformation to melEDI in lux. This is a geometric expectation, not
+the arithmetic mean of response-scale site predictions.
 
 ```{r}
 #| label: tbl-h03-prep-primary-tests
@@ -992,13 +1048,18 @@ primary_tests |>
 tibble::tribble(
   ~Estimand, ~Source_model, ~Reference_distribution, ~Inferential_role,
   "Primary category omnibus", "Additive site + light-source model", "All retained near-eye participant-hours", "Preregistered six-restriction test",
-  "Category mean melEDI", "Additive model for primary table; heterogeneity model for contextual summaries", "Sites equally weighted on the fitted log-mean scale", "Absolute geometric expectation with 95% interval",
-  "Category ratio", "Same model as corresponding category mean", "Indoor electric light; same site weights", "Six non-reference ratios; BH within placement",
-  "Site-heterogeneity omnibus", "Site-by-light-source architecture", "All estimable observed site-category deviations", "One additivity-restriction test",
-  "Site deviation", "Site-by-light-source architecture", "Site-specific category mean divided by the site-standardized category mean", "Supported cells only; BH within placement",
-  "Within-site category ratio", "Site-by-light-source architecture", "Indoor electric light in the same site", "Supported cells only; descriptive"
+  "Category mean melEDI", "Additive model for the primary omnibus; category-by-site interaction model for descriptive summaries", "Site-average estimate on the fitted log-mean scale", "Absolute geometric expectation with 95% CI",
+  "Category ratio", "Same model as corresponding category mean", "Indoor electric light; same site-average weights", "Six non-reference ratios; FDR within placement",
+  "Category-by-site interaction omnibus", "Category-by-site interaction model", "All estimable observed site-category deviations", "One additivity-restriction test",
+  "Site deviation", "Category-by-site interaction model", "Site-specific category mean divided by the site-average category mean", "Supported cells only; FDR within placement",
+  "Within-site category ratio", "Category-by-site interaction model", "Indoor electric light in the same site", "Supported cells only; descriptive"
 ) |>
   gt::gt() |>
+  gt::cols_label(
+    Source_model = "Source model",
+    Reference_distribution = "Reference or comparison",
+    Inferential_role = "Inferential role"
+  ) |>
   gt::cols_width(
     Estimand ~ gt::pct(19),
     Source_model ~ gt::pct(25),
@@ -1008,16 +1069,17 @@ tibble::tribble(
   h03_gt(10.5)
 ```
 
-### Site heterogeneity
+### Category-by-site interaction
 
-Site heterogeneity is examined separately from the additive primary omnibus.
-The near-eye frame supports the literal interaction:
+The association between light-source category and melEDI is allowed to differ
+by study site in a model examined separately from the additive primary
+omnibus. The near-eye frame supports the literal interaction:
 
 ```r
 geo_medi_1h ~ site * light_source
 ```
 
-The chest frame lacks all categories at the near-eye-only Munich site and is
+The chest frame lacks all categories at the near-eye-only Munich (DE) site and is
 therefore represented by one coefficient for each observed site-category
 cell:
 
@@ -1029,12 +1091,12 @@ The second expression is an equivalent saturated observed-cell
 parameterization, not a different scientific estimand. Its restriction matrix
 tests whether the observed cells can be represented additively by site plus
 light source. The models use the same log link, quasi-Tweedie variance,
-participant-clustered HC1 covariance, and geometric site standardization as
+participant-clustered HC1 covariance, and geometric site-average estimation as
 the additive models.
 
 ```{r}
 #| label: tbl-h03-prep-interaction-gate
-#| tbl-cap: "Recorded estimability checks for the full site-heterogeneity architectures."
+#| tbl-cap: "Estimability checks for the complete category-by-site interaction models."
 
 interaction_gate |>
   transmute(
@@ -1056,7 +1118,11 @@ interaction_gate |>
       .data$restriction_covariance_condition_number,
     `Maximum score share` = .data$maximum_cluster_score_share,
     `Maximum leverage share` = .data$maximum_cluster_leverage_share,
-    `Architecture result` = if_else(.data$gate_pass, "PASS", "FAIL")
+    `Estimability result` = if_else(
+      .data$gate_pass,
+      "Estimable",
+      "Not estimable"
+    )
   ) |>
   gt::gt(rowname_col = "Placement") |>
   gt::fmt_number(
@@ -1074,7 +1140,7 @@ interaction_gate |>
 Both full architectures converged, were full rank, had finite robust
 covariance, retained all planned restriction ranks, and passed the
 predeclared condition-number and cluster-influence thresholds. The recorded
-heterogeneity tests were F(48, 139) = 80.0 near eye and F(41, 150) = 13.1 at
+category-by-site interaction tests were F(48, 139) = 80.0 near eye and F(41, 150) = 13.1 at
 chest, both p < 0.001. Supported site-specific estimates were emitted only
 after these checks passed.
 
@@ -1086,13 +1152,20 @@ after these checks passed.
 
 multiplicity_registry |>
   transmute(
-    Family = .data$family_id,
+    Family = recode(
+      .data$family_id,
+      `H03-F1-omnibus` = "Primary category omnibus",
+      `H03-F2-context-contrasts` = "Site-average category ratios",
+      `H03-F3-site-heterogeneity` =
+        "Category-by-site interaction omnibus",
+      `H03-F4-site-context-contrasts` = "Supported site deviations"
+    ),
     Scope = recode(
       .data$scope,
       primary_near_eye = "Primary near-eye analysis"
     ),
     Members = .data$member_definition,
-    Adjustment = recode(.data$method, none = "None", BH = "BH"),
+    Adjustment = recode(.data$method, none = "None", BH = "FDR"),
     Alpha = .data$decision_alpha
   ) |>
   gt::gt() |>
@@ -1110,17 +1183,20 @@ multiplicity_registry |>
 ### Descriptive model performance
 
 Squared-error and working-deviance summaries were calculated from the full
-heterogeneity models, so the interaction contribution is retained. These
+category-by-site interaction models, so the interaction contribution is retained. These
 quantities describe in-sample fit and are not inferential substitutes for the
 omnibus tests. The participant-hour version weights every retained hour
 equally; the participant-balanced version first gives each participant equal
 total weight. The working-deviance version uses the quasi-Tweedie
 mean-variance relationship. Because these loss functions differ, their
-R-squared values are not interchangeable.
+R-squared values are not interchangeable. The Shapley allocation averages a
+component's contribution across all orders in which components could be
+added, allocating shared fitted-model information rather than counting it
+repeatedly; these are point summaries without uncertainty intervals.
 
 ```{r}
 #| label: tbl-h03-prep-glm-r-squared
-#| tbl-cap: "Stored descriptive fit and effect partitions for the full quasi-Tweedie heterogeneity models."
+#| tbl-cap: "Stored descriptive fit and effect partitions for the full quasi-Tweedie category-by-site interaction models."
 
 glm_r_squared |>
   filter(.data$model_id == "quasi_tweedie_log") |>
@@ -1157,13 +1233,164 @@ glm_r_squared |>
   h03_gt(9.8)
 ```
 
-## 4. Diagnostics and influence
+### Exploratory participant random-intercept assessment {#sec-h03-prep-participant-random-intercept}
+
+This separate exploratory model lets each participant have a stable overall
+exposure level while study site, light source, and their category-by-site
+interaction remain fixed effects. It was fitted to the accepted near-eye
+sample of 17,935 participant-hours from 140 participants, 801 participant-days,
+nine sites, and seven light-source categories. The stored formula is
+`geo_medi_1h ~ site * light_source + (1 | participant)`. The model used a
+Tweedie response with a log link, maximum-likelihood estimation, and fixed
+power 1.539919.
+
+```{r}
+#| label: tbl-h03-prep-participant-random-intercept
+#| tbl-cap: "Stored exploratory participant random-intercept assessment for near-eye melEDI."
+
+participant_random_intercept_fit_checks <-
+  participant_random_intercept_model_checks |>
+  summarise(
+    models = dplyr::n(),
+    converged = sum(.data$convergence_code == 0L & .data$converged),
+    no_warnings = sum(.data$warning_count == 0L),
+    positive_hessian = sum(.data$positive_definite_hessian),
+    nonsingular = sum(!.data$singular)
+  )
+
+participant_random_intercept_display <- bind_rows(
+  tibble::tribble(
+    ~Section, ~Quantity, ~Estimate,
+    "Model", "Formula", participant_random_intercept_summary$formula,
+    "Model", "Family and link", paste0(
+      participant_random_intercept_summary$family,
+      "; ", participant_random_intercept_summary$link, " link"
+    ),
+    "Model", "Estimation", paste0(
+      participant_random_intercept_summary$fitting_method,
+      "; fixed power ",
+      participant_random_intercept_summary$working_power_fixed
+    ),
+    "Model", "Accepted sample", paste0(
+      format(participant_random_intercept_summary$observations, big.mark = ","),
+      " hours; ", participant_random_intercept_summary$participants,
+      " participants; ", participant_random_intercept_summary$participant_days,
+      " participant-days; ", participant_random_intercept_summary$sites,
+      " sites; ", participant_random_intercept_summary$light_source_categories,
+      " categories"
+    ),
+    "Model-based R²", "Marginal R²", sprintf(
+      "%.6f", participant_random_intercept_summary$marginal_r_squared
+    ),
+    "Model-based R²", "Conditional R²", sprintf(
+      "%.6f", participant_random_intercept_summary$conditional_r_squared
+    ),
+    "Participant-level variation", "Participant R² increment", sprintf(
+      "%.6f",
+      participant_random_intercept_summary$participant_r_squared_increment
+    ),
+    "Participant-level variation", "Adjusted participant ICC", sprintf(
+      "%.6f", participant_random_intercept_summary$adjusted_participant_icc
+    ),
+    "Participant-level variation", "Unadjusted participant ICC", sprintf(
+      "%.6f", participant_random_intercept_summary$unadjusted_participant_icc
+    ),
+    "Participant-level variation", "Random-intercept SD (log scale)", sprintf(
+      "%.6f", participant_random_intercept_summary$participant_intercept_sd_log
+    ),
+    "Participant-level variation", "Factor per random-intercept SD", sprintf(
+      "%.6f", participant_random_intercept_summary$participant_factor_per_sd
+    )
+  ),
+  participant_random_intercept_shapley |>
+    transmute(
+      Section = "Marginal R² allocation",
+      Quantity = recode(
+        .data$component,
+        `Study site × light source` = "Category-by-site interaction"
+      ),
+      Estimate = sprintf(
+        "%.6f (%.1f%%)",
+        .data$marginal_r_squared_component,
+        .data$share_of_full_marginal_r_squared_percent
+      )
+    ),
+  tibble::tribble(
+    ~Section, ~Quantity, ~Estimate,
+    "Fit checks", "Nested fits converged", paste0(
+      participant_random_intercept_fit_checks$converged,
+      "/", participant_random_intercept_fit_checks$models,
+      "; convergence code 0"
+    ),
+    "Fit checks", "Nested fits without warnings", paste0(
+      participant_random_intercept_fit_checks$no_warnings,
+      "/", participant_random_intercept_fit_checks$models
+    ),
+    "Fit checks", "Positive-definite Hessians", paste0(
+      participant_random_intercept_fit_checks$positive_hessian,
+      "/", participant_random_intercept_fit_checks$models
+    ),
+    "Fit checks", "Non-singular nested fits", paste0(
+      participant_random_intercept_fit_checks$nonsingular,
+      "/", participant_random_intercept_fit_checks$models
+    ),
+    "Fit checks", "Lag-one Pearson residual correlation", sprintf(
+      "%.3f",
+      participant_random_intercept_diagnostics$lag1_pearson_residual_correlation
+    ),
+    "Fit checks", "Observed / implied zero fraction", sprintf(
+      "%.3f / %.3f",
+      participant_random_intercept_diagnostics$observed_zero_fraction,
+      participant_random_intercept_diagnostics$tweedie_implied_zero_fraction
+    )
+  )
+)
+
+stopifnot(
+  nrow(participant_random_intercept_summary) == 1L,
+  nrow(participant_random_intercept_diagnostics) == 1L,
+  participant_random_intercept_fit_checks$models == 5L,
+  participant_random_intercept_fit_checks$converged == 5L,
+  participant_random_intercept_fit_checks$no_warnings == 5L,
+  participant_random_intercept_fit_checks$positive_hessian == 5L,
+  participant_random_intercept_fit_checks$nonsingular == 5L
+)
+
+participant_random_intercept_display |>
+  gt::gt(groupname_col = "Section") |>
+  gt::cols_width(Quantity ~ gt::pct(48), Estimate ~ gt::pct(52)) |>
+  gt::tab_source_note(
+    "R², ICC, and the hierarchy-respecting Shapley allocation are point summaries without uncertainty intervals."
+  ) |>
+  h03_gt(10.5)
+```
+
+All five hierarchy-valid nested fits converged without warnings, had
+positive-definite Hessians, and were non-singular. The model contains no
+random light-source slopes, participant-day effect, or AR(1) term. Residual
+dependence and the zero process remain imperfectly represented: the lag-one
+Pearson residual correlation was 0.288, while the observed and Tweedie-implied
+zero fractions were 0.278 and 0.398.
+
+These point summaries are descriptive, model-dependent, non-causal, do not
+have uncertainty intervals, and are not a unique allocation of exposure
+variation. The assessment does not replace the accepted population-mean
+primary model or change its omnibus test or multiplicity families. It is
+distinct from the separate within-participant and between-participant
+sensitivity, which is a population-mean quasi-Tweedie augmentation with
+participant-clustered covariance. That sensitivity is not a mixed model,
+random-intercept model, random-slope model, or variance-component analysis.
+The corresponding [reader-facing
+auxiliary result](../../../notebooks/hypotheses/H03.qmd) retains the same
+boundary.
+
+## 4. Model checks and influence
 
 ### Convergence, rank, and robust covariance
 
 ```{r}
 #| label: tbl-h03-prep-primary-diagnostics
-#| tbl-cap: "Recorded diagnostics for the additive primary and complementary GLMs."
+#| tbl-cap: "Recorded model checks for the additive primary and complementary GLMs."
 
 diagnostics |>
   filter(.data$run_id %in% c("main__near_eye", "main__chest")) |>
@@ -1220,8 +1447,9 @@ diagnostics |>
 Both additive models converged without warnings, were full rank, and had
 finite positive-definite participant-clustered covariance. Large dispersion
 and residual spread show that the working variance is only an approximation.
-The near-eye and chest lag-1 Pearson residual correlations were 0.478 and
-0.615 within contiguous participant-day sequences. Clustered covariance
+Hours close together in time still show similar unexplained deviations: the
+technical lag-one Pearson residual correlations were 0.478 near eye and 0.615
+at chest within contiguous participant-day sequences. Clustered covariance
 allows within-participant residual dependence when estimating uncertainty,
 but does not make these correlations vanish.
 
@@ -1288,8 +1516,8 @@ residual_acf |>
   h03_gt()
 ```
 
-The [results report diagnostic
-figure](../../../notebooks/hypotheses/H03.html#diagnostics) shows individual
+The [results report model-check
+figure](../../../notebooks/hypotheses/H03.qmd#model-checks) shows individual
 residual points, binned residual summaries, autocorrelation, and observed
 versus working zero fractions. Its exact source data are stored in
 `artifacts/11_source_data/H03/`.
@@ -1301,7 +1529,7 @@ the largest cluster-score contribution were also removed once within each
 placement. The site deletions examine dependence on a whole site; the
 participant deletions examine the most influential independent covariance
 clusters. These deterministic refits preserve the model family, formula,
-contrast definitions, and standardization rule.
+contrast definitions, and site-average rule.
 
 ```{r}
 #| label: tbl-h03-prep-influence
@@ -1345,19 +1573,22 @@ additional metric-specific adjustment. At this first explanation only, the
 primary dataset could be interpreted as a time-sensitive primary metric dataset.
 Hereafter it is called simply the primary dataset.
 
-Other predefined branches use the placement-matched common sample, exclude
-hours that span diary-state or measurement-context boundaries, exclude
-unsupported site-category cells, vary the quasi-Tweedie working power to 1.30
-and 1.80, and add participant-level category-proportion terms to separate
-within-participant from between-participant information. These branches do
-not replace the primary estimand.
+Other predefined branches use the same participants and participant-hours
+available at both sensor positions; exclude hours that span diary-state or
+measurement-context boundaries; exclude site-category cells that fail the
+predefined support rule; vary the quasi-Tweedie working power to 1.30 and
+1.80; and add participant-level category-proportion terms to separate
+within-participant from between-participant information. The same-participant,
+same-hour comparison uses separately fitted placement estimates and is not an
+equivalence test or a direct test of a sensor-position effect. These branches
+do not replace the primary estimand.
 
 ```{r}
 #| label: tbl-h03-prep-sensitivity-samples
 #| tbl-cap: "Exact fitted samples for the predefined H03 sensitivity branches."
 
 scenario_labels <- c(
-  paired_common_sample = "Paired near-eye/chest common sample",
+  paired_common_sample = "Same-participant, same-hour near-eye/chest sample",
   gap_timing_unaware_dataset = "Gap-timing-unaware dataset",
   boundary_hours_excluded = "Boundary-spanning hours excluded",
   unsupported_cells_excluded = "Unsupported site-category cells excluded",
@@ -1415,18 +1646,20 @@ sensitivity_tests |>
 Every sensitivity omnibus was estimable and p < 0.001. The recorded
 [category-level sensitivity
 comparison](../../../artifacts/09_tables/H03/H03_sensitivity_comparison.csv)
-contains the ratios, 95% intervals, relative changes, direction checks, and
+contains the ratios, 95% CIs, relative changes, direction checks, and
 whether the primary point estimate falls inside each sensitivity interval.
 
-## 6. Exploratory temporal and latitude context
+## 6. Exploratory nonlinear time-of-day and linear-latitude context
 
-### Time-of-day GAMs
+### Nonlinear time-of-day GAM analysis
 
-The time-of-day analysis is exploratory and separate from the preregistered
-GLM inference. It models the raw one-hour geometric melEDI outcome with a
-fixed-power Tweedie mean, log link, global cyclic time smooth, sum-to-zero
-light-source and site deviation smooths, participant-specific smooths, and
-participant-day random intercepts:
+The nonlinear generalized additive model (GAM) analysis is exploratory and
+separate from the preregistered GLM inference. The association with clock time
+is allowed to bend across the day rather than follow a straight line. It
+models the raw one-hour geometric melEDI outcome with a fixed-power Tweedie
+mean, log link, global cyclic time smooth, sum-to-zero light-source and site
+deviation smooths, participant-specific smooths, and participant-day random
+intercepts:
 
 ```r
 geo_medi_1h ~
@@ -1443,12 +1676,13 @@ reference. `bam()` used fREML, discrete computation, cyclic knots at 0 and 24
 hours, and a second fit with an AR(1) working error parameter estimated from
 the preliminary standardized residual lag-1 correlation. Participant,
 participant-day, and site smooths remain in the fitted model but are excluded
-from the displayed population curves. The stored figure curves average sites
-equally and then omit unsupported time points from the display.
+from the displayed population curves. The stored figure curves form a
+site-average by giving sites equal weight and then omit unsupported time
+points from the display.
 
 ```{r}
 #| label: tbl-h03-prep-temporal-models
-#| tbl-cap: "Recorded final exploratory time-of-day model settings and diagnostics."
+#| tbl-cap: "Recorded final exploratory time-of-day model settings and checks."
 
 temporal_summary |>
   transmute(
@@ -1486,7 +1720,7 @@ temporal_summary |>
 
 ```{r}
 #| label: tbl-h03-prep-temporal-performance
-#| tbl-cap: "Stored site-standardized temporal-model performance and variance allocation."
+#| tbl-cap: "Stored site-average temporal-model performance and variance allocation."
 
 temporal_performance <- temporal_r_squared |>
   transmute(
@@ -1521,7 +1755,7 @@ temporal_performance |>
   gt::gt(groupname_col = "Placement") |>
   gt::fmt_number(columns = Value, decimals = 3) |>
   gt::tab_source_note(
-    "The R² is on the raw melEDI scale with equal site, participant-within-site, and hour-within-participant weights. Shapley shares partition fitted natural-log predictor variance and are point allocations without uncertainty intervals."
+    "The R² is on the raw melEDI scale with site-average, participant-within-site, and hour-within-participant weights. Shapley allocation averages a component's contribution across all addition orders so shared fitted-model information is not counted repeatedly; these are point allocations without uncertainty intervals."
   ) |>
   h03_gt()
 ```
@@ -1529,12 +1763,12 @@ temporal_performance |>
 The [near-eye](../../../artifacts/10_figures/H03/H03_reader_temporal_near_eye.png)
 and [chest](../../../artifacts/10_figures/H03/H03_reader_temporal_chest.png)
 figures show the fitted category curves, category-to-global ratios, and
-available observations by local hour. Model appraisal, basis dimension,
+available observations by local hour. Model checks, basis dimension,
 concurvity, residual autocorrelation, zero calibration, coefficient
 covariance, penalty-scale variances, weighted R-squared, and variance
-allocation remain in their recorded diagnostic and table files.
+allocation remain in their recorded model-check and table files.
 
-### Absolute latitude
+### Linear absolute-latitude context
 
 The exploratory ecological replacement of site uses centered absolute
 latitude and its category interaction:
@@ -1545,7 +1779,7 @@ geo_medi_1h ~ light_source * absolute_latitude_centered_10deg
 
 It uses the same quasi-Tweedie working power and log link, but uncertainty is
 clustered by site because latitude varies only between sites. Seven
-category-specific slopes form one BH family within placement. Leave-one-site-
+category-specific slopes form one FDR family within placement. Leave-one-site-
 out fits check direction and point-estimate range; they do not create a
 larger effective site sample.
 
@@ -1589,9 +1823,9 @@ The small number of independent sites limits ecological precision. Latitude
 may stand in for season, climate, built environment, behaviour, or other site
 differences; no causal latitude interpretation is made.
 
-## 7. Code and output provenance
+## 7. Technical provenance and reproduction
 
-### Executable code in analytical order
+### Code and output map
 
 ```{r}
 #| label: tbl-h03-prep-script-map
@@ -1599,22 +1833,27 @@ differences; no causal latitude interpretation is made.
 
 tibble::tribble(
   ~Order, ~File, ~Purpose, ~Principal_outputs, ~Run_on_this_page,
-  1L, "h03_contract.R", "Defines frozen inputs, category/site registries, formulas, support rules, contrasts, working power, and diagnostic thresholds.", "In-memory contract used by every H03 runner", "No",
+  1L, "h03_contract.R", "Defines accepted inputs, category/site registries, formulas, support rules, contrasts, working power, and model-check thresholds.", "In-memory contract used by every H03 runner", "No",
   2L, "h03_data.R", "Verifies one-to-one local-hour joins, builds primary and sensitivity frames, factorizes categories and sites, and creates contiguous time sequences.", "H03_model_frames.rds and frame index", "No",
-  3L, "h03_modeling.R", "Implements quasi-Tweedie GLMs, participant-clustered HC1 inference, geometric site standardization, heterogeneity restrictions, diagnostics, and influence summaries.", "Models, estimates, tests and diagnostics", "No",
-  4L, "run_h03_interaction_gate.R", "Checks the full site-heterogeneity architectures before emitting site-context effects.", "Interaction check and fitted heterogeneity models", "No",
-  5L, "run_h03_stage2.R", "Fits the additive, heterogeneity, sensitivity, and deterministic influence analyses from the frozen frames.", "Model archives, result tables and run manifests", "No",
-  6L, "run_h03_postfit_diagnostics.R", "Calculates residual autocorrelation, zero-mass, residual-point, and grouped diagnostic outputs from stored fits.", "Diagnostic CSV and plot-source data", "No",
-  7L, "run_h03_glm_fit_assessment.R", "Calculates bounded descriptive R-squared and fixed-effect partitions for the full heterogeneity models.", "R-squared and effect-partition table", "No",
-  8L, "h03_temporal.R", "Defines exploratory raw-outcome GAM fitting, AR sequences, diagnostics, smooth extraction, R-squared, and variance allocations.", "Temporal functions used by the dedicated runner", "No",
-  9L, "run_h03_temporal_raw_mean_pilot.R", "Produces the retained raw-outcome time-of-day GAM fits and their stored curves and diagnostics.", "Temporal model archive, curves and diagnostics", "No",
-  10L, "build_h03_stage3_assets.R", "Builds the final temporal figures and linked source data from stored fits.", "Near-eye/chest temporal figures and source CSVs", "No",
-  11L, "build_h03_stage3_revision.R", "Produces heterogeneity-based category summaries and the bounded exploratory latitude analysis.", "Heterogeneity summary and latitude outputs", "No",
-  12L, "h03_reporting.R", "Defines accepted tables, figure themes, labels, scales, and export routines.", "Reader-facing display functions", "No",
-  13L, "build_h03_preparation_artifacts.R", "Builds bounded descriptive source data shown on this page from the frozen model frames.", "Seven preparation source-data CSVs", "Before render"
+  3L, "h03_modeling.R", "Implements quasi-Tweedie GLMs, participant-clustered HC1 inference, geometric site-average estimation, category-by-site restrictions, model checks, and influence summaries.", "Models, estimates, tests and model checks", "No",
+  4L, "run_h03_interaction_gate.R", "Checks the complete category-by-site interaction models before emitting site-context effects.", "Interaction check and fitted category-by-site models", "No",
+  5L, "run_h03_stage2.R", "Fits the additive, category-by-site interaction, sensitivity, and deterministic influence analyses from the accepted frames.", "Model archives, result tables and run manifests", "No",
+  6L, "run_h03_postfit_diagnostics.R", "Calculates residual autocorrelation, zero-mass, residual-point, and grouped model-check outputs from stored fits.", "Model-check CSV and plot-source data", "No",
+  7L, "run_h03_glm_fit_assessment.R", "Calculates bounded descriptive R-squared and fixed-effect partitions for the full category-by-site interaction models.", "R-squared and effect-partition table", "No",
+  8L, "run_h03_participant_random_intercept_assessment.R", "Fits the sealed descriptive participant random-intercept assessment and hierarchy-valid nested models.", "Auxiliary model, summary, R² allocation, model checks, environment and manifest", "No",
+  9L, "h03_temporal.R", "Defines exploratory raw-outcome GAM fitting, AR sequences, model checks, smooth extraction, R-squared, and variance allocations.", "Temporal functions used by the dedicated runner", "No",
+  10L, "run_h03_temporal_raw_mean_pilot.R", "Produces the retained raw-outcome time-of-day GAM fits and their stored curves and model checks.", "Temporal model archive, curves and model checks", "No",
+  11L, "build_h03_stage3_assets.R", "Builds the final temporal figures and linked source data from stored fits.", "Near-eye/chest temporal figures and source CSVs", "No",
+  12L, "build_h03_stage3_revision.R", "Produces category-by-site interaction summaries and the bounded exploratory latitude analysis.", "Category-by-site summary and latitude outputs", "No",
+  13L, "h03_reporting.R", "Defines accepted tables, figure themes, labels, scales, and export routines.", "Reader-facing display functions", "No",
+  14L, "build_h03_preparation_artifacts.R", "Builds bounded descriptive source data shown on this page from the accepted model frames.", "Seven preparation source-data CSVs", "Before render"
 ) |>
   gt::gt() |>
   gt::fmt_integer(columns = Order) |>
+  gt::cols_label(
+    Principal_outputs = "Principal outputs",
+    Run_on_this_page = "Run on this page"
+  ) |>
   gt::cols_width(
     Order ~ gt::pct(5),
     File ~ gt::pct(18),
@@ -1629,25 +1868,34 @@ Only the last row creates the lightweight descriptive inputs for this page.
 All inferential and exploratory model outputs were produced before rendering
 and are read by identity.
 
-### Stored output chain
-
 ```{r}
 #| label: tbl-h03-prep-output-map
 #| tbl-cap: "Stored H03 outputs supporting the result report."
 
 tibble::tribble(
   ~Output_group, ~Location, ~Contents, ~Reader_use,
-  "Frozen model frames", "artifacts/06_model_data/H03/H03_model_frames.rds", "Primary, paired, gap-timing-unaware, boundary-excluded, and supported-cell frames", "Exact samples and descriptive support",
-  "Model objects", "artifacts/07_models/H03/", "Additive, heterogeneity, temporal, and bounded comparison fits", "Reproducible fitted state; not rendered directly",
-  "Diagnostics", "artifacts/08_diagnostics/H03/", "Convergence, rank, covariance, residual, zero-mass, temporal, sparse-cell, influence, and latitude checks", "Model adequacy and limitations",
+  "Stored model frames", "artifacts/06_model_data/H03/H03_model_frames.rds", "Primary, same-participant/same-hour, gap-timing-unaware, boundary-excluded, and supported-cell frames", "Exact samples and descriptive support",
+  "Model objects", "artifacts/07_models/H03/", "Additive, category-by-site interaction, temporal, and bounded comparison fits", "Reproducible fitted state; not rendered directly",
+  "Model checks", "artifacts/08_diagnostics/H03/", "Convergence, rank, covariance, residual, zero-mass, temporal, sparse-cell, influence, and latitude checks", "Model adequacy and limitations",
   "Result tables", "artifacts/09_tables/H03/", "Omnibus tests, category means and ratios, site context, sensitivities, R², temporal and latitude results", "Exact reported numerical outputs",
   "Figures", "artifacts/10_figures/H03/", "Tightly bounded PNG, PDF, and SVG result figures", "Reader-facing visual evidence",
   "Figure/table source data", "artifacts/11_source_data/H03/", "Exact rows used by result and preparation figure layers", "Independent display reconstruction",
   "Manifests", "artifacts/12_manifests/H03/", "R/package versions, hashes, byte sizes, run settings, and figure QA", "Identity and reproducibility checks",
-  "Result report", "notebooks/hypotheses/H03.qmd", "Scientific narrative, tables, figures, diagnostics, sensitivities, and limitations", "Primary reader-facing synthesis",
+  "Auxiliary model", "artifacts/07_models/H03/H03_near_eye_participant_random_intercept_assessment.rds", "Sealed near-eye participant random-intercept model", "Descriptive participant-level variation assessment; not rendered directly",
+  "Auxiliary summary", "artifacts/09_tables/H03/H03_near_eye_participant_random_intercept_summary.csv", "Formula, sample, marginal and conditional R², ICC, and random-intercept scale", "Exact auxiliary point summaries",
+  "Auxiliary R² allocation", "artifacts/09_tables/H03/H03_near_eye_participant_random_intercept_marginal_r2_shapley.csv", "Hierarchy-respecting Shapley allocation of marginal R²", "Descriptive fixed-effect allocation",
+  "Auxiliary nested-model checks", "artifacts/08_diagnostics/H03/H03_near_eye_participant_random_intercept_shapley_models.csv", "Five nested-model formulas, R² values, convergence, Hessian, and singularity checks", "Allocation provenance and fit checks",
+  "Auxiliary diagnostics", "artifacts/08_diagnostics/H03/H03_near_eye_participant_random_intercept_diagnostics.csv", "Residual dependence, zero fractions, and numerical checks", "Auxiliary model limitations",
+  "Auxiliary environment", "artifacts/12_manifests/H03/H03_near_eye_participant_random_intercept_environment.csv", "R and consequential package versions", "Execution context",
+  "Auxiliary manifest", "artifacts/12_manifests/H03/H03_near_eye_participant_random_intercept_manifest.csv", "Six-file SHA-256, byte-size, and R-version inventory", "Sealed auxiliary identity",
+  "Result report", "notebooks/hypotheses/H03.qmd", "Scientific narrative, tables, figures, model checks, sensitivities, and limitations", "Primary reader-facing synthesis",
   "Preparation companion", "audit/hypotheses/H03/H03_analysis_preparation.qmd", "Data-to-result construction, checks, and provenance", "This page"
 ) |>
   gt::gt() |>
+  gt::cols_label(
+    Output_group = "Output group",
+    Reader_use = "Reader use"
+  ) |>
   gt::cols_width(
     Output_group ~ gt::pct(18),
     Location ~ gt::pct(30),
@@ -1657,14 +1905,34 @@ tibble::tribble(
   h03_gt(9.8)
 ```
 
+### Commands, identities, and environment
+
+```{r}
+#| label: tbl-h03-prep-boundary
+#| tbl-cap: "Calculations performed when this page is rendered."
+
+tibble::tribble(
+  ~Category, ~Calculated_on_render, ~Explanation,
+  "File identity and schema", "Yes", "Checks recorded SHA-256 identities, required columns, unique local-hour keys, and accepted-frame dimensions.",
+  "Descriptive support", "Yes", "Summarises stored category, site, local-hour, participant-day, exact-zero, and sequence support.",
+  "Model construction and estimation", "No", "Reads the formula registry, fitted-model archives, estimates, intervals, and omnibus tests.",
+  "Model checks and sensitivities", "No", "Reads recorded model checks, influence refits, model-performance summaries, and sensitivity outputs.",
+  "Reader figures", "Display only", "Draws four descriptive figures from linked exact source-data CSV files."
+) |>
+  gt::gt() |>
+  gt::cols_label(Calculated_on_render = "Calculated on render") |>
+  gt::cols_width(
+    Category ~ gt::pct(24),
+    Calculated_on_render ~ gt::pct(18),
+    Explanation ~ gt::pct(58)
+  ) |>
+  h03_gt()
+```
+
 The preparation-report manifest records the authoring source, byte-identical
 website source copy, rendered HTML, H03 scripts and tests, stored scientific
 outputs, figure source data, and environment identities. It deliberately
 excludes itself from its checksum inventory.
-
-## 8. Reproduction and environment
-
-### Environment identity
 
 The analysis and this companion use R 4.6.1 and the existing project library.
 The GLM environment records `statmod`, `sandwich`, `ggplot2`, `LightLogR`,
@@ -1683,7 +1951,9 @@ bind_rows(
       "R package: mgcv",
       "R package: gratia"
     )) |>
-    mutate(Context = "Exploratory temporal model")
+    mutate(Context = "Exploratory temporal model"),
+  participant_random_intercept_environment |>
+    mutate(Context = "Exploratory participant random intercept")
 ) |>
   distinct(.data$Context, .data$component, .data$version) |>
   transmute(
@@ -1695,7 +1965,7 @@ bind_rows(
   h03_gt()
 ```
 
-### Examination order
+### Reproduction guidance
 
 For a bounded verification that does not recompute a model:
 
@@ -1706,7 +1976,7 @@ For a bounded verification that does not recompute a model:
 3. compare formulas and support rules with `h03_contract.R`, `h03_data.R`,
    and `h03_modeling.R`;
 4. trace each reported number to `artifacts/09_tables/H03/` and each
-   diagnostic statement to `artifacts/08_diagnostics/H03/`;
+   model-check statement to `artifacts/08_diagnostics/H03/`;
 5. rebuild displays only from their paired CSVs in
    `artifacts/11_source_data/H03/`; and
 6. verify the final identities in `H03_preparation_report_manifest.csv`.
@@ -1723,6 +1993,6 @@ checks reciprocal links, navigation order, source-copy identity, figure
 captions and alt text, paired source data, compact `gt` tables, prohibited
 scientific calls, sample assertions, figure QA, and manifest hashes.
 
-The [H03 results report](../../../notebooks/hypotheses/H03.html) is the
+The [H03 results report](../../../notebooks/hypotheses/H03.qmd) is the
 appropriate page for scientific interpretation. This companion records how
 that report was constructed and how its evidence can be checked.

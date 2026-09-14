@@ -1,182 +1,132 @@
 # H08 worker handoff
 
-Date: 2026-08-03
+Date: 2026-08-12
 Branch: `rewrite/NH`
-Current gate: **author accepted H08 package; coordinator integration and push requested**
-Preparation companion created: yes
-Preparation companion accepted: yes
-Profile-integrated preparation render: no
+Current gate: **bounded METRIC-011 maintenance complete; no new author-review gate triggered**
+R version: 4.6.1
 Resampling performed: none
 
-## Gate history
+## Outcome
 
-- The analytical audit fixed the accepted score, metric, sample, model,
-  estimand, diagnostic, and sensitivity decisions without fitting a new
-  inferential model.
-- The author explicitly approved all recommended audit decisions on
-  2026-08-01.
-- The implementation package was accepted in full, including the no-retained-
-  association conclusion, exact samples, 95% confidence intervals,
-  multiplicity families, diagnostics, and sensitivities.
-- The author approved the standalone H08 scientific reader report on
-  2026-08-01 and authorised creation of its preparation and provenance
-  companion.
-- The H08-owned preparation source, standalone render, descriptive source
-  data, display-only figure repair, A4 physical-size QA, manifest builder, and
-  focused test now exist.
-- The author accepted the preparation package on 2026-08-03 and requested a
-  scoped H08 commit followed by a coordinator-owned GitHub push.
-- Work is stopped because `_quarto-nathealth.yml` does not yet place the H08
-  preparation page immediately after H08 in the render list and navigation.
-  The exact upstream request is recorded in
-  `audit/handoffs/H08_shared_change_request.md`.
-
-## Accepted scientific conclusion remains unchanged
+The accepted H08 Stage 2, Stage 3, and Stage 4 scientific conclusion is
+unchanged after shared decision METRIC-011 normalised eight primary L10 mean
+cells from `4.163336342344337e-17` lx to exact zero. Three cells were near eye
+and five were chest. No displayed effect, confidence interval, p-value,
+multiplicity decision, diagnostic disposition, sensitivity classification,
+or reader-facing claim changed. The instruction to stop for author review was
+therefore not activated.
 
 Across nine primary near-eye metrics, no average association or site-specific
 heterogeneity test met the BH-adjusted criterion. The strongest directional
-near-eye pattern was lower corrected melEDI dose per VLSQ-8 SD: ratio 0.846
-(95% CI 0.716–0.999), likelihood-ratio raw p = 0.051, and BH-adjusted
-p = 0.160. It is not a multiplicity-retained finding.
+near-eye pattern remains lower corrected melEDI dose per VLSQ-8 SD: ratio
+0.846 (95% CI 0.716–0.999), likelihood-ratio raw p = 0.051, and BH-adjusted
+p = 0.160. This is not a multiplicity-retained finding. Complementary chest
+results and the central sensitivity analyses do not materially strengthen
+the evidence.
 
-Complementary chest analyses and the central sensitivity analyses do not
-materially strengthen the evidence. Uncertainty, complete-family adjustment,
-and site influence make the directional pattern inconclusive. The preparation
-work did not refit a model or change any scientific value.
+## Controlling shared evidence
 
-## H08 preparation companion
+- Decision: `audit/decisions/l10_numerical_zero_normalization.md`; SHA-256
+  `23b9f70d1d16f7fd3ebbdbc57aaf78c0a701fe1f9d22bd667d926cd320d40797`.
+- Evidence manifest:
+  `audit/reconciliation/l10_METRIC-011/METRIC-011_evidence_manifest.csv`;
+  SHA-256
+  `a37efd3449a8d1a6065d0eb8964bd6cf8b241f1683a26c065ea1a946e23214fb`.
+- Current metric manifest:
+  `028bce108339c1277df4a070597430ea20b49c34c2888f4eef42741c1fe76a5e`.
+- Current site/context manifest:
+  `c0c6d7f97782c0d880a213050f576213f5d56b3204a02732f6399e7e4aeb8518`.
+- Current base manifest:
+  `8344bdc0339a53079bf9eeb7d86de1ad7c15373641c3a0a5a01d040b418895ce`.
+- Current base bundle:
+  `e840ce9d2a7f653bc5ebbfe020ce087017dfdaf0276df09da578bda30a539916`.
+- Near-eye participant-day context RDS:
+  `013afe75e9b75b141b4cb48d04111a9e6c688630085a24c9fe07ca3d142a4e9a`.
+- Chest participant-day context RDS:
+  `497466ccd1a35635cca40bb8f9ce51efb97321ab04b42ee1bb76785e466a2057`.
 
-- Source: `audit/hypotheses/H08/H08_analysis_preparation.qmd`
-  - SHA-256:
-    `b5feb96cf30faaa7cb0533c2d833171f304c0051f1b3115ec16f4fdbb7dcdc45`
-  - bytes: 49,107
-- Standalone verified render:
-  `audit/hypotheses/H08/H08_analysis_preparation.html`
-  - SHA-256:
-    `8274204210e6c9babc0f2171ea9bb2864ae2c66c078f38644956887cc420137c`
-  - bytes: 677,624
+## Bounded H08 refresh
 
-The render completed all 49 document steps under R 4.6.1. It contains 18
-compact `gt` tables and three accessible descriptive figures, each linked to
-an exact source-data CSV. It recalculates only bounded hashes, schema and key
-checks, and lightweight descriptive support. It reads all scientific results,
-diagnostics, and sensitivities from frozen H08 outputs.
+`scripts/hypotheses/H08/reseal_h08_l10_metric011.R` verified all 20 sealed
+inputs and rebuilt only the branches that inherit the changed L10
+participant-days:
 
-Reader-facing content includes:
+- six primary-dataset L10 model bundles;
+- four L10 sensitivity bundles;
+- 17 leave-one-site-out fits; and
+- four complete nine-member BH families, 36 rows in total.
 
-- an informational execution-boundary callout and reciprocal link to the H08
-  results report;
-- the first-use REPORT-010 explanation with 50%-per-hour, 80%-per-day,
-  remaining-gap-timing, and one-time time-sensitive-primary wording;
-- the VLSQ-8 rule (eight ordered 1–5 item codes plus 5), 184 complete scores,
-  observed range 13–39, mean 21.598, and participant SD 5.540;
-- all nine admissible participant-day metrics, missing-value rules, near-eye-
-  primary/chest-complementary placement, and exact metric-specific samples;
-- nine exact current Wilkinson formulae, model engines, practical estimands,
-  95% confidence intervals, and eight complete nine-test BH families;
-- response-family, residual-spread, zero-mass, remaining-gap-timing, and
-  leave-one-site-out qualifications;
-- paired placement, preparation, photoperiod, participant-summary, exactly
-  identified longest-period, observed-dose, and site-omission sensitivities;
-  and
-- code, output, claim, environment, and reproduction maps.
+Four raw p-values changed below reader-display precision. Three BH-adjusted
+values changed below display precision: two L10 values and one M10 derivative
+within an affected complete family. All 36 displayed adjusted values and all
+36 retained/not-retained decisions remained identical.
 
-The reader text contains no temperature or unsupported predictor, no internal
-workflow history, and no `bout` terminology. Near eye remains primary and
-chest remains complementary.
+The reseal preserved every gap-timing-unaware field, every non-L10 fit and raw
+test, all V0 artifacts, all accepted MDER outputs, all non-target model frames
+and bundles, and the photoperiod, participant-summary, exactly identified
+longest-period, and observed-dose outputs. No temperature or unsupported
+predictor was introduced.
 
-## REPORT-011 physical-size correction
+Key bounded records are:
 
-Every H08 reader-facing figure was assessed at exactly 170 mm on an A4
-portrait page with 20-mm side margins. The record contains native width,
-intended width, scale factor, smallest essential nominal text, effective final
-text, pixel dimensions, figure/source/proof identities, and the required
-physical visual checks.
+- `artifacts/09_tables/H08/H08_metric011_result_comparison.csv`;
+- `artifacts/09_tables/H08/H08_metric011_display_invariance.csv`;
+- `artifacts/09_tables/H08/H08_metric011_bh_recalculation.csv`; and
+- `artifacts/12_manifests/H08/H08_metric011_reconciliation.csv`.
 
-- QA record:
-  `artifacts/12_manifests/H08/H08_figure_physical_size_qa.csv`
-  - SHA-256:
-    `27520754a8089d62aa13a66be3c72547e45fd60c5bd8d4d6bcc653bcb6f9f8a1`
-  - bytes: 7,531
-- Durable A4 proofs:
-  `artifacts/12_manifests/H08/physical_size_qa/`
-- Figures assessed: five H08 result figures and three preparation figures.
-- Native and intended width: 170 mm for every figure.
-- Scale factor: 1.0 for every figure.
-- Smallest effective essential text: 7.5 pt for result figures and 8.0 pt for
-  preparation figures.
-- Final status: eight of eight PASS.
+The result comparison contains no author-review-required row, all six display
+checks pass, and all 33 protected-scope reconciliation checks pass.
 
-The first physical-size inspection exposed clipped caption text in all five
-result figures. `rebuild_h08_reader_figures.R` rewrapped those captions and
-re-exported the figures from the already stored H08 figure-source CSV files.
-No model or scientific result was recomputed. The second original-size A4
-inspection passed clipping/cropping, overlap, wrapping, distortion, important-
-text readability, mark distinguishability, caption/alt presence, and data-
-region balance for all eight figures.
+## Reports and display provenance
 
-The accepted result report was rerendered after this display-only correction:
+The bounded maintenance is recorded in:
 
-- `notebooks/hypotheses/H08.qmd`
-  - SHA-256:
-    `6933b6ae770cd55794556c065e4c312079df1df5123e5c217ef6c06b12abd4a8`
-  - bytes: 37,660
-- `_build/nathealth/notebooks/hypotheses/H08.html`
-  - SHA-256:
-    `c216a59dfe335d990dc4f0c06867368c3bdbbabe2493dffb76e8d1d4701c17f4`
-  - bytes: 297,552
+- `audit/hypotheses/H08/02_implementation_and_v0_comparison.qmd`;
+- `notebooks/hypotheses/H08.qmd`; and
+- `audit/hypotheses/H08/H08_analysis_preparation.qmd`.
 
-Its five figures now use 100% intended width and its Reproducibility section
-links back to the preparation companion.
+The Stage 3 **Results in brief** callout remains directly after the hypothesis
+and analytical question and retains the multiplicity, 95% CI, complementary
+chest, and sensitivity qualifications required by REPORT-012.
 
-## New H08-owned implementation and verification files
+Five result figures were re-exported at their existing 170-mm size from the
+stored H08 source CSVs only. Three preparation figures were rebuilt from
+their stored descriptive frames. No scientific result was refitted for this
+display work. Original-size A4 inspection with 20-mm side margins passed all
+eight figures for clipping, overlap, wrapping, distortion, essential-text
+readability, mark distinction, caption/alt presence, and data-region balance.
+The effective final essential text is 7.5 pt for result figures and 8.0 pt for
+preparation figures.
 
-- `scripts/hypotheses/H08/build_h08_preparation_artifacts.R`
-- `scripts/hypotheses/H08/rebuild_h08_reader_figures.R`
-- `scripts/hypotheses/H08/build_h08_figure_physical_size_qa.R`
-- `scripts/hypotheses/H08/build_h08_preparation_report_manifest.R`
-- `tests/hypotheses/H08/test_h08_preparation_report.R`
-- six preparation source-data CSV files under
-  `artifacts/11_source_data/H08/`
-- the physical-size QA record and eight A4 proof PNG files under
-  `artifacts/12_manifests/H08/`
+Current Stage 3 reader identities are:
 
-The final-manifest builder deliberately verifies shared profile adjacency
-before writing anything. It has not created
-`H08_preparation_report_manifest.csv` because the central profile is not yet
-integrated. The earlier `H08_stage3_artifacts.csv` remains a historical
-pre-correction record; the final preparation-report manifest will seal the
-current result report, corrected figures, preparation page, and QA together.
+- `notebooks/hypotheses/H08.qmd`: SHA-256
+  `13b3547cad0eb7eba37d090cc8f611de99407e71a7b7a0a6a5a29670c06834c0`;
+  bytes: 39,363.
+- `_build/nathealth/notebooks/hypotheses/H08.html`: SHA-256
+  `a08a888a40ec58669c61a47b7500159388577eaad49ece5440b9bee9da6a93e1`;
+  bytes: 299,712.
 
-## Verification completed
+## Verification
 
-- Isolated H08 results render: 45 document steps completed under R 4.6.1.
-- Standalone preparation render: 49 document steps completed under R 4.6.1.
-- `tests/hypotheses/H08/test_h08_stage2.R`: `H08 Stage 2 tests passed`.
-- `H08_PREINTEGRATION_ONLY=true` with
-  `tests/hypotheses/H08/test_h08_preparation_report.R`: passed all frozen
-  scientific assertions, 18 `gt` tables, three descriptive figures,
-  reciprocal source links, exact source-data sizes, and eight REPORT-011 A4
-  inspections.
-- Current preparation-figure hashes remain identical to the hashes sealed in
-  the QA record after the final standalone render.
-- H08 R scripts and focused tests were formatted with Air.
-- No heavy resampling, bootstrap, model fit, prediction, simulation, or
-  full-project render was run.
+The following bounded checks complete successfully under R 4.6.1:
 
-## Required upstream action and final sealing
+- isolated Stage 2 render: 63 evaluated steps;
+- targeted NatHealth Stage 3 render: 45 evaluated steps;
+- targeted NatHealth Stage 4 render: 51 evaluated steps;
+- `tests/hypotheses/H08/test_h08_stage2.R`;
+- `tests/hypotheses/H08/test_h08_metric011_reseal.R`;
+- `tests/hypotheses/H08/test_h08_stage3_reader_report.R`; and
+- `tests/hypotheses/H08/test_h08_preparation_report.R` in strict mode.
 
-The coordinator must implement the two exact additions in
-`audit/handoffs/H08_shared_change_request.md`, then run targeted profile
-renders of H08 results and H08 preparation only. After hand-back, the H08 task
-will:
+The final Stage 2 manifest seals the accepted implementation plus the bounded
+maintenance. The Stage 3 manifest seals the reader report without sweeping
+in downstream Stage 4 outputs. The Stage 4 preparation manifest then seals
+the integrated results/preparation pair, all source data, all eight physical-
+size proofs, and the upstream Stage 3 identity. This one-way dependency avoids
+a circular manifest hash.
 
-1. inspect the final profile-integrated navigation and website figure assets;
-2. refresh and re-inspect the physical-size proof record against those assets;
-3. run `build_h08_preparation_report_manifest.R` to create the byte-identical
-   website source copy and final identity inventory; and
-4. run `test_h08_preparation_report.R` in strict mode.
-
-After those checks pass, the coordinator can treat the accepted H08 workflow
-as closed and push the scoped H08 commit. Further scientific approval is
-needed only if an accepted output changes.
+No full analysis rerun, bootstrap, simulation, heavy resampling, package
+installation, full-project render, commit, push, or upload was performed for
+this maintenance. The shared checkout contains unrelated work; any later
+commit must remain restricted to H08-owned paths.

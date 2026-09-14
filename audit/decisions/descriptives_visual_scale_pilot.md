@@ -4,9 +4,9 @@ Decision ID: `REPORT-011-PILOT-001`
 
 Date: 2026-08-01
 
-Updated: 2026-08-03
+Updated: 2026-08-11
 
-Status: typography approved; figure-detail QA remains open
+Status: Figure 1 author accepted
 
 Use the literal ggplot2 export option `scale = 1.5`. This multiplies the export
 device width and height while leaving typography, line widths, points, legend
@@ -53,10 +53,10 @@ width; it is not a final export and must not enter a submission-facing figure
 directory. Do not run preparation, metric, hypothesis, model, prediction,
 bootstrap, simulation, or Shapley computation.
 
-The author approved the recorded source-level text sizes in the updated
-[descriptive showcase](../../_build/nathealth/notebooks/descriptives.html).
-This does not approve all figure details or make `scale = 1.5` a universal
-default. Figure-specific content, clipping, annotations, panel balance, and
-line wrapping remain open to correction. The prior font-and-mark multiplier
-implementation is invalid and must not be promoted to the figure manifest, QA
-record, or report.
+The author accepted the final Figure 1 detail layout in the updated
+[descriptive showcase](../../_build/nathealth/notebooks/descriptives.html) on
+2026-08-11 after the reviewed Panel B label placement and Panel E annotation
+routing were incorporated. This closes detail-level QA for Figure 1. It does
+not make `scale = 1.5` a universal default. The prior font-and-mark multiplier
+implementation remains invalid and must not be promoted to the figure
+manifest, QA record, or report.

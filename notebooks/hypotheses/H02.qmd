@@ -6,6 +6,7 @@ format:
     toc: true
     toc-depth: 2
     code-tools: false
+    lightbox: true
 execute:
   echo: false
   warning: false
@@ -79,10 +80,11 @@ h02_gt <- function(table) {
     gt::sub_missing(missing_text = "—") |>
     gt::tab_options(
       table.width = gt::pct(100),
-      table.font.size = gt::px(14),
+      table.font.size = gt::px(12),
       data_row.padding = gt::px(5),
       column_labels.font.weight = "600",
-      source_notes.font.size = gt::px(12)
+      source_notes.font.size = gt::px(10),
+      container.overflow.x = "auto"
     )
 }
 
@@ -385,7 +387,7 @@ diagnostic_table_data <- function(run_id) {
       "Residual spread",
       "Basis-dimension checks",
       "Sum-to-zero site constraint",
-      "Observed formal concurvity"
+      "Nonlinear-term overlap (concurvity)"
     ),
     Result = c(
       paste0(
@@ -426,11 +428,11 @@ diagnostic_table_data <- function(run_id) {
       paste0(
         "common k-index ",
         fmt_number(k_common$k_index, 3),
-        " (diagnostic p = ",
+        " (check p = ",
         nh_format_p_value(k_common$p_value),
         "); participant ",
         fmt_number(k_participant$k_index, 3),
-        " (diagnostic p = ",
+        " (check p = ",
         nh_format_p_value(k_participant$p_value),
         ")"
       ),
@@ -457,7 +459,7 @@ diagnostic_table_data <- function(run_id) {
       "Residual spread changes with fitted exposure and tails remain.",
       "No evidence that the available temporal basis was too small.",
       "Site curves are identifiable deviations around the global time effect.",
-      "Common and site bases overlap strongly; interpret complete curves and contrasts, not isolated coefficients."
+      "The global and site bases overlap strongly; interpret complete curves and contrasts, not isolated coefficients."
     )
   )
 }
@@ -725,14 +727,6 @@ sensitivity_display <- bind_rows(
 )
 ```
 
-::: {.callout-note title="How this result was produced"}
-The companion [H02 analysis preparation and provenance
-page](../../audit/hypotheses/H02/H02_analysis_preparation.html) follows the
-data-to-result chain, identifies every executable script and central
-parameter, and displays intermediate input and diagnostic checks. It does not
-rerun the fitted models or production bootstraps.
-:::
-
 ## Question
 
 The preregistered hypothesis was:
@@ -748,15 +742,16 @@ Metric ~ Site +
   s(Participant, Time, bs = "fs")
 ```
 
-The scientific question is whether daily melEDI patterns differ among sites,
-how much people within a site differ from one another, and whether those
-within-site differences are larger than the differences among sites.
+The scientific question is whether daily patterns of **melanopic equivalent
+daylight illuminance (melEDI)** differ among sites, how much people within a
+site differ from one another, and whether those within-site differences are
+larger than the differences among sites.
 
-::: {.callout-tip title="Answer in brief"}
+::: {.callout-note title="Answer in brief"}
 Near-eye daily patterns differed among sites
 ($\chi^2=$ `r fmt_number(site_test$test_statistic, 2)`,
 `r fmt_number(site_test$test_df, 0)` degrees of freedom,
-BH-adjusted $p$ = `r fmt_p_value(site_test$p_adjusted, site_test$p_adjusted < 0.05)`).
+false-discovery-rate (FDR)-adjusted $p$ = `r fmt_p_value(site_test$p_adjusted, site_test$p_adjusted < 0.05)`).
 Participant curves plus participant-day shifts were
 `r fmt_ci(near_combined_ratio$estimate, near_combined_ratio$lower_95, near_combined_ratio$upper_95, 2)`
 times as dispersed as site curves. In the conditional Shapley analysis, those
@@ -768,11 +763,16 @@ measurements gave the same combined ordering.
 
 ## What was analysed
 
-Near-eye measurements are primary because they are closer to the light
-reaching the eye. Chest measurements are analysed separately as complementary
-evidence; the two placements are never pooled. During reported sleep, both
-placements characterize the bedside light environment rather than light at
+The near-eye sensor position is primary because it measures light closer to the
+eye, but it is not a direct retinal measurement. The chest sensor position is
+analysed separately as complementary evidence and is not a measure of ocular
+exposure; the two placements are never pooled. During reported sleep, both
+positions characterize the bedside light environment rather than light at
 their nominal worn position.
+
+A **participant-day** is one participant's observations on one local calendar
+date. Counts of participant-days therefore describe repeated recorded days,
+not additional independent participants.
 
 The model used local wall-clock time to describe the daily pattern. True UTC
 time determined observation ordering. A 30-minute bin entered the model when
@@ -782,51 +782,35 @@ fall-back clock bins retained their fold provenance; residual sequences were
 reset at each participant-day, after any elapsed-time discontinuity, and
 around a wall-clock outcome without a one-to-one true-time coordinate.
 
-### Deviations from preregistration
+### Terms used below
 
-The tables below list the scientific and implementation differences that are
-material to H02. They are stated here because they change the exact outcome,
-model, or interpretation.
+- A **nonlinear GAM analysis** uses a generalized additive model (GAM), which
+  allows the association with local clock time to bend across the day rather
+  than forcing it to follow a straight line.
+- The model uses `log10(melEDI + 0.1 lx)`. A **back-transformed** curve applies
+  the inverse transformation and returns to melEDI in lux.
+- Participant and participant-day smooths represent fitted variation that
+  remains among people or recorded days after the time and site patterns have
+  been considered.
+- **Autocorrelation** means adjacent 30-minute residuals can remain more alike
+  than residuals farther apart. The AR(1) structure represents this dependence
+  as strongest for adjacent observations and weaker at longer lags.
+- A **pointwise 95% confidence interval (95% CI)** gives uncertainty at one
+  displayed clock time. It is not a simultaneous band for the full day and
+  does not multiplicity-control every red segment in a daily curve.
+- **Shapley allocation** averages a model component's contribution over all
+  orders in which components could be added, allocating shared fitted-model
+  information rather than counting it repeatedly.
 
-```{r}
-#| label: tbl-h02-model-deviations
-#| tbl-cap: "H02 estimand and model deviations from preregistration."
-
-deviations_model |>
-  gt::gt(rowname_col = "Aspect") |>
-  gt::cols_label(
-    Registered = "Preregistered",
-    Analysis = "Analysed",
-    Reason_or_consequence = "Why it matters"
-  ) |>
-  gt::cols_width(
-    Registered ~ gt::pct(24),
-    Analysis ~ gt::pct(31),
-    Reason_or_consequence ~ gt::pct(30)
-  ) |>
-  h02_gt()
-```
-
-```{r}
-#| label: tbl-h02-data-deviations
-#| tbl-cap: "H02 data and implementation deviations or clarifications."
-
-deviations_data |>
-  gt::gt(rowname_col = "Aspect") |>
-  gt::cols_label(
-    Registered_or_unspecified = "Preregistered or unspecified",
-    Analysis = "Analysed",
-    Reason_or_consequence = "Why it matters"
-  ) |>
-  gt::cols_width(
-    Registered_or_unspecified ~ gt::pct(24),
-    Analysis ~ gt::pct(31),
-    Reason_or_consequence ~ gt::pct(30)
-  ) |>
-  h02_gt()
-```
+The complete [registration-change record](#h02-preregistration-deviations)
+appears in the detailed analysis record.
 
 ## Model
+
+The daily patterns were estimated with a nonlinear GAM analysis. This model
+combines a curved time-of-day pattern with structured departures for sites,
+participants, and participant-days while retaining the repeated-measures
+structure.
 
 The exact Wilkinson formula was:
 
@@ -840,26 +824,31 @@ response ~
 
 Here, `response` is
 $\log_{10}(\mathrm{melEDI}+0.1\ \mathrm{lx})$.
-The first term is the **global time effect**: the daily pattern shared across
-sites, which joins smoothly at midnight. The `sz` term estimates how each site
-departs from that global pattern. Because those departures sum to zero, the
-global time effect is centred equally across sites rather than being the curve
-of a reference site or an observation-weighted site average. The participant term gives
-each person a smooth departure from the site pattern. Participant identifiers
-are site-prefixed, so people remain nested within sites. The final term allows
-each participant-day to shift up or down without changing its shape.
+The first term is the **global time effect**, which is the site-average daily
+curve: it gives every site equal weight and joins smoothly at midnight. The
+`sz` term estimates how each site's curve departs from that site-average curve;
+the departures sum to zero, so no reference site is required. The participant
+smooth represents remaining differences in daily shape among people after the
+reported time and site patterns are considered. Participant identifiers are
+site-prefixed, so people remain nested within sites. The participant-day random
+effect represents remaining day-to-day level shifts within participants after
+those patterns are considered; it shifts an entire fitted day up or down
+without changing its shape.
 
 Only the global time effect is explicitly cyclic. The default time marginals
 inside the `sz` site term and `fs` participant term are not forced to meet
 at midnight. A fully cyclic formulation is therefore included as a
 model-form sensitivity.
 
-The model was fitted with `mgcv::bam()` under fREML and a boundary-aware
-AR(1) working correlation. Site curves and their pointwise conditional 95%
-intervals were obtained from the fitted linear-predictor matrix and full
-coefficient covariance. Smoothing parameters are treated as fixed in those
-pointwise intervals. `gratia` was used for residual appraisal and
-concurvity diagnostics.
+Because adjacent 30-minute residuals can remain more similar than residuals
+farther apart, the model was fitted with `mgcv::bam()` under fREML and a
+boundary-aware AR(1) working correlation. Site curves and their pointwise 95%
+CIs were obtained from the fitted linear-predictor matrix and full coefficient
+covariance. Each interval describes uncertainty at one clock time; it is not a
+simultaneous band across the day. Smoothing parameters are treated as fixed in
+these intervals. `gratia` was used for residual appraisal and for the
+concurvity model check; concurvity is overlap among nonlinear model terms that
+makes their separate contributions harder to distinguish.
 
 ### Quantities used to compare sites and people
 
@@ -872,21 +861,21 @@ V_{\mathrm{site}} =
 \operatorname{Var}_{s}\{\hat f_s(t_b)\},
 $$
 
-and participant-curve variation is the average—giving every site equal
-weight—of the within-site variance among participant curves, averaged over the
-same clock grid. Participant-day variation likewise gives each site equal
-weight when averaging the variance of day-specific intercept contributions.
-Their ratios compare fitted curve
-dispersion on the modelling scale. They are not proportions of response
-variance and are not “variance explained.”
+and participant-curve variation is the within-site variance among participant
+curves over the same clock grid, averaged across sites with each site receiving
+equal weight. Participant-day variation uses the same site-average weighting
+for the variance of day-specific intercept contributions. Their ratios compare
+fitted curve dispersion on the transformed modelling scale. They are not
+proportions of response variance and are not “variance explained.”
 
 The second comparison asks which model block contributes more to in-sample
 fit. The global time effect is retained in every model. Site pattern,
 participant pattern, and participant-day shift are then included in every
 possible combination. For each block, the conditional Shapley allocation is
 its average increase in row-weighted in-sample $R^2$ across all possible
-orders of entry. This allocation is descriptive: it is neither causal
-importance nor cross-validated predictive importance.
+orders of entry. This allocates shared fitted-model information without
+counting it repeatedly. It describes conditional in-sample model-fit relevance,
+not causal importance or cross-validated predictive importance.
 
 Both sets of 95% confidence intervals use 2,000 hierarchical cluster
 resamples: sites, participants within sampled sites, and participant-days
@@ -901,27 +890,35 @@ The primary model fitted `r near_counts$participants` participants,
 `r format(near_counts$observations_30_minute, big.mark = ",")` 30-minute
 observations, and `r near_counts$sites` sites.
 
-```{r}
-#| label: tbl-h02-near-sample
-#| tbl-cap: "Exact fitted near-eye sample, overall and by site."
+### Daily profiles
 
-sample_by_site(near_id) |>
-  gt::gt(rowname_col = "Site") |>
-  gt::fmt_integer(
-    columns = c(
-      Participants,
-      `Participant-days`,
-      `30-minute observations`,
-      `Exact-zero observations`,
-      `AR sequences`
-    ),
-    use_seps = TRUE
-  ) |>
-  gt::tab_style(
-    style = gt::cell_text(weight = "bold"),
-    locations = gt::cells_stub(rows = Site == "All sites")
-  ) |>
-  h02_gt()
+Panel A shows the global time effect, the site-average curve that gives each
+site equal weight. Panel B shows the absolute fitted curve for each site; each
+facet states its fitted participant-day count. Panel C overlays the fitted
+participant curves. Panel D shows each site's fitted curve divided by the
+global time effect. A factor of 2 means twice the fitted
+$\mathrm{melEDI}+0.1\ \mathrm{lx}$ quantity; a factor of 0.5 means half. Grey
+vertical bands show the mean civil-night intervals.
+
+Ribbons in panels A, B, and D are pointwise 95% CIs. Red segments in panel D
+identify individual 30-minute bins whose interval excludes one. These segments
+are local descriptions, not jointly multiplicity-controlled tests across the
+day or across sites.
+
+```{r}
+#| label: fig-h02-near-patterns
+#| fig-cap: "Daily near-eye melEDI patterns: site-average curve (A), site curves (B), participant curves (C), and site-to-global-time-effect factors (D). Ribbons are pointwise 95% CIs."
+#| fig-alt: "Four-panel near-eye daily-pattern figure. Panel A shows the site-average global time effect for 816 participant-days with a pointwise 95% confidence ribbon. Panel B shows nine site curves, pointwise ribbons, country-coded site labels, and a participant-day count in each facet. Panel C shows participant curves. Panel D shows site-to-global-time-effect factors with pointwise ribbons; red segments mark individual clock times whose intervals exclude one."
+#| out-width: "88%"
+#| fig-align: center
+
+knitr::include_graphics(file.path(
+  root,
+  "artifacts",
+  "10_figures",
+  "H02",
+  "figure4_exact_layout_replication.png"
+))
 ```
 
 ### Fitted-curve dispersion
@@ -936,7 +933,10 @@ variation_table_data(near_id) |>
   gt::tab_source_note(
     source_note = paste(
       "Variation units are squared log10(melEDI + 0.1 lx) prediction",
-      "units; ratios are unitless. CIs use 2,000 hierarchical resamples."
+      "units. Participant / site divides participant-curve variation by",
+      "site-curve variation; (Participant + day) / site adds participant-day",
+      "intercept variation to that numerator. Ratios are unitless. CIs use",
+      "2,000 hierarchical resamples."
     )
   ) |>
   h02_gt()
@@ -998,35 +998,7 @@ participant-level blocks contributed substantially more to in-sample fit than
 the site-pattern block. It does not imply that changing a person's behaviour
 would cause that amount of change.
 
-### Daily profiles
-
-Panel A shows the global time effect. Panel B overlays the fitted
-participant curves. Panel C shows the absolute fitted curve for each site;
-each facet states its fitted participant-day count. Panel D shows the site's
-fitted curve divided by the global time effect. A factor of 2 means twice the
-fitted $\mathrm{melEDI}+0.1\ \mathrm{lx}$ quantity; a factor of 0.5 means
-half. Grey vertical bands show the mean civil-night intervals.
-
-Ribbons in A, C, and D are pointwise conditional 95% intervals. Red segments
-in D identify individual 30-minute bins whose interval excludes one. These
-segments are local descriptions, not a jointly multiplicity-controlled test
-across the day or across sites.
-
-```{r}
-#| label: fig-h02-near-patterns
-#| fig-cap: "Daily near-eye melEDI patterns and site departures."
-#| fig-alt: "Four-panel near-eye daily-pattern figure. Panel A shows the global time effect for 816 participant-days. Panel B shows participant curves. Panel C shows nine site curves with a participant-day count inside each site facet. Panel D shows site-to-global-time-effect factors with pointwise intervals."
-#| out-width: "88%"
-#| fig-align: center
-
-knitr::include_graphics(file.path(
-  root,
-  "artifacts",
-  "10_figures",
-  "H02",
-  "figure4_exact_layout_replication.png"
-))
-```
+### Pointwise site windows
 
 ```{r}
 #| label: tbl-h02-near-windows
@@ -1043,57 +1015,6 @@ window_table_data(near_id) |>
   h02_gt()
 ```
 
-### Model assessment
-
-```{r}
-#| label: fig-h02-near-diagnostics
-#| fig-cap: "Near-eye model diagnostics."
-#| fig-alt: "Five-panel diagnostic figure for the near-eye GAMM. Panels A to D show a normal QQ plot, residuals versus linear predictor, residual histogram, and observed versus fitted values using Pearson residuals. Panel E shows residual autocorrelation before and after the boundary-aware AR1 correction."
-#| out-width: "88%"
-#| fig-align: center
-
-knitr::include_graphics(file.path(
-  root,
-  "artifacts",
-  "10_figures",
-  "H02",
-  "model_diagnostics_near_eye.png"
-))
-```
-
-```{r}
-#| label: tbl-h02-near-diagnostics
-#| tbl-cap: "Near-eye fit and diagnostic summary."
-
-diagnostic_table_data(near_id) |>
-  gt::gt(rowname_col = "Check") |>
-  gt::cols_width(
-    Result ~ gt::pct(34),
-    Reading ~ gt::pct(43)
-  ) |>
-  h02_gt()
-```
-
-The model converged at full rank, the basis-size checks did not indicate that
-the available time bases were too small, and the AR(1) correction reduced
-overall lag-1 residual correlation from
-`r fmt_number(filter(residual_acf, run_id == near_id, stage == "preliminary_no_AR1", lag_30_minute_bins == 1)$correlation, 3)`
-to
-`r fmt_number(filter(residual_acf, run_id == near_id, stage == "final_AR1_standardized", lag_30_minute_bins == 1)$correlation, 3)`.
-These are strengths for estimating average daily patterns.
-
-The residual diagnostics are not ideal. The QQ plot has an S-shaped departure
-from normality, and the line of observations at response $-1$ reflects the
-large number of exact zeros after the $\log_{10}(\mathrm{melEDI}+0.1)$
-transform. Residual magnitude also increases modestly with fitted exposure.
-Some participant-days retain positive lag-1 correlation. In addition, formal
-concurvity is high between the common and site time bases even though the
-sum-to-zero constraint is satisfied at full rank. The model is therefore
-adequate for a conditional description of mean curves and their complete
-contrasts, but it is not a perfect generative description of the full
-zero-heavy response distribution. Isolated smooth coefficients should not be
-interpreted as independent effects.
-
 ## Complementary chest result
 
 The chest model used the identical formula, transform, fitting algorithm,
@@ -1101,31 +1022,8 @@ curve definitions, and interval procedures. It fitted
 `r chest_counts$participants` participants,
 `r chest_counts$participant_days` participant-days,
 `r format(chest_counts$observations_30_minute, big.mark = ",")` 30-minute
-observations, and `r chest_counts$sites` sites. Tübingen is absent because
+observations, and `r chest_counts$sites` sites. Tübingen (DE) is absent because
 chest measurements were unavailable there.
-
-```{r}
-#| label: tbl-h02-chest-sample
-#| tbl-cap: "Exact fitted chest sample, overall and by site."
-
-sample_by_site(chest_id) |>
-  gt::gt(rowname_col = "Site") |>
-  gt::fmt_integer(
-    columns = c(
-      Participants,
-      `Participant-days`,
-      `30-minute observations`,
-      `Exact-zero observations`,
-      `AR sequences`
-    ),
-    use_seps = TRUE
-  ) |>
-  gt::tab_style(
-    style = gt::cell_text(weight = "bold"),
-    locations = gt::cells_stub(rows = Site == "All sites")
-  ) |>
-  h02_gt()
-```
 
 ### Fitted-curve dispersion
 
@@ -1139,7 +1037,10 @@ variation_table_data(chest_id) |>
   gt::tab_source_note(
     source_note = paste(
       "Variation units are squared log10(melEDI + 0.1 lx) prediction",
-      "units; ratios are unitless. CIs use 2,000 hierarchical resamples."
+      "units. Participant / site divides participant-curve variation by",
+      "site-curve variation; (Participant + day) / site adds participant-day",
+      "intercept variation to that numerator. Ratios are unitless. CIs use",
+      "2,000 hierarchical resamples."
     )
   ) |>
   h02_gt()
@@ -1195,10 +1096,15 @@ relative-relevance ordering.
 
 ### Daily profiles
 
+As in the near-eye figure, panel A shows the site-average global time effect,
+panel B shows site curves with fitted participant-day counts, panel C shows
+participant curves, and panel D shows site-to-global-time-effect factors.
+Ribbons in panels A, B, and D are pointwise 95% CIs.
+
 ```{r}
 #| label: fig-h02-chest-patterns
-#| fig-cap: "Daily chest melEDI patterns and site departures."
-#| fig-alt: "Four-panel chest daily-pattern figure. Panel A shows the global time effect for 902 participant-days. Panel B shows participant curves. Panel C shows eight site curves with a participant-day count inside each site facet. Panel D shows site-to-global-time-effect factors with pointwise intervals."
+#| fig-cap: "Daily chest melEDI patterns: site-average curve (A), site curves (B), participant curves (C), and site-to-global-time-effect factors (D). Ribbons are pointwise 95% CIs."
+#| fig-alt: "Four-panel chest daily-pattern figure. Panel A shows the site-average global time effect for 902 participant-days with a pointwise 95% confidence ribbon. Panel B shows eight site curves, pointwise ribbons, country-coded site labels, and a participant-day count in each facet. Panel C shows participant curves. Panel D shows site-to-global-time-effect factors with pointwise ribbons; red segments mark individual clock times whose intervals exclude one."
 #| out-width: "88%"
 #| fig-align: center
 
@@ -1226,53 +1132,12 @@ window_table_data(chest_id) |>
   h02_gt()
 ```
 
-### Model assessment
-
-```{r}
-#| label: fig-h02-chest-diagnostics
-#| fig-cap: "Chest model diagnostics."
-#| fig-alt: "Five-panel diagnostic figure for the chest GAMM. Panels A to D show a normal QQ plot, residuals versus linear predictor, residual histogram, and observed versus fitted values using Pearson residuals. Panel E shows residual autocorrelation before and after the boundary-aware AR1 correction."
-#| out-width: "88%"
-#| fig-align: center
-
-knitr::include_graphics(file.path(
-  root,
-  "artifacts",
-  "10_figures",
-  "H02",
-  "model_diagnostics_chest.png"
-))
-```
-
-```{r}
-#| label: tbl-h02-chest-diagnostics
-#| tbl-cap: "Chest fit and diagnostic summary."
-
-diagnostic_table_data(chest_id) |>
-  gt::gt(rowname_col = "Check") |>
-  gt::cols_width(
-    Result ~ gt::pct(34),
-    Reading ~ gt::pct(43)
-  ) |>
-  h02_gt()
-```
-
-The chest model also converged at full rank. The AR(1) correction reduced
-overall lag-1 residual correlation from
-`r fmt_number(filter(residual_acf, run_id == chest_id, stage == "preliminary_no_AR1", lag_30_minute_bins == 1)$correlation, 3)`
-to
-`r fmt_number(filter(residual_acf, run_id == chest_id, stage == "final_AR1_standardized", lag_30_minute_bins == 1)$correlation, 3)`.
-Its basis-size checks were acceptable. The same lower-bound pattern,
-non-normal tails, fitted-dependent residual spread, and high common/site
-concurvity remain. The chest model is therefore corroborating evidence with
-the same interpretive limitations as the near-eye model.
-
 ## Direct comparison of near-eye and chest patterns
 
-The placement-matched analysis retained exactly the same 112 participants,
-643 participant-days, and 29,786 30-minute observations at eight sites for
-near-eye and chest fits. Their observation keys match one-to-one. The two
-placements were fitted separately with the same response definition,
+The comparison used the same 112 participants, 643 participant-days, and
+29,786 30-minute observations at both sensor positions across eight sites;
+their observation keys match one-to-one. This is the **matched sample**. The
+two positions were fitted separately with the same response definition,
 transformation, temporal grid, and model structure; they were not pooled.
 
 A scalar near-eye-versus-chest identity plot would discard the feature H02 is
@@ -1284,8 +1149,8 @@ back-transformed to melEDI for interpretation.
 
 ```{r}
 #| label: fig-h02-paired-placement-curves
-#| fig-cap: "Matched near-eye and chest site curves with pointwise 95% intervals (112 participants; 643 participant-days; 29,786 paired observations)."
-#| fig-alt: "Eight site facets compare separately fitted near-eye and chest daily melEDI curves for the same 112 participants, 643 participant-days, and 29,786 paired half-hour observations. Near-eye curves are solid blue and chest curves are dashed orange; translucent ribbons show component pointwise conditional 95% intervals."
+#| fig-cap: "Near-eye and chest site curves for the same 112 participants, 643 participant-days, and 29,786 30-minute observations at both sensor positions. Ribbons are component pointwise 95% CIs."
+#| fig-alt: "Eight country-coded site facets compare separately fitted near-eye and chest daily melEDI curves for the same 112 participants, 643 participant-days, and 29,786 half-hour observations at both sensor positions. Near-eye curves are solid blue and chest curves are dashed orange; translucent ribbons show component pointwise 95% confidence intervals."
 #| fig-width: 11
 #| fig-height: 7
 
@@ -1360,26 +1225,139 @@ ggplot(
   )
 ```
 
-The ribbons are component pointwise conditional 95% intervals for each
+The ribbons are component pointwise 95% CIs for each
 separately fitted placement curve. They are not an interval for the
 near-eye-minus-chest difference because the covariance between the two fitted
 models was not estimated. Similar-looking curves indicate descriptive
 concordance on this matched sample, not statistical equivalence.
 
+## Model checks
+
+### Near-eye model checks
+
+<details>
+<summary>Show detailed near-eye model checks</summary>
+
+```{r}
+#| label: fig-h02-near-diagnostics
+#| fig-cap: "Near-eye model checks (diagnostics)."
+#| fig-alt: "Five-panel model-check figure for the near-eye nonlinear GAM. Panels A to D show a normal QQ plot, residuals versus linear predictor, a residual histogram, and observed versus fitted values using Pearson residuals. Panel E shows residual autocorrelation before and after the boundary-aware AR(1) correction."
+#| out-width: "88%"
+#| fig-align: center
+
+knitr::include_graphics(file.path(
+  root,
+  "artifacts",
+  "10_figures",
+  "H02",
+  "model_diagnostics_near_eye.png"
+))
+```
+
+```{r}
+#| label: tbl-h02-near-diagnostics
+#| tbl-cap: "Near-eye fit and model-check summary."
+
+diagnostic_table_data(near_id) |>
+  gt::gt(rowname_col = "Check") |>
+  gt::cols_width(
+    Result ~ gt::pct(34),
+    Reading ~ gt::pct(43)
+  ) |>
+  h02_gt()
+```
+
+</details>
+
+The model converged at full rank, the basis-size checks did not indicate that
+the available time bases were too small, and the AR(1) correction reduced
+overall lag-1 residual correlation from
+`r fmt_number(filter(residual_acf, run_id == near_id, stage == "preliminary_no_AR1", lag_30_minute_bins == 1)$correlation, 3)`
+to
+`r fmt_number(filter(residual_acf, run_id == near_id, stage == "final_AR1_standardized", lag_30_minute_bins == 1)$correlation, 3)`.
+These are strengths for estimating average daily patterns.
+
+The residual checks are not ideal. The QQ plot has an S-shaped departure
+from normality, and the line of observations at response $-1$ reflects the
+large number of exact zeros after the $\log_{10}(\mathrm{melEDI}+0.1)$
+transform. Residual magnitude also increases modestly with fitted exposure.
+Some participant-days retain positive lag-1 correlation. In addition,
+concurvity, the overlap among nonlinear terms, is high between the global and
+site time bases even though the
+sum-to-zero constraint is satisfied at full rank. The model is therefore
+adequate for a conditional description of mean curves and their complete
+contrasts, but it is not a perfect generative description of the full
+zero-heavy response distribution. Isolated smooth coefficients should not be
+interpreted as independent effects.
+
+### Chest model checks
+
+<details>
+<summary>Show detailed chest model checks</summary>
+
+```{r}
+#| label: fig-h02-chest-diagnostics
+#| fig-cap: "Chest model checks."
+#| fig-alt: "Five-panel model-check figure for the chest nonlinear GAM. Panels A to D show a normal QQ plot, residuals versus linear predictor, a residual histogram, and observed versus fitted values using Pearson residuals. Panel E shows residual autocorrelation before and after the boundary-aware AR(1) correction."
+#| out-width: "88%"
+#| fig-align: center
+
+knitr::include_graphics(file.path(
+  root,
+  "artifacts",
+  "10_figures",
+  "H02",
+  "model_diagnostics_chest.png"
+))
+```
+
+```{r}
+#| label: tbl-h02-chest-diagnostics
+#| tbl-cap: "Chest fit and model-check summary."
+
+diagnostic_table_data(chest_id) |>
+  gt::gt(rowname_col = "Check") |>
+  gt::cols_width(
+    Result ~ gt::pct(34),
+    Reading ~ gt::pct(43)
+  ) |>
+  h02_gt()
+```
+
+</details>
+
+The chest model also converged at full rank. The AR(1) correction reduced
+overall lag-1 residual correlation from
+`r fmt_number(filter(residual_acf, run_id == chest_id, stage == "preliminary_no_AR1", lag_30_minute_bins == 1)$correlation, 3)`
+to
+`r fmt_number(filter(residual_acf, run_id == chest_id, stage == "final_AR1_standardized", lag_30_minute_bins == 1)$correlation, 3)`.
+Its basis-size checks were acceptable. The same lower-bound pattern,
+non-normal tails, fitted-dependent residual spread, and high overlap between
+the global and site nonlinear terms (concurvity) remain. The chest model is
+therefore corroborating evidence with
+the same interpretive limitations as the near-eye model.
+
 ## Sensitivity to other analytical choices
 
 The table changes one substantive choice at a time where possible. The
-**gap-timing-unaware dataset** is the predefined data-preparation sensitivity.
+**gap-timing-unaware dataset** sensitivity changes the prepared 30-minute
+dataset while retaining the model specification. It is the predefined
+data-preparation sensitivity.
 It still passed the general 50%-per-hour and 80%-per-day coverage rules, but
 the timing of the remaining missing observations was not used for an
 additional metric-specific adjustment. For contrast, the primary dataset
 could be interpreted as a time-sensitive primary metric dataset because its
 preparation uses the timing of remaining missing observations where that
 timing is relevant to the metric; it is called simply the **primary dataset**
-elsewhere in this report. The cyclic-basis analysis forces site and
-participant deviations to meet at midnight. The placement-matched analyses
-restrict near-eye and chest fits to the same participant-day-clock
-observations.
+elsewhere in this report. The **fully cyclic basis** sensitivity changes the
+site and participant time bases so those deviations also meet at midnight. The
+**placement-matched** sensitivities change the fitted sample by restricting
+near-eye and chest fits to the same participant-day-clock observations. The
+**complementary chest** analysis changes sensor position while retaining the
+selected formula and implementation. A separate **non-cyclic global-time
+basis** check changed only the global time basis from cyclic cubic to thin
+plate; residual model checks did not materially improve and midnight
+continuity worsened.
 
 ```{r}
 #| label: tbl-h02-sensitivity
@@ -1415,8 +1393,9 @@ is less certain outside the full near-eye sample.
 
 ## Interpretation
 
-The daily profile is dominated by the global time effect, but the
-remaining heterogeneity is not mainly geographic. People within the same site
+The daily profile is dominated by the global time effect. After that pattern
+was considered, the fitted variation among people and their recorded days was
+larger than the fitted variation among sites. People within the same site
 showed more distinct fitted daily patterns than the average differences among
 site curves, especially when day-to-day level shifts were included.
 
@@ -1432,19 +1411,172 @@ combined. The first compares model-implied curve spread. The second allocates
 in-sample model fit. Neither is a causal effect, a population-wide fraction of
 variance, or a guarantee of out-of-sample prediction.
 
+### Limitations
+
 The site-specific time windows are useful for describing when a fitted site
 profile departs from the global time effect, but each ribbon is a pointwise
-interval. A reader should not interpret every red segment as a separate
-familywise-controlled discovery. The single confirmatory multiplicity family
-is the near-eye omnibus site-pattern test (`H02-F1-site-pattern`); it contains
-one test, so BH adjustment leaves its p-value unchanged.
+95% CI rather than a simultaneous band. A reader should not interpret every
+red segment as a separate familywise-controlled discovery. The single
+confirmatory family contains only the near-eye omnibus site-pattern test, so
+FDR adjustment leaves its p-value unchanged.
 
 Overall, the model provides a defensible description of mean daily patterns
 and supports the preregistered ordering when participant-day variation is
 included. Confidence is tempered by the zero-heavy residual distribution,
 remaining day-specific serial correlation, high common/site concurvity, only
-nine near-eye sites, and the conditional—not model-refitting—nature of the
-bootstrap intervals.
+nine near-eye sites, and the conditional rather than model-refitting nature of
+the bootstrap intervals.
+
+## Detailed analysis record
+
+### Exact fitted samples
+
+The primary near-eye and complementary chest sample tables below give the
+overall fitted counts and their site-specific distribution.
+
+#### Near eye
+
+```{r}
+#| label: tbl-h02-near-sample
+#| tbl-cap: "Exact fitted near-eye sample, overall and by site."
+
+sample_by_site(near_id) |>
+  gt::gt(rowname_col = "Site") |>
+  gt::fmt_integer(
+    columns = c(
+      Participants,
+      `Participant-days`,
+      `30-minute observations`,
+      `Exact-zero observations`,
+      `AR sequences`
+    ),
+    use_seps = TRUE
+  ) |>
+  gt::tab_style(
+    style = gt::cell_text(weight = "bold"),
+    locations = gt::cells_stub(rows = Site == "All sites")
+  ) |>
+  h02_gt()
+```
+
+#### Chest
+
+```{r}
+#| label: tbl-h02-chest-sample
+#| tbl-cap: "Exact fitted chest sample, overall and by site."
+
+sample_by_site(chest_id) |>
+  gt::gt(rowname_col = "Site") |>
+  gt::fmt_integer(
+    columns = c(
+      Participants,
+      `Participant-days`,
+      `30-minute observations`,
+      `Exact-zero observations`,
+      `AR sequences`
+    ),
+    use_seps = TRUE
+  ) |>
+  gt::tab_style(
+    style = gt::cell_text(weight = "bold"),
+    locations = gt::cells_stub(rows = Site == "All sites")
+  ) |>
+  h02_gt()
+```
+
+### Deviations from preregistration {#h02-preregistration-deviations}
+
+The tables below list the scientific and implementation differences that are
+material to H02. They are stated here because they change the exact outcome,
+model, or interpretation.
+
+```{r}
+#| label: tbl-h02-model-deviations
+#| tbl-cap: "H02 estimand and model changes relative to the registered analysis."
+
+deviations_model |>
+  gt::gt(rowname_col = "Aspect") |>
+  gt::cols_label(
+    Registered = "Preregistered",
+    Analysis = "Analysed",
+    Reason_or_consequence = "Why it matters"
+  ) |>
+  gt::cols_width(
+    Registered ~ gt::pct(24),
+    Analysis ~ gt::pct(31),
+    Reason_or_consequence ~ gt::pct(30)
+  ) |>
+  h02_gt()
+```
+
+```{r}
+#| label: tbl-h02-data-deviations
+#| tbl-cap: "H02 data and implementation deviations or clarifications."
+
+deviations_data |>
+  gt::gt(rowname_col = "Aspect") |>
+  gt::cols_label(
+    Registered_or_unspecified = "Preregistered or unspecified",
+    Analysis = "Analysed",
+    Reason_or_consequence = "Why it matters"
+  ) |>
+  gt::cols_width(
+    Registered_or_unspecified ~ gt::pct(24),
+    Analysis ~ gt::pct(31),
+    Reason_or_consequence ~ gt::pct(30)
+  ) |>
+  h02_gt()
+```
+
+<details>
+<summary>Show linked registration entries by topic</summary>
+
+**Related preregistration entries**
+
+- **Model/estimand table**
+  - Primary placement: [DEV-001](../preregistration_deviations.qmd#dev-001),
+    [REP-001](../preregistration_deviations.qmd#rep-001), and
+    [REP-002](../preregistration_deviations.qmd#rep-002).
+  - Outcome and epoch: [DEV-012](../preregistration_deviations.qmd#dev-012).
+  - Response scale: [DEV-012](../preregistration_deviations.qmd#dev-012).
+  - Global time effect: [DEV-011](../preregistration_deviations.qmd#dev-011).
+  - Site smooth: [DEV-010](../preregistration_deviations.qmd#dev-010).
+  - Participant hierarchy:
+    [DEV-011](../preregistration_deviations.qmd#dev-011) and
+    [DEV-021](../preregistration_deviations.qmd#dev-021).
+  - Variance target: [IMP-005](../preregistration_deviations.qmd#imp-005).
+- **Data/implementation table**
+  - 30-minute support: [DEV-012](../preregistration_deviations.qmd#dev-012)
+    and [IMP-015](../preregistration_deviations.qmd#imp-015).
+  - Whole-day handling: [DEV-019](../preregistration_deviations.qmd#dev-019)
+    and [DEV-057](../preregistration_deviations.qmd#dev-057).
+  - Clock and DST: [IMP-017](../preregistration_deviations.qmd#imp-017) and
+    [DEV-021](../preregistration_deviations.qmd#dev-021).
+  - Measurement context: [DEV-005](../preregistration_deviations.qmd#dev-005),
+    [IMP-012](../preregistration_deviations.qmd#imp-012), and
+    [REP-003](../preregistration_deviations.qmd#rep-003).
+  - Operating range: [IMP-002](../preregistration_deviations.qmd#imp-002).
+  - Software environment:
+    [DEV-049](../preregistration_deviations.qmd#dev-049) and
+    [DEV-050](../preregistration_deviations.qmd#dev-050).
+
+</details>
+
+### Source data and technical provenance
+
+The accepted numerical source files include the
+[site-curve predictions](../../artifacts/11_source_data/H02/site_curve_predictions.csv),
+[fitted-curve variation results](../../artifacts/09_tables/H02/variation_summary.csv),
+[Shapley allocation results](../../artifacts/09_tables/H02/dominance_summary.csv),
+and [matched-position curve data](../../artifacts/11_source_data/H02/paired_placement_site_curves.csv).
+These files preserve full precision; the report applies reader-facing
+formatting only.
+
+::: {.callout-note title="How this result was produced"}
+The companion [H02 analysis preparation and provenance](../../audit/hypotheses/H02/H02_analysis_preparation.qmd)
+explains the data-to-result chain, central model settings, model checks, and
+stored outputs. It does not rerun the fitted models or resampling analyses.
+:::
 
 ```{r}
 #| label: session-info-h02

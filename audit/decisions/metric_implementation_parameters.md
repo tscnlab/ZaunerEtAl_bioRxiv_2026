@@ -1,11 +1,10 @@
 # Metric implementation parameters
 
 Decision ID: `METRIC-002`  
-Related support decisions: `STATE-005`; `METRIC-003`; `METRIC-004`;
-`METRIC-005`; `METRIC-006`  
-Status: author approved; canonical Preparation 03 and Preparation 04 artifact
-integrity independently verified; Preparation 04 result gate open for M10
-timing and MDER upper-tail disposition  
+Related support decisions: `STATE-005`; `METRIC-004`; `METRIC-005`;
+`METRIC-006`; current MDER decision `METRIC-010`
+Status: author approved and implemented; current metric artifacts independently
+verified; `METRIC-003` retained only as superseded MDER history
 Decision date: 2026-07-30  
 Scope: parameters that were deliberately fixed before inspecting repaired
 metric values
@@ -97,8 +96,8 @@ The fixed relevance maps are metric-specific:
   from its daily maximum;
 - first/last/mean timing above 250 lx: the fixed participant-day- then
   participant-balanced strict-exceedance distribution;
-- paired MEDI/LIGHT metrics: paired support from their separate signal
-  profiles, without using either profile to alter the ratio.
+- MDER does not use a relevance map under `METRIC-010`; it instead requires
+  at least 50% viable positive paired minutes on the fixed wall-clock grid.
 
 If a relevance map has zero total mass in its intended domain, it is
 non-estimable and no unweighted fallback is silently substituted.
@@ -121,33 +120,27 @@ threshold durations, continuous periods, window levels, clock timings, or MDER.
 
 ## MDER
 
-MDER is the ratio of MEDI and photopic `LIGHT` integrals over identical paired
-valid one-minute intervals. It is calculated only when:
+MDER is the arithmetic mean of viable one-minute `MEDI / LIGHT` ratios.
+Eligible channel values are first placed on the fixed 1,440-minute local
+wall-clock grid. A repeated daylight-saving fall-back minute is flattened by
+averaging each channel before the ratio is formed. A pair is viable only when
+both channel values are finite and strictly positive.
 
-- at least one paired valid observation exists;
-- the paired `LIGHT` integral is positive;
-- ordinary paired-minute coverage is at least 0.80;
-- support under the fixed pooled MEDI profile is at least 0.80; and
-- support under the fixed pooled `LIGHT` profile is at least 0.80.
+MDER is available when at least 720 viable minutes remain. Exactly 720 pass;
+719 fail. The failure-code precedence is `no_viable_momentary_ratio` followed
+by `below_viable_ratio_fraction`. Failure affects MDER only and never removes
+the participant-day from another metric.
 
-The three support requirements are conjunctive: passing one does not
-compensate for failing another. The fixed signal-specific profiles diagnose
-whether paired missingness occurs at consequential times of day. They do not
-scale, weight, or correct either integral or the resulting ratio.
+The general Rule A 80% participant-day criterion remains upstream. MDER is
+not divided by coverage, weighted by time of day, weighted by illuminance, or
+replaced by a ratio of channel integrals. The old fixed-profile MDER gate and
+its 0.70/0.80/0.90 candidates were specific to the superseded estimand and are
+not active MDER scenarios. The gap-timing-unaware dataset remains the planned
+prepared-data comparison under the same mean-of-ratios construct.
 
-Failure produces exactly one metric-specific reason code, using the
-prespecified precedence `no_paired_observation`,
-`nonpositive_paired_light_integral`,
-`below_ordinary_paired_support`, `below_medi_profile_support`, then
-`below_light_profile_support`. MDER becomes `NA`, while the participant-day
-and all unrelated metrics remain retained.
-
-Cutoffs 0.70 and 0.90 are fixed MDER-specific sensitivity scenarios. The
-primary 0.80 rule retains 733 of 811 near-eye and 825 of 897 chest
-participant-days in the verified support gate, with every participant and
-site represented. These are support classifications, not final repaired
-MDER values; the canonical Preparation 04 rerun and downstream result
-comparisons remain pending.
+The verified primary output contains 702 of 816 near-eye and 732 of 902 chest
+participant-days. Full implementation, comparison, and manifest identities
+are recorded in `mder_mean_of_viable_ratios.md`.
 
 ## M10 and L10
 
@@ -172,6 +165,14 @@ comparisons remain pending.
 - Fall-back duplicate wall minutes are averaged, with provenance, for this
   clock-aligned calculation. Elapsed-time metrics retain both real hours.
 - L10 is retained. No L5 value or producer is permitted.
+- Under `METRIC-011`, an offset-subtracted geometric-mean value is normalized
+  to exact zero only when it is within the scale-dependent R machine-precision
+  tolerance and either lies just below the non-negative domain or every
+  finite source value is exactly zero. Missing source minutes remain missing
+  and are counted; the raw back-transform and row-level source evidence are
+  preserved. Zero-capable models retain the record as zero, and two-part
+  models retain it in the occurrence component while excluding it only from
+  the strictly positive magnitude component.
 
 ## Threshold timing and censoring
 

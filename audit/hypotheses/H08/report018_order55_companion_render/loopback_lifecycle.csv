@@ -1,0 +1,11 @@
+event,status,evidence,details
+served_root_symlink_precheck,PASS,prerender_status.csv,"The served _build/nathealth root contained zero symlinks before QA."
+port_precheck,PASS,process_prerender_external.csv,"No process was listening on TCP port 8775 before QA."
+sandbox_bind_attempt,NO_SERVER_CREATED,visual_qa_corrections.csv,"The initial sandboxed bind was denied before a socket or server process was created."
+authorized_loopback_start,PASS,session_80972,"Exactly one temporary server started with _build/nathealth as its working root and bound only to 127.0.0.1:8775."
+request_scope,PASS,session_80972,"The server received only the H08 companion route and its required local CSS, JavaScript, font, Mermaid, and three H08 figure resources. A browser-originated favicon request returned 404 and had no reader-facing or console effect."
+qa_tab_close,PASS,browser_runtime,"The agent-created H08 QA tab was closed after inspection."
+viewport_reset,PASS,browser_runtime,"The explicit viewport override was reset after inspection."
+server_stop,PASS,session_80972,"A single interrupt stopped the temporary server and the process exited with code 0."
+listener_postcheck,PASS,lsof_127.0.0.1_8775,"lsof returned no listener on TCP port 8775 after shutdown."
+process_postcheck,PASS,postqa_process_and_listener_audit.csv,"No Quarto, Pandoc, temporary HTTP server, semantic hook, or order-specific verifier process remained after QA."

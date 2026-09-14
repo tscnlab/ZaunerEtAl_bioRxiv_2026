@@ -26,13 +26,22 @@ readr::write_csv(
   file.path(h07_stage2_paths$tables, "H07_main_run_registry.csv")
 )
 
-samples <- tibble::tibble()
-diagnostics <- tibble::tibble()
-tests <- tibble::tibble()
+h07_main_seed_unaffected <- function(filename) {
+  path <- file.path(h07_stage2_paths$tables, filename)
+  if (!h07_stage2_partial_execution || !file.exists(path)) {
+    return(tibble::tibble())
+  }
+  readr::read_csv(path, show_col_types = FALSE) |>
+    filter(!.data$metric_id %in% h07_stage2_execution_metric_ids)
+}
+
+samples <- h07_main_seed_unaffected("H07_main_samples.csv")
+diagnostics <- h07_main_seed_unaffected("H07_main_diagnostics.csv")
+tests <- h07_main_seed_unaffected("H07_main_tests_unadjusted.csv")
 
 for (run_index in seq_len(nrow(run_registry))) {
   run <- run_registry[run_index, , drop = FALSE]
-  for (metric_id in h07_stage2_metric_ids) {
+  for (metric_id in h07_stage2_execution_metric_ids) {
     message(
       sprintf(
         "H07 MAIN START %s / %s at %s",
@@ -89,6 +98,40 @@ for (run_index in seq_len(nrow(run_registry))) {
     invisible(gc())
   }
 }
+
+samples <- samples |>
+  arrange(
+    factor(.data$run_id, levels = run_registry$run_id),
+    factor(.data$metric_id, levels = h07_stage2_metric_ids)
+  )
+diagnostics <- diagnostics |>
+  arrange(
+    factor(.data$run_id, levels = run_registry$run_id),
+    factor(.data$metric_id, levels = h07_stage2_metric_ids),
+    factor(.data$model_id, levels = h07_stage2_main_model_ids)
+  )
+tests <- tests |>
+  arrange(
+    factor(.data$run_id, levels = run_registry$run_id),
+    factor(.data$metric_id, levels = h07_stage2_metric_ids),
+    .data$analysis_scope,
+    .data$test_id
+  )
+readr::write_csv(
+  samples,
+  file.path(h07_stage2_paths$tables, "H07_main_samples.csv"),
+  na = ""
+)
+readr::write_csv(
+  diagnostics,
+  file.path(h07_stage2_paths$tables, "H07_main_diagnostics.csv"),
+  na = ""
+)
+readr::write_csv(
+  tests,
+  file.path(h07_stage2_paths$tables, "H07_main_tests_unadjusted.csv"),
+  na = ""
+)
 
 tests_adjusted <- tests |>
   left_join(

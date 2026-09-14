@@ -1,0 +1,61 @@
+stopifnot(as.character(getRversion()) == "4.6.1")
+root <- normalizePath(getwd(), mustWork = TRUE)
+out <- "/private/tmp/h09-s15b-independent.ZOy62t"
+owner <- file.path(root, "audit/hypotheses/H09/manuscript_s15b_strip_layout_2026_09_14")
+coord <- file.path(root, "audit/report_harmonization/final_documents_2026_09_13")
+sha <- function(p) { con <- file(p, "rb"); on.exit(close(con)); as.character(openssl::sha256(con)) }
+audit <- function(path, base, count, pin, label) {
+  stopifnot(sha(path) == pin)
+  m <- read.csv(path, stringsAsFactors = FALSE)
+  p <- ifelse(startsWith(m$path, "/"), m$path, file.path(base, m$path))
+  stopifnot(nrow(m) == count, !anyDuplicated(m$path), all(file.exists(p)),
+    !normalizePath(path) %in% normalizePath(p), !anyDuplicated(normalizePath(p)))
+  m$observed_sha256 <- vapply(p, sha, "")
+  m$observed_bytes <- file.info(p)$size
+  m$pass <- m$observed_sha256 == m$sha256 & m$observed_bytes == m$bytes
+  stopifnot(all(m$pass))
+  write.csv(m, file.path(out, paste0(label, "_rehash.csv")), row.names = FALSE)
+  nrow(m)
+}
+n_owner <- audit(file.path(owner,"non_circular_manifest.csv"),owner,33L,"cc1774067a4ef6ca95efdb5942aa6a0ca39ac4441251ffaea0cfb3403854904b","owner")
+n_dispatch <- audit(file.path(coord,"h09_s15b_strip_candidate_order_010a_dispatch_manifest.csv"),root,32L,"5461baf4380ef285a4df9156edac3f4b3fbcd40ff0c396a437f7e338373546f8","dispatch")
+prior <- file.path(root,"audit/manuscript_nature_health/final_review_production_2026_09_14")
+n_writer <- audit(file.path(prior,"candidate_package_manifest.csv"),prior,439L,"624753fabeb69a47cc9fe7262cba25849963e8ab8aca201512f47fbb5ec65b32","writer")
+old <- file.path(root,"audit/hypotheses/H09/report018_order72j_split_svg_export/candidate/H09_observed_timing_patterns.svg")
+new <- file.path(owner,"candidate/H09_observed_timing_patterns.svg")
+stopifnot(sha(old)=="c937252509c5de9448944358a9846842c973bac26b0f0fb4640728fcf8a908b3",sha(new)=="0a3d0cabcd6cdb67db072cfa566448a885a774db519bea442a973896a7d616e8")
+bytes <- function(p) readBin(p,"raw",n=file.info(p)$size)
+old_raw <- bytes(old); new_raw <- bytes(new)
+old_text <- rawToChar(old_raw); new_text <- rawToChar(new_raw)
+old_x <- c("105.65","324.73","543.80"); new_x <- c("89.13","308.21","527.28")
+forward <- old_text; reverse <- new_text
+for(i in seq_along(old_x)) {
+  a <- paste0("<rect x='",old_x[[i]],"' y='86.06' width='158.96' height='47.66'")
+  b <- paste0("<rect x='",new_x[[i]],"' y='86.06' width='192.00' height='47.66'")
+  stopifnot(length(gregexpr(a,old_text,fixed=TRUE)[[1]])==2L, length(gregexpr(b,new_text,fixed=TRUE)[[1]])==2L)
+  forward <- gsub(a,b,forward,fixed=TRUE); reverse <- gsub(b,a,reverse,fixed=TRUE)
+}
+stopifnot(identical(charToRaw(forward),new_raw), identical(charToRaw(reverse),old_raw))
+d_old <- xml2::read_xml(old); d_new <- xml2::read_xml(new)
+xml2::xml_ns_strip(d_old); xml2::xml_ns_strip(d_new)
+texts <- function(d) vapply(xml2::xml_find_all(d,".//text"), as.character, "")
+stopifnot(identical(texts(d_old),texts(d_new)))
+ids <- xml2::xml_attr(xml2::xml_find_all(d_new,".//*[@id]"),"id")
+stopifnot(!anyDuplicated(ids))
+checks <- read.csv(file.path(owner,"evidence/final_candidate_checks.csv"),stringsAsFactors=FALSE)
+stopifnot(all(checks$status=="PASS"))
+teardown <- read.csv(file.path(owner,"evidence/teardown.csv"),stringsAsFactors=FALSE)
+stopifnot(all(teardown$status=="PASS"))
+summary <- data.frame(check=c("owner_manifest","dispatch_manifest","writer_package","six_rectangles_only","exact_forward","exact_reverse","all_text_and_fonts_exact","unique_SVG_IDs","owner_final_checks","owner_teardown"),
+  value=c(n_owner,n_dispatch,n_writer,"6",TRUE,TRUE,TRUE,TRUE,nrow(checks),nrow(teardown)),pass=TRUE)
+write.csv(summary,file.path(out,"independent_checks.csv"),row.names=FALSE)
+writeLines(c(capture.output(sessionInfo()),paste("xml2",packageVersion("xml2")),paste("openssl",packageVersion("openssl"))),file.path(out,"session.txt"))
+serve <- file.path(out,"serve")
+stopifnot(!dir.exists(serve));dir.create(serve)
+src <- c(file.path(owner,"qa/preview_wrapper.html"),new)
+dst <- file.path(serve,c("index.html","H09_observed_timing_patterns.svg"))
+stopifnot(all(file.copy(src,dst)),all(vapply(src,sha,"")==vapply(dst,sha,"")))
+files <- list.files(serve,recursive=TRUE,full.names=TRUE,all.files=TRUE,no..=TRUE)
+stopifnot(length(files)==2L,all(Sys.readlink(files)==""))
+write.csv(data.frame(path=files,bytes=file.info(files)$size,sha256=vapply(files,sha,"")),file.path(out,"serve_preflight.csv"),row.names=FALSE)
+cat(sprintf("H09_S15B_INDEPENDENT=PASS owner=%s dispatch=%s writer=%s exact_reverse=TRUE final_checks=%s\n",n_owner,n_dispatch,n_writer,nrow(checks)))

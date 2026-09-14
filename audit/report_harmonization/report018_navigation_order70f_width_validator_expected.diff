@@ -1,0 +1,18 @@
+--- a/audit/report_harmonization/nathealth_final_landing_integration_2026_09_02/order70_integrate_verify_promote.R
++++ b/audit/report_harmonization/nathealth_final_landing_integration_2026_09_02/order70_integrate_verify_promote.R
+@@ -908,13 +908,13 @@ validate_browser_evidence <- function(prefix) {
+   stopifnot(
+     nrow(route_qa) == 74L,
+     setequal(route_qa$route, routes),
+-    setequal(unique(route_qa$viewport_width), c(390L, 708L)),
++    setequal(unique(route_qa$width), c(390L, 708L)),
+     all(route_qa$pass),
+     sum(route_qa$classification == "CLEAN_NEW_LANDING_PAGE") == 2L,
+     sum(route_qa$classification == "ACCEPTED_LEGACY_OVERFLOW_BASELINE_PRESERVED") == 1L,
+     sum(route_qa$classification == "CLEAN_UNCHANGED_ROUTE") == 71L,
+     nrow(landing_qa) == 3L,
+-    setequal(landing_qa$viewport_width, c(390L, 708L, 1440L)),
++    setequal(landing_qa$width, c(390L, 708L, 1440L)),
+     all(landing_qa$pass),
+     all(!landing_qa$page_overflow),
+     any(lifecycle$event == "listener_absent" & lifecycle$pass),

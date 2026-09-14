@@ -1,0 +1,8 @@
+check,status,evidence
+server command,PASS,"python3 -m http.server 54317 --bind 127.0.0.1 --directory _build/nathealth"
+network boundary,PASS,"Listener was bound only to TCP 127.0.0.1:54317"
+exact route,PASS,"http://127.0.0.1:54317/audit/hypotheses/H06/H06_analysis_preparation.html"
+page and assets,PASS,"The companion HTML, site libraries, styles, three PNGs, and Mermaid resources returned HTTP 200; one automatic favicon request returned the expected non-page 404"
+browser console,PASS,"Zero warning or error entries"
+shutdown,PASS,"The single server received Ctrl-C and exited 0"
+listener teardown,PASS,"lsof -nP -iTCP:54317 -sTCP:LISTEN exited 1 with empty output"

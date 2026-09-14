@@ -1,0 +1,39 @@
+748 equally spaced photoperiod values with 95% intervals79. A qualifying descriptive transition
+749 required the preceding slope interval to be wholly above zero, the next interval to include
+750 zero and every later interval through the recorded maximum to include zero as well. This
+751 procedure located a change in the fitted slope but did not test equivalence, a mechanism or
+752 a physiological ceiling. Expanded-basis, fixed-site, common-sample and leave-one-site-out
+753 analyses assessed stability. The gap-timing-unaware sensitivity dataset still passed the
+754 50%-per-hour and 80%-per-day rules, but did not use the timing of remaining missing
+755 observations for an additional metric-specific adjustment.
+
+756 Immediate-context and routine analyses
+
+757 Light-source and activity-environment analyses modelled the zero-aware one-hour
+758 geometric mean melanopic EDI with fixed-power quasi-Tweedie log-mean models and
+759 participant-cluster-robust inference73,74. Additive fixed-site models supplied primary category
+760 tests. Category-by-site interaction models supplied site-average category estimates, ratios
+761 and site-specific context when the interaction was supported. The activity-environment
+762 analysis retained fractional 1/k weights for concurrent labels. FDR adjustments were applied
+763 to the declared category and site-contrast families. Exact-zero calibration, residual
+764 dependence, sparse cells and deletion refits were retained as model checks. A secondary
+765 population-mean sensitivity added six participant-level category-proportion terms to the light-
+766 source model while retaining participant-clustered covariance. This separated hour-to-hour
+767 category differences within participants from between-participant differences in category
+768 composition; it did not estimate participant random slopes. Exploratory glmmTMB Tweedie
+769 log-link models fitted by maximum likelihood then added one common participant intercept to
+770 site-by-category fixed effects at the near-eye position for light source and separately at both
+771 positions for the activity-environment variable, with the power fixed at 1.53991976,77. The
+772 activity-environment models retained the five named categories, excluded Other-only hours
+773 and used exact 1/k weights. Their fixed-predictor variance used the same fractional weights
+774 so every participant-hour contributed one unit. Marginal and conditional R² used a lognormal
+775 distribution-specific variance approximation, and hierarchy-respecting Shapley allocations
+776 distributed marginal R² across site, category and their interaction. Percentages from the
+777 exploratory time-of-day models instead partition variance among fitted linear-predictor
+778 values. Because they do not compare this with observed outcome variance, they are not R².
+779 Results describe them as variation in fitted hourly patterns, not variance explained in raw
+780 exposure. These were model-based point descriptions without bootstrap intervals. No model
+781 included random category slopes.
+
+    36
+

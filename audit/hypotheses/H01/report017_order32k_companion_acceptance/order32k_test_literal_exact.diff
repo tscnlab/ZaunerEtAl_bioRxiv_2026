@@ -1,0 +1,11 @@
+--- /Users/zauner/Documents/Arbeit/12-TUM/MeLiDos/WP2.2.5_Data_Analysis/ZaunerEtAl_bioRxiv_2026/audit/hypotheses/H01/report017_order32k_companion_acceptance/test_h01_preparation_report.pre.R	2026-08-20 09:46:04
++++ tests/hypotheses/H01/test_h01_preparation_report.R	2026-08-20 09:46:11
+@@ -264,7 +264,7 @@
+ main_text <- xml2::xml_text(main)
+ stopifnot(
+   grepl("H01 analysis preparation and provenance", main_text, fixed = TRUE),
+-  grepl("17 prespecified light-exposure metrics", main_text, fixed = TRUE),
++  grepl("17-response package", main_text, fixed = TRUE),
+   grepl("gap-timing-unaware dataset", main_text, fixed = TRUE),
+   grepl("At least 1,000 successful joint refits", main_text, fixed = TRUE),
+   grepl("816", main_text, fixed = TRUE),

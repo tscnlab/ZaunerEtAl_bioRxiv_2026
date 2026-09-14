@@ -1,0 +1,19 @@
+# order32 file-change event: exec-f61a543d-3c89-4d87-8144-0f7a4a91197b
+--- a/audit/hypotheses/H01/H01_analysis_preparation.qmd
++++ b/audit/hypotheses/H01/H01_analysis_preparation.qmd
+@@ -997,3 +997,3 @@
+ 
+-### Stored joint refits
++### Stored joint-refit support
+ 
+@@ -1001,3 +1001,3 @@
+ #| label: tbl-h01-prep-bootstrap-audit
+-#| tbl-cap: "Stored joint-refit audit across the eight H01 analysis scenarios."
++#| tbl-cap: "Stored joint-refit support across the eight H01 analysis scenarios."
+ 
+@@ -1010,3 +1010,3 @@
+     `Maximum warning refits` = max(.data$warning_refits, na.rm = TRUE),
+-    Status = if_else(all(.data$status == "PASS"), "PASS", "CHECK"),
++    Status = if_else(all(.data$status == "PASS"), "Verified", "Review needed"),
+     .groups = "drop"
+

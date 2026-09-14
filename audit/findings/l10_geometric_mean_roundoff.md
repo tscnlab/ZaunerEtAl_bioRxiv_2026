@@ -5,6 +5,12 @@ Status: repaired and independently verified
 Date: 2026-07-30  
 Severity: low numerical error; high importance for model-domain checks
 
+> **2026-08-12 extension.** `METRIC-011` and `FIND-050` extend this
+> negative-domain repair to positive machine-roundoff residuals only when all
+> finite source values are exactly zero. The manifest identities below remain
+> historical identities for this original repair; current identities are
+> recorded in `audit/decisions/l10_numerical_zero_normalization.md`.
+
 ## Finding
 
 The zero-aware geometric mean is calculated on
@@ -65,4 +71,3 @@ sample counts did not change. No H01 model had been fitted before the repair.
 Reopen if the zero offset, logarithm base, rolling-window calculation,
 floating-point tolerance or non-negative outcome contract changes, or if a
 materially negative exposure value is observed.
-

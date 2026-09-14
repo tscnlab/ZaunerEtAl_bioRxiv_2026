@@ -1,0 +1,25 @@
+stopifnot(as.character(getRversion()) == "4.6.1")
+suppressPackageStartupMessages(library(digest))
+suppressPackageStartupMessages(library(jsonlite))
+root <- normalizePath(getwd())
+production <- file.path(root, "audit/manuscript_nature_health/final_review_production_2026_09_14")
+dir.create(file.path(production, "evidence"), recursive = TRUE, showWarnings = FALSE)
+sha <- function(p) digest(p, algo = "sha256", file = TRUE)
+check_manifest <- function(path, base, expected, label) {
+  stopifnot(sha(path) == expected)
+  x <- read.csv(path, check.names = FALSE)
+  resolved <- ifelse(startsWith(x$path, "/"), x$path, file.path(base, x$path))
+  x$actual_sha256 <- vapply(resolved, sha, character(1))
+  x$actual_bytes <- file.info(resolved)$size
+  x$pass <- x$sha256 == x$actual_sha256 & x$bytes == x$actual_bytes
+  write.csv(x, file.path(production, "evidence", paste0(label, "_preflight.csv")), row.names = FALSE)
+  stopifnot(all(x$pass))
+  nrow(x)
+}
+dispatch <- check_manifest(file.path(root, "audit/report_harmonization/final_documents_2026_09_13/writer_candidate_production_order_009_dispatch_manifest.csv"), root, "07ceb88e078b9a470b5c8835f955dc52e8129dd1549c4a4b79807f3b4041e899", "dispatch")
+accepted <- file.path(root, "audit/manuscript_nature_health/table_layout_visual_corrections_2026_09_14")
+owner <- check_manifest(file.path(accepted, "package_manifest.csv"), accepted, "1b5deb90c0c11cd0e931e6b13c00fedf5551920b9be1e890f86ba878ccfceb3b", "accepted_owner")
+stopifnot(dispatch == 45L, owner == 263L)
+writeLines(capture.output(sessionInfo()), file.path(production, "evidence", "R_session_preflight.txt"))
+write_json(list(dispatch = dispatch, accepted_owner = owner, status = "PASS", scientific_computation = FALSE), file.path(production, "evidence", "preflight_result.json"), auto_unbox = TRUE, pretty = TRUE)
+cat("PASS: dispatch 45/45; accepted owner 263/263; R", as.character(getRversion()), "\n")

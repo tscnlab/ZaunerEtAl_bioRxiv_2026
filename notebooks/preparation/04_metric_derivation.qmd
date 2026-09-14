@@ -160,41 +160,247 @@ check_manifest <- function(path, family, expected_sha256) {
   list(data = manifest, summary = summary)
 }
 
+check_file_hash <- function(path, expected_sha256) {
+  observed <- digest::digest(
+    file = absolute_path(path),
+    algo = "sha256"
+  )
+  stopifnot(identical(observed, expected_sha256))
+  observed
+}
+
 current_metric_manifest_sha256 <-
-  "6ec3185620d921e1f81b8464e850249613deb823988187d58794b3471303f4e8"
-current_mder_manifest_sha256 <-
-  "9ca9b97dac5efd9ec4e7b43a1fb2227b7a13cf98ac4b92318606c4874f9e460b"
+  "028bce108339c1277df4a070597430ea20b49c34c2888f4eef42741c1fe76a5e"
+mder_audit_metric_manifest_sha256 <-
+  "7bb2830c695e5600f0877acca500a187a040fe727a029bdb069f69099abe4f43"
+current_mder_audit_sha256 <-
+  "5bd34fd4ac26dc2761540393d40e096cde835d8dd4b4edda9253243c9083d4bb"
+current_gap_manifest_sha256 <-
+  "4ed62fbe58de65a6d05d8cfc6b5d870d7c74a3c83fe89bcd72bd1dd838698935"
+current_gap_participant_day_rds_sha256 <-
+  "7561b5dd47cb5e23ca94ba59bd57648f11fe492f86af53a566c5c9cf42d932f1"
+current_gap_support_rds_sha256 <-
+  "a0bc5d7ea2142709412da2253158086416ddb730b0f60ff616bba9d6ccb1edc5"
+current_gap_repair_evidence_sha256 <-
+  "81e3aa9439b88cf239d6669dc4343cfb146cd2f45790bae412ab837156315018"
 current_state_manifest_sha256 <-
   "755508076e42ed74ce0d40f48de192b69ea81b04532db2d5a950c451236e2619"
-earlier_metric_manifest_sha256 <-
-  "ac0325716421f2d90bb83b445ffb6ad965b131e382373e45f4ad6157eac5937d"
-intervening_metric_manifest_sha256 <-
-  "944f395e00735e6f8200798d4cde387454441d39b9defda68f583bd8778cd34b"
-earlier_mder_manifest_sha256 <-
-  "c4ecfab41892e44b38dd78097277ccef5f94a379b44c7b309de281e9215a7b3c"
+historical_mder_gate_sha256 <-
+  "9ca9b97dac5efd9ec4e7b43a1fb2227b7a13cf98ac4b92318606c4874f9e460b"
+mder_decision_sha256 <-
+  "1664347de976057807fcb5ac6e24bd4b66af1fe32378fabd1f2acafcfc9266de"
+l10_zero_decision_sha256 <-
+  "23b9f70d1d16f7fd3ebbdbc57aaf78c0a701fe1f9d22bd667d926cd320d40797"
+l10_zero_evidence_sha256 <-
+  "a37efd3449a8d1a6065d0eb8964bd6cf8b241f1683a26c065ea1a946e23214fb"
 
 metric_bundle <- check_manifest(
   "artifacts/12_manifests/metric_artifacts.csv",
   "Metric outputs",
   current_metric_manifest_sha256
 )
-mder_bundle <- check_manifest(
-  "artifacts/12_manifests/mder_support_gate_artifacts.csv",
-  "MDER support gate",
-  current_mder_manifest_sha256
-)
 state_bundle <- check_manifest(
   "artifacts/12_manifests/state_support_gate_artifacts.csv",
   "Diary-period support gate",
   current_state_manifest_sha256
 )
+gap_bundle <- check_manifest(
+  "artifacts/12_manifests/manuscript_prepared_data_artifacts.csv",
+  "Gap-timing-unaware prepared data",
+  current_gap_manifest_sha256
+)
 
 metric_manifest <- metric_bundle$data
-mder_manifest <- mder_bundle$data
 state_manifest <- state_bundle$data
+gap_manifest <- gap_bundle$data
+
+mder_audit_path <- "artifacts/08_diagnostics/mder_METRIC-010/audit_manifest.csv"
+mder_audit_manifest <- read_stored_csv(mder_audit_path)
+assert_columns(
+  mder_audit_manifest,
+  c("role", "path", "sha256", "bytes", "decision_id", "r_version"),
+  "METRIC-010 MDER audit manifest"
+)
+stopifnot(
+  identical(
+    digest::digest(file = absolute_path(mder_audit_path), algo = "sha256"),
+    current_mder_audit_sha256
+  ),
+  all(mder_audit_manifest$decision_id == "METRIC-010"),
+  all(mder_audit_manifest$r_version == "4.6.1")
+)
+
+# The independent audit records its exact historical input snapshot. During
+# render, only its stored output records are checked against that snapshot;
+# none of the scientific calculations is repeated.
+mder_audit_outputs <- mder_audit_manifest |>
+  dplyr::filter(.data$role == "output")
+mder_output_paths <- absolute_path(mder_audit_outputs$path)
+mder_output_present <- file.exists(mder_output_paths)
+mder_output_bytes <- rep(NA_real_, length(mder_output_paths))
+mder_output_sha256 <- rep(NA_character_, length(mder_output_paths))
+mder_output_bytes[mder_output_present] <-
+  file.info(mder_output_paths[mder_output_present])$size
+mder_output_sha256[mder_output_present] <- vapply(
+  mder_output_paths[mder_output_present],
+  function(file) digest::digest(file = file, algo = "sha256"),
+  character(1)
+)
+stopifnot(
+  all(mder_output_present),
+  all(mder_output_bytes == mder_audit_outputs$bytes),
+  all(mder_output_sha256 == mder_audit_outputs$sha256)
+)
+
+mder_audit_summary <- tibble::tibble(
+  Family = "Independent MDER audit outputs",
+  `Manifest path` = mder_audit_path,
+  `Manifest SHA-256` = current_mder_audit_sha256,
+  `Files listed` = nrow(mder_audit_outputs),
+  `Files present` = sum(mder_output_present),
+  `Size checks` = sum(mder_output_bytes == mder_audit_outputs$bytes),
+  `SHA-256 checks` = sum(mder_output_sha256 == mder_audit_outputs$sha256),
+  Check = "PASS"
+)
+
+gap_repair_manifest_path <-
+  "audit/reconciliation/mder_METRIC-010_gap_repair/gap_repair_evidence_manifest.csv"
+gap_repair_manifest <- read_stored_csv(gap_repair_manifest_path)
+assert_columns(
+  gap_repair_manifest,
+  c(
+    "artifact", "path", "sha256", "bytes", "producer", "r_version",
+    "status"
+  ),
+  "gap-timing-unaware MDER repair evidence manifest"
+)
+stopifnot(
+  identical(
+    check_file_hash(
+      gap_repair_manifest_path,
+      current_gap_repair_evidence_sha256
+    ),
+    current_gap_repair_evidence_sha256
+  ),
+  all(gap_repair_manifest$r_version == "4.6.1"),
+  all(gap_repair_manifest$status == "PASS")
+)
+gap_repair_paths <- absolute_path(gap_repair_manifest$path)
+gap_repair_present <- file.exists(gap_repair_paths)
+gap_repair_bytes <- rep(NA_real_, length(gap_repair_paths))
+gap_repair_sha256 <- rep(NA_character_, length(gap_repair_paths))
+gap_repair_bytes[gap_repair_present] <-
+  file.info(gap_repair_paths[gap_repair_present])$size
+gap_repair_sha256[gap_repair_present] <- vapply(
+  gap_repair_paths[gap_repair_present],
+  function(file) digest::digest(file = file, algo = "sha256"),
+  character(1)
+)
+stopifnot(
+  all(gap_repair_present),
+  all(gap_repair_bytes == gap_repair_manifest$bytes),
+  all(gap_repair_sha256 == gap_repair_manifest$sha256)
+)
+gap_repair_audit_summary <- tibble::tibble(
+  Family = "Gap-timing-unaware MDER repair evidence",
+  `Manifest path` = gap_repair_manifest_path,
+  `Manifest SHA-256` = current_gap_repair_evidence_sha256,
+  `Files listed` = nrow(gap_repair_manifest),
+  `Files present` = sum(gap_repair_present),
+  `Size checks` = sum(gap_repair_bytes == gap_repair_manifest$bytes),
+  `SHA-256 checks` = sum(gap_repair_sha256 == gap_repair_manifest$sha256),
+  Check = "PASS"
+)
+
+l10_zero_manifest_path <-
+  "audit/reconciliation/l10_METRIC-011/METRIC-011_evidence_manifest.csv"
+l10_zero_manifest <- read_stored_csv(l10_zero_manifest_path)
+assert_columns(
+  l10_zero_manifest,
+  c(
+    "artifact", "path", "sha256", "bytes", "producer", "r_version",
+    "status"
+  ),
+  "METRIC-011 numerical-zero evidence manifest"
+)
+stopifnot(
+  identical(
+    check_file_hash(l10_zero_manifest_path, l10_zero_evidence_sha256),
+    l10_zero_evidence_sha256
+  ),
+  all(l10_zero_manifest$r_version == "4.6.1"),
+  all(l10_zero_manifest$status == "PASS")
+)
+l10_zero_paths <- absolute_path(l10_zero_manifest$path)
+l10_zero_present <- file.exists(l10_zero_paths)
+l10_zero_bytes <- rep(NA_real_, length(l10_zero_paths))
+l10_zero_sha256 <- rep(NA_character_, length(l10_zero_paths))
+l10_zero_bytes[l10_zero_present] <-
+  file.info(l10_zero_paths[l10_zero_present])$size
+l10_zero_sha256[l10_zero_present] <- vapply(
+  l10_zero_paths[l10_zero_present],
+  function(file) digest::digest(file = file, algo = "sha256"),
+  character(1)
+)
+stopifnot(
+  all(l10_zero_present),
+  all(l10_zero_bytes == l10_zero_manifest$bytes),
+  all(l10_zero_sha256 == l10_zero_manifest$sha256)
+)
+l10_zero_audit_summary <- tibble::tibble(
+  Family = "L10 numerical-zero evidence",
+  `Manifest path` = l10_zero_manifest_path,
+  `Manifest SHA-256` = l10_zero_evidence_sha256,
+  `Files listed` = nrow(l10_zero_manifest),
+  `Files present` = sum(l10_zero_present),
+  `Size checks` = sum(l10_zero_bytes == l10_zero_manifest$bytes),
+  `SHA-256 checks` = sum(l10_zero_sha256 == l10_zero_manifest$sha256),
+  Check = "PASS"
+)
+
+check_file_hash(
+  "artifacts/06_model_data/scenarios/manuscript_prepared_data/participant_day_metrics.rds",
+  current_gap_participant_day_rds_sha256
+)
+check_file_hash(
+  "artifacts/06_model_data/scenarios/manuscript_prepared_data/mder_support.rds",
+  current_gap_support_rds_sha256
+)
+
+stopifnot(
+  identical(
+    digest::digest(
+      file = absolute_path(
+        "artifacts/12_manifests/mder_support_gate_artifacts.csv"
+      ),
+      algo = "sha256"
+    ),
+    historical_mder_gate_sha256
+  ),
+  identical(
+    digest::digest(
+      file = absolute_path(
+        "audit/decisions/mder_mean_of_viable_ratios.md"
+      ),
+      algo = "sha256"
+    ),
+    mder_decision_sha256
+  ),
+  identical(
+    check_file_hash(
+      "audit/decisions/l10_numerical_zero_normalization.md",
+      l10_zero_decision_sha256
+    ),
+    l10_zero_decision_sha256
+  )
+)
+
 manifest_validation <- dplyr::bind_rows(
   metric_bundle$summary,
-  mder_bundle$summary,
+  mder_audit_summary,
+  gap_bundle$summary,
+  gap_repair_audit_summary,
+  l10_zero_audit_summary,
   state_bundle$summary
 )
 
@@ -205,20 +411,41 @@ settings <- read_stored_csv(
 state_candidates <- read_stored_csv(
   "artifacts/05_metrics/state_support_candidate_diagnostics.csv"
 )
-mder_candidates <- read_stored_csv(
-  paste0(
-    "artifacts/08_diagnostics/mder_support_gate/",
-    "mder_support_candidate_summary.csv"
-  )
-)
 state_inputs <- read_stored_csv(
   "artifacts/05_metrics/metric_state_interval_inputs.csv"
 )
-mder_inputs <- read_stored_csv(
-  paste0(
-    "artifacts/08_diagnostics/mder_support_gate/",
-    "mder_support_gate_inputs.csv"
-  )
+mder_verification <- read_stored_csv(
+  "artifacts/08_diagnostics/mder_METRIC-010/verification_summary.csv"
+)
+mder_distribution <- read_stored_csv(
+  "artifacts/08_diagnostics/mder_METRIC-010/distribution_summary.csv"
+)
+non_mder_invariance <- read_stored_csv(
+  "artifacts/08_diagnostics/mder_METRIC-010/non_mder_invariance.csv"
+)
+gap_mder_summary <- read_stored_csv(
+  "audit/reconciliation/mder_METRIC-010_gap_repair/gap_mder_summary.csv"
+)
+gap_mder_support <- read_stored_csv(
+  "audit/reconciliation/mder_METRIC-010_gap_repair/gap_mder_support_summary.csv"
+)
+gap_non_mder_invariance <- read_stored_csv(
+  "audit/reconciliation/mder_METRIC-010_gap_repair/gap_non_mder_invariance.csv"
+)
+l10_zero_reclassifications <- read_stored_csv(
+  "audit/reconciliation/l10_METRIC-011/all_numerical_zero_reclassifications.csv"
+)
+l10_positive_roundoff <- read_stored_csv(
+  "audit/reconciliation/l10_METRIC-011/positive_roundoff_reclassifications.csv"
+)
+l10_primary_changes <- read_stored_csv(
+  "audit/reconciliation/l10_METRIC-011/primary_scientific_cell_changes.csv"
+)
+l10_invariance <- read_stored_csv(
+  "audit/reconciliation/l10_METRIC-011/invariance_summary.csv"
+)
+l10_manifest_transition <- read_stored_csv(
+  "audit/reconciliation/l10_METRIC-011/manifest_transition.csv"
 )
 
 assert_columns(
@@ -240,7 +467,19 @@ assert_columns(
     "timing_exceedance_distributions_sha256", "relevance_maps_path",
     "relevance_maps_sha256", "verified_minimum_hour_coverage",
     "verified_minimum_day_coverage", "state_support_cutoff",
-    "mder_support_cutoff", "minimum_window_support",
+    "mder_support_cutoff", "mder_support_decision_id",
+    "mder_support_status", "mder_support_rule", "mder_failure_scope",
+    "mder_ratio_definition", "mder_pair_resolution_minutes",
+    "mder_zero_pair_rule", "mder_nonfinite_pair_rule",
+    "mder_ratio_scaled_or_weighted", "minimum_window_support",
+    "zero_aware_offset_lx", "numerical_zero_decision_id",
+    "numerical_zero_status", "numerical_zero_scope",
+    "numerical_zero_rule", "numerical_zero_tolerance_multiplier",
+    "numerical_zero_positive_requires_all_source_zero",
+    "numerical_zero_raw_value_preserved",
+    "numerical_zero_reclassified_cells",
+    "numerical_zero_zero_capable_model_rule",
+    "numerical_zero_two_part_model_rule",
     "dose_minimum_relevance_support", "maximum_dose_correction_factor",
     "participants", "eligible_participant_days", "thirty_minute_rows",
     "hourly_rows"
@@ -259,16 +498,90 @@ assert_columns(
   "diary-period support summary"
 )
 assert_columns(
-  mder_candidates,
+  mder_verification,
   c(
-    "position", "candidate_support_cutoff",
-    "eligible_participant_days", "retained_participant_days",
-    "retained_participants", "sites_with_retained_days",
-    "no_paired_observation_days",
-    "nonpositive_paired_light_integral_days", "below_any_support_days",
-    "retained_fraction"
+    "placement", "eligible_participant_days", "estimable_mder_days",
+    "excluded_mder_days", "below_viable_ratio_fraction",
+    "no_viable_momentary_ratio", "status", "metric",
+    "minimum_viable_ratio_fraction", "metric_manifest_sha256",
+    "immutable_inputs", "independently_recalculated", "r_version"
   ),
-  "MDER support summary"
+  "independent MDER verification summary"
+)
+assert_columns(
+  mder_distribution,
+  c(
+    "dataset", "estimand", "position", "participant_days_available",
+    "participant_days_estimable", "participant_days_missing",
+    "participants_available", "participants_estimable", "mean", "median"
+  ),
+  "stored MDER distribution summary"
+)
+assert_columns(
+  non_mder_invariance,
+  c(
+    "placement", "shared_non_mder_columns", "columns_with_any_difference",
+    "differing_cells", "exact_non_mder_invariance"
+  ),
+  "stored non-MDER invariance summary"
+)
+assert_columns(
+  gap_mder_summary,
+  c(
+    "position", "participant_days", "participants", "old_estimable_days",
+    "new_estimable_days", "new_mean", "new_median"
+  ),
+  "repaired gap-timing-unaware MDER summary"
+)
+assert_columns(
+  gap_mder_support,
+  c(
+    "position", "failure_reason", "participant_days", "participants",
+    "viable_minutes_minimum", "viable_minutes_median",
+    "viable_minutes_maximum"
+  ),
+  "repaired gap-timing-unaware MDER support summary"
+)
+assert_columns(
+  gap_non_mder_invariance,
+  c("check", "value"),
+  "gap-timing-unaware non-MDER invariance summary"
+)
+assert_columns(
+  l10_zero_reclassifications,
+  c(
+    "position", "metric", "raw_backtransformed_value_lx",
+    "normalized_value_lx", "numerical_zero_tolerance_lx",
+    "source_all_zero", "source_valid_minutes", "source_zero_minutes",
+    "source_positive_minutes", "source_missing_minutes",
+    "numerical_zero_decision_id", "numerical_zero_reason"
+  ),
+  "METRIC-011 numerical-zero reclassifications"
+)
+assert_columns(
+  l10_positive_roundoff,
+  c(
+    "position", "metric", "raw_backtransformed_value_lx",
+    "normalized_value_lx", "numerical_zero_tolerance_lx",
+    "source_all_zero", "source_valid_minutes", "source_zero_minutes",
+    "source_positive_minutes", "source_missing_minutes"
+  ),
+  "METRIC-011 positive-roundoff reclassifications"
+)
+assert_columns(
+  l10_primary_changes,
+  c("position", "metric", "old_value_lx", "new_value_lx"),
+  "METRIC-011 primary scientific cell changes"
+)
+assert_columns(
+  l10_invariance,
+  c("check", "status", "detail"),
+  "METRIC-011 invariance summary"
+)
+assert_columns(
+  l10_manifest_transition,
+  c("artifact", "path", "sha256_before", "sha256_after", "changed"),
+  "METRIC-011 manifest transition"
 )
 
 stopifnot(
@@ -277,7 +590,47 @@ stopifnot(
   all(settings$verified_minimum_hour_coverage == 0.50),
   all(settings$verified_minimum_day_coverage == 0.80),
   all(settings$state_support_cutoff == 0.80),
-  all(settings$mder_support_cutoff == 0.80),
+  all(settings$mder_support_cutoff == 0.50),
+  all(settings$mder_support_decision_id == "METRIC-010"),
+  all(settings$mder_support_status == "author_approved"),
+  all(
+    settings$mder_support_rule ==
+      "positive_finite_one_minute_ratio_fraction_gte_0.50"
+  ),
+  all(settings$mder_failure_scope == "metric_specific_only_day_retained"),
+  all(
+    settings$mder_ratio_definition ==
+      "arithmetic_mean_of_positive_finite_one_minute_ratios"
+  ),
+  all(settings$mder_pair_resolution_minutes == 1),
+  all(settings$mder_zero_pair_rule == "exclude_if_either_channel_zero"),
+  all(
+    settings$mder_nonfinite_pair_rule ==
+      "exclude_if_source_or_ratio_nonfinite"
+  ),
+  all(!settings$mder_ratio_scaled_or_weighted),
+  all(settings$zero_aware_offset_lx == 0.1),
+  all(settings$numerical_zero_decision_id == "METRIC-011"),
+  all(settings$numerical_zero_status == "author_approved"),
+  all(
+    settings$numerical_zero_scope ==
+      "offset_geometric_mean_backtransforms"
+  ),
+  all(settings$numerical_zero_tolerance_multiplier == 100),
+  all(settings$numerical_zero_positive_requires_all_source_zero),
+  all(settings$numerical_zero_raw_value_preserved),
+  all(settings$numerical_zero_reclassified_cells == 6),
+  all(
+    settings$numerical_zero_zero_capable_model_rule ==
+      "retain_participant_day_as_zero"
+  ),
+  all(
+    settings$numerical_zero_two_part_model_rule ==
+      paste0(
+        "retain_in_zero_occurrence_component;",
+        "exclude_only_from_strictly_positive_magnitude_component"
+      )
+  ),
   all(settings$minimum_window_support == 0.80),
   all(settings$dose_minimum_relevance_support == 0.80),
   all(settings$maximum_dose_correction_factor == 1.25),
@@ -287,9 +640,99 @@ stopifnot(
     unique(state_candidates$candidate_state_support_cutoff),
     c(0.70, 0.80, 0.90)
   ),
-  setequal(
-    unique(mder_candidates$candidate_support_cutoff),
-    c(0.70, 0.80, 0.90)
+  all(mder_verification$status == "PASS"),
+  all(mder_verification$metric == "mder_mean_of_viable_ratios"),
+  all(mder_verification$minimum_viable_ratio_fraction == 0.50),
+  all(
+    mder_verification$metric_manifest_sha256 ==
+      mder_audit_metric_manifest_sha256
+  ),
+  all(mder_verification$immutable_inputs),
+  all(mder_verification$independently_recalculated),
+  all(mder_verification$r_version == "4.6.1"),
+  all(non_mder_invariance$shared_non_mder_columns == 43L),
+  all(non_mder_invariance$columns_with_any_difference == 0L),
+  all(non_mder_invariance$differing_cells == 0L),
+  all(non_mder_invariance$exact_non_mder_invariance),
+  identical(
+    gap_non_mder_invariance$value[
+      gap_non_mder_invariance$check == "non_mder_rows_after"
+    ],
+    "25620"
+  ),
+  identical(
+    gap_non_mder_invariance$value[
+      gap_non_mder_invariance$check == "non_mder_cells_exactly_unchanged"
+    ],
+    "TRUE"
+  ),
+  nrow(l10_zero_reclassifications) == 12L,
+  identical(
+    as.integer(table(factor(
+      l10_zero_reclassifications$position,
+      levels = c("glasses", "chest")
+    ))),
+    c(6L, 6L)
+  ),
+  all(l10_zero_reclassifications$metric == "l10_mean_medi"),
+  all(l10_zero_reclassifications$normalized_value_lx == 0),
+  all(l10_zero_reclassifications$numerical_zero_decision_id == "METRIC-011"),
+  nrow(l10_positive_roundoff) == 8L,
+  identical(
+    as.integer(table(factor(
+      l10_positive_roundoff$position,
+      levels = c("glasses", "chest")
+    ))),
+    c(3L, 5L)
+  ),
+  isTRUE(all.equal(
+    l10_positive_roundoff$raw_backtransformed_value_lx,
+    rep(4.163336342344337e-17, 8L),
+    tolerance = 0
+  )),
+  all(l10_positive_roundoff$normalized_value_lx == 0),
+  all(l10_positive_roundoff$source_all_zero),
+  all(l10_positive_roundoff$source_positive_minutes == 0L),
+  sum(l10_positive_roundoff$source_valid_minutes == 600L) == 7L,
+  sum(
+    l10_positive_roundoff$source_valid_minutes == 547L &
+      l10_positive_roundoff$source_missing_minutes == 53L
+  ) == 1L,
+  all(
+    l10_positive_roundoff$source_zero_minutes ==
+      l10_positive_roundoff$source_valid_minutes
+  ),
+  all(
+    l10_positive_roundoff$numerical_zero_tolerance_lx ==
+      2.220446049250313e-14
+  ),
+  nrow(l10_primary_changes) == 8L,
+  all(l10_primary_changes$metric == "l10_mean_medi"),
+  isTRUE(all.equal(
+    l10_primary_changes$old_value_lx,
+    rep(4.163336342344337e-17, 8L),
+    tolerance = 0
+  )),
+  all(l10_primary_changes$new_value_lx == 0),
+  all(
+    l10_invariance$status[l10_invariance$check != "hypothesis_models"] ==
+      "PASS"
+  ),
+  identical(
+    l10_invariance$status[l10_invariance$check == "hypothesis_models"],
+    "NOT_RUN"
+  ),
+  identical(
+    l10_manifest_transition$sha256_after[
+      l10_manifest_transition$artifact == "metric"
+    ],
+    current_metric_manifest_sha256
+  ),
+  identical(
+    l10_manifest_transition$sha256_after[
+      l10_manifest_transition$artifact == "manuscript_prepared"
+    ],
+    current_gap_manifest_sha256
   )
 )
 
@@ -440,33 +883,105 @@ state_support_display <- state_candidates |>
     .data$`Diary-period metric`
   )
 
-mder_support_display <- mder_candidates |>
-  dplyr::mutate(
+primary_mder_display <- mder_distribution |>
+  dplyr::filter(.data$dataset == "primary") |>
+  dplyr::transmute(
+    Dataset = "Primary dataset",
     Placement = placement_label(.data$position),
-    cutoff = paste0(round(100 * .data$candidate_support_cutoff), "%")
-  ) |>
+    `Eligible days` = .data$participant_days_available,
+    `Days with MDER` = .data$participant_days_estimable,
+    `Days without MDER` = .data$participant_days_missing,
+    `Participants with MDER` = .data$participants_estimable,
+    `Mean MDER` = .data$mean,
+    `Median MDER` = .data$median
+  )
+
+gap_participants_with_mder <- gap_mder_support |>
+  dplyr::filter(is.na(.data$failure_reason)) |>
   dplyr::select(
-    .data$Placement,
-    `Eligible days` = .data$eligible_participant_days,
-    .data$cutoff,
-    retained = .data$retained_participant_days
+    .data$position,
+    `Participants with MDER` = .data$participants
+  )
+
+gap_mder_display <- gap_mder_summary |>
+  dplyr::left_join(gap_participants_with_mder, by = "position") |>
+  dplyr::transmute(
+    Dataset = "Gap-timing-unaware dataset",
+    Placement = placement_label(.data$position),
+    `Eligible days` = .data$participant_days,
+    `Days with MDER` = .data$new_estimable_days,
+    `Days without MDER` = .data$participant_days - .data$new_estimable_days,
+    .data$`Participants with MDER`,
+    `Mean MDER` = .data$new_mean,
+    `Median MDER` = .data$new_median
+  )
+
+mder_availability_display <- dplyr::bind_rows(
+  primary_mder_display,
+  gap_mder_display
+) |>
+  dplyr::arrange(
+    factor(
+      .data$Dataset,
+      levels = c("Primary dataset", "Gap-timing-unaware dataset")
+    ),
+    factor(.data$Placement, levels = c("Near-eye", "Chest"))
+  )
+
+primary_mder <- mder_availability_display |>
+  dplyr::filter(.data$Dataset == "Primary dataset")
+stopifnot(
+  identical(primary_mder$`Eligible days`, c(816, 902)),
+  identical(primary_mder$`Days with MDER`, c(702, 732)),
+  identical(primary_mder$`Days without MDER`, c(114, 170)),
+  identical(primary_mder$`Participants with MDER`, c(137, 152)),
+  isTRUE(all.equal(primary_mder$`Mean MDER`, c(0.7238529, 0.7565438),
+    tolerance = 1e-7
+  )),
+  isTRUE(all.equal(primary_mder$`Median MDER`, c(0.7239000, 0.7494261),
+    tolerance = 1e-7
+  ))
+)
+
+gap_mder <- mder_availability_display |>
+  dplyr::filter(.data$Dataset == "Gap-timing-unaware dataset")
+stopifnot(
+  identical(gap_mder$`Eligible days`, c(811, 897)),
+  identical(gap_mder$`Days with MDER`, c(687, 723)),
+  identical(gap_mder$`Days without MDER`, c(124, 174)),
+  identical(gap_mder$`Participants with MDER`, c(137, 152)),
+  isTRUE(all.equal(gap_mder$`Mean MDER`, c(0.7242573, 0.7567377),
+    tolerance = 1e-7
+  )),
+  isTRUE(all.equal(gap_mder$`Median MDER`, c(0.7238676, 0.7495175),
+    tolerance = 1e-7
+  )),
+  identical(
+    gap_mder_summary$old_estimable_days[
+      match(c("glasses", "chest"), gap_mder_summary$position)
+    ],
+    c(725, 729)
+  )
+)
+
+mder_plot_data <- mder_verification |>
+  dplyr::transmute(
+    Placement = placement_label(.data$placement),
+    `MDER available` = .data$estimable_mder_days,
+    `MDER unavailable` = .data$excluded_mder_days
   ) |>
-  tidyr::pivot_wider(names_from = .data$cutoff, values_from = .data$retained) |>
-  dplyr::left_join(
-    mder_candidates |>
-      dplyr::filter(.data$candidate_support_cutoff == 0.80) |>
-      dplyr::transmute(
-        Placement = placement_label(.data$position),
-        `Participants at 80%` = .data$retained_participants,
-        `Sites at 80%` = .data$sites_with_retained_days,
-        `Primary retention` = scales::percent(
-          .data$retained_fraction,
-          accuracy = 0.1
-        )
-      ),
-    by = "Placement"
+  tidyr::pivot_longer(
+    cols = c(.data$`MDER available`, .data$`MDER unavailable`),
+    names_to = "Status",
+    values_to = "Participant-days"
   ) |>
-  dplyr::arrange(factor(.data$Placement, levels = c("Near-eye", "Chest")))
+  dplyr::mutate(
+    Placement = factor(.data$Placement, levels = c("Near-eye", "Chest")),
+    Status = factor(
+      .data$Status,
+      levels = c("MDER unavailable", "MDER available")
+    )
+  )
 
 availability_summary <- admissibility |>
   dplyr::filter(.data$metric %in% metric_registry$metric_id) |>
@@ -529,6 +1044,38 @@ availability_summary <- admissibility |>
     )
   ) |>
   dplyr::arrange(.data$`Metric family`, .data$Metric)
+
+l10_availability <- admissibility |>
+  dplyr::filter(.data$metric == "l10_mean_medi") |>
+  dplyr::group_by(.data$placement) |>
+  dplyr::summarise(
+    possible = dplyr::n(),
+    calculated = sum(.data$estimable),
+    .groups = "drop"
+  ) |>
+  dplyr::arrange(factor(.data$placement, levels = c("glasses", "chest")))
+stopifnot(
+  identical(l10_availability$placement, c("glasses", "chest")),
+  identical(l10_availability$possible, c(816L, 902L)),
+  identical(l10_availability$calculated, c(816L, 902L))
+)
+
+l10_zero_display <- tibble::tibble(
+  Placement = c("Near-eye", "Chest", "Total"),
+  `New exact-zero L10 cells` = c(3L, 5L, 8L),
+  `Source-minute evidence in selected 600-minute windows` = c(
+    "Three windows: 600 observed zero minutes and no missing minutes",
+    paste(
+      "Four windows: 600 observed zero minutes; one window:",
+      "547 observed zero minutes and 53 missing minutes"
+    ),
+    paste(
+      "Seven windows: 600 observed zero minutes; one window:",
+      "547 observed zero minutes and 53 missing minutes"
+    )
+  ),
+  `Current L10 values available` = c("816 / 816", "902 / 902", "1,718 / 1,718")
+)
 
 gap_summary <- gap_data |>
   dplyr::group_by(.data$placement) |>
@@ -642,16 +1189,17 @@ input_display <- tibble::tibble(
     ),
     paste(
       "Provides the fixed participant-balanced melEDI and illuminance",
-      "profiles learned in Preparation 03. They are not relearned for a",
-      "participant-day."
+      "profiles learned in Preparation 03 for non-MDER metrics. The current",
+      "MDER calculation does not use profile weights, scales, or gates."
     ),
     paste(
       "Checks whether observed minutes cover the times when exposure above",
       "250 lx is expected; it never weights or changes an observed timing."
     ),
     paste(
-      "Checks time-of-day support for dose, M10, L10, timing, and MDER.",
-      "Only the approved dose correction may change a metric value."
+      "Checks time-of-day support for dose, M10, L10, and timing metrics.",
+      "Only the approved dose correction may change a metric value; these",
+      "maps do not enter the current MDER calculation."
     )
   )
 )
@@ -659,33 +1207,39 @@ input_display <- tibble::tibble(
 script_map <- tibble::tibble(
   `Step and producing code` = c(
     paste0(
-      "**1. Screen paired-channel support**<br>",
-      "scripts/pipeline/build_mder_support_gate.R<br>",
-      "scripts/pipeline/mder_support_gate.R"
-    ),
-    paste0(
-      "**2. Reconstruct diary and wear state on the minute grid**<br>",
+      "**1. Reconstruct diary and wear state on the minute grid**<br>",
       "scripts/pipeline/build_metric_derivation.R<br>",
       "scripts/pipeline/state_interval_projection.R"
     ),
     paste0(
-      "**3. Derive metrics and metric-specific availability**<br>",
+      "**2. Derive metrics and metric-specific availability**<br>",
       "scripts/pipeline/metric_derivation.R<br>",
       "scripts/pipeline/time_support.R"
     ),
     paste0(
-      "**4. Store values, diagnostics, and inventories**<br>",
+      "**3. Store values, diagnostics, and inventories**<br>",
       "scripts/pipeline/build_metric_derivation.R"
+    ),
+    paste0(
+      "**4. Reconstruct current MDER independently**<br>",
+      "scripts/pipeline/verify_metric_derivation_mder.R"
+    ),
+    paste0(
+      "**5. Preserve the amendment audit record**<br>",
+      "audit/scripts/finalize_mder_METRIC_010.R"
+    ),
+    paste0(
+      "**6. Reconstruct and verify the gap-timing-unaware MDER**<br>",
+      "audit/scripts/repair_gap_mder_METRIC_010.R<br>",
+      "audit/scripts/finalize_gap_mder_METRIC_010_evidence.R"
+    ),
+    paste0(
+      "**7. Verify and seal numerical-zero normalization**<br>",
+      "audit/scripts/finalize_l10_METRIC_011.R<br>",
+      "scripts/pipeline/verify_metric_derivation_core.R"
     )
   ),
   `Reads, operation, separation, and output` = c(
-    paste(
-      "Reads Preparation 02 coverage plus Preparation 03 melEDI and",
-      "illuminance profiles. It classifies support at the fixed 70%, 80%,",
-      "and 90% cutoffs without calculating MDER. This separate step made the",
-      "80% choice inspectable before any ratio or hypothesis result existed.",
-      "It produced the five-file MDER support-gate bundle."
-    ),
     paste(
       "Reads the exact sleep and wear interval files from Preparation 01.",
       "It applies half-open [start, end) intervals in actual UTC time, then",
@@ -695,16 +1249,52 @@ script_map <- tibble::tibble(
     ),
     paste(
       "Reads the reconstructed minute grid, eligible light values, and fixed",
-      "profiles. It calculates daily, diary-period, window, timing, spectral,",
-      "and repeated-day metrics; records why any one value is unavailable;",
-      "and retains the participant-day for unrelated metrics. Time-support",
-      "functions isolate gap, window, circular-time, and boundary rules."
+      "profiles for the metrics that need them. For MDER, time_support.R",
+      "constructs the complete 1,440-position local-clock grid, averages",
+      "fall-back duplicates channel-wise, forms only finite positive",
+      "one-minute melEDI/illuminance ratios, and averages them when at least",
+      "720 are viable. For offset geometric means, it preserves the raw",
+      "back-transform and applies the source-verified METRIC-011",
+      "numerical-zero rule before storing a non-negative value. It records",
+      "metric-specific failure reasons."
     ),
     paste(
       "Writes participant-day and participant R objects, complete 30-minute",
       "and hourly grids, rectangular CSV mirrors, availability and gap",
-      "diagnostics, settings, exact input inventories, and the 29-file metric",
+      "diagnostics, settings, exact input inventories, placement-specific",
+      "numerical-zero audits, and the 31-file metric",
       "manifest. This storage step is the hand-off to Preparation 06."
+    ),
+    paste(
+      "Reads the stored primary metric files and independently reconstructs",
+      "MDER from the stored one-minute inputs. Its separate implementation",
+      "checks the local-clock grid, duplicate-minute averaging, viable-pair",
+      "count, value, and failure reason. It writes the stored PASS summary."
+    ),
+    paste(
+      "Reads the verified metric manifest and the preserved historical MDER",
+      "snapshot. It records current distributions, placement and site support,",
+      "paired comparisons, key-level changes, and the exact invariance of 43",
+      "non-MDER fields. It writes the six-output METRIC-010 audit bundle and",
+      "its manifest; this report reads those files without recreating them."
+    ),
+    paste(
+      "Reads the pinned one-minute melEDI and illuminance inputs for the",
+      "gap-timing-unaware dataset and applies the same viable-pair, local-grid,",
+      "daylight-saving, and inclusive 720-minute MDER rule. The separate",
+      "finalizer records the corrected availability, support reasons, exact",
+      "25,620-cell non-MDER invariance, input/output hashes, and a seven-file",
+      "PASS evidence manifest under audit/reconciliation/. These scripts are",
+      "named for provenance only and are not executed during rendering."
+    ),
+    paste(
+      "The finalizer reads the rebuilt primary metric layer and calls the",
+      "independent core verifier before checking the",
+      "offset geometric-mean back-transforms, selected L10 source minutes,",
+      "exact-zero decisions, and before/after scientific cells. It records",
+      "the eight newly changed L10 cells, manifest transitions, invariance",
+      "checks, and a seven-file METRIC-011 evidence manifest. It also reseals",
+      "only preparation outputs that inherit L10; no hypothesis model is run."
     )
   )
 )
@@ -714,6 +1304,7 @@ core_rules <- tibble::tibble(
     "Measurement represented",
     "Actual time and local clock",
     "Thirty-minute and hourly values",
+    "Numerical zeros after geometric means",
     "Thresholds and missing minutes",
     "Diary-period metrics",
     "Dose and MDER",
@@ -739,6 +1330,13 @@ core_rules <- tibble::tibble(
       "true zeros remain valid. Unsupported bins stay as missing rows."
     ),
     paste(
+      "After adding 0.1 lx, averaging on the log10 scale, and transforming",
+      "back, production subtracts the offset. A result within the unit-aware",
+      "floating-point tolerance is stored as exact zero only when every",
+      "finite source value is exact zero; negative light beyond tolerance",
+      "stops production. Missing minutes stay missing and never become zero."
+    ),
+    paste(
       "Comparisons are strictly >1,000, >250, <10, and <1 lx melEDI.",
       "Missing or invalid minutes are never converted to zero or darkness and",
       "never bridge a continuous period."
@@ -751,14 +1349,18 @@ core_rules <- tibble::tibble(
     paste(
       "Observed dose integrates actual durations. Only dose may be corrected",
       "for when missing data occurred, with at least 80% profile relevance and",
-      "a maximum factor of 1.25. MDER is an unscaled ratio of paired melEDI",
-      "and illuminance integrals and requires all three 80% support checks."
+      "a maximum factor of 1.25. MDER is the arithmetic mean of viable",
+      "one-minute melEDI/illuminance ratios on the 1,440-position local-clock",
+      "grid. Both channels must be finite and strictly positive, and at least",
+      "720 ratios are required. It is not weighted, scaled, profile-gated, or",
+      "calculated as a ratio of daily integrals."
     ),
     paste(
       "M10 tests all 841 non-wrapping one-minute starts; L10 tests all 1,440",
       "starts and may cross midnight. Each window is 600 minutes, uses at",
       "least 80% ordinary and profile support, and returns a geometric mean",
-      "and midpoint. No L5 metric is produced."
+      "and midpoint. The same source-verified numerical-zero rule applies to",
+      "the geometric mean. No L5 metric is produced."
     ),
     paste(
       "First, last, and mean timing above 250 lx require sufficient support",
@@ -790,14 +1392,22 @@ output_display <- tibble::tibble(
     "Participant-level IS and IV",
     "Complete 30-minute grid",
     "Complete hourly grid",
-    "Availability, gap, support, and uncertainty records"
+    "Availability, gap, support, and uncertainty records",
+    "Primary MDER verification and amendment record",
+    "Gap-timing-unaware participant-day metrics and MDER support",
+    "Gap-timing-unaware MDER repair evidence",
+    "L10 numerical-zero normalization evidence"
   ),
   `Role in the next step` = c(
     "Daily metric values supplied to Preparation 06",
     "Repeated-day metrics supplied to Preparation 06",
     "Thirty-minute analysis rows supplied to Preparation 06",
     "Hourly analysis rows supplied to Preparation 06",
-    "Audit and sample-flow evidence; not substituted for metric values"
+    "Audit and sample-flow evidence; not substituted for metric values",
+    "Independent verification and provenance for primary MDER",
+    "Repaired sensitivity inputs passed to Preparation 06",
+    "Independent verification, corrected sample flow, and invariance evidence",
+    "Source-minute audit, eight-cell change record, and invariance evidence"
   ),
   `Exact stored artifacts` = c(
     output_file_lines("participant_day_metrics_rds"),
@@ -816,6 +1426,55 @@ output_display <- tibble::tibble(
         )
       ),
       collapse = "<br>"
+    ),
+    paste(
+      wrap_provenance_path(
+        c(
+          "artifacts/08_diagnostics/mder_METRIC-010/verification_summary.csv",
+          "artifacts/08_diagnostics/mder_METRIC-010/distribution_summary.csv",
+          "artifacts/08_diagnostics/mder_METRIC-010/support_by_site.csv",
+          "artifacts/08_diagnostics/mder_METRIC-010/paired_comparisons.csv",
+          "artifacts/08_diagnostics/mder_METRIC-010/key_level_comparison.csv",
+          "artifacts/08_diagnostics/mder_METRIC-010/non_mder_invariance.csv",
+          "artifacts/08_diagnostics/mder_METRIC-010/audit_manifest.csv"
+        )
+      ),
+      collapse = "<br>"
+    ),
+    paste(
+      wrap_provenance_path(
+        c(
+          "artifacts/06_model_data/scenarios/manuscript_prepared_data/participant_day_metrics.rds",
+          "artifacts/06_model_data/scenarios/manuscript_prepared_data/mder_support.rds",
+          "artifacts/12_manifests/manuscript_prepared_data_artifacts.csv"
+        )
+      ),
+      collapse = "<br>"
+    ),
+    paste(
+      wrap_provenance_path(
+        c(
+          "audit/reconciliation/mder_METRIC-010_gap_repair/gap_mder_summary.csv",
+          "audit/reconciliation/mder_METRIC-010_gap_repair/gap_mder_support_summary.csv",
+          "audit/reconciliation/mder_METRIC-010_gap_repair/gap_non_mder_invariance.csv",
+          "audit/reconciliation/mder_METRIC-010_gap_repair/gap_repair_input_output_hashes.csv",
+          "audit/reconciliation/mder_METRIC-010_gap_repair/gap_repair_evidence_manifest.csv"
+        )
+      ),
+      collapse = "<br>"
+    ),
+    paste(
+      wrap_provenance_path(
+        c(
+          "audit/reconciliation/l10_METRIC-011/all_numerical_zero_reclassifications.csv",
+          "audit/reconciliation/l10_METRIC-011/positive_roundoff_reclassifications.csv",
+          "audit/reconciliation/l10_METRIC-011/primary_scientific_cell_changes.csv",
+          "audit/reconciliation/l10_METRIC-011/manifest_transition.csv",
+          "audit/reconciliation/l10_METRIC-011/invariance_summary.csv",
+          "audit/reconciliation/l10_METRIC-011/METRIC-011_evidence_manifest.csv"
+        )
+      ),
+      collapse = "<br>"
     )
   )
 )
@@ -823,46 +1482,65 @@ output_display <- tibble::tibble(
 verification_history <- tibble::tibble(
   `Artifact version` = c(
     paste0(
-      "**Current metric outputs**<br>",
-      wrap_hash(current_metric_manifest_sha256)
+      "**Current METRIC-011 metric outputs**<br>",
+      wrap_hash(current_metric_manifest_sha256),
+      "<br>Evidence: ", wrap_hash(l10_zero_evidence_sha256)
     ),
     paste0(
-      "**Earlier complete metric reconstruction**<br>",
-      wrap_hash(earlier_metric_manifest_sha256)
+      "**Preceding METRIC-010 MDER audit**<br>",
+      "Metric manifest: ", wrap_hash(mder_audit_metric_manifest_sha256),
+      "<br>Audit manifest: ", wrap_hash(current_mder_audit_sha256)
     ),
     paste0(
-      "**Current MDER and diary-period support gates**<br>",
-      wrap_hash(current_mder_manifest_sha256),
-      "<br>", wrap_hash(current_state_manifest_sha256)
+      "**Current repaired gap-timing-unaware MDER**<br>",
+      "Preparation manifest: ", wrap_hash(current_gap_manifest_sha256),
+      "<br>Repair evidence: ",
+      wrap_hash(current_gap_repair_evidence_sha256),
+      "<br>Participant-day RDS: ",
+      wrap_hash(current_gap_participant_day_rds_sha256),
+      "<br>MDER-support RDS: ", wrap_hash(current_gap_support_rds_sha256)
     ),
     paste0(
-      "**Earlier complete MDER support reconstruction**<br>",
-      wrap_hash(earlier_mder_manifest_sha256)
+      "**Current diary-period support gate**<br>",
+      wrap_hash(current_state_manifest_sha256)
+    ),
+    paste0(
+      "**Historical ratio-of-integrals support gate**<br>",
+      wrap_hash(historical_mder_gate_sha256)
     )
   ),
   `What is documented for that exact version` = c(
     paste(
-      "The stored settings contain 816 near-eye and 902 chest",
-      "participant-days. Every file listed by the current manifest is",
-      "present and matches its stored size and SHA-256. Complete independent",
-      "reconstruction of the current values remains FIND-044."
+      "The current metric manifest lists the stored metric layer for 816",
+      "near-eye and 902 chest participant-days. METRIC-011 independently",
+      "verified the rebuilt layer and records exactly eight primary L10 mean",
+      "cells changed from positive numerical roundoff to exact zero. Every",
+      "non-L10 value and all samples are unchanged; all seven evidence files",
+      "match the sealed evidence manifest under R 4.6.1."
     ),
     paste(
-      "The complete independent metric check applied only to this earlier",
-      "manifest and its 811 near-eye and 897 chest participant-days. It must",
-      "not be presented as a reconstruction of the current files."
+      "The six-output METRIC-010 audit is tied to the explicitly identified",
+      "preceding metric manifest. It independently reconstructed MDER values,",
+      "viable-minute counts, and failure reasons. METRIC-011 did not change",
+      "MDER, and its finalizer independently reran the MDER verifier against",
+      "the current rebuild without fitting a model."
     ),
     paste(
-      "The current MDER summary retains 760 of 816 near-eye and 850 of 902",
-      "chest participant-days at 80%. Current diary-period counts are shown",
-      "above. File identities match their manifests; complete independent",
-      "reconstruction of both current classification families remains",
-      "FIND-044."
+      "The repaired prepared-data manifest pins the participant-day and",
+      "MDER-support RDS files. Independent evidence records 687 of 811",
+      "near-eye and 723 of 897 chest days with MDER, exact preservation of",
+      "all 25,620 non-MDER cells, and PASS identities for all seven evidence",
+      "files. The earlier 725/729 availability record is superseded."
     ),
     paste(
-      "The complete independent MDER check applied only to this earlier",
-      "manifest: 733 of 811 near-eye and 825 of 897 chest participant-days",
-      "were retained at 80%. It must not be transferred to the current gate."
+      "Every listed file is present and matches its stored size and SHA-256.",
+      "Exact independent reconstruction of this current diary-period support",
+      "manifest remains the sole Preparation 04 item recorded as FIND-044."
+    ),
+    paste(
+      "This gate used profile support and a ratio of paired-channel daily",
+      "integrals. It is retained only as historical evidence of the",
+      "superseded METRIC-003 method and is not an input to current MDER."
     )
   )
 )
@@ -875,36 +1553,30 @@ Preparation 02 into the daily, diary-period, 30-minute, hourly, and
 participant-level metrics used by later analyses. It also records whether
 each individual metric had enough relevant data to be interpreted. A failed
 support check makes only that metric unavailable; it does not discard the
-participant-day from unrelated analyses.
+participant-day from unrelated analyses. For offset geometric means, it also
+records when floating-point roundoff is normalized to a source-verified exact
+zero.
 
 The exact inputs are the Preparation 02 Rule A coverage files, the
 Preparation 01 sleep and wear intervals, and the fixed time-of-day profiles
 and relevance maps learned in Preparation 03. The main outputs are eight R
 data files containing participant-day, participant, 30-minute, and hourly
-values for the near-eye and chest placements. Preparation 06 combines those
-files with site and participant context; this report does not inspect any
-hypothesis result.
+values for the near-eye and chest placements. [Preparation 06](06_model_ready_datasets.qmd)
+combines those files with site and participant context; this report does not
+inspect any hypothesis result.
 
 ```{mermaid}
-flowchart LR
+flowchart TB
   P1["Preparation 01<br/>sleep and wear intervals"] --> D["Preparation 04<br/>metric derivation"]
-  P2["Preparation 02<br/>eligible one-minute records"] --> G["MDER and diary-period<br/>support checks"]
-  P2 --> D
-  P3["Preparation 03<br/>fixed temporal profiles"] --> G
-  P3 --> D
-  G --> D
+  P2["Preparation 02<br/>eligible one-minute records"] --> D
+  P2 --> M["Current MDER<br/>viable one-minute ratios"]
+  P3["Preparation 03<br/>fixed temporal profiles"] --> N["Non-MDER metrics that<br/>need time-profile support"]
+  N --> D
+  M --> D
   D --> O["Daily, participant,<br/>30-minute, and hourly metrics"]
+  O --> V["Independent MDER<br/>verification record"]
   O --> P6["Preparation 06<br/>model-ready data"]
 ```
-
-::: {.callout-note title="What is calculated during this render?"}
-This report reads already stored CSV outputs. During rendering it checks file
-presence, byte size, SHA-256 identity, required columns, and fixed row-count
-relationships, then calculates only lightweight descriptive totals for the
-tables and figure below. It does **not** run a preparation builder, derive or
-change a metric, independently reconstruct a support classification, fit a
-model, or overwrite an accepted analytical artifact.
-:::
 
 ::: {.callout-important title="Interpret the full-day metrics as a hybrid measurement"}
 During wake and the three hours before sleep, the record represents the
@@ -921,10 +1593,17 @@ continuous 24-hour measure of ocular exposure.
 #| tbl-cap: "Exact stored inputs to metric derivation and the scientific role of each."
 
 prep_gt(
-  input_display,
+  input_display |>
+    dplyr::mutate(
+      `Input and exact stored artifact` = gsub(
+        "<br>SHA-256: [^<]*",
+        "",
+        .data$`Input and exact stored artifact`
+      )
+    ),
   source_note = paste(
-    "Paths and SHA-256 values are read from the current metric settings and",
-    "input inventories; no input is rebuilt during rendering."
+    "Input paths are read from the current stored settings and inventories;",
+    "no input is rebuilt during rendering."
   )
 ) |>
   gt::fmt_markdown(columns = gt::everything()) |>
@@ -941,29 +1620,18 @@ remove otherwise valid one-minute measurements from daily or minute-based
 metrics. All-finite, all-zero melEDI days had also been removed from the
 primary coverage files while remaining available as a predefined sensitivity.
 
-## Production sequence and stored hand-offs
-
-The producing scripts are shown in execution order. They remain separate so
-that support decisions, state reconstruction, metric calculation, and file
-storage each have an inspectable input and output boundary.
-
-```{r}
-#| label: tbl-script-execution-map
-#| tbl-cap: "Producing scripts and function modules in execution order; none is executed while this report renders."
-
-prep_gt(
-  script_map,
-  source_note = paste(
-    "The visible report translates each module's role; the paths preserve",
-    "the exact production provenance."
-  )
-) |>
-  gt::fmt_markdown(columns = gt::everything()) |>
-  gt::cols_width(
-    `Step and producing code` ~ gt::pct(38),
-    `Reads, operation, separation, and output` ~ gt::pct(62)
-  )
-```
+::: {.callout-note appearance="simple" title="Short glossary"}
+- **Metric support:** the observed data available at the times relevant to a
+  particular metric; insufficient support makes that metric unavailable but
+  does not remove the participant-day.
+- **M10 and L10:** the mean melEDI during, respectively, the brightest and
+  darkest 10-hour windows of a participant-day.
+- **MDER:** the melanopic daylight efficacy ratio, calculated here as the
+  arithmetic mean of viable one-minute melEDI-to-illuminance ratios.
+- **Transformed and back-transformed quantities:** calculations may be made on
+  a scale chosen for statistical or numerical reasons; back-transformation
+  returns the result to its original practical unit, such as lx.
+:::
 
 ## Scientific rules applied during production
 
@@ -977,6 +1645,60 @@ prep_gt(core_rules) |>
     `Rule and reason` ~ gt::pct(69)
   )
 ```
+
+### Source-verified zeros after geometric means
+
+Geometric means can include true zero measurements because production first
+adds 0.1 lx, averages on the log10 scale, transforms back, and subtracts the
+same 0.1 lx. In exact arithmetic, an all-zero source window returns zero.
+Floating-point arithmetic can instead leave a minute positive remainder: the
+eight affected L10 means were
+`4.163336342344337e-17` lx, far below the source-verified numerical tolerance
+of `2.220446049250313e-14` lx.
+
+The active numerical-zero rule stores a positive remainder within that
+tolerance as exact zero only when every finite source minute is itself exactly
+zero. Missing minutes remain missing; they are counted separately and never
+imputed as zeros. A materially negative result stops production, and a small
+positive result with any positive source minute is retained.
+
+```{r}
+#| label: tbl-l10-numerical-zero
+#| tbl-cap: "Primary L10 values changed from positive floating-point roundoff to source-verified exact zero."
+
+prep_gt(
+  l10_zero_display,
+  source_note = paste(
+    "Counts and source-minute evidence are read from the stored independent",
+    "numerical-zero record; the report does not recalculate an L10 window."
+  )
+) |>
+  gt::fmt_number(
+    columns = .data$`New exact-zero L10 cells`,
+    decimals = 0
+  ) |>
+  gt::cols_width(
+    Placement ~ gt::pct(13),
+    `New exact-zero L10 cells` ~ gt::pct(16),
+    `Source-minute evidence in selected 600-minute windows` ~ gt::pct(48),
+    `Current L10 values available` ~ gt::pct(23)
+  )
+```
+
+Exactly eight primary L10 mean cells changed: three near-eye and five chest.
+Seven selected 600-minute windows contained 600 observed zero minutes. The
+remaining chest window contained 547 observed zero minutes and 53 missing
+minutes; all 547 observed values were zero, and the 53 missing minutes stayed
+missing. L10 remains available for all 816 near-eye and 902 chest
+participant-days, so neither the sample nor its support rule changed.
+Every non-L10 value and all samples are unchanged. No hypothesis model is run
+or rebuilt by this report.
+
+The sealed audit contains 12 numerical-zero normalizations in total: four
+previously documented negative roundoff residuals and the eight positive
+residuals above. A zero-capable analysis retains these participant-days as
+exact zeros; a later two-part model retains them in its zero/occurrence part
+and excludes them only from a strictly positive magnitude part by definition.
 
 The central distinction is between participant-day eligibility and
 metric-specific availability. A day that passed the general coverage rule
@@ -1061,111 +1783,136 @@ respectively. An unavailable value carries one of three distinct explanations:
 the diary could not bound the day's state domains, the target period did not
 occur, or the target period contained too little valid melEDI.
 
-### Paired support for MDER
+### MDER from viable one-minute channel pairs
 
-MDER compares melEDI with photopic illuminance over exactly the same valid
-minutes. Ordinary paired-minute coverage, melEDI-profile support, and
-illuminance-profile support must each meet the cutoff; the paired illuminance
-integral must also be positive. The profile checks assess when data are
-missing but never scale or weight the ratio.
+The melanopic daylight efficacy ratio (MDER) describes melEDI relative to
+photopic illuminance. For each participant-day, production first represents
+the complete 1,440-position local wall-clock grid. If the autumn clock change
+creates two observations for one local minute, melEDI and illuminance are each
+averaged within that clock minute before their ratio is formed. A local minute
+that does not exist during the spring clock change remains missing.
+
+A minute contributes only when both channels are finite and strictly greater
+than zero. This restriction defines a viable proportional comparison: a zero
+illuminance denominator is undefined, and a zero in either channel does not
+represent a meaningful positive channel ratio for this estimand. MDER is the
+arithmetic mean of the viable one-minute melEDI/illuminance ratios. At least
+720 of the 1,440 positions must be viable; the boundary is inclusive, so
+exactly 720 passes. If fewer are viable, only MDER is unavailable. The
+participant-day and all other metrics remain eligible.
+
+No time profile weights, gates, or scales enter current MDER, and it is not a
+ratio of daily channel integrals. Records describing a profile-supported
+ratio-of-integrals method and 70%, 80%, or 90% MDER gates document an earlier
+method; they are not active.
+
+The **gap-timing-unaware dataset** still passed the general 50%-per-hour and
+80%-per-day coverage rules. Its name means that the timing of remaining
+missing observations was not used for an additional metric-specific
+adjustment. For this first explanation only, the primary dataset could be
+interpreted as a **time-sensitive primary metric dataset**; hereafter it is
+called simply the **primary dataset**. Both datasets now use the same
+momentary-ratio MDER definition.
 
 ```{r}
 #| label: tbl-mder-support
-#| tbl-cap: "Participant-days retained for MDER at the fixed support cutoffs in the current stored gate."
+#| tbl-cap: "Current MDER availability and distribution summaries under the same viable one-minute-ratio estimand."
 
 prep_gt(
-  mder_support_display,
+  mder_availability_display,
+  groupname_col = "Dataset",
   source_note = paste(
-    "The current stored gate calculated support classifications only; it did",
-    "not calculate MDER ratios or hypothesis results."
+    "Primary and gap-timing-unaware rows are read from their stored",
+    "independent-verification summaries; rendering does not reconstruct MDER."
   )
 ) |>
   gt::fmt_number(
     columns = c(
-      .data$`Eligible days`, .data$`70%`, .data$`80%`, .data$`90%`,
-      .data$`Participants at 80%`, .data$`Sites at 80%`
+      .data$`Eligible days`, .data$`Days with MDER`,
+      .data$`Days without MDER`, .data$`Participants with MDER`
     ),
     decimals = 0,
     use_seps = TRUE
   ) |>
+  gt::fmt_number(
+    columns = c(.data$`Mean MDER`, .data$`Median MDER`),
+    decimals = 4
+  ) |>
   gt::cols_width(
-    Placement ~ gt::pct(14),
+    Placement ~ gt::pct(15),
     `Eligible days` ~ gt::pct(12),
-    `70%` ~ gt::pct(9),
-    `80%` ~ gt::pct(9),
-    `90%` ~ gt::pct(9),
-    `Participants at 80%` ~ gt::pct(15),
-    `Sites at 80%` ~ gt::pct(13),
-    `Primary retention` ~ gt::pct(19)
+    `Days with MDER` ~ gt::pct(14),
+    `Days without MDER` ~ gt::pct(15),
+    `Participants with MDER` ~ gt::pct(18),
+    `Mean MDER` ~ gt::pct(13),
+    `Median MDER` ~ gt::pct(13)
   )
 ```
 
+In the primary dataset, MDER is available for 702 of 816 near-eye
+participant-days from 137 participants (mean 0.7239; median 0.7239) and 732 of
+902 chest participant-days from 152 participants (mean 0.7565; median
+0.7494). In the gap-timing-unaware dataset, it is available for 687 of 811
+near-eye participant-days from 137 participants (mean 0.7243; median 0.7239)
+and 723 of 897 chest participant-days from 152 participants (mean 0.7567;
+median 0.7495).
+
+The stored comparison found all 25,620 non-MDER participant-day cells exactly
+unchanged. A failed MDER support rule therefore removes only MDER, not the day
+or any other metric.
+
 ```{r}
-#| label: fig-mder-support-retention
-#| fig-cap: "Participant-day retention for MDER at the three fixed paired-data support cutoffs. The 80% cutoff is primary; 70% and 90% are predefined sensitivities. Values are read from the current stored MDER support-gate summary, not recalculated from minute-level data."
-#| fig-alt: "Line chart showing MDER participant-day retention at 70%, 80%, and 90% support. Near-eye retention decreases from about 99% to 93% to 78%; chest retention decreases from about 98% to 94% to 80%."
+#| label: fig-mder-availability
+#| fig-cap: "Availability of the current MDER in the primary dataset. At least 720 viable one-minute ratios are required. Counts are read from the stored independent-verification summary; rendering does not reconstruct MDER."
+#| fig-alt: "Two horizontal stacked bars show MDER availability in the primary dataset. Near-eye has 702 participant-days with MDER and 114 without, out of 816. Chest has 732 with MDER and 170 without, out of 902."
 #| fig-width: 7.2
 #| fig-height: 4.2
-
-mder_plot_data <- mder_candidates |>
-  dplyr::mutate(Placement = placement_label(.data$position))
 
 ggplot(
   mder_plot_data,
   aes(
-    x = .data$candidate_support_cutoff,
-    y = .data$retained_fraction,
-    colour = .data$Placement,
-    linetype = .data$Placement,
-    shape = .data$Placement,
-    group = .data$Placement
+    x = .data$`Participant-days`,
+    y = .data$Placement,
+    fill = .data$Status
   )
 ) +
-  geom_line(linewidth = 0.8) +
-  geom_point(size = 2.6, stroke = 0.8) +
+  geom_col(width = 0.58, colour = "white", linewidth = 0.4) +
+  geom_text(
+    aes(label = scales::comma(.data$`Participant-days`)),
+    position = position_stack(vjust = 0.5),
+    colour = "white",
+    size = 3.2,
+    fontface = "bold"
+  ) +
   scale_x_continuous(
-    breaks = c(0.70, 0.80, 0.90),
-    labels = scales::label_percent(accuracy = 1),
-    expand = expansion(mult = c(0.04, 0.04))
+    labels = scales::label_comma(),
+    expand = expansion(mult = c(0, 0.03))
   ) +
-  scale_y_continuous(
-    limits = c(0.70, 1.00),
-    breaks = seq(0.70, 1.00, by = 0.05),
-    labels = scales::label_percent(accuracy = 1),
-    expand = expansion(mult = c(0, 0.02))
+  scale_fill_manual(
+    values = c(
+      "MDER available" = "#0072B2",
+      "MDER unavailable" = "#D55E00"
+    ),
+    breaks = c("MDER available", "MDER unavailable")
   ) +
-  scale_colour_manual(
-    values = c("Near-eye" = "#0072B2", "Chest" = "#D55E00")
-  ) +
-  scale_linetype_manual(
-    values = c("Near-eye" = "solid", "Chest" = "longdash")
-  ) +
-  scale_shape_manual(values = c("Near-eye" = 16, "Chest" = 17)) +
   labs(
-    x = "Required paired-data support",
-    y = "Eligible participant-days retained",
-    colour = "Placement",
-    linetype = "Placement",
-    shape = "Placement"
+    x = "Eligible participant-days",
+    y = NULL,
+    fill = NULL
   ) +
   theme_minimal(base_size = 10) +
   theme(
     axis.text = element_text(size = 9, colour = "#333333"),
     axis.title = element_text(size = 10),
     legend.text = element_text(size = 9),
-    legend.title = element_text(size = 10),
     legend.position = "bottom",
     panel.grid.minor = element_blank(),
+    panel.grid.major.y = element_blank(),
     plot.margin = margin(7, 10, 7, 7)
   )
 ```
 
-[Download the source data for @fig-mder-support-retention](../../artifacts/08_diagnostics/mder_support_gate/mder_support_candidate_summary.csv).
-
-The current 80% gate retains 760 of 816 near-eye participant-days and 850 of
-902 chest participant-days. Every near-eye and chest participant remains
-represented at the primary cutoff, across nine and eight sites,
-respectively.
+[Download the source data for @fig-mder-availability](../../artifacts/08_diagnostics/mder_METRIC-010/verification_summary.csv).
 
 ### Thirty-minute and hourly values
 
@@ -1295,7 +2042,52 @@ averaged only on that grid, and structurally absent spring minutes remain
 absent. Missing light, unknown diary state, and a daylight-saving transition
 are therefore not treated as the same event.
 
-## Exact artifacts passed forward
+## Limitation of current independent verification
+
+Independent reconstruction of current diary-period support remains incomplete.
+
+This qualification applies to the current diary-period support files. It
+does not apply to current MDER and is not evidence that the diary-period data
+or any downstream result is wrong. The file checks below do not attempt that
+scientific reconstruction.
+
+## Technical provenance and version-specific verification
+
+::: {.callout-note title="What is calculated during this render?"}
+This report reads already stored CSV outputs. During rendering it checks file
+presence, byte size, SHA-256 identity, required columns, and fixed row-count
+relationships. It also formats lightweight summaries already stored by the
+independent MDER audits and the numerical-zero evidence. It does **not** run a
+preparation builder, change a metric, independently reconstruct MDER, L10, or
+another support classification, fit a model, or overwrite an accepted
+analytical artifact.
+:::
+
+### Production sequence and stored hand-offs
+
+The producing scripts are shown in execution order. They remain separate so
+that support decisions, state reconstruction, metric calculation, and file
+storage each have an inspectable input and output boundary.
+
+```{r}
+#| label: tbl-script-execution-map
+#| tbl-cap: "Producing scripts and function modules in execution order; none is executed while this report renders."
+
+prep_gt(
+  script_map,
+  source_note = paste(
+    "The visible report translates each module's role; the paths preserve",
+    "the exact production provenance."
+  )
+) |>
+  gt::fmt_markdown(columns = gt::everything()) |>
+  gt::cols_width(
+    `Step and producing code` ~ gt::pct(38),
+    `Reads, operation, separation, and output` ~ gt::pct(62)
+  )
+```
+
+### Exact artifacts passed forward
 
 ```{r}
 #| label: tbl-output-artifacts
@@ -1317,15 +2109,14 @@ prep_gt(
 ```
 
 The eight R data files in the first four rows are the metric layer used to
-construct the primary dataset in Preparation 06. The predefined
-**gap-timing-unaware dataset** still passed the general 50%-per-hour and
-80%-per-day coverage rules; its name means that the timing of remaining
-missing observations was not used for an additional metric-specific
-adjustment. It does not mean that gaps or coverage were ignored. For this
-first contrast only, the primary dataset could be interpreted as a
-**time-sensitive primary metric dataset**, because its approved metric rules
-use the timing of remaining missing observations where scientifically
-relevant. Hereafter, it is simply the **primary dataset**.
+construct the primary dataset in Preparation 06. The repaired
+gap-timing-unaware participant-day and MDER-support files use the same
+momentary-ratio MDER estimand and are passed forward separately. Historical
+internal filenames remain for provenance but are not visible dataset labels.
+The two audit bundles document the exact primary verification and the repaired
+gap-timing-unaware sample flow, support reasons, and non-MDER invariance. The
+METRIC-011 bundle separately records the source minutes, raw back-transforms,
+eight changed L10 cells, manifest transition, and exact non-L10 invariance.
 
 Preparation 04 creates the primary dataset's metric layer. Preparation 05
 acquires questionnaire and diary inputs, and Preparation 06 brings the metric
@@ -1333,11 +2124,11 @@ and non-light inputs together. The gap-timing-unaware dataset remains a
 predefined prepared-data sensitivity and is not substituted into the primary
 files listed above.
 
-## Current file checks and version-specific verification
+### File checks and version-specific evidence
 
 ```{r}
 #| label: tbl-current-manifest-validation
-#| tbl-cap: "Bounded file-identity checks for the three current Preparation 04 manifests."
+#| tbl-cap: "Bounded file-identity checks for the current metric, repaired gap-timing-unaware, diary-period, MDER-audit, and L10 numerical-zero artifacts."
 
 manifest_validation_display <- manifest_validation |>
   dplyr::mutate(
@@ -1348,9 +2139,12 @@ manifest_validation_display <- manifest_validation |>
 prep_gt(
   manifest_validation_display,
   source_note = paste(
-    "PASS means that every listed file exists and matches the stored byte",
-    "size and SHA-256. It does not mean that metric values or support",
-    "classifications were independently reconstructed during rendering."
+    "For the metric, repaired gap-timing-unaware, and diary-period manifests,",
+    "PASS means that every listed file matches its stored size and SHA-256.",
+    "The primary MDER audit, seven-file gap repair evidence bundle, and",
+    "seven-file METRIC-011 evidence bundle also match their independently",
+    "produced manifests.",
+    "Rendering performs identity checks only."
   )
 ) |>
   gt::fmt_markdown(columns = c(.data$`Manifest path`)) |>
@@ -1377,9 +2171,14 @@ prep_gt(
   )
 ```
 
-The complete independent-verification records available for Preparation 04
-apply to earlier artifact versions. PREP-003 requires those claims to remain
-attached to their exact manifests and samples.
+Independent verification is version-specific. The current metric manifest
+and numerical-zero results belong to the METRIC-011 evidence bundle. The
+six-output METRIC-010 MDER audit belongs to the explicitly identified
+preceding metric manifest; METRIC-011 changed no MDER value and independently
+reran its verifier against the current rebuild. The repaired
+gap-timing-unaware MDER verification belongs to its prepared-data manifest and
+repair evidence bundle. The remaining qualification applies only to the
+current diary-period support manifest.
 
 ```{r}
 #| label: tbl-version-specific-verification
@@ -1388,9 +2187,10 @@ attached to their exact manifests and samples.
 prep_gt(
   verification_history,
   source_note = paste(
-    "CHG-046 also records the intervening metric manifest",
-    wrap_hash(intervening_metric_manifest_sha256),
-    "; it is not the current metric manifest."
+    "The controlling METRIC-011 decision has SHA-256",
+    wrap_hash(l10_zero_decision_sha256),
+    "; METRIC-010 remains the active MDER estimand decision with SHA-256",
+    wrap_hash(mder_decision_sha256), "."
   )
 ) |>
   gt::fmt_markdown(columns = gt::everything()) |>
@@ -1400,18 +2200,31 @@ prep_gt(
   )
 ```
 
-Under [PREP-003](../../audit/decisions/preparation04_version_specific_verification.md),
-the earlier complete metric reconstruction applies only to metric manifest
-`ac0325716421f2d90bb83b445ffb6ad965b131e382373e45f4ad6157eac5937d`
-and its 811 near-eye and 897 chest participant-days. The earlier complete MDER
-support reconstruction applies only to manifest
-`c4ecfab41892e44b38dd78097277ccef5f94a379b44c7b309de281e9215a7b3c`
-and its 733-of-811 near-eye and 825-of-897 chest retention at 80%.
+The active metric manifest is
+`028bce108339c1277df4a070597430ea20b49c34c2888f4eef42741c1fe76a5e`,
+and the METRIC-011 evidence manifest is
+`a37efd3449a8d1a6065d0eb8964bd6cf8b241f1683a26c065ea1a946e23214fb`.
+They record the current geometric-mean zero rule, all eight primary L10 cell
+changes, and exact invariance outside L10. The preceding metric manifest
+`7bb2830c695e5600f0877acca500a187a040fe727a029bdb069f69099abe4f43`
+and independent MDER audit manifest
+`5bd34fd4ac26dc2761540393d40e096cde835d8dd4b4edda9253243c9083d4bb`
+remain identified because that stored six-output audit is tied to their exact
+version. METRIC-011 changed no MDER value and independently reran the MDER
+verifier against the current rebuild.
 
-Those results must not be transferred to the three current manifests. Exact
-independent reconstruction of the current metric values, MDER classifications,
-and diary-period classifications remains open audit item **FIND-044**. This
-provenance gap is not evidence that the current artifacts or any downstream
-result is wrong. It states precisely which scientific check has not yet been
-documented for these exact file versions; this bounded reader-facing render
-does not attempt to perform that check.
+The repaired gap-timing-unaware preparation manifest is
+`4ed62fbe58de65a6d05d8cfc6b5d870d7c74a3c83fe89bcd72bd1dd838698935`,
+and its independent repair evidence manifest is
+`81e3aa9439b88cf239d6669dc4343cfb146cd2f45790bae412ab837156315018`.
+They pin the participant-day RDS
+`7561b5dd47cb5e23ca94ba59bd57648f11fe492f86af53a566c5c9cf42d932f1`
+and MDER-support RDS
+`a0bc5d7ea2142709412da2253158086416ddb730b0f60ff616bba9d6ccb1edc5`.
+
+Under [PREP-003](../../audit/decisions/preparation04_version_specific_verification.md),
+exact independent reconstruction of the current diary-period support manifest
+`755508076e42ed74ce0d40f48de192b69ea81b04532db2d5a950c451236e2619`
+remains open audit item **FIND-044**. This remaining qualification does not
+apply to current MDER and is not evidence that the diary-period data or any
+downstream result is wrong. Rendering does not attempt that scientific check.

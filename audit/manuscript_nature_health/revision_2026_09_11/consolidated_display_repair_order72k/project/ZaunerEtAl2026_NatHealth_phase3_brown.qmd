@@ -1,0 +1,488 @@
+---
+title: "The health-relevant architecture of the everyday light exposome"
+author:
+  - name: "Johannes Zauner"
+    orcid: "0000-0003-2171-4566"
+    email: "johannes.zauner@tum.de"
+    corresponding: true
+    affiliations: [{ref: tum}]
+  - name: "Altug Didikoglu"
+    orcid: "0000-0002-5582-6956"
+    affiliations: [{ref: manchester}, {ref: iyte}]
+  - name: "Sam Aerts"
+    orcid: "0000-0002-7444-4312"
+    affiliations: [{ref: thuas}]
+  - name: "Gabriel Kwaku Agbeshie"
+    orcid: "0009-0009-6135-7111"
+    affiliations: [{ref: knust}]
+  - name: "Kwadwo Owusu Akuffo"
+    orcid: "0000-0001-6683-249X"
+    affiliations: [{ref: knust}]
+  - name: "Sena Gulsum Akgun"
+    affiliations: [{ref: iyte}]
+  - name: "Sema Nur Aydin"
+    affiliations: [{ref: iyte}]
+  - name: "David Baeza Moyano"
+    orcid: "0000-0001-8395-9994"
+    affiliations: [{ref: ceu}]
+  - name: "Daan Boesten"
+    affiliations: [{ref: thuas}]
+  - name: "John F.B. Bolte"
+    orcid: "0000-0001-8301-5547"
+    affiliations: [{ref: thuas}, {ref: rivm}]
+  - name: "Kai Broszio"
+    orcid: "0000-0002-8269-8654"
+    affiliations: [{ref: baua}]
+  - name: "Guadalupe Cantarero García"
+    orcid: "0000-0003-3169-8547"
+    affiliations: [{ref: ceu}]
+  - name: "Roberto Alonso González Lezcano"
+    orcid: "0000-0002-6185-4929"
+    affiliations: [{ref: ceu}]
+  - name: "Carolina Guidolin"
+    orcid: "0009-0007-4959-2667"
+    affiliations: [{ref: mpi}]
+  - name: "Sarina Hilden"
+    affiliations: [{ref: tum}]
+  - name: "Nico Hogervorst"
+    affiliations: [{ref: thuas}]
+  - name: "Astrid Jansen"
+    affiliations: [{ref: thuas}]
+  - name: "Zeynep Kayar"
+    affiliations: [{ref: iyte}]
+  - name: "Stefan Källberg"
+    orcid: "0009-0003-8259-3400"
+    affiliations: [{ref: rise}]
+  - name: "Suyoun Lee"
+    affiliations: [{ref: tum}]
+  - name: "Sofía Melero Tur"
+    orcid: "0000-0002-5902-4539"
+    affiliations: [{ref: ceu}]
+  - name: "Maria Nilsson Tengelin"
+    orcid: "0000-0002-0909-626X"
+    affiliations: [{ref: rise}]
+  - name: "María Concepción Pérez Gutiérrez"
+    orcid: "0000-0003-0963-6147"
+    affiliations: [{ref: ceu}]
+  - name: "Andrea Sancho-Salas"
+    orcid: "0000-0002-6566-2772"
+    affiliations: [{ref: ucr}]
+  - name: "Oliver Stefani"
+    orcid: "0000-0003-0199-6500"
+    affiliations: [{ref: hslu}]
+  - name: "Ingemar Svensson"
+    orcid: "0009-0006-9283-509X"
+    affiliations: [{ref: rise}]
+  - name: "Helga von-Breymann"
+    orcid: "0000-0002-6841-5953"
+    affiliations: [{ref: ucr}]
+  - name: "Manuel Spitschan"
+    orcid: "0000-0002-8572-9268"
+    affiliations: [{ref: tum}, {ref: mpi}, {ref: tumias}, {ref: tumcreate}]
+affiliations:
+  - id: tum
+    name: "Department Health and Sports Sciences, TUM School of Medicine and Health, Chronobiology & Health, Technical University of Munich, Munich, Germany"
+  - id: manchester
+    name: "Division of Diabetes, Endocrinology, and Gastroenterology, School of Medical Sciences, Faculty of Biology, Medicine and Health, The University of Manchester, Manchester, UK"
+  - id: iyte
+    name: "Faculty of Science, Department of Neuroscience, Izmir Institute of Technology, Izmir, Türkiye"
+  - id: thuas
+    name: "Smart Sensor Systems research group, The Hague University of Applied Sciences, Delft, The Netherlands"
+  - id: knust
+    name: "Department of Optometry and Visual Science, College of Science, Kwame Nkrumah University of Science and Technology, Kumasi, Ghana"
+  - id: ceu
+    name: "Fundación Universitaria CEU San Pablo, Boadilla del Monte, Madrid, Spain"
+  - id: rivm
+    name: "Centre for Sustainability, Environment and Health, National Institute for Public Health and the Environment (RIVM), Bilthoven, The Netherlands"
+  - id: baua
+    name: "Federal Institute for Occupational Safety and Health (BAuA), Dortmund, Germany"
+  - id: mpi
+    name: "Max Planck Institute for Biological Cybernetics, Max Planck Research Group Translational Sensory & Circadian Neuroscience, Tübingen, Germany"
+  - id: rise
+    name: "RISE Research Institutes of Sweden, Borås, Sweden"
+  - id: ucr
+    name: "School of Architecture, University of Costa Rica, San José, Costa Rica"
+  - id: hslu
+    name: "Lucerne University of Applied Sciences and Arts, Lucerne, Switzerland"
+  - id: tumias
+    name: "TUM Institute for Advanced Study (TUM-IAS), Technical University of Munich, Garching, Germany"
+  - id: tumcreate
+    name: "TUMCREATE Ltd., Singapore, Singapore"
+date: "2026-08-21"
+lang: en-GB
+keywords:
+  - ocular light exposure
+  - melanopic equivalent daylight illuminance
+  - wearable sensing
+  - environmental health
+  - exposome
+  - non-communicable disease
+  - circadian light
+  - multicountry study
+bibliography: resources/fa7454dedb2f_references_merged.bib
+csl: resources/15b1272a3c36_nature.csl
+link-citations: true
+reference-section-title: "References"
+css: [resources/5974136901a8_manuscript_displays.css, order72k_layout.css]
+---
+
+# Abstract
+
+Personal light exposure has been associated with sleep and non-communicable diseases, yet how ocular exposure varies across the day, among people and between everyday settings remains poorly understood. We analysed 191 adults at nine sites in seven countries; 184 contributed 1,478 participant-days (near eye: 141 adults, 816 days; complementary chest: 154 adults, 902 days). The shared 24-hour near-eye pattern accounted for 78.9% of full-model R², participant patterns 12.9%, participant-day shifts 6.2% and site patterns 2.0%. Reported light source and immediate setting produced large contrasts, accounting for 24.2% and 30.7%, respectively, of variation in fitted hourly patterns, the next-largest shares after time of day. Associations with site, day length and personal characteristics differed across exposure measures. Only 24.0% of daytime minutes met the recommendation. By resolving variation across sites, people, days and immediate settings, this study lays an empirical foundation for targeted, harmonised exposure monitoring aligned with health-based light recommendations.
+
+# Introduction
+
+<!-- P-I01 -->
+Light reaching the eye supports vision and signals circadian timing, sleep, alertness and neuroendocrine responses [@czeisler2007; @dijk2009; @roenneberg2007; @blume2019; @spitschan2026]. Melanopic equivalent daylight illuminance (melanopic EDI) weights illuminance for melanopsin-related sensitivity and is most relevant to these effects [@cie2018s026; @brown2020]. Expert consensus recommends at least 250 lx melanopic EDI at the eye during daytime, no more than 10 lx during the three hours before sleep and no more than 1 lx in the sleep environment for healthy adults with regular daytime schedules [@brown2022]. These physiology-based ranges make daily light a health-relevant exposure, but are not individual risk functions.
+
+<!-- P-I02 -->
+Population studies and reviews associate personal light patterns with sleep and major non-communicable diseases [@spitschan2026a]. Wrist-sensor studies link light timing and day-night distribution with sleep timing and sleepiness, psychiatric disorders, incident type 2 diabetes, cardiovascular disease and mortality [@didikoglu2023; @lok2023; @burns2023; @windred2024; @windred2025cardiovascular; @windred2024a]. Other cohorts link evening, nocturnal or seasonal light with sleep in bipolar disorder and with obesity, diabetes, hypertension and metabolic health [@esaki2020; @obayashi2016; @kim2022; @gubin2024]. The exposome framework characterises non-genetic exposures across the life course [@vineis2018; @vermeulen2020], yet rarely includes time-resolved ocular melanopic light, the everyday component examined here. These studies establish population relevance but mostly measured broad-spectrum wrist or bedside light, providing only proxy evidence for melanopic ocular exposure.
+
+<!-- P-I03 -->
+An everyday exposure baseline against these recommendations is missing. Personal exposure to natural and electric light follows an expected 24-hour rhythm, including in large wrist-sensor cohorts [@wallace2025], but previous studies focus on particular populations, occupations or settings [@savides1986; @price2021; @biller2025]. Its amplitude and timing across sites and countries, and the contributions of time, site, individuals, day-to-day variation and immediate context, remain uncertain. Daylight availability, satellite estimates and fixed-site measurements cannot resolve these layers as people move through buildings, transport, outdoor spaces and sleep environments [@huss2019corrected]. Sensor position also matters: near-eye sensing is closer to the incident ocular field but is not a retinal measurement; wrist and chest sensors capture related fields shaped by posture, wear and occlusion [@vanduijnhoven2025; @hartmeyer2022; @devries2025; @devries2026; @devries2026a; @gibaldi2024; @zauner2026placementpreprint].
+
+<!-- P-I04 -->
+Using the harmonised MeLiDos protocol, we measured personal light across nine sites in seven countries [@spitschan2024; @guidolin2024]. The near-eye sensor characterised ocular light exposure during wear, alongside diaries, light-source and immediate-setting reports, sleep information and questionnaires. The complementary chest sensor provided non-ocular environmental evidence and enabled participation among people reluctant to wear the glasses-mounted sensor. We sought a multisite recommendation-based baseline, assessing temporal, environmental and routine contributions alongside selected person-level correlates. We use architecture to describe how everyday light exposure is organised across time, sites, people, days and immediate settings, and benchmark this component of the exposome against health-based light recommendations. Although not global, the protocol enables harmonised measurement elsewhere, progressively closing gaps across locations, civil photoperiods, latitudes and climates and building towards a global account of ocular light exposure.
+
+# Results
+
+## A multisite baseline and recommendation adherence
+
+<!-- P-R01 -->
+The normalised roster comprised 191 participants across Borås (SE), Delft (NL), Dortmund (DE), Tübingen (DE), Munich (DE), Madrid (ES), Izmir (TR), San José (CR) and Kumasi (GH). Of these, 184 contributed 1,478 participant-days with recorded, non-all-zero light data at either position before quality screening. After screening, the near-eye dataset contained 141 participants and 816 participant-days, the complementary chest dataset 154 and 902, and the common sample 112 participants and 643 participant-days. Near-eye measurements provide ocular-exposure evidence during wear, whereas chest measurements are non-ocular; both describe the bedside sleep environment during reported sleep. [Supplementary Table S1](#supp-table-s1) gives the sample flow.
+
+<!-- P-R02 -->
+The pooled near-eye record followed the expected 24-hour rhythm: low overnight exposure, a morning rise, higher daytime values and an evening decline. Seventeen complementary metrics captured thematic streams rather than one score. Level metrics described daily geometric mean melanopic EDI and the brightest and darkest supported 10-hour means; duration and timing metrics quantified exposure ranges, sustained bright periods, bright or dark windows and threshold crossings. Dose integrated intensity, regularity captured stability and fragmentation, and melanopic daylight efficacy (MDER) described spectral composition relative to visual illuminance. These features are not interchangeable health-response estimates. [Supplementary Table S2](#supp-table-s2) and [Supplementary Figure S1](#fig-s1) give the metric dictionary and site distributions; [Supplementary Figure S2](#fig-s2) shows a worked derivation. @fig-study-overview and @tbl-participant-site summarise the design and data structure.
+
+::: {#fig-study-overview}
+![](resources/4304aa487b3c_descriptive_overview.svg){fig-alt="Five-panel overview of the eight-day protocol, sensor positions, nine country-coded sites, collection windows, civil photoperiod, and the pooled near-eye daily profile."}
+
+Five-panel overview of the eight-day protocol, sensor positions, nine country-coded sites, collection windows, civil photoperiod, and the pooled near-eye daily profile. **A**, Eight-day field protocol and sensor positions. The wrist logger is shown as a protocol device but is not an exposure channel analysed in this manuscript. **B**, Nine sites in seven countries. **C**, Site collection periods. **D**, Observed civil photoperiod. **E**, Site and pooled 15-minute median near-eye melanopic equivalent daylight illuminance profiles from 816 participant-days contributed by 141 participants, repeated over 48 hours for display only. Grey ribbons show the central 50% and 90% of measured values, not confidence intervals; coloured lines are site medians, the black line is the pooled median, and red and blue shading show mean reported sleep and civil night (sun elevation < -6°). During reported sleep, the measurement represents the bedside sleep environment.
+:::
+
+::: {#tbl-participant-site .manuscript-table .column-page-left}
+
+{{< include resources/95781f53b177_table1_participant_site.html >}}
+
+Participant and measurement characteristics overall and by country-coded study site. The table distinguishes the 191-person roster, participants and participant-days with recorded light data, and the screened near-eye and complementary chest samples. Model-specific samples are reported with each analysis. Of the 191 roster participants, 184 contributed the 1,478 recorded participant-days. Continuous participant characteristics are median with the stated percentile range.
+:::
+
+<!-- P-R03 -->
+Exposure was within the applicable recommendation during 24.0% of daytime minutes, 63.3% of pre-sleep minutes and 87.7% of sleep minutes. This represented 137,792 of 573,712 waking daytime minutes, 81,894 of 129,390 pre-sleep minutes and 336,052 of 383,366 minutes during reported sleep. The sleep quantity describes the bedside sleep environment because the device was not worn at the eye; the Discussion addresses low-light measurement accuracy. [Supplementary Table S3](#supp-table-s3) gives exact numerators, denominators and complementary ranges.
+
+<!-- P-R04 -->
+These pooled-minute percentages describe how often exposure lay within range, not participant adherence. Model-based comparisons retained each window's adherent and valid-minute counts.
+
+<!-- P-R04A -->
+The main adherence model included 2,216 recommendation-window periods from 140 participants and 782 complete daytime, pre-sleep and sleep cycles, representing 1,028,958 valid minutes. Site-average work-day adherence was 26.5% during daytime, 61.9% during pre-sleep and 90.3% during sleep; free-day adherence was 21.6%, 69.9% and 84.1%. Relative to work days, free-day adherence was 4.92 percentage points lower during daytime (95% confidence interval (95% CI) 2.21 to 7.64 lower), 7.98 higher during pre-sleep (3.28 to 12.67) and 6.13 lower during sleep (3.48 to 8.79). Requiring at least 80% valid coverage preserved each direction and interval conclusion, with a maximum 0.88-point change.
+
+<!-- P-R04B -->
+Adherence differences between free and work days varied among sites (*p* = 0.003): during daytime (*p* = 0.002) and sleep (*p* = 0.003), but not pre-sleep (*p* = 0.526). The free-minus-work daytime difference exceeded its site-average value by 15.0 percentage points in Dortmund (DE; 95% CI 6.9 to 23.1; *p* = 0.004) and was 9.2 lower in Madrid (ES; -15.6 to -2.8; *p* = 0.042); the sleep difference was 6.3 higher in Kumasi (GH; 3.4 to 9.1; *p* < 0.001). These directions persisted when the sensitivity analysis required at least 80% valid data coverage.
+
+<!-- P-R04C -->
+Fixed predictors explained 58.4% of variance on the design-standardized response scale, the participant intercept added 2.2 percentage points and observation and distribution variation accounted for 39.4%; conditional R² was 60.6%. Within marginal R², Shapley shares were 94.1% for recommendation window, 4.8% for site and 1.2% for day type. On the design-standardized response scale, site accounted for 2.8 percentage points of variance, compared with a 2.2-point participant-intercept increment and 0.7 percentage points for day type. Thus, the site allocation was about 1.3 times the participant-intercept increment and about four times the day-type allocation. @tbl-brown-adherence summarises the main estimates; [Supplementary Figures S4](#fig-s4) and [S5](#fig-s5) show site-average and site-specific results.
+
+::: {#tbl-brown-adherence .manuscript-table .column-page-left}
+
+{{< include resources/6f7367bf3e8d_table2_brown_adherence.html >}}
+
+Recommendation adherence by Brown et al. recommendation window and day type. Daytime, Pre-sleep and Sleep identify the recommendation windows used for comparison. Daytime comprises diary-defined wake excluding the three hours before Sleep, Pre-sleep comprises those three hours, and Sleep uses the reported sleep interval and therefore describes the bedside sleep environment. Pooled minutes meeting recommendation report the number and percentage of valid measured minutes whose exposure lay within the applicable range. Work-day and free-day percentages, differences, 95% confidence intervals and false-discovery-rate-adjusted p-values are site-average estimates from the main recommendation-window model, with each of the nine sites weighted equally. The pooled-minute fractions and modelled recommendation-window estimates are distinct estimands. The main model included 2,216 recommendation-window periods from 140 participants and 782 behavioural cycles, representing 1,028,958 valid minutes. Adherence is defined at the measured-minute or recommendation-window-period level and does not classify participants.
+:::
+
+<!-- P-R04D -->
+A separate exploratory analysis related adherence across recommendation windows. Within participants, the estimated differences for a daytime-adherence value 10 percentage points above a participant's usual level were -0.26 percentage points for sleep adherence (95% CI -0.95 to 0.43) and -1.09 points for pre-sleep adherence (-2.75 to 0.56). Both intervals included zero, and temporal dependence remained unresolved, so we withheld a within-participant day-level claim rather than interpreting these estimates as evidence of no association. Between participants, each 10 percentage points higher observed average daytime adherence was associated with 2.52 points lower sleep adherence (95% CI 1.48 to 3.55 lower; FDR-adjusted *p* < 0.001) and 3.59 points lower pre-sleep adherence (1.25 to 5.94 lower; FDR-adjusted *p* = 0.005). Directions and interval conclusions remained in the sensitivity analysis, with a maximum 0.60-point change. Thus, participants with higher average daytime adherence tended to have lower pre-sleep and sleep adherence, consistent with higher evening and nighttime light exposure. Complete estimates are reported in [Supplementary Table S4](#supp-table-s4), with participant profiles in [Supplementary Figure S6](#fig-s6).
+
+## Personal and day-to-day differences exceed site differences
+
+<!-- P-R05 -->
+A nonlinear model decomposed personal light exposure into common local-clock, site and participant curves, and participant-day shifts. Near-eye in-sample R² was 0.775. Participant curves were 1.80 times as dispersed as site curves (95% CI 1.16 to 4.33); participant curves plus day shifts had a dispersion ratio of 1.99 (1.29 to 4.77). After accounting for time of day, fitted variation among people and their days within sites exceeded variation among sites.
+
+<!-- P-R06 -->
+Shares of full-model R² showed the same hierarchy: 78.9% for the shared local-clock pattern, 12.9% for participant patterns, 6.2% for participant-day shifts and 2.0% for site patterns. The participant-pattern share was 6.41 times the site-pattern share (3.85 to 15.14), and the combined participant-pattern and participant-day-shift share was 9.49 times the site-pattern share (5.77 to 21.81).
+
+<!-- P-R07 -->
+The shared rhythm did not imply uniform amplitude. Relative to the fitted site-average daily pattern, Borås (SE) ratios were 2.04 to 4.64 from 06:00 to 11:00 and 1.80 to 2.73 from 15:00 to 19:00. Madrid (ES) ratios were 0.15 to 0.47 from 05:30 to 10:30 and 0.40 to 0.57 from 17:30 to 20:30. Izmir (TR) shifted from 0.51 to 0.59 at 06:00 to 08:30 to 1.98 to 4.28 at 21:00 to 24:00, while Kumasi (GH) was 0.11 to 0.38 from 11:30 to 23:00. These are clock-specific departures from the average curve.
+
+<!-- P-R08 -->
+The chest model had an in-sample R² of 0.737. Of this full-model R², common time accounted for 79.1%, participant patterns 11.9%, participant-day shifts 7.0% and site patterns 2.1%. Common-sample comparisons supported the combined participant-plus-day ordering, but the participant-only contrast was less stable. Cross-position similarity is complementary context, not replication, equivalence or interchangeability. @fig-daily-architecture shows the fitted layers; [Supplementary Tables S5](#supp-table-s5) and [S6](#supp-table-s6) give both decompositions.
+
+::: {#fig-daily-architecture}
+![](resources/2f9493540f12_figure4_exact_layout_replication.svg){fig-alt="Four-panel display of the site-average, site-specific, participant-specific, and site-to-average daily near-eye melanopic EDI patterns."}
+
+Multiscale daily pattern of near-eye melanopic equivalent daylight illuminance. **A**, Site-average daily curve. **B**, Fitted site curves. **C**, Fitted participant curves after the shared local-clock and site patterns were considered. **D**, Ratio of each fitted site curve to the site-average curve on the melanopic equivalent daylight illuminance plus 0.1 lx scale. Grey bands show mean civil night. Shaded bands are clock-specific 95% confidence intervals; red segments identify displayed half-hours whose interval did not include the site-average curve and are descriptive clock-specific contrasts. The analysis included 141 participants and 816 participant-days across nine sites. The label “global time effect” denotes the site-average local-clock curve (panel **A**).
+:::
+
+## Geography and photoperiod provide partial context
+
+<!-- P-R09 -->
+Site associations were stream-specific. Site differences met the FDR criterion for 8 of 17 near-eye metrics: all three level metrics, waking time above 250 lx, the brightest- and darkest-10-hour midpoints, and the mean and last timing above 250 lx. They were not FDR-retained for dose, spectral composition, stability, fragmentation, sustained bright exposure, the other threshold-duration metrics or first timing above 250 lx. Across metric models, conditional R² averaged 36.4%; participant-associated R² averaged 25.6% among participant-day metrics. Among the eight metrics with site support, site-associated part R² averaged 9.0%. These non-additive components reinforce the stronger individual-level contribution in the daily-pattern analysis.
+
+<!-- P-R09A -->
+Civil-photoperiod associations were selective. Per additional hour, the fitted daily geometric mean was 1.18 times higher (95% CI 1.11 to 1.26), the brightest-10-hour mean 1.24 times higher (1.13 to 1.36), waking time above 250 lx 1.14 times higher (1.07 to 1.20) and daily dose 1.28 times higher (1.17 to 1.39). Each hour was also associated with 0.134 h less time below 10 lx before sleep (0.066 to 0.201 h less) and the last exposure above 250 lx occurring 0.323 h later (0.186 to 0.460 h). Civil photoperiod met the FDR criterion for 12 of 17 metrics but not stability, fragmentation, sleep time below 1 lx, the brightest-window midpoint or first exposure above 250 lx. Among supported models, photoperiod-associated part R² averaged 5.2%; the corresponding mean for the six supported latitude models was 4.0%, meaning that photoperiod had a stronger effect than latitude, when compared across models.
+
+<!-- P-R09B -->
+Across the recorded 10.33 to 20.52 h of civil photoperiod, six of nine level, exposure-history, and duration-based metrics changed from increasing to a sustained near-flat tail between 14.24 and 16.20 hours of photoperiod: the daily mean, both 10-hour window means, time above 1,000 lx, waking time above 250 lx and dose. Pre-sleep time below 10 lx, sleep-environment time below 1 lx and the longest period above 250 lx did not. This transition means that the effect of photoperiod becomes uncertain around 14 to 16 hours. The fitted slope became compatible with zero and remained so through the observed maximum. Some classifications were sensitive to site, sample or model form. Several limitations apply as discussed below: latitude was confounded with site, collection periods and photoperiod overlap differed, and weather, built environment, culture and routine could not be separated. The metric-specific results are summarised in @tbl-metric-context, [Supplementary Figure S7](#fig-s7) and [Supplementary Tables S7](#supp-table-s7) and [S8](#supp-table-s8).
+
+::: {#tbl-metric-context .manuscript-table .column-page-left}
+
+{{< include resources/d50b25afae95_table3_metric_context.html >}}
+
+Near-eye personal light-exposure metrics and their geographic and photoperiod context. Descriptive exposure values are medians with interquartile ranges (25th to 75th percentiles). Density plots show site distributions and are descriptive. Metrics are grouped into thematic streams and describe distinct features of the daily exposure pattern rather than interchangeable health-response estimates. Model cells report overall-site evidence, civil-photoperiod associations with 95% confidence intervals, FDR decisions, participant-associated model information and model-specific R² summaries where applicable. Site and photoperiod part-R² values may contain overlapping fitted information and must not be summed. Associations are observational. Absolute latitude is fixed within and confounded with study site, so separate models containing either site or latitude are reported; complete latitude and model-adequacy results are provided in the Supplementary Information.
+:::
+
+## Immediate environments and routines reorganise exposure
+
+<!-- P-R10 -->
+Self-reported light source was strongly associated with one-hour near-eye exposure, with an FDR-supported light-source-by-site interaction. Site-average interaction-model estimates were 959.6 lx melanopic EDI for outdoor daylight (95% CI 786.8 to 1,170.2), 198.8 lx for indoor daylight (169.3 to 233.4), 85.1 lx for indoor electric light (71.6 to 101.1) and 23.8 lx for a display screen (17.4 to 32.5). Outdoor daylight was 11.27 times the indoor-electric estimate (8.71 to 14.60) and exceeded the 250-lx daytime recommendation, whereas the indoor-daylight and indoor-electric intervals were below it. During reported sleep, darkness and external-light estimates were 2.24 lx (1.54 to 3.26) and 11.18 lx (8.06 to 15.51), both above the 1-lx bedside upper limit. Outdoor electric light remained imprecise relative to indoor electric light near eye (ratio 1.019, 0.336 to 3.090; FDR-adjusted *p* = 0.973). These contextual averages do not classify people or hours as adherent.
+
+<!-- P-R10A -->
+External light during sleep in Munich (DE) was estimated at 130.2 lx, 11.65 times the corresponding site average; sleep darkness in Kumasi (GH) was 0.371 lx, 0.166 times its site average. Sparse site-category cells limited some estimates.
+
+<!-- P-R10B -->
+The primary analysis used a population-mean quasi-Tweedie model with participant-cluster-robust covariance for uncertainty; lag-one residual correlation remained 0.288. Fitted versus observed exact-zero proportions were 39.8% and 27.8%, respectively. An exploratory mixed-effects model quantified variance explained after adding a participant intercept to site-by-light-source fixed terms. Marginal R² was 0.796 and conditional R² 0.876, an 8.0-percentage-point increase in explained variance from the participant intercept. Of the marginal R², light source accounted for 89.3%, site 7.1% and their interaction 3.7%. Separately, an exploratory time-of-day model attributed 60.4% of variation in fitted hourly patterns to global time of day and 24.2% to light-source deviations. Among these two components, light source accounted for 28.6%. The remaining shares were 5.2% for site, 7.6% for participant patterns and 2.5% for day-to-day shifts.
+
+<!-- P-R10C -->
+A sensitivity adjusted the population-average light-source comparisons for each participant's overall category distribution, distinguishing hour-to-hour differences within participants from differences in category composition between participants. The overall category pattern was retained. For external light during sleep, the near-eye ratio relative to indoor electric light changed from 0.449 in the primary additive model to 0.333 (95% CI 0.190 to 0.585), a 25.8% decrease. Thus, between-participant category composition influenced the magnitude, but not the direction, of this contrast. [Supplementary Figure S8](#fig-s8) shows the temporal, support and site-specific results.
+
+<!-- P-R11 -->
+Immediate setting combined behaviour and environment, with an FDR-supported activity-by-site interaction. Site-average near-eye estimates were 714.2 lx outdoors (95% CI 561.7 to 908.2), 331.2 lx on the road or in a vehicle (274.4 to 399.8), 198.9 lx during office or home work (173.9 to 227.5), 76.4 lx while awake at home (62.0 to 94.1) and 4.28 lx during sleep (3.06 to 5.99). The sleep category included many low or zero observations and occasional high stray-light readings, so its fitted mean need not represent a typical observation. Relative to awake time at home, the ratios were 9.35 outdoors, 4.34 for travel, 2.60 for work and 0.056 during sleep. The outdoor estimate exceeded the 250-lx daytime recommendation, the work estimate remained below it, and the sleep estimate exceeded the 1-lx bedside-environment upper limit. Borås (SE) had a fitted outdoor estimate of 3,054 lx, 4.28 times the site average, whereas Tübingen (DE) had 127 lx, 0.18 times the site average. In an exploratory mixed model of five setting categories, marginal R² was 0.766 near eye and 0.768 at the chest. Adding the participant intercept raised conditional R² to 0.858 and 0.859, an explained-variance increment of 9.2 percentage points at both positions. Of the marginal R², immediate setting accounted for 80.7% near eye and 86.1% at the chest, site 12.5% and 5.9%, and their interaction 6.9% and 8.0%, respectively. @fig-activity-context shows the immediate-setting patterns and site-specific estimates. Separately, an exploratory near-eye time-of-day model attributed 52.5% of variation in fitted hourly patterns to time of day and 30.7% to immediate setting. Among these two components, immediate setting accounted for 36.9%. The remaining shares were 5.6% for site, 8.4% for participant patterns and 2.8% for day-to-day shifts.
+
+::: {#fig-activity-context}
+![](resources/012453debcd7_H04_manuscript_figure3_selection_candidate.svg){fig-alt="Four-panel display of fitted near-eye melanopic EDI by immediate setting, effective weighted support across local clock time, and activity-by-site estimates. The activity variable combines behaviour and environmental setting."}
+
+Personal light exposure by immediate setting across time of day and study sites. The diary variable labelled activity combines behaviour and environmental setting. **A–C**, Exploratory time-of-day analysis. Panel **A** shows site-average expected one-hour melanopic EDI with clock-specific 95% confidence intervals; the dashed black curve is the site-average local-clock smooth. Panel **B** shows each setting curve relative to that smooth, with 1 as the reference. Panel **C** shows effective weighted hours; open circles indicate locally sparse support and grey regions indicate times without observations. **D**, Site-average category estimates and site-specific deviation ratios from the activity-by-site interaction model, with participant-cluster-robust 95% confidence intervals and FDR-adjusted *p* values. Each multi-select participant-hour contributes weight 1/*k* to every retained setting category. The *Other* category is sparse and display-only. The fitted frame contains 126 participants, 724 participant-days, 16,135 unique participant-hours, 16,135 effective weighted hours and 4,746 exact-zero participant-hours. Estimates are observational.
+:::
+
+<!-- P-R12 -->
+Across models of free versus work day, active versus sedentary daily activity status and previous-night sleep duration, the site-average reference was a work, sedentary day following an average 7.8 h of sleep; expected near-eye exposure was 89 lx melanopic EDI (95% CI 67 to 119). Active versus sedentary status was associated with 2.06 times the expected exposure (1.54 to 2.76; FDR-adjusted *p* < 0.001). A model constraining the free-versus-work association across sites estimated 1.45 times higher exposure on free days (1.14 to 1.85; FDR-adjusted *p* = 0.004). Allowing the association to differ by site gave an inconclusive site-average ratio of 1.15 (0.93 to 1.44; FDR-adjusted *p* = 0.298), while some sites differed (interaction *p* = 0.017). Exploratory ratios were FDR-retained in Borås (SE; 1.95, 1.26 to 3.01) and Dortmund (DE; 2.44, 1.42 to 4.22), with FDR-adjusted *p* = 0.013 for each. The free-versus-work result was also inconclusive under the alternative working variance and sensitive to omitting either site. Each additional hour of previous-night sleep duration, centred at 8 h, had an inconclusive ratio of 0.98 (0.85 to 1.12; FDR-adjusted *p* = 0.745). Excluding six participants outside the employment requirement left 15,871 supported hours from 684 participant-days and 131 participants across all nine sites. The free-versus-work, active-versus-sedentary and previous-sleep associations remained stable within model uncertainty; the predictor-by-site interaction for day type also remained FDR-supported. [Supplementary Table S9](#supp-table-s9) and Supplementary Figures [S9](#fig-s9), [S10](#fig-s10), [S11](#fig-s11) and [S12](#fig-s12) report common, temporal, position-specific and site-specific results.
+
+## Person-level correlates are selective
+
+<!-- P-R14 -->
+Self-report analyses did not support general exposure profiling. None of 68 prespecified near-eye associations between four light-exposure-related behaviour (LEBA) factors and 17 metrics retained FDR support. Unsatisfactory model checks made the sleep-environment metric unfit for inference, so its estimates were suppressed. Neither average associations nor site interactions across nine visual-light-sensitivity (VLSQ-8) outcomes retained FDR support at either position. Supplementary Tables [S10](#supp-table-s10), [S11](#supp-table-s11) and [S12](#supp-table-s12), and Supplementary Figures [S13](#fig-s13) and [S14](#fig-s14), give the full results.
+
+<!-- P-R15 -->
+Each hour later in corrected midsleep on free days (MCTQ questionnaire) was associated with first exposure above 250 lx occurring 0.381 h later (95% CI 0.146 to 0.616; FDR-adjusted *p* = 0.003). Each 10-point shift towards greater morning preference (MEQ questionnaire) was separately associated with first exposure above 250 lx occurring 0.444 h earlier (0.189 to 0.699 h earlier; FDR-adjusted *p* = 0.001). The brightest- and darkest-10-hour midpoints followed the same directions; last exposure and the longest-bright-period midpoint did not retain support. The distinct questionnaires were not combined. [Supplementary Table S13](#supp-table-s13) and [Supplementary Figure S15](#fig-s15) show adjusted estimates and observed timing distributions.
+
+<!-- P-R16 -->
+Each additional decade of age was associated with higher near-eye brightest-10-hour mean, time above 1,000 lx and daily dose, with ratios from 1.27 to 1.31. These cross-sectional associations may reflect cohort, occupation, behaviour or other confounding, not ageing itself. Neither near-eye metric associations with biological sex nor near-eye age-by-site or sex-by-site interactions met the FDR criterion. In a separate daily-pattern analysis, near-eye and chest profiles differed by biological sex (FDR-adjusted *p* = 0.028 and 0.029), but the difference did not meet the FDR criterion after restriction to records with complete immediate-setting data and adjustment. This attenuation is compatible with immediate-setting patterning, but restriction and adjustment cannot be disentangled as mechanisms. Gender was recorded separately but not analysed; its category matched biological sex in all but one case. Supplementary Tables [S10](#supp-table-s10), [S14](#supp-table-s14) and [S15](#supp-table-s15), and Supplementary Figures [S16](#fig-s16) and [S17](#fig-s17), give the complete results.
+
+## Measurement position and robustness constrain interpretation
+
+<!-- P-R17 -->
+The paired sample of 112 participants and 643 participant-days allowed separate near-eye and chest models to be compared within the same participants and participant-days. The full chest dataset of 154 participants and 902 participant-days broadened coverage beyond the 141 participants and 816 participant-days near eye. At several sites, especially San José (CR), offering a chest sensor enabled recruitment among people reluctant to wear the glasses-mounted sensor. This improved feasibility, not the ocular-exposure sample.
+
+<!-- P-R18 -->
+A parallel analysis of overlapping MeLiDos data reported structured position differences across scale, metric, context, site, day and participant [@zauner2026placementpreprint]. Our separate and common-sample analyses likewise show directional agreement but differences in magnitude or support. Chest adherence retained the main daytime and pre-sleep directions and interval conclusions, but provides no sleep ocular claim. We neither pooled positions nor inferred equivalence or a universal correction.
+
+<!-- P-R19 -->
+Non-estimable planned quantities were four sleep-environment variants (main plus three sensitivity variants) at each position in the light-behaviour analysis (LEBA), and one longest-period sensitivity comparison incompatible with the metric representation. We retained these outcomes rather than replacing them with zero or null findings. Qualifications for zeros, residuals, dependence, nonlinear-term overlap, sparse support and influence remain with the affected analyses and in Methods.
+
+# Discussion
+
+<!-- P-D01 -->
+The expected 24-hour rhythm was evident across nine sites in seven countries. The advance was a multiscale account of this everyday exposome component: amplitude across sites, people and days, and its reorganisation across immediate settings. The shared local-clock pattern accounted for the largest share of full-model R² in the daily-pattern analysis. Separate hourly decompositions showed large light-source and immediate-setting contrasts, with the next-largest shares of variation in fitted hourly patterns after time of day. Participant patterns and participant-day shifts together exceeded site patterns in the daily-pattern model, while site, photoperiod and measured person-level associations were metric-specific. Different outcomes and decompositions make this a qualitative synthesis rather than a single quantitative ranking.
+
+<!-- P-D02 -->
+The consensus recommendations provide the clearest health-relevant benchmark. Only 24.0% of waking minutes reached the daytime range, while 63.3% of pre-sleep and 87.7% of bedside sleep-environment minutes met their upper limits. Modelled adherence was lower on free days during daytime and sleep but higher during pre-sleep, with site variation in daytime and sleep. Outdoor exposure exceeded the daytime recommendation, but all other conditions remained below it on average. The fitted sleep-category mean exceeded the bedside limit, while 87.7% of pooled bedside sleep-environment minutes met it. These quantities describe different aspects of the exposure distribution and should be interpreted together. These pooled fractions, recommendation-window proportions and hourly means are distinct estimands. Together, they identify intervention opportunities and shortfalls. The recommendations principally address healthy adults aged 18 to 55 with regular daytime schedules [@brown2022].
+
+<!-- P-D02A -->
+This baseline connects mechanistic recommendations with population evidence. Large wrist-sensor cohorts have associated day and night light patterns with psychiatric disorders, incident type 2 diabetes, cardiovascular disease and mortality, and light timing with sleep timing and sleepiness [@didikoglu2023; @lok2023; @burns2023; @windred2024; @windred2025cardiovascular; @windred2024a]. Other cohorts have linked evening, nocturnal or strongly seasonal light with sleep in bipolar disorder, obesity, diabetes, hypertension and metabolic health [@esaki2020; @obayashi2016; @kim2022; @gubin2024]. These outcomes span sleep and major non-communicable diseases. The exposome frames environmental contributions across the life course [@vineis2018; @vermeulen2020] but rarely includes time-resolved ocular light. This evidence supports personal-light measurement, not clinical risk classification of our exposure categories. Most cohorts used wrist or bedside illuminance without resolving melanopic exposure at the eye, immediate light source or its multiscale architecture.
+
+<!-- P-D02B -->
+Exploratory inverse associations of average daytime with sleep and pre-sleep adherence show why the three recommendation windows should not be collapsed into one score. They may reflect schedules, environments or other between-participant differences, not a within-person trade-off or stable phenotype. In exploratory nonlinear models, light source and immediate setting accounted for substantially more variation in fitted hourly patterns than participant-specific patterns: 24.2% versus 7.6%, and 30.7% versus 8.4%, respectively. This finding is consistent with schedules and immediate environments being prominent correlates of hourly exposure, but it is not a causal explanation for the cross-window adherence association. Longitudinal models of dependence and changing routines are needed to test whether improving one part of the pattern displaces or supports another.
+
+<!-- P-D03 -->
+Location mattered, but not as one north-to-south ranking. Site differences concentrated in daily level, waking bright-light duration and several timing metrics, while dose, spectrum and regularity did not show the same site pattern. Civil photoperiod was associated with a broader set of metrics, with larger day-length associations for bright-light level and dose than for the darkest daily window. Between 14.2 and 16.2 h of civil photoperiod, six of nine metrics showed signs of uncertainty about a photoperiod effect beyond that point. Sites were sampled in distinct calendar periods and covered unequal photoperiod ranges, leaving latitude, season, weather, temperature, culture, mobility and the built environment entangled. Repeated seasonal sampling across more sites is needed to separate these influences.
+
+<!-- P-D04 -->
+Immediate setting patterned exposure, consistent with environmental opportunity, built settings and behaviour [@biller2024]. Outdoor daylight and being outdoors exceeded indoor electric light and awake time at home, respectively; active days exceeded sedentary days. Site interactions placed outdoors-category exposure higher in Borås (SE) than Tübingen (DE), while the free-versus-work association was most evident in Borås (SE) and Dortmund (DE). Participant intercepts captured remaining between-participant variation, not individual responses or predictions. Future monitoring should preserve local clock time, location, immediate setting, daylight access and site; self-selection, occupation, mobility and weather remain potential confounders.
+
+<!-- P-D05 -->
+Light-behaviour and visual-sensitivity scores did not meet their FDR criteria, whereas chronotype aligned with selected timing outcomes and age with selected bright-light and dose metrics. This accords with evidence linking circadian preference or timing to daylight exposure, sleep and routine, without identifying causal direction [@roenneberg2019; @tortello2023; @bonatto2024; @dacostalopes2024]. Metric-level biological-sex comparisons were inconclusive near the eye. The complete available-data curve differed by biological sex, but immediate-setting-complete analyses did not retain this separation. Person-level patterns may concern specific exposure dimensions rather than a general high-versus-low phenotype.
+
+<!-- P-D06 -->
+Near-eye sensing approximates the incident ocular field during wake but is not a retinal measurement; chest sensing samples a related environmental field. Studies show structured differences by body position, morphology, posture and surrounding light [@devries2025; @devries2026; @devries2026a]. The matched sample and parallel placement study show metric- and context-specific MeLiDos differences without a universal correction [@zauner2026placementpreprint]. The chest option broadened recruitment among people unwilling to wear glasses-mounted sensors, especially in San José (CR). Study design must balance biological proximity, burden and recruitment while keeping estimands position-specific.
+
+<!-- P-D07 -->
+The harmonised protocol combined repeated near-eye sensing with local-clock and contextual information across nine sites and seven countries. A generalised additive model separated the shared 24-hour pattern from site, participant and participant-day layers obscured by daily summaries. Collecting these data demanded substantial effort from participants and study teams. Glasses-mounted loggers required fitting, explanation and daily handling; removal, occlusion, charging, discomfort, weather and social acceptability all affected measurement quality [@stefani2024; @zauner2025; @zauner2026]. Despite this burden, the protocol measured closer to the incident ocular field at high temporal and contextual resolution.
+
+<!-- P-D08 -->
+Several limitations qualify these findings. Modest site samples limit site estimates, interactions and subgroup evaluation. Healthy working-age adults may not represent children, adolescents, older or clinical populations, shift workers, people outside employment, or those with restricted mobility or atypical living conditions. Sparse latitude-by-photoperiod coverage leaves latitude, seasonality, culture, climate and built environment entangled and requires broader seasonal sampling. Retrospective hourly setting and light-source reports enabled harmonisation but could not distinguish fine-grained settings or behaviours within home, work or transport. Very low readings require caution. The manufacturer specifies an operating range starting at 1 lx, and independent laboratory testing began at 2 lx [@ishihara2025]. A scene-based field validation found high overall agreement with laboratory-grade spectral references, but underestimation increased at lower intensities and varied with lighting, time, scene complexity and site [@gemici2026]. Single-digit values therefore approximate low-light exposure rather than provide precise measurements. Finally, no health outcome was measured.
+
+<!-- P-D09 -->
+This nine-site reference locates everyday ocular light exposure within the exposome, benchmarks it against physiology-based recommendations, highlights within-site variation among people and days, and identifies temporal, contextual and positional information for future cohorts. Everyday ocular light exposure is structured, measurable and strongly shaped by behaviour and micro-environment, but cannot be reduced to site, latitude or photoperiod. Next steps are broader sampling across photoperiods, latitudes and locations and prospective links to sleep, mental, metabolic, cardiovascular and other outcomes. Causal health benefits or policy effects require interventions and representative longitudinal designs. Potential interventions through clinical advice, occupational health, building design, urban planning or public-health guidance must address the contexts in which people receive light. Time-resolved near-eye measurement offers a practical route from circadian biology to precision prevention and context-sensitive environmental health.
+
+# Methods
+
+## Study design and sites
+
+<!-- P-M01 -->
+MeLiDos is a prospective multicentre observational field study of personal light exposure conducted with a harmonised protocol [@guidolin2024]. Participants completed an eight-day ambulatory protocol comprising continuous light logging, repeated smartphone assessments and daily diaries under free-living conditions. At an in-person registration visit, participants provided consent, completed baseline questionnaires, received study instructions and were fitted with the loggers. Seven consecutive recording days separated registration and return visits; most sites recorded from Monday to Monday, while Dortmund (DE) recorded from Tuesday to Tuesday. If a return visit was delayed, participants continued until formal study termination and device retrieval. Data were collected between August 2023 and October 2025 at Borås (SE), Delft (NL), Dortmund (DE), Tübingen (DE), Munich (DE), Madrid (ES), Izmir (TR), San José (CR) and Kumasi (GH). The Kumasi (GH) and Izmir (TR) collections are described in site-specific data notes [@agbeshie2025; @akgun2026]. Sites were an opportunity sample of consortium partners and were not selected to represent national populations. Questionnaire materials were administered in the local language except in Tübingen (DE) and Kumasi (GH), where English was used, and translated materials followed a harmonised translation, review, adjudication, pretesting and documentation process [@walde2023].
+
+## Participants, recruitment and ethics
+
+<!-- P-M02 -->
+The registered target population comprised adults aged 18 to 65 years in full-time employment or part-time employment above 80%. Exclusion criteria included diagnosed psychiatric or sleep disorders, shift work in the preceding two months, regular tobacco or recreational drug use, photosensitising medication, visual impairment incompatible with the devices and residence outside the local study area during recording. The retained near-eye sample included nine participants outside the registered age or employment criteria: one participant older than 65 years, two recorded as not employed and seven recorded as marginally employed; one participant met both the age and employment criteria for exclusion. As a near-eye-only eligibility sensitivity, we refitted the additive and predictor-by-site models after excluding participants recorded as not employed or marginally employed. Students and trainees were retained, and age above 65 years was not an exclusion criterion for this sensitivity. The target was at least 15 participants per site, based on prior power calculations and allowing for up to one-third dropout or incomplete recording [@zauner2024]. Participants were recruited through local advertisements and institutional mailing lists. At some sites, especially San José (CR), reluctance to wear the glasses-mounted near-eye sensor limited recruitment, and the chest option broadened recruitment possibilities.
+
+<!-- P-M03 -->
+All participants provided written informed consent. Approvals were obtained from the Ethics Committee of the Technical University of Munich for Tübingen (DE; 2023-115-S-KK) and for Munich (DE) and Dortmund (DE; 2024-118-S-SB); the Dortmund (DE) site at the Federal Institute for Occupational Safety and Health (BAuA) operated under this TUM multicentre approval. The other approvals were from the Swedish Ethical Review Authority for Borås (SE; 2024-06792-01), the THUAS Ethics Committee for Delft (NL; positive review dated 29 May 2024), the Research Ethics Committee of Universidad San Pablo-CEU for Madrid (ES; 834/24/106), the Scientific Research and Publication Ethics Committee of the Faculty of Science and Engineering at İzmir Institute of Technology for Izmir (TR; decision 5/1), the Comité Ético Científico of Universidad de Costa Rica for San José (CR; CEC-279-2025), and the Committee on Human Research, Publications and Ethics of Kwame Nkrumah University of Science and Technology for Kumasi (GH; CHRPE/AP/644/24). The protocol was first trialled with participants at the Tübingen (DE) site, whose feedback informed procedural refinements before implementation at the remaining sites; further details are reported in the published protocol [@guidolin2024].
+
+## Personal light measurements
+
+<!-- P-M04 -->
+Personal light was recorded every 10 s with spectrally sensitive ActLumus loggers (Condor Instruments, São Paulo, Brazil). Eight visible-band channels were processed by the device to generate photopic and alpha-opic quantities, including melanopic EDI [@cie2018s026]. The manufacturer specified a factory-calibrated operating range of 1 to 100,000 lx and 10% precision at 1,000 lx. Independent testing against a criterion spectrometer across indoor LED and outdoor daylight conditions covered 2 to 100,000 lx and reported mean photopic error of +3.3% (SD 13.4%) for ActLumus [@ishihara2025]. A subsequent scene-based field validation found high overall agreement with laboratory-grade spectral reference instruments, together with systematic underestimation that varied with intensity and setting [@gemici2026]. Participants wore the near-eye device centrally on non-prescription spectacle frames and, where available, a complementary pendant-mounted device at the chest. The near-eye position measures light closer to the eye but is not a direct retinal measurement. The chest position provided a separate measurement of the local environmental light field. Paired common-sample analyses evaluated how closely it tracked the near-eye measurement as a potential ocular proxy. During reported sleep, devices were placed facing upward on a bedside surface near head level, so both positions characterise the bedside sleep environment. Participants recorded removals and placed devices in an opaque bag during waking non-wear [@guidolin2026; @zauner2026].
+
+<!-- P-M05 -->
+The placement analysis from the same project used overlapping MeLiDos data and is cited as related methodological evidence, not independent replication [@zauner2026placementpreprint]. No analysis pooled sensor positions or estimated a universal conversion. Common-sample analyses retained the same participants and participant-days or participant-hours at both positions and fitted each position separately.
+
+## Contextual and person-level measures
+
+<!-- P-M06 -->
+Participants completed the core Consensus Sleep Diary after awakening [@Carney2012], together with evening reports and paper diaries recording light source and an activity-environment category for each hour. Smartphone assessments of sleepiness and mood were scheduled at 11:00, 14:00, 17:00 and 20:00, and evening questionnaires assessed wellbeing and physical activity [@kaida2006; @tsanas2016; @sischka2020]. Smartphone measures and baseline or end-of-study questionnaires used MyCap integrated with REDCap [@harris2022; @patridge2018]. Participants photographed and uploaded the paper hourly diaries each day.
+
+<!-- P-M06A -->
+The modified Harvard Light Exposure Assessment categories were indoor electric light, outdoor electric light, indoor daylight, outdoor daylight including shade, an emissive display, darkness during sleep and external light during sleep [@Bajaj2011]. The primary light-source analysis used one retained category per participant-hour. The diary variable labelled activity combined behaviour and environmental setting. Its categories distinguished sleep, awake time at home, motorised travel, active travel, office or home work, outdoor work, outdoor leisure and other activities. We therefore refer to this variable as immediate setting in the narrative. For analysis, outdoor travel, outdoor work and outdoor leisure were combined as Outdoors. Reports could contain concurrent categories; duplicates were removed and an hour with *k* retained labels contributed weight 1/*k* to each, preserving total weight one. Day type was coded as work or free day, daily activity status as sedentary or active, and previous sleep duration was linked from the preceding sleep period.
+
+<!-- P-M07 -->
+Baseline measures recorded age, biological sex, gender, employment and chronotype; end-of-study measures covered visual light sensitivity, the sleep environment and habitual light-exposure behaviour. Chronotype was represented separately by corrected midsleep on free days from the Munich Chronotype Questionnaire and the Morningness-Eveningness Questionnaire, whose higher scores indicate greater morning preference [@kantermann2015; @horne1976]. Visual sensitivity used the VLSQ-8 [@verriotto2017], sleep environment used the Assessment of Sleep Environment [@grandner2022], and four Light Exposure Behaviour Assessment (LEBA) factors represented outdoor time, device use in bed, ambient light before bed and morning or daytime light use [@siraji2023]. Biological sex and gender were recorded as separate variables. Models analysed biological sex, coded Female or Male, but did not analyse gender; its recorded category matched biological sex in all but one case.
+
+## Time, sleep/wake status and coverage preparation
+
+<!-- P-M08 -->
+Processing preserved both actual time in Coordinated Universal Time and local wall-clock time. Actual time ordered observations and measured elapsed gaps; local time aligned daily patterns across sites. Repeated local minutes during autumn clock changes remained distinct in actual time, and structurally absent spring minutes remained missing. Melanopic EDI values at or above the validated 100,000-lx operating boundary were unavailable analytically but retained in the raw channel with a flag.
+
+<!-- P-M09 -->
+Diary-defined sleep began at reported sleep preparation and ended at reported wake. Sleep values were retained as the intended bedside record. Declared waking non-wear made the analytical light value unavailable; missing wear labels were not treated as non-wear. Complete 1,440-minute local participant-day grids preserved unsupported periods as missing rather than deleting rows or replacing them with zero. A day was eligible when at least 80% of this combined waking and bedside-sleep record had valid melanopic EDI. Hourly summaries required at least 50% valid minutes in that hour, but an unsupported hour did not erase valid minutes from the daily decision or minute-based metrics. Two otherwise eligible near-eye days and three chest days with finite but entirely zero melanopic EDI were excluded by the defined exact-all-zero screen.
+
+## Exposure metrics
+
+<!-- P-M10 -->
+Metrics were derived in R [@base] with LightLogR [@LightLogR; @hartmeyer2023]. The 17 outcomes represented complementary properties of the daily pattern. Three level metrics described the daily geometric mean melanopic EDI and the mean melanopic EDI in the brightest and darkest 10-hour windows. Five duration metrics quantified time above 1,000 lx, waking time above 250 lx, pre-sleep time below 10 lx, sleep-environment time below 1 lx and the longest continuous period above 250 lx. Five timing metrics located the brightest and darkest windows and the first, last and mean timing above 250 lx. Melanopic EDI dose integrated exposure over time, melanopic daylight efficacy ratio characterised spectral composition relative to visual illuminance, and interdaily stability and intradaily variability characterised regularity and fragmentation. Geometric means were calculated from log10(melanopic EDI + 0.1 lx), followed by inverse transformation and removal of the same offset [@zauner2025a]. All-observed-zero windows were retained as exact zero within verified numerical tolerance. Metric-specific support rules made only the affected metric unavailable, not the participant-day. A longest-period duration remained a lower bound when missing data could conceal a longer period; exactly identified periods were examined separately.
+
+<!-- P-M11 -->
+The melanopic daylight efficacy ratio was the arithmetic mean of viable one-minute melanopic EDI to photopic-illuminance ratios on a complete 1,440-position local-clock grid. Both channels had to be finite and strictly positive, and at least 720 positions were required. Repeated autumn minutes were averaged within each channel before division, and absent spring minutes remained missing.
+
+## Recommendation-window and adherence analyses
+
+<!-- P-M12 -->
+We compared valid one-minute values with the Brown et al. recommendation ranges [@brown2022]: at least 250 lx melanopic EDI during daytime, no more than 10 lx during pre-sleep and no more than 1 lx during sleep. Daytime comprised diary-defined wake excluding the three hours before reported sleep, pre-sleep comprised those three hours and sleep comprised the reported sleep interval. Each descriptive numerator was divided by all valid near-eye-record minutes in the corresponding window and pooled across the analysed sample. Daytime and pre-sleep used the worn near-eye record; sleep used the bedside sleep-environment record.
+
+<!-- P-M12A -->
+The main adherence analysis retained one row per window period and defined adherence as adherent valid minutes divided by all valid minutes in that period. A behavioural cycle crossed midnight when necessary and inherited the work or free label of the calendar date on which daytime began. The any-valid primary sample retained a window with at least one valid comparison; an otherwise identical coverage sensitivity required at least 80% coverage of the exact window interval. Exact 0% and 100% periods remained in an endpoint-inflated beta-binomial model. Fixed predictors represented the complete window-by-site-by-day-type pattern, and the retained random effect was a participant intercept in the beta-binomial mean. Population averages weighted all nine sites equally. Separate FDR families covered window-specific free-minus-work contrasts, interaction tests, site-specific contrasts against zero and 27 comparisons of site-specific contrasts with their window-specific equal-site values. Chest models were fitted separately for daytime and pre-sleep.
+
+<!-- P-M12B -->
+The exploratory cross-window extension used daytime adherence as the predictor and sleep or pre-sleep adherence as outcomes in daytime-anchored behavioural cycles. It separated each participant's cycle-specific daytime deviation from their observed average daytime adherence, while adjusting for window, site, day type, their corresponding interactions and the participant's mix of daytime observations across day types. The four within-participant and between-participant associations formed one FDR family. Positive serial dependence remained unresolved and some unchanged sensitivity fits were non-estimable, so no within-participant day-level claim was stated. Descriptive profiles used site-average participant means for 139 complete three-window profiles and 417 participant-window points; they neither identify nor rank participants and do not define stable participant types.
+
+## Daily temporal architecture
+
+<!-- P-M13 -->
+The daily-pattern analysis used supported 30-minute arithmetic means, retaining a bin when at least 15 one-minute values were valid. The outcome was log10(melanopic EDI + 0.1 lx). A generalised additive model fitted with `mgcv::bam()` and fREML combined a cyclic common local-clock smooth, sum-to-zero site curves, participant curves and participant-day random intercepts [@hastie1986; @hastie1995; @mgcv; @pedersen2019]. A boundary-aware first-order autoregressive working structure prevented residual sequences from crossing participant-day, clock-repeat or gap boundaries. Fitted-curve dispersion was compared on a common 48-bin grid. A Shapley decomposition averaged each component's addition to R² across all component orders, thereby distributing the model's explained variance [@azen2003; @groemping2007]. The decomposition partitioned the full model’s row-weighted in-sample R² for log10(melanopic EDI + 0.1 lx), defined as the reduction in squared prediction error relative to predicting the fitted-sample mean. The percentages therefore partition full-model R² on that transformed response scale. They are not percentages of variance explained in raw melanopic EDI and do not indicate causal or out-of-sample predictive importance. Confidence intervals for dispersion and R²-share ratios used 2,000 hierarchical cluster resamples while holding the fitted model structure fixed.
+
+## Geographic and photoperiod analyses
+
+<!-- P-M14 -->
+We analysed 17 participant-level or participant-day metrics with metric-specific Gaussian or Tweedie exponential-dispersion models [@jorgensen1987; @dunn2005]. We treated overall site differences, civil photoperiod (day length including civil twilight), absolute latitude and the adequacy of a linear latitude term relative to site as four separate model questions, each adjusted as a complete 17-test FDR family. Participant-day models included participant random intercepts. Mixed-effects models were fitted with `lme4` or `glmmTMB`, and component R² values were obtained with `performance` where reported [@lme4; @glmmTMB; @performance]. Site and latitude were not entered as independent fixed predictors in one model because each site has one latitude; site and latitude models instead used the same observations and photoperiod adjustment. Site follow-up contrasts were calculated with `emmeans` only after a supported overall site test and compared each site with a site-average estimate, obtained by giving each included site equal weight [@emmeans].
+
+<!-- P-M15 -->
+Nonlinear photoperiod analyses fitted each of nine planned metrics separately with a generalised additive model estimated by restricted maximum likelihood, a thin-plate photoperiod smooth with basis dimension six and participant random effects nested within site. The derivative, meaning the slope of the fitted curve, was evaluated with `gratia` at 100 equally spaced photoperiod values with 95% intervals [@gratia]. A qualifying descriptive transition required the preceding slope interval to be wholly above zero, the next interval to include zero and every later interval through the recorded maximum to include zero as well. This procedure located a change in the fitted slope but did not test equivalence, a mechanism or a physiological ceiling. Expanded-basis, fixed-site, common-sample and leave-one-site-out analyses assessed stability. The gap-timing-unaware sensitivity dataset still passed the 50%-per-hour and 80%-per-day rules, but did not use the timing of remaining missing observations for an additional metric-specific adjustment.
+
+## Immediate-context and routine analyses
+
+<!-- P-M16 -->
+Light-source and activity-environment analyses modelled the zero-aware one-hour geometric mean melanopic EDI with fixed-power quasi-Tweedie log-mean models and participant-cluster-robust inference [@jorgensen1987; @dunn2005]. Additive fixed-site models supplied primary category tests. Category-by-site interaction models supplied site-average category estimates, ratios and site-specific context when the interaction was supported. The activity-environment analysis retained fractional 1/*k* weights for concurrent labels. FDR adjustments were applied to the declared category and site-contrast families. Exact-zero calibration, residual dependence, sparse cells and deletion refits were retained as model checks. A secondary population-mean sensitivity added six participant-level category-proportion terms to the light-source model while retaining participant-clustered covariance. This separated hour-to-hour category differences within participants from between-participant differences in category composition; it did not estimate participant random slopes. Exploratory `glmmTMB` Tweedie log-link models fitted by maximum likelihood then added one common participant intercept to site-by-category fixed effects at the near-eye position for light source and separately at both positions for the activity-environment variable, with the power fixed at 1.539919 [@glmmTMB; @performance]. The activity-environment models retained the five named categories, excluded Other-only hours and used exact 1/*k* weights. Their fixed-predictor variance used the same fractional weights so every participant-hour contributed one unit. Marginal and conditional R² used a lognormal distribution-specific variance approximation, and hierarchy-respecting Shapley allocations distributed marginal R² across site, category and their interaction. Percentages from the exploratory time-of-day models instead partition variance among fitted linear-predictor values. Because they do not compare this with observed outcome variance, they are not R². Results describe them as variation in fitted hourly patterns, not variance explained in raw exposure. These were model-based point descriptions without bootstrap intervals. No model included random category slopes.
+
+<!-- P-M17 -->
+The participant-hour analysis modelled each supported participant-hour with a zero-inclusive quasi-Poisson log-link model, fixed site associations and participant-cluster HC3 uncertainty. Free versus work day, active versus sedentary daily activity status and previous-night sleep duration centred at 8 h were entered together. Three-test FDR families were applied separately to pooled associations, predictor-by-site interactions and practical contrasts.
+
+## Person-level analyses
+
+<!-- P-M18 -->
+Light-related behaviour, visual sensitivity, chronotype, age and measured biological sex were evaluated with site-adjusted metric-specific models. Participant-day outcomes generally used Gaussian or Tweedie mixed models with participant random intercepts; participant-level dynamics outcomes used fixed-effect models. Each analysis retained its complete prespecified false-discovery-rate families, including non-estimable outcomes. Chronotype instruments were modelled separately across five timing outcomes. Age associations were scaled per decade, and female-minus-male contrasts used male as the reference. Average associations and predictor-by-site interactions were distinct questions.
+
+<!-- P-M19 -->
+The complete biological-sex curve analysis used supported 30-minute arithmetic means transformed as log10(melanopic EDI + 0.1 lx). The generalised additive model included cyclic common and female-specific curves, site curves, participant curves, participant-day random effects and boundary-aware first-order autoregression. The primary test jointly assessed the time-constant and time-varying female-minus-male contributions across the complete 24-hour curve. Clock-specific uncertainty was participant-cluster robust. Level-versus-shape attribution and adjustment for the activity-environment variable were secondary or exploratory analyses.
+
+## Multiplicity, uncertainty, model checks and sensitivities
+
+<!-- P-M20 -->
+Tests were two-sided. We controlled the false discovery rate with the Benjamini-Hochberg procedure separately within each declared complete family [@benjamini1995]. We report 95% confidence intervals and FDR-adjusted *p* values for confirmatory families. A result that did not meet an FDR-adjusted criterion was treated as inconclusive rather than as evidence of absence or equivalence. Unless stated otherwise, site-average estimates gave each included site equal weight on the fitted scale before back-transformation. Exploratory analyses retained separate multiplicity families and are labelled as such.
+
+<!-- P-M21 -->
+Model checks addressed convergence, rank, singularity, residual distribution, zero mass, fitted support, heteroscedasticity, serial dependence, nonlinear-term overlap and participant or site influence. Qualifications were attached to the affected results. Prespecified or structured sensitivities included the separately prepared gap-timing-unaware dataset, common sensor-position samples, alternative support or metric definitions, model-form changes, participant deletion and leave-one-site-out checks. Near-eye and chest models remained separate in every comparison. Analyses were conducted in R, with `tidyverse` packages supporting data handling and reporting [@base; @tidyverse]. Exact package versions, formulas, inputs and output files are documented in the Supplementary Information and reproducibility records.
+
+## Preregistration and deviations
+
+<!-- P-M22 -->
+The study was preregistered with AsPredicted (#273407) [@zauner2026melidos_preregistration]. The final analyses preserve the registered scientific questions but include documented changes to placement priority, state and coverage rules, metric definitions, outcome construction, model families, site structure, multiplicity and sensitivity handling. The main manuscript reports the resulting estimands rather than the historical hypothesis sequence. A complete mapping in the Supplementary Information distinguishes scientific deviations and qualifications from analytical history and technical provenance.
+
+## Artificial-intelligence assistance
+
+<!-- P-M24 -->
+During the original manuscript preparation, generative artificial intelligence tools (ChatGPT 5.5) were used to support language editing, structural refinement and text condensation. AI assistance was used to improve clarity, coherence, concision and journal fit, but **not** to generate, analyse or interpret primary data.
+
+During primary data analysis, AI assistance was used to debug code sections, support figure and table styling, and resolve modelling convergence and singularity issues. Participant comments in their native languages were translated into English with AI assistance. All translations were reviewed and approved or corrected by the respective site authors. AI assistance was **not** used to develop the primary analysis strategy, write analysis scripts or interpret results.
+
+During review, an agentic AI assistant (ChatGPT 5.6 Sol) was used to review the analyses for potential issues. This review prompted additional sensitivity analyses to evaluate data-preparation and model-selection choices, expanded model diagnostics, and improved effect-size reporting through Shapley decompositions and more precise language. AI assistance also supported expanded analysis documentation and reproducibility checks.
+
+All AI-assisted text was critically reviewed, edited, and approved by the authors, who take full responsibility for the content, accuracy, integrity, and conclusions of the manuscript.
+
+# Data availability {.unnumbered}
+
+<!-- P-M23 -->
+All data used in this study are available through the [MeLiDos Project GitHub organisation](https://github.com/MeLiDosProject) and are archived in the [MeLiDos Zenodo community](https://zenodo.org/communities/22nrm05_melidos/). Public site datasets have persistent records for Kumasi (GH), Madrid (ES), Dortmund (DE), Izmir (TR), Tübingen (DE), San José (CR), Munich (DE), Borås (SE) and Delft (NL) [@akuffo2025; @baezamoyano2025; @broszio2025; @didikoglu2025; @guidolin2025; @sancho-salas2026; @hilden2025; @nilssontengelin2026; @aerts2025]. These records and other project resources are indexed through the MeLiDos Project Data Hub [@zauner2026a] and accessed reproducibly through the documented `melidosData` interface [@melidosData].
+
+# Code availability {.unnumbered}
+
+<!-- P-A01 -->
+All analysis code is available in the [project repository](https://github.com/tscnlab/ZaunerEtAl_bioRxiv_2026), with rendered reports on [GitHub Pages](https://tscnlab.github.io/ZaunerEtAl_bioRxiv_2026/) and an archive on [Zenodo](https://doi.org/10.5281/zenodo.20547314). The archived version will be reconciled with the final manuscript snapshot before submission.
+
+# References
+
+::: {#refs}
+:::
+
+# Acknowledgements {.unnumbered}
+
+<!-- P-A02 -->
+We thank everyone who volunteered for the study, including those who did not complete the protocol, and the MeLiDos partners Iberoptics and LNE for lending wearable devices used in this research.
+
+# Funding {.unnumbered}
+
+<!-- P-A03 -->
+The MeLiDos project (22NRM05 MeLiDos) received funding from the European Partnership on Metrology, co-financed by the European Union's Horizon Europe Research and Innovation Programme and the Participating States. The views and opinions expressed are those of the authors only and do not necessarily reflect those of the European Union or EURAMET. Neither the European Union nor the granting authority can be held responsible for them. A.D. was also supported by the Scientific and Technological Research Council of Türkiye, TÜBİTAK (project 224S740). The funders had no role in study design, data collection and analysis, the decision to publish or preparation of the manuscript.
+
+# Author contributions {.unnumbered}
+
+<!-- P-A04 -->
+- **Conceptualization:** J.Z., A.D., S.A., J.B., O.S. and M.S.
+- **Data curation:** J.Z., A.D., G.K.A., S.A., S.G.A., S.N.A., Z.K., D.B.M., M.N.T., S.M.T., N.H., S.H., A.J., D.B., A.S.S. and M.S.
+- **Formal analysis:** J.Z.
+- **Funding acquisition:** A.D., K.O.A., K.B., D.B.M., M.N.T., J.B., S.K., A.S.S. and M.S.
+- **Investigation:** A.D., G.K.A., S.A., S.G.A., S.N.A., Z.K., M.C.P.G., R.A.G.L., S.L., D.B.M., M.N.T., S.M.T., N.H., S.H., A.J., C.G., D.B., I.S., A.S.S., H.v.B., K.B., S.K. and M.S.
+- **Methodology:** J.Z., A.D., K.O.A., K.B., C.G., D.B.M., M.C.P.G., R.A.G.L., M.N.T., S.M.T., O.S., G.C.G. and M.S.
+- **Project administration:** J.Z., A.D., G.K.A., S.A., S.G.A., S.N.A., K.O.A., D.B.M., J.B., A.S.S., K.B., A.J. and M.S.
+- **Resources:** J.Z., A.D., G.K.A., K.O.A., J.B., K.B., A.S.S. and M.S.
+- **Software:** J.Z.
+- **Supervision:** J.Z., A.D., S.A., J.B. and M.S.
+- **Validation:** J.Z., A.D. and M.S.
+- **Visualization:** J.Z.
+- **Writing – original draft:** J.Z.
+- **Writing – review & editing:** all authors.
+
+# Competing interests {.unnumbered}
+
+<!-- P-A05 -->
+M.S. declares the following potential competing interests between 2021 and 2025: academic roles as a member of the Board of Directors of the Society of Light, Rhythms, and Circadian Health, Chair of Joint Technical Committee 20 of the International Commission on Illumination, member of the Daylight Academy, and Chair of the Research Data Alliance Working Group Optical Radiation and Visual Experience Data; remunerated roles as Speaker of the Steering Committee of the Daylight Academy, ad hoc reviewer for the Health and Digital Executive Agency of the European Commission and the Swedish Research Council, Associate Editor for *LEUKOS*, examiner for the University of Manchester, Flinders University and the University of Southern Norway, and consultant for LyS Technologies and RoX Health; research funding and support from the Max Planck Society, Max Planck Foundation, Max Planck Innovation, Technical University of Munich, Wellcome Trust, National Research Foundation Singapore, European Partnership on Metrology, VELUX Foundation, Bayerisch-Tschechische Hochschulagentur, BayFrance/Bayerisch-Französisches Hochschulzentrum, BayFOR/Bayerische Forschungsallianz and Reality Labs Research; honoraria for talks from ISGlobal, the Research Foundation of the City University of New York and Stadt Ebersberg, Museum Wald und Umwelt; travel reimbursements from the Daimler und Benz Stiftung; and being named on European Patent Application EP23159999.4A, “System and method for corneal-plane physiologically-relevant light logging with an application to personalized light interventions related to health and well-being.” M.S. declares that these roles and relationships had no influence on the work presented here.
+
+<!-- P-A06 -->
+J.Z. declares the following potential competing interests between 2021 and 2025: academic roles as a member of Joint Technical Committee 20 of the International Commission on Illumination, member of the Research Data Alliance Working Group Optical Radiation and Visual Experience Data, and Speaker of group 2, melanopic effects of light, of the Technical Scientific Committee of the German Society of Lighting Technology and Design; remunerated roles as examiner for the Swiss Lighting Society; teacher for the German Society of Lighting Technology and Design, Munich University of Applied Sciences and the Technical University of Applied Sciences Rosenheim; associated partner at 3lpi lighting design + engineering, Munich; tool and three-dimensional-model designer for Zumtobel Lighting GmbH; and course designer for Munich University of Applied Sciences and Virtual University Bavaria; honoraria for talks from the German Society of Lighting Technology and Design, Lamilux/Heinrich Strunz GmbH, Robert Bosch Hospital Stuttgart, Ergotopia GmbH, the German Social Accident Insurance Institution for the Administrative Sector, BRIXEN CULTUR, KITEO GmbH & Co. KG and Augsburg University of Applied Sciences; travel reimbursements from the Daimler und Benz Stiftung; and, together with 3lpi, holding European Union Intellectual Property Office design patent 008194021-0001 through -0006 for a non-visually optimized luminaire.
+
+<!-- P-A07 -->
+A.D. declares academic roles as a member of Joint Technical Committee 20 of the International Commission on Illumination and Division Reporter DR6-50 for the “4th Manchester Workshop on Light Metrics for Biology: Light Pollution.” A.D. declares that these roles had no influence on the work presented here. D.B. is also owner of Minus 15 B.V., a company active in the lighting sector. All other authors declare no competing interests.
+
+# Supplementary Information {.unnumbered}
+
+Non-S5 display-integration preview. The historical Brown Figure S5 and existing Brown results are retained for context and are not updated or newly scientifically accepted here. The Brown linkage-B replacement remains held pending explicit fit authorization and scientific review. During sleep, the unworn device describes the bedside sleep environment, not verified ocular exposure; contrary historical caption wording is not endorsed.
+
+{{< include supplementary_information_outline.qmd >}}

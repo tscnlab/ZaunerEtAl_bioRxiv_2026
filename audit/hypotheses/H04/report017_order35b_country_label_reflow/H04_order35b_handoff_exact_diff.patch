@@ -1,0 +1,41 @@
+--- audit/handoffs/H04_worker_handoff.md.pre_order35b
++++ audit/handoffs/H04_worker_handoff.md
+@@ -590,0 +591,38 @@
++
++## REPORT-014/017 order 35b country-label source reflow
++
++Order 35b applied exactly two source-line whitespace reflows on 2026-08-20:
++
++- in `notebooks/hypotheses/H04.qmd`, the line break between `Delft` and
++  `(NL)` moved to immediately before `Delft`, producing contiguous source text
++  `Delft (NL)`;
++- in `audit/hypotheses/H04/H04_analysis_preparation.qmd`, the line break
++  between `Munich` and `(DE)` moved to immediately before `Munich`, producing
++  contiguous source text `Munich (DE)`.
++
++The resulting current-source identities are:
++
++- result QMD:
++  `f8adb6d78be041ce296dd7e89eb92769b128631c1b4227ce5d8ab3d526daf1d5`,
++  83,285 bytes;
++- preparation companion QMD:
++  `efdb5be8dc194695f40c50249fab14905ec337bc63079ae589557de860188474`,
++  91,202 bytes.
++
++Normalized reader text is unchanged. Each complete source remains
++byte-identical to its preimage after whitespace removal, and the complete
++non-whitespace byte and token sequences are identical. Every executable R
++chunk body, inline-R expression, endpoint, formula, numeric token, assignment,
++link, artifact reference, and source-data reference remains unchanged. Exact
++reverse substitution reconstructs the preceding result and companion hashes
++already recorded in the historical order-35 section above.
++
++Under R 4.6.1, the unchanged participant random-intercept assessment passed,
++the unchanged complete H04 source test passed all 37 gates, and the unchanged
++global country-coded-site test passed for all 37 reader-facing QMD sources
++with zero findings.
++
++No QMD was executed. No scientific computation, model fit, prediction,
++simulation, bootstrap, Shapley allocation, artifact regeneration, Quarto
++render, HTML or profile edit, commit, or push occurred. Every H04 render
++remains held, and H01 remains the sole active integration path.

@@ -1,6 +1,6 @@
 # H05 figure readability revalidation
 
-Date: 2026-08-03
+Date: 2026-08-11
 
 Rules: REPORT-011; REPORT-013 applicability assessed
 
@@ -37,17 +37,25 @@ rerendered, and the complete physical-size proof was regenerated. No model,
 prediction, diagnostic statistic, sensitivity result, bootstrap, or simulation
 was recomputed.
 
+At the bounded METRIC-010 reporting touchpoint, MDER was added to the
+diagnostic display. The residual-versus-fitted and quantile--quantile figures
+therefore expanded from three to four facets, with their canvases increased
+from 9 x 7.5 inches to 9 x 9 inches. The MDER row in both effect matrices, the
+exact paired MDER sample annotation, and MDER support in the preparation
+figure were revalidated at final display size. These were display-only updates
+from accepted stored model outputs and source data.
+
 ## Final inspection
 
 | Figure | Outcome | Final visual assessment |
 |---|---|---|
 | `fig-h05-near-effects` | PASS | Metric and factor labels, 95% confidence-interval cell values, legend, and grey unfit cells are readable and unclipped. |
 | `fig-h05-near-adequacy` | PASS | Labels, adequacy categories, cell marks, and legend are readable and distinct without overlap. |
-| `fig-h05-near-residual-fitted` | PASS | Facet titles, axes, points, smooths, and subtitle are proportionate, readable, and fully visible. |
-| `fig-h05-near-residual-qq` | PASS | Facet titles, axes, points, reference lines, and the unfit-for-inference qualification are readable and fully visible. |
+| `fig-h05-near-residual-fitted` | PASS | All four facets, including MDER, have proportionate and readable titles, axes, points, smooths, and subtitle; nothing is clipped. |
+| `fig-h05-near-residual-qq` | PASS | All four facets, including MDER, have readable titles, axes, points, and reference lines; the unfit-for-inference qualification is fully visible. |
 | `fig-h05-chest-effects` | PASS | Metric and factor labels, 95% confidence-interval cell values, legend, and grey unfit cells are readable and unclipped. |
 | `fig-h05-chest-adequacy` | PASS | Labels, adequacy categories, cell marks, and legend are readable and distinct without overlap. |
-| `fig-h05-paired-placement` | PASS | Four panels, equal-axis geometry, identity and null lines, and annotations are readable; the caption does not imply equivalence. |
+| `fig-h05-paired-placement` | PASS | Four panels, equal-axis geometry, identity and null lines, and exact matched-sample annotations are readable; the caption does not imply equivalence. |
 | `fig-h05-prep-leba-distribution` | PASS | Facet titles, axes, ticks, bars, and participant labels remain readable in a balanced four-panel layout. |
 | `fig-h05-prep-sample-support` | PASS | Both panels, metric ticks, placement legend, lines, and points are readable and distinguishable. |
 | `fig-h05-prep-site-range` | PASS | Site names, placement panels, axes, ticks, ranges, and points are readable and unclipped. |

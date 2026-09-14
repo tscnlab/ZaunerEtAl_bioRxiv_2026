@@ -1,0 +1,23 @@
+{
+  "timestamp": "2026-09-14T19:14:53.643Z",
+  "call_id": "call_CgeKhrtBGEUh9zdibIF65CF5",
+  "tool_arguments": {
+    "code": "await order017Live.goto('http://127.0.0.1:64656/index.html'); let live017AX=await order017Live.getAXState({emit:false,disableDiffing:true}); nodeRepl.write({check:'L017-index-desktop',downloadsBox:live017AX.includes('Manuscript downloads'),withdrawnNavigation:live017AX.includes('Sensitivity checks'),menu:live017AX.split('\\n').filter(s=>/Supporting material|Supplementary information|MS Word/.test(s)).slice(0,10)}); await order017Live.getScreenshot();",
+    "title": "Verify live manuscript opening and navigation"
+  },
+  "text_blocks": [
+    "Wall time: 9.1827 seconds\nOutput:",
+    "{\n  check: 'L017-index-desktop',\n  downloadsBox: false,\n  withdrawnNavigation: false,\n  menu: [\n    '\\t\\t\\t\\t17 link (collapsed) Description: Supporting material, Value: 127.0.0.1:64656/, ID: nav-menu-supporting-material, Secondary Actions: Expand',\n    '\\t\\t\\t\\t\\t75 link Description: MS Word, Value: 127.0.0.1:64656/Zau…',\n    '\\t\\t\\t6297 link Description: Supplementary information, Value: …'\n  ]\n}"
+  ],
+  "images": [
+    {
+      "timestamp": "2026-09-14T19:14:53.643Z",
+      "call_id": "call_CgeKhrtBGEUh9zdibIF65CF5",
+      "within_call_index": 1,
+      "image_path": "evidence/live_qa/browser_captures/2026-09-14T191453643Z_call_CgeKhrtBGEUh9zdibIF65CF5_1.jpg",
+      "metadata_path": "evidence/live_qa/browser_captures/2026-09-14T191453643Z_call_CgeKhrtBGEUh9zdibIF65CF5.json",
+      "bytes": 145587,
+      "sha256": "60ddb2600b1fcdf4cef85457cb3a2db1e77eceb577ac9606b501ae2ac2963cde"
+    }
+  ]
+}

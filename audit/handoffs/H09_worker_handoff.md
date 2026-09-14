@@ -1,8 +1,9 @@
 # H09 worker handoff
 
-Date: 2026-08-10
+Date: 2026-08-12
 
-Stage: **Stage 4 analysis-preparation and provenance companion completed and verified; coordinator-owned website integration requested**
+Stage: **Stage 4 completed and verified; METRIC-011 provenance-only reseal
+completed; coordinator-owned website integration requested**
 
 Stage 1 decision: **H09-001 approved on 2026-08-07**
 
@@ -22,6 +23,57 @@ approved H09-G1 through H09-G16 and explicitly accepted the pinned aggregate
 calculated fields `msf_sc` and `meq` for H09-G4. They remain distinct MCTQ and
 MEQ constructs, models, and multiplicity families. Item-level scoring
 reconstruction remains unavailable and is not implied by the acceptance.
+
+## METRIC-011 provenance-only follow-up
+
+Shared decision `METRIC-011` is final under
+`audit/decisions/l10_numerical_zero_normalization.md` (SHA-256
+`23b9f70d1d16f7fd3ebbdbc57aaf78c0a701fe1f9d22bd667d926cd320d40797`).
+Its seven-member evidence manifest is
+`audit/reconciliation/l10_METRIC-011/METRIC-011_evidence_manifest.csv`
+(SHA-256
+`a37efd3449a8d1a6065d0eb8964bd6cf8b241f1683a26c065ea1a946e23214fb`).
+Every member matched its sealed hash, byte count, `PASS` status, and R 4.6.1
+record.
+
+The eight changed primary cells are L10 **mean** melEDI values only: three
+near-eye and five chest values changed from `4.163336342344337e-17` lx to
+exact zero. H09 uses the registered L10 **midpoint** timing
+(`l10_midpoint` / `l10_hour`), not L10 mean. A provenance-only R check
+matched all 12 stored primary L10-midpoint frames and all 9,378 stored rows to
+the current enriched inputs exactly, including raw and negative-hour-converted
+timing values (maximum absolute difference 0 hours). All 65 scientific H09
+artifacts in scope remain byte-identical to the accepted Stage 3 seal.
+
+Only the six H09 shared/base input citations changed by METRIC-011 and the
+base input-bundle citation were repinned. No H09 model was fitted or refitted;
+no diagnostic, prediction, sensitivity, simulation, or bootstrap was rerun;
+and no sample, result, interval, p-value, multiplicity decision, figure,
+table, or claim changed. The older gap-data/gap-manifest pin drift and the
+independently changed metric-display registry were recorded but deliberately
+not absorbed into this bounded reseal because the METRIC-011 transition shows
+the gap preparation manifest itself was unchanged.
+
+Durable H09 record:
+
+- `audit/hypotheses/H09/H09_METRIC-011_provenance_reseal.md`;
+- `audit/hypotheses/H09/H09_METRIC-011_provenance_reseal.csv`;
+- `scripts/hypotheses/H09/reseal_h09_metric011.R`;
+- `tests/hypotheses/H09/test_h09_metric011_reseal.R`; and
+- `artifacts/12_manifests/H09/H09_METRIC-011_provenance_reseal_manifest.csv`
+  (29 records; 6,164 bytes; SHA-256
+  `cb4e0701c0f642c36e138ef670af373eeeef850e538a991af32bcf7f63583cad`).
+
+Verification command:
+
+```sh
+env R_PROFILE_USER=/dev/null \
+  Rscript --vanilla tests/hypotheses/H09/test_h09_metric011_reseal.R
+```
+
+Result: `H09 METRIC-011 provenance reseal verified: 12 L10-midpoint frames,
+9,378 rows, 65 unchanged scientific artifacts, and zero model or diagnostic
+reruns`.
 
 ## H09-owned implementation
 
@@ -358,6 +410,7 @@ The H09 worker has not edited any central ledger. Proposed entries:
 | `H09-V0` | V0 scalar adjustment and selected/site-unadjusted reporting not retained; exact recreation and audited comparison persisted |
 | `H09-SAMPLE-STAGE2` | Populate exact fitted samples from `H09_model_frame_index.csv`, not Stage 1 candidate counts |
 | `H09-PREP-GAP` | Registered longest-period midpoint remains unavailable in the shared gap-timing-unaware artifact; H09 sensitivity explicitly non-estimable |
+| `H09-METRIC-011` | Provenance-only repin completed; eight upstream L10-mean numerical-zero changes are outside H09's L10-midpoint estimand; 12 frames/9,378 rows and 65 scientific artifacts verified unchanged; zero fits or diagnostic reruns |
 
 Coordinator action requested: add
 `audit/hypotheses/H09/H09_analysis_preparation.qmd` immediately after the H09

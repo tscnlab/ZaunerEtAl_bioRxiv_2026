@@ -1,0 +1,14 @@
+Resume under BA-018-CHEST-PREFIT-RECOVERY-001, following the author's standing instruction to finish the Brown analysis and reader reports. Package007 is independently accepted as a prefit implementation stop, not a failed estimated chest model. The complete independent R 4.6.1 prefit, mapping and export-fixture audit passes 40/40 with zero real fits/draws; V8 process fixtures pass 42/42.
+
+Controlling shared-checkout root: audit/decisions/brown_main_linkage_b_stage2_chest_prefit_recovery_001/.
+Read decision.md SHA 535ec773868447c51dd3307fdfd057cb787dbebd42446e11dd445e6cea0b5527 and independent_acceptance.md SHA 1d17e00724f94532c80213d99c771776ec222bf8d4090b9edea86ec12eed26da completely. Rehash dispatch_manifest.csv, package007 and all four map sources before copying to their absent owner destinations.
+
+Install exactly the four byte-identical files in exact_owner_copy_map.csv. Preserve every old driver, registry, supervisor and stopped history. The versioned driver has only the four sealed reversible changes, including exact identity against ba_boundary_prepare_frame(input$frame). Keep the actual saved input unchanged. Verify all 27 source-manifest rows after copying.
+
+Use V8, existing R 4.6.1 library, explicit accepted roots, disabled renv autoloader and single-thread settings. Run CHEST-ANY-PREFIT-RECOVERY-001 once using 19_fit_chest_b_v2.R, no arguments, max120 seconds clamped to the original remaining budget. It is the still-unconsumed nominal CHEST-ANY optimization, not a second candidate. Preserve the original0.9314868329965975-second prefit failure.
+
+Continue the already authorized finite chest derivation/diagnostics, true-local-calendar comparator, stored benchmark diagnostics, actual-date conditional temporal sequence and combined sensitivity disposition within the same order. Do not stop to ask for enumerated registrations or scoped new code. Enforce the chest-specific two-window grid, eight equal-site weights, Pre-sleep-only day-type all-yes matrix, valid contrast variances, unchanged eligibility gates and finite seed/draw limits. Keep failed candidates without inference. No refit of completed work or new fallback.
+
+Starting debit497.007346292051/1200 seconds includes71 existing executions and V8's37.339253292007136-second fixed audit debit exactly once. Preserve750 attempted/500 logical draws and1750/1500 ceilings. Charge subsequent scientific audits. Keep Pre-sleep coverage sensitivity, INFLUENCE-4 and DIAG-BINOMIAL failures, and withheld exploratory day-level claim.
+
+Write the next combined package only to absent completion_v2/continued_final_package_008/. Stop once and seal a genuinely new issue or exhausted budget; no blind retry. No QMD/HTML, Quarto/browser, R2/Shapley, shared website, manuscript, writer numerical handoff, commit or push in this recovery. R2/Shapley and the three reports remain required subsequent finishing work, not abandoned work.

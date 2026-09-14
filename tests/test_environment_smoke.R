@@ -61,6 +61,14 @@ if (!inherits(linear_check, "check_model")) {
   )
 }
 
+diagnostic_theme <- see::theme_modern()
+if (!inherits(diagnostic_theme, "theme")) {
+  stop(
+    "The direct `see` diagnostic-plotting backend smoke test failed",
+    call. = FALSE
+  )
+}
+
 set.seed(20260730)
 n_observations <- 80L
 diagnostic_data <- data.frame(

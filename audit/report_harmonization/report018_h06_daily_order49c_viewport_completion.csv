@@ -1,0 +1,20 @@
+check,viewport,observed,expected,status
+desktop_viewport,1440x1000,1440x1000,1440x1000,PASS
+desktop_page_overflow,1440x1000,FALSE,FALSE,PASS
+desktop_native_tables,1440x1000,17 contained and zero requiring scroll,17 contained,PASS
+desktop_figure,1440x1000,3011x2657 source displayed at 1148.50x1013.47 within its container,complete and contained,PASS
+narrow_viewport,708x1000,708x1000,708x1000,PASS
+narrow_page_overflow,708x1000,FALSE,FALSE,PASS
+narrow_native_tables,708x1000,17 contained with 3 requiring contained scrolling,17 contained,PASS
+narrow_scroller_exercise,708x1000,scrollLeft 0 to 100 with maximum 109,working horizontal scroller,PASS
+narrow_figure,708x1000,3011x2657 source displayed at 642.00x566.52 within its container,complete and contained,PASS
+zoom_equivalent_viewport,720x500,720x500,720x500,PASS
+zoom_equivalent_page_overflow,720x500,FALSE,FALSE,PASS
+zoom_equivalent_native_tables,720x500,17 contained with 2 requiring contained scrolling,17 contained,PASS
+analysis_path_diagram,720x500,654.00x341.64 with 13 labels and 16 px minimum text,contained and legible,PASS
+final_figure_review,642 px or 170 mm,complete labels axes legend caption and points with 8.67 pt accepted minimum text,at least 7 pt and no clipping or overlap,PASS
+browser_console,all viewports,0 warnings or errors,0 page-attributable warnings or errors,PASS
+server_scope,all viewports,127.0.0.1 port 50184 exact companion route,loopback only and exact route,PASS
+server_teardown,after QA,QA tab closed viewport reset and no listener on port 50184,complete teardown,PASS
+build_stability,after QA,850 of 850 exact with zero symlinks,all members exact,PASS
+protected_stability,after QA,3527 of 3527 exact,all protected members exact,PASS

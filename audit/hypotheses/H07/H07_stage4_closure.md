@@ -54,6 +54,24 @@ and non-empty alternative text. All four reader-facing H07 figures pass
 REPORT-011 inspection at 170-mm display width. The expected website source is
 byte-identical to the authoring QMD.
 
+## METRIC-011 sealed-input addendum
+
+On 2026-08-12, the shared METRIC-011 numerical-zero normalization activated
+the sealed-input reopen rule for eight primary L10 mean cells. The H07 worker
+reopened only the L10 mean primary, declared sensitivity, diagnostic, and
+leave-one-site-out branches and BH fields in families containing L10. The
+historical V0 reconstruction and every non-L10 fit and raw test remained
+frozen.
+
+The bounded reconciliation changed no fitted sample, diagnostic category,
+derivative classification, transition grid point, conditional-AIC category,
+BH significance label, or REPORT-008 three-decimal value. The accepted
+scientific disposition above is therefore unchanged and decision `H07-005`
+remains closed without a new author gate. The durable addendum and exact
+artifact hashes are recorded in
+`audit/hypotheses/H07/H07_METRIC-011_reconciliation.md` and
+`artifacts/12_manifests/H07/H07_METRIC-011_*.csv`.
+
 ## Reopen rule
 
 Reopen H07 only if a sealed scientific input or output changes, a focused

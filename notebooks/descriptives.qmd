@@ -1,6 +1,6 @@
 ---
 title: "Descriptive tables and figures"
-subtitle: "Exact-layout replication with updated verified data and documented corrections"
+subtitle: "Study sample, light exposure distributions, and temporal context"
 engine: knitr
 bibliography: ../bibliography.bib
 format:
@@ -27,27 +27,30 @@ caption {
 }
 </style>
 
-## Scope and result
+## Study sample and sites
 
-This document reproduces the submitted table styles, figure compositions, and
-manuscript-scale canvases from the earlier manuscript-generating descriptive
-analysis, but fills them with the updated verified data. It also repairs errors that
-could not responsibly be copied forward. The main analytical measurement is
-near-eye melEDI; chest measurement is shown only as a complementary description
-and the two placements are never pooled.
-
-The replicated layouts include the wide participant-and-site table, the wide
-site-by-metric table with miniature distributions, the five-part study
-overview, the 3 × 3 site profiles, the 4 × 4 metric grid, the four-panel
-time-series explanation, the latitude–photoperiod diagnostic, and the
-site-by-state light-context table.
+The primary analytical measurement is near eye melEDI. Chest measurement is
+shown as a complementary description; values from the two placements are never
+pooled and are not treated as equivalent.
 
 ```{r}
 #| label: setup-descriptives
 
-root <- Sys.getenv("QUARTO_PROJECT_DIR", unset = "")
-if (!nzchar(root)) root <- getwd()
-root <- normalizePath(root, winslash = "/", mustWork = TRUE)
+find_descriptive_root <- function(start = getwd()) {
+  current <- normalizePath(start, winslash = "/", mustWork = TRUE)
+  repeat {
+    if (all(file.exists(file.path(current, c("_quarto.yml", "renv.lock"))))) {
+      return(current)
+    }
+    parent <- dirname(current)
+    if (identical(parent, current)) {
+      stop("Could not locate the descriptive project root")
+    }
+    current <- parent
+  }
+}
+
+root <- find_descriptive_root()
 
 source(file.path(root, "scripts", "descriptives", "build_descriptives.R"))
 descriptive_build <- load_descriptive_render_bundle(root)
@@ -105,23 +108,21 @@ include_descriptive_figure <- function(filename) {
 }
 ```
 
-All 12 required shared manifests matched their pinned SHA-256 fingerprints
-before any analytical input was read. The current display registry is
-`config/site_display_registry.csv`; it supplies the labels, visible order, and
-colours in every table and figure. The visible site sequence is
-`r paste(site_display$display_name, collapse = ", ")`.
-
-## Updated sample
+The study sites are displayed in the registered reader order, with country
+codes and fixed colours: `r paste(site_display$display_name, collapse = ", ")`.
+The same labels, order, and colours are used throughout the tables and figures.
 
 The normalized participant roster contains **191 participants**. After the
 pre-specified ≥80% full-day completeness rule and exact-all-zero screen, the
-main near-eye dataset contains **141 participants, 816 participant-days, and
+primary near eye dataset contains **141 participants, 816 participant-days, and
 1,175,160 one-minute real observations**. The complementary chest dataset
 contains **154 participants, 902 participant-days, and 1,298,880 one-minute
 real observations**. The paired subset contains **112 participants and 643
 participant-days**.
 
-Two of 818 otherwise eligible near-eye participant-days and three of 905
+## Data coverage and measurement placements
+
+Two of 818 otherwise eligible near eye participant-days and three of 905
 otherwise eligible chest participant-days were exact-all-zero melEDI days and
 were excluded. A participant was not removed merely because one of their days
 was excluded.
@@ -130,7 +131,11 @@ was excluded.
 #| label: tbl-descriptive-sample-flow
 #| tbl-cap: "Updated descriptive sample after each fixed coverage step."
 
-sample_contract |>
+sample_contract_before_gt <- sample_contract
+sample_contract_key_before_gt <- sample_contract |>
+  dplyr::select(stage, placement)
+
+sample_flow_display <- sample_contract |>
   dplyr::mutate(
     dplyr::across(
       c(participants, participant_days, one_minute_real_observations),
@@ -143,210 +148,244 @@ sample_contract |>
     Participants = participants,
     `Participant-days` = participant_days,
     `One-minute real observations` = one_minute_real_observations
+  )
+
+sample_flow_gt <- sample_flow_display |>
+  gt::gt(rowname_col = "Stage", groupname_col = "Placement") |>
+  gt::cols_align(
+    align = "right",
+    columns = c(
+      Participants,
+      `Participant-days`,
+      `One-minute real observations`
+    )
   ) |>
-  knitr::kable(align = c("l", "l", "r", "r", "r"))
+  gt::tab_options(
+    table.width = gt::pct(100),
+    table.font.size = gt::px(12),
+    container.overflow.x = "auto"
+  )
+
+stopifnot(
+  inherits(sample_flow_gt, "gt_tbl"),
+  identical(sample_contract, sample_contract_before_gt),
+  identical(
+    sample_contract |> dplyr::select(stage, placement),
+    sample_contract_key_before_gt
+  ),
+  identical(dim(sample_flow_display), c(8L, 5L))
+)
+
+sample_flow_gt
 ```
 
-## Table 1: participant and site characteristics
-
-@tbl-participant-site keeps the earlier wide site-column organization. Cells
-now identify whether a quantity belongs to near-eye, chest, paired, roster, or
-diary data. Participant information covers the complete normalized roster.
 Collection dates and civil photoperiod use the union of every recorded
-non-all-zero participant-day across both placements; screened-day counts
-retain the main-analysis completeness rule.
+non-all-zero participant-day across both placements. Screened-day counts retain
+the primary-analysis completeness rule. Declared non-wear is reported for near
+eye only. Participant information covers the complete normalized roster.
+
+## Main descriptive figure and table
+
+### Figure 1: study overview
+
+The five-panel overview combines the study protocol, site map, collection
+timing, photoperiod coverage, and a repeated 48-hour primary near eye profile.
+The second 24-hour cycle is a display duplicate, not additional data. Collection
+spans are shown as rectangles and split only when a site has at least six
+consecutive dates without any available data.
+
+```{r}
+#| label: fig-descriptive-overview
+#| fig-cap: "Study protocol, country-coded sites, collection dates, observed civil photoperiod, and the pooled primary near eye 48-hour profile."
+#| fig-alt: "Five-panel study overview showing the protocol, country-coded study sites and coordinates, roster-wide collection dates, site photoperiod distributions, and a repeated 15-minute 48-hour primary near eye melEDI profile with central 50% and 90% value bands."
+#| out-width: "100%"
+
+include_descriptive_figure("descriptive_overview.png")
+```
+
+Panel B shows country and coordinate information while retaining the registered
+site names and colours. The black and site-coloured profiles use
+`LightLogR::aggregate_Datetime()` in 15-minute floor bins after removing
+participant grouping; the numeric handler is the median with `na.rm = TRUE`.
+Nested grey ribbons show the central 50% and 90% of eligible one-minute values
+in each overall bin, with direct arrow labels. They are value intervals, not
+confidence intervals. The red band from the lower plot edge to −0.1 shows
+average diary sleep, and blue shading shows average civil night; declared
+non-wear is not displayed. For the non-negative melEDI values, the symlog axis
+is linear from 0 to 1 lx and logarithmic above 1 lx; tick labels remain in lx.
+The axis is capped above 10,000 lx to reserve less space for unsupported
+extremes.
+
+### Table 1: participant and site characteristics
+
+@tbl-participant-site uses site columns and identifies whether each quantity
+belongs to near eye, chest, paired, roster, or diary data.
 
 ```{r}
 #| label: tbl-participant-site
-#| tbl-cap: "Participant, site, collection, sleep, chronotype, and wear characteristics using updated verified data."
+#| tbl-cap: "Participant, site, collection, sleep, chronotype, and wear characteristics."
 
 participant_gt <- build_participant_site_publication_gt(participant_table_data)
 participant_gt
 ```
 
-### Manuscript Table 1 variant
+#### Reduced participant-characteristics table
 
-The rendered submitted manuscript used the reduced `tbl1_red` variant rather
-than the expanded table above. The following table reproduces that exact row
-selection with the updated data and corrections. As in the submitted variant,
-it omits Morningness–Eveningness Questionnaire score, gender, collection
-dates, weekday/weekend counts, workday/free-day diaries, social jetlag, and
-sleep duration; all remaining rows retain their original order and styling.
+The reduced participant-characteristics table provides the concise row
+selection used alongside the full table. It omits Morningness–Eveningness
+Questionnaire score, gender, collection dates, weekday/weekend counts,
+workday/free-day diaries, social jetlag, and sleep duration; all remaining rows
+retain their registered order and styling.
 
 ```{r}
 #| label: tbl-participant-site-manuscript
-#| tbl-cap: "Submitted-manuscript Table 1 row selection reproduced with updated verified data."
+#| tbl-cap: "Reduced participant and site characteristics."
 
 participant_manuscript_gt <-
   build_participant_site_manuscript_publication_gt(participant_table_data)
 participant_manuscript_gt
 ```
 
-Important corrections embodied in @tbl-participant-site are:
+## Light distributions and temporal context
 
-- MPI is displayed as Tübingen and TUM as Munich, repairing their interchanged
-  institution labels in the earlier table.
-- Participant and participant-day rows show the whole available roster plus
-  near-eye, chest, and paired subsets. Participant time retains the screened
-  near-eye basis and is limited to its two largest time units.
-- Declared non-wear is reported for near-eye only; the earlier chest display
-  reused the near-eye input and has therefore been removed.
-- Screened days show only the final result after the completeness and all-zero
-  screens. Civil photoperiod comes from verified site-and-solar context across
-  the whole available roster.
-- Clock-time chronotype summaries are circular. During rebuilding, a
-  `quantile()` argument typo in the first implementation was detected,
-  documented, and corrected before this final table was generated.
+### Table 2: metric distributions
 
-## Table 2: metric distributions
-
-@tbl-near-eye-metrics reproduces the old metric categories, order, ten site
-columns, scaling column, and enlarged miniature distribution column. Every
+@tbl-near-eye-metrics presents the registered metric categories and order, ten
+site columns, scaling column, and miniature distribution column. Every
 numerical cell states `N`, the number of participants, and `d`, the number of
 participant-days with a finite value. The site columns have equal widths and
-each median, interval, mean ± SD, and size line is kept intact.
+each median, interval, mean ± SD, and size line is kept intact. A compact line
+under each metric name states what the metric captures and why that construct
+is physiologically or health-relevant; these notes are context, not health-
+effect estimates from this descriptive dataset.
+
+MDER is the arithmetic mean of viable one-minute melEDI / photopic illuminance
+ratios, with both channels finite and strictly positive. Each day
+is evaluated on a complete 1,440-minute local wall-clock grid and retained
+with at least 720 viable ratios (the inclusive 50% rule). Fall-back duplicate
+local minutes are averaged within channel before the ratio is formed;
+spring-forward absent minutes remain missing.
+
+For the L10 mean, source windows verified as entirely zero are retained as
+exact 0 lx. Machine-precision residuals from the averaging calculation are
+not interpreted as positive exposure.
 
 ```{r}
 #| label: tbl-near-eye-metrics
-#| tbl-cap: "Near-eye melEDI metric distributions overall and by site using updated verified metric artifacts."
+#| tbl-cap: "Primary near eye melEDI metric distributions overall and by site."
 
 metric_gt <- build_metric_publication_gt(metric_table_data, metric_plot_values)
 metric_gt
 ```
 
-The numerical values in @tbl-near-eye-metrics come from the approved metric
-artifacts; the table does not recalculate any metric. Clock-time means and
+The table displays the accepted metric values without recalculating them.
+Clock-time means and
 middle-50% intervals are circular, rather than treating 23:59 and 00:01 as far
 apart. The miniature plots are redundant visual summaries: the adjacent cells
 remain the authoritative values and provide the exact denominators.
 
-## Figure 1: study overview
+### Figure 2: site-specific profiles
 
-The study overview retains the submitted five-part composition: protocol,
-site map, collection timing, photoperiod coverage, and a repeated 48-hour
-near-eye profile. The second 24-hour cycle is a display duplicate, not
-additional data.
-Collection spans are shown as rectangles and split only when a site has at
-least six consecutive dates without any available data.
-
-```{r}
-#| label: fig-descriptive-overview
-#| fig-cap: "Study protocol, locations, collection dates, observed civil photoperiod, and the pooled main near-eye 48-hour double profile."
-#| fig-alt: "Five-panel study overview with the protocol, world map, roster-wide collection dates, site photoperiod distributions, and a repeated 15-minute 48-hour near-eye melEDI profile."
-#| out-width: "100%"
-
-include_descriptive_figure("descriptive_overview.png")
-```
-
-The black and site-coloured profiles use `LightLogR::aggregate_Datetime()` in
-15-minute floor bins after removing participant grouping; the numeric handler
-is the median with `na.rm = TRUE`. The grey ribbon is the central 67% of
-eligible one-minute values in each overall bin. It is a value interval, not a
-confidence interval. The red band shows average diary sleep and the blue
-shading shows average civil night; declared non-wear is not displayed. The
-melEDI axis uses `LightLogR::symlog_trans(base = 10, thr = 1, scale = 1)`.
-
-## Figure 2: site-specific profiles
-
-The main near-eye profiles retain the earlier 3 × 3 double-plot layout and
-registered site order. Each site uses the same 15-minute
+The primary near eye profiles use a 3 × 3 double-plot layout and the registered
+site order. Each site uses the same 15-minute
 `aggregate_Datetime()` median with nested central 50%, 75%, and 95% value
-intervals. The interval legend shows the corresponding ribbon opacities.
+intervals. The interval legend shows the corresponding ribbon opacities. The
+red mean-sleep strip extends from the lower plot edge to −0.1.
 
 ```{r}
 #| label: fig-near-eye-site-profiles
-#| fig-cap: "Pooled main near-eye melEDI profiles by site, with each 24-hour cycle repeated once."
-#| fig-alt: "Nine labelled site panels repeat pooled 15-minute near-eye 24-hour melEDI profiles across 48 hours with nested central 50%, 75%, and 95% value bands and average civil-night and sleep periods."
+#| fig-cap: "Pooled primary near eye melEDI profiles by site, with each 24-hour cycle repeated once."
+#| fig-alt: "Nine country-coded site panels repeat pooled 15-minute primary near eye 24-hour melEDI profiles across 48 hours with nested central 50%, 75%, and 95% value bands and average civil-night and sleep periods."
 #| out-width: "100%"
 
 include_descriptive_figure("near_eye_site_profiles.png")
 ```
 
 The complementary chest profile uses the same visual grammar in a complete
-four-by-two layout. Tübingen is
-omitted because the updated chest main dataset contains no eligible MPI site
-panel; the remaining sites retain their registered order and colours.
+four-by-two layout. Tübingen (DE) is omitted because the complementary chest
+dataset contains no eligible MPI site panel; the remaining sites retain their
+registered order and colours.
 
 ```{r}
 #| label: fig-chest-site-profiles
-#| fig-cap: "Complementary chest-level melEDI profiles by available site, with each 24-hour cycle repeated once."
-#| fig-alt: "Eight labelled site panels repeat complementary 15-minute chest-level 24-hour melEDI profiles across 48 hours with nested central 50%, 75%, and 95% value bands and average civil-night and sleep periods. Tübingen is absent because there are no eligible chest main days at MPI."
+#| fig-cap: "Complementary chest melEDI profiles by available site, with each 24-hour cycle repeated once."
+#| fig-alt: "Eight country-coded site panels repeat complementary 15-minute chest 24-hour melEDI profiles across 48 hours with nested central 50%, 75%, and 95% value bands and average civil-night and sleep periods. Tübingen (DE) is absent because there are no eligible chest days at MPI."
 #| out-width: "100%"
 
 include_descriptive_figure("chest_site_profiles.png")
 ```
 
 Chest values describe the environment at the chest sensor. They are not
-treated as equivalent to near-eye or ocular exposure.
+treated as equivalent to near eye or ocular exposure.
 
-## Figure 3: reader-facing metric distributions
+### Figure 3: near eye metric distributions
 
-@fig-near-eye-metric-distributions reproduces the old 4 × 4 ordering and
-ridge-plus-box construction. Site names remain visible in the first column of
-panels, so colour is not the only way to identify a distribution.
+@fig-near-eye-metric-distributions uses a 4 × 4 ridge-plus-box layout. Site
+names remain visible in the first column of panels, so colour is not the only
+way to identify a distribution.
 
 ```{r}
 #| label: fig-near-eye-metric-distributions
-#| fig-cap: "Sixteen familiar near-eye melEDI metric distributions by site."
+#| fig-cap: "Sixteen primary near eye melEDI metric distributions by site."
 #| fig-alt: "A four-by-four grid of duration, dynamics, dose, level, spectrum, and circular timing metric distributions. Each panel contains labelled site ridges and white boxplots; red lines mark site medians."
 #| out-width: "100%"
 
 include_descriptive_figure("near_eye_metric_distributions.png")
 ```
 
-## Figure 4: from time series to a daily metric
+### Figure 4: from time series to a daily metric
 
-The submitted explanatory figure used seven fixed German-site examples over
-five aligned study days. @fig-time-series-to-metrics retains the same IDs and
-the same submitted study days 2–6, then orders participants from top to bottom by their
-median TAT250 across those days. The source CSV preserves each participant’s
-actual local dates, while the visible x-axis retains the submitted Wednesday
-to Sunday alignment.
+@fig-time-series-to-metrics uses seven fixed German-site examples over five
+aligned study days (days 2–6) and orders participants from top to bottom by
+their median TAT250 across those days. The source CSV preserves each
+participant’s actual local dates, while the visible x-axis uses a Wednesday to
+Sunday alignment.
 
 ```{r}
 #| label: fig-time-series-to-metrics
-#| fig-cap: "The same seven manuscript examples link stored 30-minute near-eye melEDI series from the gap-timing-unaware dataset to daily duration above 250 lx during daytime."
-#| fig-alt: "Four panels connect five protocol weekdays of stored gap-timing-unaware near-eye light samples for seven fixed participants to TAT250 values calculated from those same displayed daytime samples, using participant boxplots, weekday boxplots, and a participant-by-weekday bubble grid."
+#| fig-cap: "Seven fixed examples link stored 30-minute primary near eye melEDI series to daily duration above 250 lx during daytime."
+#| fig-alt: "Four panels connect five protocol weekdays of stored 30-minute primary near eye light samples for seven fixed participants to TAT250 values calculated from those displayed daytime samples, using participant boxplots, weekday boxplots, and a participant-by-weekday bubble grid."
 #| out-width: "100%"
 
 include_descriptive_figure("time_series_to_metrics.png")
 ```
 
-Panel A uses the stored floor-aligned 30-minute near-eye arithmetic means from
-the gap-timing-unaware dataset. Panels B–D recalculate daily TAT250 from
+Panel A uses the stored floor-aligned 30-minute near eye arithmetic means.
+Panels B–D recalculate daily TAT250 from
 exactly those displayed daytime samples with
 `LightLogR::duration_above_threshold()`. This figure illustrates the fixed
 examples and does not estimate a population weekday effect.
 
-## Figure 5: latitude and observed photoperiod
+### Figure 5: latitude and observed photoperiod
 
-The latitude diagnostic is retained as supplementary context based on the 816
-main near-eye participant-days. Its black impossible-region ribbons consume
-the verified theoretical bounds from the current H1 reporting artifact, so
-the panel follows the submitted and current H1 visual grammar without a new
-calculation in the descriptive pipeline. The density curves and observations
-are drawn first and the black feasibility curtains are drawn over them.
+The latitude–photoperiod figure provides supplementary context for the 816
+primary near eye participant-days. Black ribbons mark civil-photoperiod
+combinations outside the site-specific theoretical bounds. The density curves
+and observations are drawn first and the black feasibility curtains are drawn
+over them. Points use deterministic two-dimensional jitter to avoid artificial
+bands without changing any underlying photoperiod or latitude.
 
 ```{r}
 #| label: fig-latitude-photoperiod
-#| fig-cap: "Observed verified civil photoperiod and verified theoretical bounds by absolute latitude for main near-eye participant-days."
-#| fig-alt: "Observed civil photoperiod distributions are plotted against absolute study-site latitude for 816 main near-eye participant-days, with black ribbons marking impossible photoperiods and a registered-colour legend identifying the nine sites."
+#| fig-cap: "Observed civil photoperiod and theoretical bounds by absolute latitude for primary near eye participant-days."
+#| fig-alt: "Observed civil photoperiod distributions are plotted against absolute study-site latitude for 816 primary near eye participant-days, with black ribbons marking impossible photoperiods and a country-coded, registered-colour legend identifying the nine sites."
 #| out-width: "100%"
 
 include_descriptive_figure("latitude_photoperiod_diagnostic.png")
 ```
 
-## Light exposure in recommendation contexts
+### Light exposure in Brown et al. recommendation windows
 
-@tbl-recommendation-context preserves the earlier site-row and state-column
-organization. The thresholds are wake ≥250 lx melEDI, before sleep ≤10 lx
-melEDI, and sleep ≤1 lx melEDI [@brown2022]. The results are deliberately
-described as *fractions of valid measured minutes in a recommended range*, not
-as adherence, compliance, or evidence of a biological response.
+@tbl-recommendation-context uses site rows and recommendation-window columns.
+The Brown et al. recommendation windows are Daytime ≥250 lx melanopic EDI,
+Pre-sleep ≤10 lx melanopic EDI, and Sleep ≤1 lx melanopic EDI
+[@brown2022]. The results are deliberately described as *fractions of valid
+measured minutes in a recommended range*, not as adherence, compliance, or
+evidence of a biological response.
 
 ```{r}
 #| label: tbl-recommendation-context
-#| tbl-cap: "Fractions of updated main near-eye minutes in the Brown et al. light-context ranges, with explicit denominators."
+#| tbl-cap: "Fractions of primary near eye minutes in the Brown et al. recommended ranges, with explicit denominators."
 
 recommendation_gt <- build_recommendation_publication_gt(
   recommendation_table_data
@@ -354,20 +393,51 @@ recommendation_gt <- build_recommendation_publication_gt(
 recommendation_gt
 ```
 
-Each percentage is followed by one grey `relevant / all` count. Wake,
-before-sleep, and sleep cells divide minutes within the
-recommended context by all valid one-minute observations in that diary state;
-the combined column pools all classified valid minutes. The four state-share
+Each percentage is followed by one grey numerator/denominator count. Daytime,
+Pre-sleep, and Sleep cells divide minutes within the applicable recommended
+range by all valid one-minute observations in that recommendation window; the
+combined column pools all classified valid minutes. The four state-share
 columns divide minutes in the displayed state by all eligible real minutes.
-Diary-defined sleep combines the
-near-eye sensor while awake with a bedside sensor during sleep; the sleep row
-therefore describes the sleep environment rather than direct ocular exposure.
+Diary-defined sleep combines the near eye sensor while awake with a bedside
+sensor during sleep; the Sleep window therefore describes the bedside sleep
+environment rather than direct ocular exposure.
 
-## Exact comparison with the earlier render
+## Data-quality and denominator qualifications
 
-The earlier HTML was read only as a record of displayed cells; no old `.RData`
-workspace was loaded. Machine-readable comparisons cover every displayed
-publication-table cell:
+- Participant and participant-day displays distinguish the complete roster,
+  primary near eye, complementary chest, and paired subsets. Participant time
+  uses the screened primary near eye basis and is limited to its two largest
+  time units.
+- Site labels follow the country-coded registry, including Tübingen (DE) for
+  MPI and Munich (DE) for TUM.
+- Screened days report the result after the completeness and all-zero screens.
+  Civil photoperiod uses the available site-and-solar context across the whole
+  roster.
+- Declared non-wear is available for near eye only. Chest values are retained
+  solely as complementary environmental measurements.
+- Clock-time chronotype and timing summaries are circular.
+  Recommendation-window percentages retain their displayed state-specific or
+  eligible-minute denominators.
+
+## Source data and technical provenance
+
+Aligned records and state handling are documented in
+[Preparation 01](preparation/01_import_state_alignment.qmd). Shared coverage and
+denominator flow are documented in
+[Preparation 02](preparation/02_coverage_sample_flow.qmd).
+
+Material inputs and source-data mappings are recorded in:
+
+- `audit/descriptives/sample_count_contract.csv`;
+- `artifacts/09_tables/descriptives/metric_descriptive_summary_replica.csv`;
+- `artifacts/11_source_data/descriptives/metric_plot_values.csv`;
+- `artifacts/12_manifests/descriptives/figure_source_data_map.csv`; and
+- `artifacts/12_manifests/descriptives/descriptive_artifacts.csv`.
+
+### Reference-table comparison
+
+A machine-readable audit compares every displayed publication-table cell with
+the archived reference tables:
 
 ```{r}
 #| label: tbl-descriptive-comparison-summary
@@ -386,45 +456,57 @@ comparison_summary <- dplyr::bind_rows(lapply(names(comparison_files), function(
     dplyr::count(.data$comparison_status, name = "cells") |>
     dplyr::mutate(table = name, .before = 1L)
 }))
-comparison_summary |>
+comparison_summary_before_gt <- comparison_summary
+comparison_summary_key_before_gt <- comparison_summary |>
+  dplyr::select(table, comparison_status)
+
+comparison_summary_display <- comparison_summary |>
   dplyr::rename(
     Table = table,
     `Comparison status` = comparison_status,
     Cells = cells
+  )
+
+comparison_summary_gt <- comparison_summary_display |>
+  gt::gt(
+    rowname_col = "Comparison status",
+    groupname_col = "Table"
   ) |>
-  knitr::kable(align = c("l", "l", "r"))
+  gt::fmt_integer(columns = Cells) |>
+  gt::cols_align(align = "right", columns = Cells) |>
+  gt::tab_options(
+    table.width = gt::pct(100),
+    table.font.size = gt::px(12),
+    container.overflow.x = "auto"
+  )
+
+stopifnot(
+  inherits(comparison_summary_gt, "gt_tbl"),
+  identical(comparison_summary, comparison_summary_before_gt),
+  identical(
+    comparison_summary |>
+      dplyr::select(table, comparison_status),
+    comparison_summary_key_before_gt
+  ),
+  identical(dim(comparison_summary_display), c(6L, 3L))
+)
+
+comparison_summary_gt
 ```
 
-The comparison summary above reports all current cells and classifies each
-against the submitted render. Metric timing rows also changed to circular
-summaries, while the contextual table reflects the updated eligible-day and
-state denominators.
-
-Every numerical cell, plus the explanation assigned to its difference, is in:
+Every cell and its documented comparison status are retained in:
 
 - `audit/descriptives/previous_table1_comparison.csv`
 - `audit/descriptives/previous_table2_comparison.csv`
 - `audit/descriptives/previous_recommendation_comparison.csv`
 
-Every old table, figure, panel, and batch export is covered by
-`audit/descriptives/output_difference_explanations.csv`. Redundant reduced
-tables, letter-only metric exports, and individual site PDFs were not copied
-as separate deliverables because they add no distinct construct; their values
-and panels remain in the full replicated tables, composite figures, and exact
-source CSVs.
+Table- and figure-level difference explanations are recorded in
+`audit/descriptives/output_difference_explanations.csv`.
 
-### Stand-alone visual exports
+### Visual-export comparison
 
-The four publication tables are exported as PNG files with their registered
-`gtsave()` viewport widths. Each of the six durable figures uses its registered,
-content-specific canvas and export scale to create a 300-dpi PNG, a
-maximum-quality JPEG, a tightly bounded one-page PDF, and an SVG. The final
-files contain the figure only, not an A4 paper canvas. Each figure is then
-checked at its intended publication width; main text normally resolves to
-5--7 pt, central text to 7--9 pt, and only repeated non-essential detail may
-use 3.5--5 pt. The following record gives the
-retained original and rebuilt PNG paths, dimensions, and hashes needed for
-direct side-by-side review:
+The following support table retains the registered reference and current PNG
+paths and pixel dimensions for side-by-side technical review:
 
 ```{r}
 #| label: tbl-descriptive-visual-export-comparison
@@ -433,7 +515,10 @@ direct side-by-side review:
 visual_export_comparison <- read_descriptive_csv(
   "audit", "descriptives", "visual_export_comparison.csv"
 )
-visual_export_comparison |>
+visual_export_comparison_before_gt <- visual_export_comparison
+visual_export_comparison_key_before_gt <- visual_export_comparison$output_id
+
+visual_export_display <- visual_export_comparison |>
   dplyr::transmute(
     Output = output_id,
     Type = output_type,
@@ -441,50 +526,59 @@ visual_export_comparison |>
     Rebuilt = rebuilt_path,
     `Original pixels` = paste0(original_width_px, " × ", original_height_px),
     `Rebuilt pixels` = paste0(rebuilt_width_px, " × ", rebuilt_height_px)
+  )
+
+visual_export_comparison_gt <- visual_export_display |>
+  gt::gt(rowname_col = "Output") |>
+  gt::cols_align(
+    align = "right",
+    columns = c(`Original pixels`, `Rebuilt pixels`)
   ) |>
-  knitr::kable(align = c("l", "l", "l", "l", "r", "r"))
+  gt::cols_width(c(Original, Rebuilt) ~ gt::px(260)) |>
+  gt::tab_style(
+    style = gt::cell_text(whitespace = "normal"),
+    locations = gt::cells_body(columns = c(Original, Rebuilt))
+  ) |>
+  gt::tab_options(
+    table.width = gt::pct(100),
+    table.font.size = gt::px(12),
+    container.overflow.x = "auto"
+  )
+
+stopifnot(
+  inherits(visual_export_comparison_gt, "gt_tbl"),
+  identical(
+    visual_export_comparison,
+    visual_export_comparison_before_gt
+  ),
+  identical(
+    visual_export_comparison$output_id,
+    visual_export_comparison_key_before_gt
+  ),
+  identical(dim(visual_export_display), c(10L, 6L))
+)
+
+visual_export_comparison_gt
 ```
 
-The completed visual assessment, including intended visible differences, is
-recorded in `audit/descriptives/visual_export_review.md`.
+### Figure display contract
 
-## Reproducibility and output contract
-
-Each durable figure has a fixed filename and dimensions, 300-dpi PNG and JPEG
-exports, a deterministic one-page PDF, an SVG vector master, accurate alt
-text, and an exact source-data mapping with source SHA-256 values. The PDF
-places the verified 300-dpi PNG on a page of the same physical dimensions so
-that Unicode labels and the inspected layout are preserved exactly while the
-file remains byte-reproducible. The complete output manifest is
-`artifacts/12_manifests/descriptives/descriptive_artifacts.csv`; figure-to-source
-mapping is `artifacts/12_manifests/descriptives/figure_source_data_map.csv`.
-The DISPLAY-001 registry provenance, including its hash, is recorded in
-`audit/descriptives/site_display_registry_provenance.csv`.
-Figure 1 is the REPORT-011-PILOT-001 typography reference. Its approved
-source-level text sizes are the default 14-pt cowplot base, 12-pt tick labels,
-14-pt axis titles and tags, 11-pt caption, and 3-unit map labels. Approval of
-these values does not close the figure-specific detail QA. The 10.5-by-10-inch
-base
-canvas is exported with the literal `ggplot2::ggsave(scale = 1.5)` argument to
-15.75 by 15 inches. This external asset is displayed at `out-width: 100%`. A
-direct-knitr equivalent would use `fig-width: 15.75`, `fig-height: 15`, and the
-same separate `out-width`, without changing fonts or marks. Figures 2–5 retain
-their content-specific export geometry. The export/display calculation and
-optional A4 portrait QA mock-up with 20-mm margins are recorded in
-`audit/descriptives/figure_readability_qa.csv`. The mock-up is an inspection
-artifact only; final figure files are tightly bounded to the figure and are not
-saved on an A4 canvas.
-
-The four table PNG export settings are recorded in
-`artifacts/12_manifests/descriptives/table_export_specifications.csv`.
+The figure source map, physical-size checks, and table export settings are
+recorded in the Descriptives manifests and audits. The support table below
+retains the accepted figure geometry, text-size fields, and physical-size QA
+status without recalculating them.
 
 ```{r}
 #| label: tbl-descriptive-figure-contract
 #| tbl-cap: "Deterministic dimensions and formats for the replicated descriptive figures."
 
-read_descriptive_csv(
+figure_contract_source <- read_descriptive_csv(
   "artifacts", "12_manifests", "descriptives", "figure_specifications.csv"
-) |>
+)
+figure_contract_source_before_gt <- figure_contract_source
+figure_contract_key_before_gt <- figure_contract_source$figure_id
+
+figure_contract_display <- figure_contract_source |>
   dplyr::select(
     figure_id, base_width_in, base_height_in,
     export_scale_multiplier, export_width_in, export_height_in,
@@ -505,22 +599,119 @@ read_descriptive_csv(
     `Nominal minimum text (pt)` = nominal_min_essential_text_pt,
     `Effective minimum text (pt)` = effective_min_essential_text_pt,
     `Physical-size QA` = physical_size_qa
-  ) |>
-  knitr::kable(
-    align = c("l", "r", "r", "r", "r", "r", "l", "r", "r", "r", "r", "l")
   )
-```
 
-The complete descriptive build is run with:
+figure_contract_gt <- figure_contract_display |>
+  gt::gt(rowname_col = "Figure") |>
+  gt::tab_spanner(
+    label = "Base geometry",
+    columns = c(`Base width (in)`, `Base height (in)`),
+    gather = FALSE
+  ) |>
+  gt::tab_spanner(
+    label = "Export geometry",
+    columns = c(
+      `Export scale`,
+      `Export width (in)`,
+      `Export height (in)`
+    ),
+    gather = FALSE
+  ) |>
+  gt::tab_spanner(
+    label = "Display geometry",
+    columns = c(
+      `HTML out-width`,
+      `Print width (mm)`,
+      `Display reduction`
+    ),
+    gather = FALSE
+  ) |>
+  gt::tab_spanner(
+    label = "Text size",
+    columns = c(
+      `Nominal minimum text (pt)`,
+      `Effective minimum text (pt)`
+    ),
+    gather = FALSE
+  ) |>
+  gt::tab_spanner(
+    label = "Physical-size check",
+    columns = `Physical-size QA`,
+    gather = FALSE
+  ) |>
+  gt::fmt(
+    columns = c(
+      `Base width (in)`,
+      `Base height (in)`,
+      `Export width (in)`,
+      `Export height (in)`,
+      `Effective minimum text (pt)`
+    ),
+    fns = function(x) {
+      formatC(
+        as.numeric(format(
+          round(x, 7),
+          digits = 7,
+          scientific = FALSE,
+          trim = TRUE
+        )),
+        format = "f",
+        digits = 6
+      )
+    }
+  ) |>
+  gt::fmt(
+    columns = `Export scale`,
+    fns = function(x) formatC(x, format = "f", digits = 1)
+  ) |>
+  gt::fmt(
+    columns = `Print width (mm)`,
+    fns = function(x) formatC(x, format = "f", digits = 0)
+  ) |>
+  gt::fmt(
+    columns = `Display reduction`,
+    fns = function(x) formatC(x, format = "f", digits = 7)
+  ) |>
+  gt::fmt(
+    columns = `Nominal minimum text (pt)`,
+    fns = function(x) formatC(x, format = "f", digits = 2)
+  ) |>
+  gt::cols_align(
+    align = "right",
+    columns = c(
+      `Base width (in)`,
+      `Base height (in)`,
+      `Export scale`,
+      `Export width (in)`,
+      `Export height (in)`,
+      `Print width (mm)`,
+      `Display reduction`,
+      `Nominal minimum text (pt)`,
+      `Effective minimum text (pt)`
+    )
+  ) |>
+  gt::tab_style(
+    style = gt::cell_text(whitespace = "normal"),
+    locations = gt::cells_body()
+  ) |>
+  gt::tab_style(
+    style = gt::cell_text(whitespace = "normal"),
+    locations = gt::cells_column_labels()
+  ) |>
+  gt::tab_options(
+    table.width = gt::pct(100),
+    table.font.size = gt::px(12),
+    container.overflow.x = "auto"
+  )
 
-```text
-RENV_CONFIG_SANDBOX_ENABLED=FALSE Rscript scripts/descriptives/run_descriptives.R
-```
+stopifnot(
+  inherits(figure_contract_gt, "gt_tbl"),
+  identical(figure_contract_source, figure_contract_source_before_gt),
+  identical(figure_contract_source$figure_id, figure_contract_key_before_gt),
+  identical(dim(figure_contract_display), c(6L, 12L))
+)
 
-This document alone is rendered with:
-
-```text
-quarto render notebooks/descriptives.qmd --profile nathealth
+figure_contract_gt
 ```
 
 No hypothesis model, inferential p-value, or exploratory H03/H04 analysis is

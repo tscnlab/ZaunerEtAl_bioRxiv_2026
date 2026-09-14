@@ -1,0 +1,140 @@
+--- /Users/zauner/Documents/Arbeit/12-TUM/MeLiDos/WP2.2.5_Data_Analysis/ZaunerEtAl_bioRxiv_2026/audit/hypotheses/H09/report018_order56a_display_repair/recoverable_preimages/scripts/hypotheses/H09/run_h09_stage2.R	2026-08-22 07:36:08
++++ /Users/zauner/Documents/Arbeit/12-TUM/MeLiDos/WP2.2.5_Data_Analysis/ZaunerEtAl_bioRxiv_2026/scripts/hypotheses/H09/run_h09_stage2.R	2026-08-22 08:13:45
+@@ -2464,4 +2464,9 @@
+-    strip.text = ggplot2::element_text(face = "bold", size = 14),
+-    axis.text = ggplot2::element_text(size = 12),
+-    axis.title = ggplot2::element_text(size = 14),
+-    panel.grid.minor = ggplot2::element_blank()
++    text = ggplot2::element_text(size = 17),
++    legend.text = ggplot2::element_text(size = 17),
++    legend.title = ggplot2::element_text(size = 17),
++    strip.text = ggplot2::element_text(face = "bold", size = 17),
++    axis.text = ggplot2::element_text(size = 17),
++    axis.title = ggplot2::element_text(size = 17),
++    panel.grid.minor = ggplot2::element_blank(),
++    panel.spacing = grid::unit(12, "pt"),
++    plot.margin = ggplot2::margin(12, 16, 12, 12)
+@@ -2474 +2479 @@
+-  height = 6,
++  height = 6.5,
+@@ -2483 +2488 @@
+-  height = 6,
++  height = 6.5,
+@@ -2552,0 +2558,3 @@
++    text = ggplot2::element_text(size = 13),
++    legend.text = ggplot2::element_text(size = 13),
++    legend.title = ggplot2::element_text(size = 13),
+@@ -2554 +2562 @@
+-    axis.text = ggplot2::element_text(size = 12),
++    axis.text = ggplot2::element_text(size = 13),
+@@ -2556 +2564,3 @@
+-    panel.grid.minor = ggplot2::element_blank()
++    panel.grid.minor = ggplot2::element_blank(),
++    panel.spacing = grid::unit(10, "pt"),
++    plot.margin = ggplot2::margin(10, 14, 12, 10)
+@@ -2563 +2573 @@
+-  height = 6,
++  height = 6.5,
+@@ -2572 +2582 @@
+-  height = 6,
++  height = 6.5,
+@@ -2822 +2832,6 @@
+-    ggplot2::facet_wrap(~panel, scales = "free_x", ncol = 3) +
++    ggplot2::facet_wrap(
++      ~panel,
++      scales = "free_x",
++      ncol = 3,
++      labeller = ggplot2::label_wrap_gen(width = 26)
++    ) +
+@@ -2826,4 +2841,8 @@
+-      strip.text = ggplot2::element_text(size = 12, face = "bold"),
+-      axis.text = ggplot2::element_text(size = 12),
+-      axis.title = ggplot2::element_text(size = 13),
+-      panel.grid.minor = ggplot2::element_blank()
++      text = ggplot2::element_text(size = 17),
++      strip.text = ggplot2::element_text(size = 17, face = "bold"),
++      axis.text = ggplot2::element_text(size = 17),
++      axis.title = ggplot2::element_text(size = 17),
++      panel.grid.minor = ggplot2::element_blank(),
++      plot.tag = ggplot2::element_text(size = 17, face = "bold"),
++      panel.spacing = grid::unit(10, "pt"),
++      plot.margin = ggplot2::margin(10, 12, 10, 10)
+@@ -2840 +2859,6 @@
+-    ggplot2::facet_wrap(~panel, scales = "free", ncol = 3) +
++    ggplot2::facet_wrap(
++      ~panel,
++      scales = "free",
++      ncol = 3,
++      labeller = ggplot2::label_wrap_gen(width = 26)
++    ) +
+@@ -2844,4 +2868,8 @@
+-      strip.text = ggplot2::element_text(size = 12, face = "bold"),
+-      axis.text = ggplot2::element_text(size = 12),
+-      axis.title = ggplot2::element_text(size = 13),
+-      panel.grid.minor = ggplot2::element_blank()
++      text = ggplot2::element_text(size = 17),
++      strip.text = ggplot2::element_text(size = 17, face = "bold"),
++      axis.text = ggplot2::element_text(size = 17),
++      axis.title = ggplot2::element_text(size = 17),
++      panel.grid.minor = ggplot2::element_blank(),
++      plot.tag = ggplot2::element_text(size = 17, face = "bold"),
++      panel.spacing = grid::unit(10, "pt"),
++      plot.margin = ggplot2::margin(10, 12, 10, 10)
+@@ -2854 +2882,2 @@
+-        plot.title = ggplot2::element_text(face = "bold", size = 16)
++        plot.title = ggplot2::element_text(face = "bold", size = 18),
++        plot.margin = ggplot2::margin(12, 12, 8, 12)
+@@ -2869 +2898 @@
+-    height = 14,
++    height = 17.5,
+@@ -2878 +2907 @@
+-    height = 14,
++    height = 17.5,
+@@ -2893,3 +2922,2 @@
+-  10.5, 6, 1.5, 15.75, 9, 300, 170, 12,
+-  12 * (170 / 25.4) / 15.75,
+-  "PENDING_FINAL_SIZE_VISUAL_INSPECTION",
++  10.5, 6.5, 1.5, 15.75, 9.75, 300, 170, 17,
++  17 * (170 / 25.4) / 15.75,
+@@ -2896,0 +2925,5 @@
++    "PASS: Order 56a candidate inspected at original dimensions, 170 mm,",
++    "708 px, and 720 by 500 on 2026-08-22; no clipping, overlap, broken",
++    "wrapping, or blocking whitespace."
++  ),
++  paste(
+@@ -2905,3 +2938,2 @@
+-  8, 6, 1.5, 12, 9, 300, 170, 12,
+-  12 * (170 / 25.4) / 12,
+-  "PENDING_FINAL_SIZE_VISUAL_INSPECTION",
++  8, 6.5, 1.5, 12, 9.75, 300, 170, 13,
++  13 * (170 / 25.4) / 12,
+@@ -2908,0 +2941,5 @@
++    "PASS: Order 56a candidate inspected at original dimensions, 170 mm,",
++    "708 px, and 720 by 500 on 2026-08-22; no clipping, overlap, broken",
++    "wrapping, or blocking whitespace."
++  ),
++  paste(
+@@ -2939,3 +2976,2 @@
+-  10.5, 14, 1.5, 15.75, 21, 300, 170, 12,
+-  12 * (170 / 25.4) / 15.75,
+-  "PENDING_FINAL_SIZE_VISUAL_INSPECTION",
++  10.5, 17.5, 1.5, 15.75, 26.25, 300, 170, 17,
++  17 * (170 / 25.4) / 15.75,
+@@ -2942,0 +2979,5 @@
++    "PASS: Order 56a candidate inspected at original dimensions, 170 mm,",
++    "708 px, and 720 by 500 on 2026-08-22; no clipping, overlap, broken",
++    "wrapping, or blocking whitespace."
++  ),
++  paste(
+@@ -2950,3 +2991,2 @@
+-  10.5, 14, 1.5, 15.75, 21, 300, 170, 12,
+-  12 * (170 / 25.4) / 15.75,
+-  "PENDING_FINAL_SIZE_VISUAL_INSPECTION",
++  10.5, 17.5, 1.5, 15.75, 26.25, 300, 170, 17,
++  17 * (170 / 25.4) / 15.75,
+@@ -2953,0 +2994,5 @@
++    "PASS: Order 56a candidate inspected at original dimensions, 170 mm,",
++    "708 px, and 720 by 500 on 2026-08-22; no clipping, overlap, broken",
++    "wrapping, or blocking whitespace."
++  ),
++  paste(

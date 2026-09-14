@@ -1,0 +1,65 @@
+                                     check pass
+1                          draw_dimensions TRUE
+2                              draw_bounds TRUE
+3                     randomized_cdf_order TRUE
+4                         finite_residuals TRUE
+5                       probability_bounds TRUE
+6         nonnegative_conditional_variance TRUE
+7                       nine_endpoint_rows TRUE
+8                five_applicable_endpoints TRUE
+9       all_six_state_daytype_calibrations TRUE
+10               actual_date_unique_series TRUE
+11        three_state_temporal_assessments TRUE
+12           five_primary_screen_positions TRUE
+13                  frozen_model_unchanged TRUE
+14 failed_Pre_sleep_coverage_gate_retained TRUE
+           sample_id                          target
+              <char>                          <char>
+1: primary_any_valid               overall_adherence
+2: primary_any_valid          endpoint_probabilities
+3: primary_any_valid actual_date_temporal_dependence
+4: primary_any_valid    frozen_primary_numerical_fit
+                        status
+                        <char>
+1: acceptable_with_limitations
+2:              not_acceptable
+3:                   triggered
+4:    acceptable_with_cautions
+                                                    detail
+                                                    <char>
+1:  SYNTHETIC TEST ONLY, not an observed diagnostic result
+2:  SYNTHETIC TEST ONLY, not an observed diagnostic result
+3:  SYNTHETIC TEST ONLY, not an observed diagnostic result
+4: Stored numerical status; primary model was not refitted
+         residual_type
+                <char>
+1:             Pearson
+2:             Pearson
+3:             Pearson
+4: Randomized quantile
+5: Randomized quantile
+6: Randomized quantile
+M1 coverage remains failed and author-qualified. No fit, primary inference or gate rewrite.
+error: NONE
+mock_source:runtime_contract.R
+mock_source:boundary_model_contract.R
+mock_source:diagnostic_interface.R
+fit_schema_read
+mock_diagnostic_return
+rds:raw_diagnostic_checkpoint.rds
+mock_calibration
+csv:row_data.csv
+csv:calibration.csv
+csv:boundary_prediction.csv
+csv:residual_group_summary.csv
+csv:residual_patterns.csv
+csv:state_residual_covariance.csv
+csv:temporal_correlation.csv
+csv:temporal_gap_summary.csv
+csv:participant_influence.csv
+csv:assessment.csv
+csv:coverage_qualification.csv
+csv:construction_checks.csv
+csv:draw_usage.csv
+rds:diagnostics.rds
+csv:manifest.csv

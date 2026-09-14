@@ -1,10 +1,19 @@
 # MDER upper-tail device-day audit
 
 Finding ID: `FIND-018`  
-Related decisions: `METRIC-003`; `METRIC-008`  
-Status: author-approved disposition; device QC completed; registered sensitivities pending  
+Related historical decisions: `METRIC-003`; `METRIC-008`  
+Current decision: `METRIC-010`  
+Status: **historical ratio-of-integrals audit; new-estimand upper tail reopened**  
 Date: 2026-07-30  
 Severity: high for MDER models and maximum-value claims
+
+> **Supersession notice (2026-08-11).** The arithmetic and device evidence on
+> this page remains valid for the former ratio-of-integrals values, but its two
+> prespecified device-days and sensitivity disposition do not automatically
+> transfer to the mean-of-momentary-ratios estimand. Under `METRIC-010`, the
+> primary maxima are 1.857 near eye and 3.574 at the chest. Each MDER-dependent
+> hypothesis must inspect the new upper tail and influence under the new
+> fitted sample before making a stability claim.
 
 ## Finding
 

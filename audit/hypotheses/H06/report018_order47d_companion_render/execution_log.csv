@@ -1,0 +1,6 @@
+step,command,execution_count,exit_status,disposition
+preflight,"Rscript --vanilla /private/tmp/h06_order47d_preflight.R <root> /private/tmp/h06_order47d_preflight.HCmjWg",1,0,"Definitive preflight passed after a temporary verifier-only vectorization correction"
+companion_render,"GT_HTML_SEMANTIC_AUDIT_DIR=/private/tmp/h06_order47d_semantic.7o8aQn quarto render audit/hypotheses/H06/H06_analysis_preparation.qmd --profile nathealth",1,0,"Render and semantic hook passed"
+integration_helper,"Rscript --vanilla scripts/hypotheses/H06/build_h06_preparation_report_manifest.R",1,0,"411-row live-exact manifest written and website QMD synchronized"
+preparation_test,"Rscript --vanilla tests/hypotheses/H06/test_h06_preparation_report.R",1,1,"Stopped on stale literal HTML-link assertion; not rerun"
+safe_post_inspection,"Rscript --vanilla /private/tmp/h06_order47d_post.R <root> <preflight-dir> <semantic-dir> <post-dir>",4,0,"Temporary verifier was corrected only for its own data.table scoping and XPath logic; final run recorded 10 PASS and 2 FAIL"

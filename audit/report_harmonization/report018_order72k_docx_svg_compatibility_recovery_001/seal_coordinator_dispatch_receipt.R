@@ -1,0 +1,27 @@
+options(warn = 2)
+stopifnot(getRversion() == "4.6.1")
+root <- normalizePath(getwd(), mustWork = TRUE)
+base <- "audit/report_harmonization/report018_order72k_docx_svg_compatibility_recovery_001"
+harm <- "audit/report_harmonization/report018_order72k_non_s5_integration_dispatch/docx_svg_recovery_dispatch_001"
+pin <- function(path) {
+  f <- file.path(root, path)
+  stopifnot(file.exists(f), !dir.exists(f), identical(Sys.readlink(f), ""))
+  data.frame(path = path, sha256 = digest::digest(file = f, algo = "sha256", serialize = FALSE), bytes = unname(file.info(f)$size))
+}
+key_paths <- c("audit/report_harmonization/owner_orders/72k_docx_svg_compatibility_recovery_001.md", file.path(base, c("input_pins.csv", "release_manifest.csv", "dispatch_manifest.csv")))
+key_hashes <- c("b49a7d5f184d060624f157da0732dede453d09e286ec7e481901f8a01a035ab2", "7294576d95aaf2abca1575f445c6ff6df136dac85a0a2f7afa34f27e7ceb6b33", "0f29450842ba933f54ea2efcf82a05d849971d9e82081bfbb16075117a29ee1d", "5e9c3445234a01076c3dc1e5d2fe6cb7279d5505629037b06f8af8c7c9c9d812")
+stopifnot(identical(vapply(key_paths, function(p) pin(p)$sha256, character(1), USE.NAMES = FALSE), key_hashes))
+delivery <- jsonlite::fromJSON(file.path(root, harm, "actual_dispatch_receipt.json"), simplifyVector = FALSE)
+stopifnot(identical(delivery$threadId, "019ffb39-372e-7262-bfac-192751fd0e63"), identical(delivery$response$isError, FALSE), identical(delivery$sent_at$current_time, "2026-09-11 22:27:36 UTC"))
+central <- jsonlite::fromJSON(file.path(root, base, "coordinator_dispatch_result.json"), simplifyVector = FALSE)
+stopifnot(identical(central$recipient_thread_id, "019ff52e-48ac-77b3-9a0e-9a87749a3bba"), identical(central$response$isError, FALSE))
+paths <- c(key_paths, file.path(base, c("dispatch_message.md", "coordinator_dispatch_result.json", "coordinator_dispatch_receipt.md", "seal_coordinator_dispatch_receipt.R")), file.path(harm, c("actual_dispatch_receipt.json", "exclusive_file_assignment.md", "release_rehash_1718_rows.csv", "preflight_session.txt")))
+stopifnot(length(paths) == 12L, !anyDuplicated(paths))
+out <- file.path(base, "coordinator_dispatch_receipt_manifest.csv")
+stopifnot(!out %in% paths, !file.exists(file.path(root, out)))
+m <- do.call(rbind, lapply(paths, pin))
+write.csv(m, file.path(root, out), row.names = FALSE)
+recheck <- do.call(rbind, lapply(paths, pin))
+stopifnot(identical(m, recheck))
+print(do.call(rbind, lapply(c(file.path(base, "coordinator_dispatch_receipt.md"), out), pin)), row.names = FALSE)
+cat("COORDINATOR_COMPATIBILITY_DISPATCH_RECEIPT=PASS members=12/12 unique non-circular delivery=confirmed writer=observed_active outcome=pending\n")

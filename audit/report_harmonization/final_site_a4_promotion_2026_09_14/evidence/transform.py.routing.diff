@@ -1,0 +1,11 @@
+--- Accepted015a/transform.py
++++ Production016/transform.py
+@@ -1,5 +1,8 @@
+ """Exact accepted fragment delta and static two-route search projection."""
+ from common import *
++# Verification replay uses immutable accepted preimages, never promoted live bytes.
++LIVE=BASELINE
++CORPUS=PRECORPUS
+ from collections import Counter
+ from urllib.parse import quote
+ from lxml import html

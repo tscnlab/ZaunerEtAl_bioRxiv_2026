@@ -1,0 +1,10 @@
+domain,status,evidence
+sole render execution,PASS,One render; R 4.6.1; Quarto 1.9.37; exit 0; result HTML 15c537269ac0be96ce06c6b574946dc0b98d46afe36c3c696f804a216a7d0c76
+static and semantic acceptance,PASS,"All 12 nonvisual domains passed; 14 native gt tables, five figures, seven dynamic links, and exact semantic reversal."
+secure loopback function and layout,PASS_EXCEPT_LISTED_DEFECTS,"No page-level overflow; callout, navigation, links, tab switching, tables, and figures were inspected at all three required viewports."
+predictor-tab content,FAIL_CLOSED,"Tables 5, 6, and 7 have distinct captions but text-identical three-predictor bodies because the live dplyr filter is shadowed."
+figure final-size typography,FAIL_CLOSED,Figures 1 through 4 are below 7 pt at 170 mm; Figure 5 passes.
+post-QA build preservation,PASS,All 846 build members are byte-identical to the post-render inventory; zero build symlinks.
+post-QA protected preservation,PASS,"All 3,260 protected members are byte-identical to the post-render inventory."
+loopback teardown,PASS,"QA viewport reset, QA tab closed, server exited, and no listener remains on 127.0.0.1:56199."
+order disposition,FAIL_CLOSED,"Return the consolidated defect package. No source patch, second render, companion render, or later target execution occurred."

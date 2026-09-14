@@ -1,0 +1,93 @@
+--- accepted_complete_checker
++++ order60c_complete_verifier
+@@ -284,7 +284,7 @@
+     "3f5a0d2ead03d2cb149451709110b59ba1387401f9ff633dfba1a0663f4b0816",
+     "c5724711ad1aa94631df0b6186fee92398d414ae02690ade08f320b29d6b6db7",
+     "fd6307a6a2e9365f95f18f1fd668165cf833847cab58bac9d3be1e8a9b6dde11",
+-    "088e0a1235d2561515613271e497ae55124a2bbe39f5fa9e2173583df131dea8",
++    "b0af27946d6c4001e659e9edb27bfab0fdfd3a36aa8be536d51ed50ae234a3c0",
+     "3d945c2b813ffaa2291ddebbe01f1f45c5c4ae7fe10256c9a1c8b15c3b531e7b",
+     "7c565618a4d3ec1c2240419b1daead2189616fce97931dde68e0a9450db8f41f",
+     "317f31069e6019475023b3097b1d7f1b00435755e0a109e40535fab89b570bf8",
+@@ -300,7 +300,7 @@
+     54527,
+     289711,
+     775131,
+-    16736,
++    16783,
+     8062,
+     10562,
+     10130,
+@@ -507,7 +507,8 @@
+ ]
+ expected_stage3_mismatch <- c(
+   "audit/decisions/figure_readability_and_layout.md",
+-  "notebooks/hypotheses/H11.qmd"
++  "notebooks/hypotheses/H11.qmd",
++  "tests/hypotheses/H11/test_h11_stage3_reader_report.R"
+ )
+ 
+ semantic_audit_dir <- Sys.getenv("H11_SEMANTIC_AUDIT_DIR", unset = "")
+@@ -558,6 +559,15 @@
+       match("notebooks/hypotheses/H11.qmd", stage3_mismatch$path)
+     ],
+     "7909ba06782c84223197ab7fcd16493d7ee6e6d8b63c750aa81f17cb97977867"
++  ) &&
++  identical(
++    stage3_mismatch$live_sha256[
++      match(
++        "tests/hypotheses/H11/test_h11_stage3_reader_report.R",
++        stage3_mismatch$path
++      )
++    ],
++    "b0af27946d6c4001e659e9edb27bfab0fdfd3a36aa8be536d51ed50ae234a3c0"
+   )
+ utils::write.csv(
+   stage3_mismatch,
+@@ -610,6 +620,7 @@
+   "audit/decisions/figure_readability_and_layout.md",
+   "audit/hypotheses/H11/H11_analysis_preparation.qmd",
+   "notebooks/hypotheses/H11.qmd",
++  "tests/hypotheses/H11/test_h11_stage3_reader_report.R",
+   "_quarto-nathealth.yml"
+ )
+ if (phase == "postrender") {
+@@ -693,7 +704,8 @@
+   '  stage3_manifest$bytes != manifest_live_bytes',
+   'expected_mismatch <- c(',
+   '  "audit/decisions/figure_readability_and_layout.md",',
+-  '  "notebooks/hypotheses/H11.qmd"',
++  '  "notebooks/hypotheses/H11.qmd",',
++  '  "tests/hypotheses/H11/test_h11_stage3_reader_report.R"',
+   ')',
+   'if (identical(Sys.getenv("H11_RESULT_PHASE"), "postrender")) {',
+   '  expected_mismatch <- c(',
+@@ -733,6 +745,13 @@
+   '    )]],',
+   '    "7909ba06782c84223197ab7fcd16493d7ee6e6d8b63c750aa81f17cb97977867"',
+   '  ),',
++  '  identical(',
++  '    manifest_live_sha[[match(',
++  '      "tests/hypotheses/H11/test_h11_stage3_reader_report.R",',
++  '      stage3_manifest$path',
++  '    )]],',
++  '    "b0af27946d6c4001e659e9edb27bfab0fdfd3a36aa8be536d51ed50ae234a3c0"',
++  '  ),',
+   '  any(stage3_manifest$role == "rendered_report"),',
+   '  any(stage3_manifest$role == "audit_or_gate"),',
+   '  any(stage3_manifest$path ==',
+@@ -885,7 +904,13 @@
+ } else {
+   stopifnot(file.exists(science_inventory_path))
+   sealed_science <- utils::read.csv(science_inventory_path, check.names = FALSE)
+-  science_pass <- identical(h11_science_inventory, sealed_science)
++  science_pass <-
++    identical(h11_science_inventory$path, sealed_science$path) &&
++    identical(h11_science_inventory$sha256, sealed_science$sha256) &&
++    identical(
++      as.numeric(h11_science_inventory$bytes),
++      as.numeric(sealed_science$bytes)
++    )
+ }
+ add_check(
+   "H11 protection",

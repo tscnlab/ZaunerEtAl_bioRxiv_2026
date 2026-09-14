@@ -1,6 +1,7 @@
 source("scripts/pipeline/paths_io.R")
 source("scripts/pipeline/assertions.R")
 source("scripts/pipeline/metric_display_registry.R")
+source("scripts/pipeline/time_support.R")
 source("scripts/pipeline/manuscript_prepared_data.R")
 source("scripts/pipeline/build_manuscript_prepared_data.R")
 source("scripts/pipeline/verify_manuscript_prepared_data_artifacts.R")
@@ -47,9 +48,69 @@ stopifnot(
   ] ==
     "Uncorrected manuscript-prepared dose",
   output_mapping$variant_label[
-    output_mapping$metric_id == "mder_ratio_of_integrals"
+    output_mapping$metric_id == "mder_mean_of_viable_ratios"
   ] ==
-    "Mean of epoch-wise melEDI/illuminance ratios"
+    paste(
+      "Gap-timing-unaware mean of viable one-minute",
+      "melEDI/illuminance ratios"
+    )
+)
+
+message("Checking the METRIC-010 one-minute support boundary and DST rule")
+synthetic_date <- as.Date("2025-10-26")
+synthetic_time <- as.POSIXct(synthetic_date, tz = "UTC") +
+  seq.int(0, by = 60, length.out = 1440L)
+synthetic_mder <- tibble::tibble(
+  site = "TEST",
+  Id = "TEST_S001",
+  Datetime = synthetic_time,
+  Date = synthetic_date,
+  MEDI = c(rep(2, 720L), rep(0, 720L)),
+  LIGHT = c(rep(1, 720L), rep(0, 720L))
+)
+synthetic_mder <- dplyr::bind_rows(
+  synthetic_mder,
+  dplyr::mutate(
+    synthetic_mder[1L, ],
+    MEDI = 4,
+    LIGHT = 3
+  )
+)
+synthetic_support <- manuscript_prepared_build_mder_support(
+  synthetic_mder,
+  "glasses"
+)
+expected_synthetic_mder <- (1.5 + 719 * 2) / 720
+stopifnot(
+  nrow(synthetic_support) == 1L,
+  synthetic_support$viable_ratio_minutes == 720L,
+  synthetic_support$expected_minutes == 1440L,
+  synthetic_support$raw_source_rows == 1441L,
+  synthetic_support$duplicated_local_minutes == 1L,
+  synthetic_support$duplicate_source_rows == 1L,
+  synthetic_support$passes_viable_ratio_support,
+  synthetic_support$estimable,
+  isTRUE(all.equal(
+    synthetic_support$manuscript_prepared_value,
+    expected_synthetic_mder,
+    tolerance = 1e-14
+  ))
+)
+below_support <- synthetic_mder |>
+  dplyr::filter(
+    !(.data$Datetime == synthetic_time[[720L]] & dplyr::row_number() <= 1440L)
+  )
+below_support$MEDI[below_support$Datetime == synthetic_time[[720L]]] <- 0
+below_support$LIGHT[below_support$Datetime == synthetic_time[[720L]]] <- 0
+below_support_result <- manuscript_prepared_build_mder_support(
+  below_support,
+  "glasses"
+)
+stopifnot(
+  below_support_result$viable_ratio_minutes == 719L,
+  !below_support_result$estimable,
+  is.na(below_support_result$manuscript_prepared_value),
+  below_support_result$failure_reason == "below_viable_ratio_fraction"
 )
 
 message("Checking isolated RData object-name enforcement")
@@ -116,6 +177,7 @@ stopifnot(
     c(
       participant_metrics = 590L,
       participant_day_metrics = 27328L,
+      mder_support = 1708L,
       thirty_minute_data = 81744L,
       one_hour_data = 40464L
     )
@@ -126,6 +188,7 @@ stopifnot(
     c(
       "participant_metrics",
       "participant_day_metrics",
+      "mder_support",
       "thirty_minute_data",
       "one_hour_data",
       "normalized_input_references"
@@ -134,7 +197,13 @@ stopifnot(
   identical(
     production_verification$one_hour_rows$one_hour_rows,
     c(21288L, 19176L)
-  )
+  ),
+  identical(
+    production_verification$mder_summary$estimable_days,
+    c(723L, 687L)
+  ),
+  production_verification$mder_impossible_zero_repaired,
+  production_verification$non_mder_participant_day_cells_verified == 25620L
 )
 
 message("Checking isolated build and byte-stable regeneration")

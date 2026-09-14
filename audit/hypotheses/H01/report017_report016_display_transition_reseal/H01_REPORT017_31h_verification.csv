@@ -1,0 +1,16 @@
+check,expected,observed,status
+Stage 3 manifest rows,108 exact,108 exact,PASS
+Stage 3 preserved pre-existing rows,92,92,PASS
+Stage 3 authorized identity updates,3,3,PASS
+Stage 3 allowlisted appends,13,13,PASS
+Worker manifest rows,1644,1644,PASS
+Worker preserved pre-existing rows outside five updates,1626,1626,PASS
+Worker authorized identity updates,5 plus one bounded correction to the same test row,5 plus one bounded correction to the same test row,PASS
+Worker allowlisted appends,13,13,PASS
+Worker live-exact rows,1638 with six frozen unrelated historical identities,1638 with six frozen unrelated historical identities,PASS_WITH_HISTORICAL_ROWS
+REPORT-016 protected files,7,7,PASS
+Approved protected transitions,2 exact image paths,2 exact image paths,PASS
+Dynamic links,40 occurrences / 36 anchors,40 occurrences / 36 anchors,PASS
+Historical reconciliation manifest,unchanged gate,7 intentionally historical identities differ from live files,FAIL_CLOSED_STOP
+Reporting manifest identity,d0ed8e0c...,d0ed8e0c62579597,PASS
+Render,not run,not run,PASS

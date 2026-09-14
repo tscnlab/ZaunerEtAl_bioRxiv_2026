@@ -88,6 +88,12 @@ for (pattern in forbidden) {
 full <- paste(lines, collapse = "\n")
 visible <- strip_fenced_blocks(lines)
 visible_no_code <- gsub("`[^`]*`", "", visible)
+visible_flat <- gsub("[[:space:]]+", " ", visible)
+approved_equivalence_explanation <- paste(
+  "The stored example-day display was created from an earlier version of the",
+  "site/daylight-context file. The accepted current file contains the same",
+  "site/daylight values used here; only file-level provenance metadata changed."
+)
 
 expect_true(
   grepl('title="What is calculated during this render?"', full, fixed = TRUE),
@@ -117,9 +123,20 @@ expect_true(
   ),
   "Current showcase manifest identity is absent."
 )
+for (token in c(
+  "870cbb5d5f9414f61ee7db05b61a12eb51d56c9273e9ae7dfd05094984c47164",
+  "0757fc175c44fd33e9d8b06e4f9352699c18bfe50bbcf1c65d141f3f36a1cb97",
+  "01a07b87799faeb8291bb6187ced96ab7abdcf2399ee77c5dcfd19d608b1194c",
+  "b0e8de539572ee595cc91027e7a2d919ba01237f780e50a76e5e4468d497c4bf",
+  "39ffe488de86f5d7cdc56d65c582c9de31f9054f8565936b4ec74e01491f26d0",
+  "7dc64cc5026947ef96d6e4ab112bb767414420be97817f022082248db68d7028"
+)) {
+  expect_true(grepl(token, full, fixed = TRUE), paste("Missing identity:", token))
+}
 for (path in c(
   "artifacts/03_coverage/light_glasses_coverage.rds",
   "artifacts/06_model_data/context/site_solar_context.rds",
+  "artifacts/06_model_data/context/site_solar_context.csv",
   "config/site_metadata.csv",
   "config/site_display_registry.csv",
   "artifacts/12_manifests/prepared_day_showcase_artifacts.csv",
@@ -128,7 +145,10 @@ for (path in c(
   "artifacts/08_diagnostics/prepared_day_showcase/selection_settings.csv",
   "artifacts/11_source_data/prepared_day_showcase.csv",
   "artifacts/10_figures/prepared_day_showcase.png",
-  "artifacts/10_figures/prepared_day_showcase.svg"
+  "artifacts/10_figures/prepared_day_showcase.svg",
+  "audit/reconciliation/preparation07/site_solar_context_equivalence_audit.md",
+  "audit/reconciliation/preparation07/site_solar_context_equivalence_evidence.csv",
+  "audit/reconciliation/preparation07/site_solar_context_equivalence_manifest.csv"
 )) {
   expect_true(grepl(path, full, fixed = TRUE), paste("Missing path:", path))
 }
@@ -140,20 +160,63 @@ for (path in c(
   expect_true(grepl(path, full, fixed = TRUE), paste("Missing script:", path))
 }
 
+expect_true(
+  grepl(approved_equivalence_explanation, visible_flat, fixed = TRUE),
+  "The approved site/daylight-context explanation is absent."
+)
+expect_true(
+  grepl("Equivalent values, different file version", full, fixed = TRUE),
+  "The plain site/daylight-context equivalence label is absent."
+)
+for (token in c(
+  "nrow(equivalence_evidence) == 17L",
+  "sum(equivalence_evidence$status == \"PASS\") == 16L",
+  "EXPECTED_PROVENANCE_FAIL_ONLY",
+  "17 PASS and manifest::input_hashes FAIL",
+  "618 rows; 47 columns; zero changed cells",
+  "9 keys and 4 fields exactly equal as stored strings",
+  "nrow(equivalence_seal) == 2L",
+  "all(equivalence_seal$r_version == \"4.6.1\")",
+  "all(equivalence_seal$status == \"PASS\")"
+)) {
+  expect_true(
+    grepl(token, full, fixed = TRUE),
+    paste("Missing stored-evidence contract:", token)
+  )
+}
+
 for (token in c(
   "display-only inspection",
-  "None of the Preparation 07",
   "no hypothesis-analysis handoff",
-  "does not rerun the fixed-seed selection",
-  "does not rerun",
   "12,960",
   "1,440",
-  "20260730",
   "50% valid observations",
   "80% valid observations"
 )) {
   expect_true(grepl(token, visible, fixed = TRUE), paste("Missing statement:", token))
 }
+for (token in c(
+  "none enters an H01–H11 model",
+  "selection was not repeated",
+  "does not repeat the selection"
+)) {
+  expect_true(
+    grepl(token, visible_flat, fixed = TRUE),
+    paste("Missing visible semantic statement:", token)
+  )
+}
+expect_true(
+  grepl("unique(manifest$seed) == 20260730L", full, fixed = TRUE),
+  "The fixed-seed source assertion is absent."
+)
+expect_true(
+  grepl(
+    "The full production verifier is deliberately not rerun here because",
+    full,
+    fixed = TRUE
+  ),
+  "The full-source verifier-not-rerun assertion is absent."
+)
 
 table_chunks <- Filter(
   function(chunk) any(grepl("^#\\| label: tbl-", chunk$code)),
@@ -191,15 +254,20 @@ for (chunk in figure_chunks) {
   )
 }
 expect_true(
-  grepl("axis.text = ggplot2::element_text(size = 9)", full, fixed = TRUE) &&
-    grepl("strip.text = ggplot2::element_text(", full, fixed = TRUE) &&
-    grepl("size = 9.5", full, fixed = TRUE) &&
-    grepl("legend.text = ggplot2::element_text(size = 9)", full, fixed = TRUE),
+  grepl("legend.title = ggplot2::element_text(size = 10)", full, fixed = TRUE) &&
+    grepl("legend.text = ggplot2::element_text(size = 10)", full, fixed = TRUE) &&
+    grepl(
+      "strip\\.text\\s*=\\s*ggplot2::element_text\\(\\s*size\\s*=\\s*10\\s*,",
+      full,
+      perl = TRUE
+    ) &&
+    grepl("axis.text = ggplot2::element_text(size = 10)", full, fixed = TRUE) &&
+    grepl("axis.title = ggplot2::element_text(size = 10)", full, fixed = TRUE),
   "REPORT-011 figure typography contract is absent."
 )
 expect_true(
-  grepl("figure source-data CSV", visible, fixed = TRUE) &&
-    grepl("split into three three-panel figures", visible, fixed = TRUE),
+  grepl("figure source-data CSV", visible_flat, fixed = TRUE) &&
+    grepl("split into three three-panel figures", visible_flat, fixed = TRUE),
   "The readable figure split or paired source-data statement is absent."
 )
 expect_true(
@@ -214,6 +282,8 @@ if (length(args) >= 1L) {
     readLines(html_path, warn = FALSE, encoding = "UTF-8"),
     collapse = "\n"
   )
+  html_unwrapped <- gsub("\u200b", "", html, fixed = TRUE)
+  html_flat <- gsub("[[:space:]]+", " ", html_unwrapped)
   for (token in c(
     "Preparation 07: Inspect example days from each study site",
     "tbl-example-day-inputs",
@@ -236,6 +306,26 @@ if (length(args) >= 1L) {
     "Kumasi (GH)"
   )) {
     expect_true(grepl(token, html, fixed = TRUE), paste("HTML lacks:", token))
+  }
+  expect_true(
+    grepl(approved_equivalence_explanation, html_flat, fixed = TRUE),
+    "HTML lacks the approved site/daylight-context explanation."
+  )
+  for (token in c(
+    "Equivalent values, different file version",
+    "audit/reconciliation/preparation07/site_solar_context_equivalence_audit.md",
+    "audit/reconciliation/preparation07/site_solar_context_equivalence_evidence.csv",
+    "audit/reconciliation/preparation07/site_solar_context_equivalence_manifest.csv",
+    "870cbb5d5f9414f61ee7db05b61a12eb51d56c9273e9ae7dfd05094984c47164",
+    "0757fc175c44fd33e9d8b06e4f9352699c18bfe50bbcf1c65d141f3f36a1cb97",
+    "01a07b87799faeb8291bb6187ced96ab7abdcf2399ee77c5dcfd19d608b1194c",
+    "b0e8de539572ee595cc91027e7a2d919ba01237f780e50a76e5e4468d497c4bf",
+    "39ffe488de86f5d7cdc56d65c582c9de31f9054f8565936b4ec74e01491f26d0"
+  )) {
+    expect_true(
+      grepl(token, html_unwrapped, fixed = TRUE),
+      paste("HTML lacks provenance reconciliation token:", token)
+    )
   }
   expect_true(
     lengths(regmatches(html, gregexpr('<table class="gt_table ', html, fixed = TRUE))) == 7L,

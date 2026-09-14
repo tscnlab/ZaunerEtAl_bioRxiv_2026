@@ -1,0 +1,5 @@
+2026-09-14 13:46 UTC
+Stopped only the task-created server PID28418 using SIGTERM. Its retained exec session28406 exited0 with 'Server closed'.
+Approved read-only check: /usr/sbin/lsof -nP -iTCP:55182 -sTCP:LISTEN
+Result: exit1, empty output. No listener remains on the exact temporary port55182.
+The lifecycle JSON also records status stopped. No unrelated process was stopped.

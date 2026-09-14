@@ -1,0 +1,2299 @@
+---
+title: "Preregistration deviations and current analysis decisions"
+subtitle: "What changed from the registered plan, why it changed, and how to interpret the current analyses"
+date: 2026-08-12
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    code-tools: false
+execute:
+  enabled: false
+---
+
+# How to read this page {#how-to-read}
+
+A preregistration records the analysis plan before the results are known. A deviation is a scientifically relevant difference between that plan and the analysis now used. This page states those differences directly and keeps their stable IDs so that result and preparation reports can link to the exact decision that affects them.
+
+The first section contains current scientific deviations. The second keeps one qualification that is still open. The third records consequential implementation issues that have been resolved or superseded and therefore do not describe the current method. The final section contains environment, source, and documentation provenance.
+
+::: {.callout-note title="Current interpretation"}
+Use **Current analysis** and **What this means for interpretation** to understand the accepted analysis. The **Preregistered or expected** field is preserved to show what differed; resolved-history entries must not be read as the current method.
+:::
+
+## Statistical terms used across entries
+
+::: {.callout-tip title="Short glossary"}
+- A **site-average estimate** is an average across sites that gives each site equal weight.
+- A **predictor-by-site interaction** allows the association with a predictor to differ among study sites.
+- A **false-discovery-rate (FDR) adjustment** accounts for a declared family of statistical tests; later entries use **FDR**.
+- **Model checks** (model diagnostics) assess whether the fitted model is adequate for its intended interpretation.
+- **Participant-cluster-robust uncertainty** allows repeated observations from the same participant to remain associated without treating them as independent.
+- A **sensitivity analysis** repeats an analysis after one stated choice is changed to assess whether the interpretation is stable.
+:::
+
+::: {.callout-tip title="Time curves and transformed results"}
+- A **nonlinear generalized additive model (GAM) analysis** lets the estimated exposure pattern vary flexibly over time rather than forcing a straight line; later entries may use **GAM**.
+- **AR(1)** is a model for autocorrelation in which observations closer together in a sequence are expected to be more similar; the similarity decreases with separation.
+- A **derivative** is the estimated rate at which a fitted curve is changing at a given point.
+- A **Shapley allocation** distributes fitted-model variation among model components by averaging their added contribution across possible entry orders.
+- A **back-transformed** quantity has been converted from the model's transformed scale to an interpretable response-scale quantity, such as a ratio or time difference.
+- A **95% confidence interval (95% CI)** gives the range of parameter values compatible with the estimate under the stated model and uncertainty procedure.
+:::
+
+## Light-exposure measures named in entries
+
+::: {.callout-tip title="Measure glossary"}
+- **Melanopic equivalent daylight illuminance (melEDI)** describes light in terms of its stimulation of the melanopsin pathway and is reported in lux.
+- **M10** and **L10** describe the brightest and darkest supported consecutive 10-hour windows, respectively.
+- **Melanopic daylight efficacy ratio (MDER)** is the mean of viable one-minute ratios of melEDI to photopic illuminance in the current analysis.
+- **Interdaily stability (IS)** describes regularity across days; **intradaily variability (IV)** describes fragmentation across adjacent hours within days.
+- **MCTQ** and **MEQ** are distinct chronotype measures: corrected midsleep timing from the Munich Chronotype Questionnaire and morningness preference from the Morningness–Eveningness Questionnaire.
+- **LEBA** is the Light Exposure Behaviour Assessment, and **VLSQ-8** is an eight-item self-report measure of visual light sensitivity.
+:::
+
+# Current scientific deviations {#scientific-deviation}
+
+These 60 entries remain relevant to what was measured, analysed, or inferred. They are grouped by their role in the scientific analysis, not by the date on which the difference was documented.
+
+## Study population, samples, placement, and context
+
+### DEV-001: All hypotheses; placement {#dev-001}
+
+**Topic.** All hypotheses; placement
+
+**Current disposition.** Implemented
+
+**Preregistered or expected.** Chest data primary; repeat with glasses for robustness
+
+**Current analysis.** Near-eye glasses measurements are primary for the ocular-exposure estimand. Chest measurements are complementary and are compared on placement-matched samples when a direct placement comparison is shown.
+
+**Why.** The placements measure related but non-interchangeable light fields, so simple pooling or unmatched identity comparisons are not valid.
+
+**Affected hypotheses.** All hypotheses (H01–H11)
+
+**What this means for interpretation.** Primary conclusions come from near-eye data; chest evidence is labelled complementary and does not replace the primary estimand.
+
+**Related records.** [REP-001](preregistration_deviations.qmd#rep-001) and [REP-002](preregistration_deviations.qmd#rep-002)
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/decisions/placement_decision.md`
+- `audit/decisions/paired_placement_comparison_display.md`
+
+</details>
+
+### DEV-004: Site sample size and placement availability {#dev-004}
+
+**Topic.** Site sample size and placement availability
+
+**Current disposition.** Implemented
+
+**Preregistered or expected.** Target 15-30 participants per site using all eligible repository participants
+
+**Current analysis.** Recruitment and placement availability remain uneven by site. Every accepted hypothesis analysis now reports its exact participants, participant-days or participant-hours, observations, placements, and sites rather than presenting one universal sample size.
+
+**Why.** Uneven support is an observed feature of the study design and cannot be repaired analytically; exact model-specific denominators and complementary-placement labels are the approved response.
+
+**Affected hypotheses.** All hypotheses (H01–H11)
+
+**What this means for interpretation.** Site and placement comparisons must be interpreted with their model-specific support, especially for Munich (DE), San José (CR), and glasses-versus-chest comparisons.
+
+**Related records.** None
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/decisions/site_display_conventions.md`
+- `audit/handoffs/H01_worker_handoff.md`
+- `audit/handoffs/H02_worker_handoff.md`
+
+</details>
+
+### IMP-012: Metric construct; full-day and sleep {#imp-012}
+
+**Topic.** Metric construct; full-day and sleep
+
+**Current disposition.** Implemented
+
+**Preregistered or expected.** The intended 24-hour environmental-light record combines worn near-eye waking measurements with bedside sleep-environment measurements during the diary-defined sleep window
+
+**Current analysis.** The full-day hybrid record combines worn waking measurements with retained bedside sleep-environment measurements and is described explicitly as such.
+
+**Why.** This preserves the practical 24-hour environmental record without mislabelling sleep values as ocular exposure.
+
+**Affected hypotheses.** All hypotheses (H01–H11)
+
+**What this means for interpretation.** Full-day metrics are hybrid personal/environmental summaries; sleep-specific interpretations remain environmental.
+
+**Related records.** [DEV-005](preregistration_deviations.qmd#dev-005) and [REP-003](preregistration_deviations.qmd#rep-003)
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/decisions/placement_decision.md`
+- `audit/decisions/daily_coverage_denominator.md`
+
+</details>
+
+### REP-001: Placement pooling {#rep-001}
+
+**Topic.** Placement pooling
+
+**Current disposition.** Implemented
+
+**Preregistered or expected.** No pooled placement model was preregistered; chest was primary and glasses a robustness repeat
+
+**Current analysis.** Simple pooling of near-eye and chest measurements is rejected; placements retain separate estimands.
+
+**Why.** The placements differ systematically and are not duplicate measures of one interchangeable quantity.
+
+**Affected hypotheses.** All hypotheses (H01–H11)
+
+**What this means for interpretation.** No pooled placement claim is permitted.
+
+**Related records.** [DEV-001](preregistration_deviations.qmd#dev-001)
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/decisions/placement_decision.md`
+
+</details>
+
+### REP-002: Chest complementary analysis {#rep-002}
+
+**Topic.** Chest complementary analysis
+
+**Current disposition.** Implemented
+
+**Preregistered or expected.** Registered glasses analysis was a robustness repeat
+
+**Current analysis.** Direct near-eye/chest displays use placement-matched participant, local-date, and clock keys, while chest remains complementary in all-available analyses.
+
+**Why.** Matching makes the compared placements refer to the same observed periods and avoids conflating placement with sample composition.
+
+**Affected hypotheses.** All hypotheses (H01–H11)
+
+**What this means for interpretation.** Matched comparisons describe placement sensitivity, not equivalence, and unmatched all-available estimates are not plotted against each other as identities.
+
+**Related records.** [DEV-001](preregistration_deviations.qmd#dev-001)
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/decisions/paired_placement_comparison_display.md`
+
+</details>
+
+### REP-003: Sleep-period construct language {#rep-003}
+
+**Topic.** Sleep-period construct language
+
+**Current disposition.** Implemented
+
+**Preregistered or expected.** Registered outcomes referred to chest-mounted measurements, including sleep metrics
+
+**Current analysis.** Retained sleep-period logger values are described as bedside sleep-environment exposure.
+
+**Why.** This language matches what the logger can measure when wear is not verified during sleep.
+
+**Affected hypotheses.** All hypotheses (H01–H11)
+
+**What this means for interpretation.** Sleep-period results must not be called ocular exposure.
+
+**Related records.** [DEV-005](preregistration_deviations.qmd#dev-005) and [IMP-012](preregistration_deviations.qmd#imp-012)
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/decisions/placement_decision.md`
+
+</details>
+
+## Data preparation, timing, state, and support
+
+### DEV-005: Preprocessing; non-wear {#dev-005}
+
+**Topic.** Preprocessing; non-wear
+
+**Current disposition.** Implemented
+
+**Preregistered or expected.** Remove non-wear periods identified by device logs
+
+**Current analysis.** Logged non-wear outside reported sleep is set to missing, whereas logger values during the reported sleep interval are retained as measurements of the sleep environment and are not described as worn ocular exposure.
+
+**Why.** The retained sleep values answer a different construct question from waking personal exposure; the placement decision and reader reports now distinguish those constructs.
+
+**Affected hypotheses.** All hypotheses (H01–H11)
+
+**What this means for interpretation.** Sleep-environment results describe light at the logger location during attempted sleep, not verified eye-level exposure while the device was worn.
+
+**Related records.** None
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/decisions/placement_decision.md`
+- `audit/decisions/metric_validity.md`
+
+</details>
+
+### DEV-006: Preprocessing; sleep windows {#dev-006}
+
+**Topic.** Preprocessing; sleep windows
+
+**Current disposition.** Implemented
+
+**Preregistered or expected.** Registered rule refers to sleep but does not define attempted-sleep versus estimated-onset boundary
+
+**Current analysis.** Attempted-sleep time is the operational boundary for sleep-environment and pre-sleep metrics rather than estimated physiological sleep onset.
+
+**Why.** Attempted sleep aligns the analysed interval with the intention to sleep and is now defined consistently in preparation and reader-facing methods.
+
+**Affected hypotheses.** All hypotheses (H01–H11)
+
+**What this means for interpretation.** Sleep and pre-sleep denominators refer to attempted sleep; they should not be interpreted as intervals anchored to measured sleep onset.
+
+**Related records.** None
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/decisions/metric_implementation_parameters.md`
+- [Preparation 04: Metric derivation](../notebooks/preparation/04_metric_derivation.qmd)
+
+</details>
+
+### IMP-002: Preprocessing saturation boundary {#imp-002}
+
+**Topic.** Preprocessing saturation boundary
+
+**Current disposition.** Implemented
+
+**Preregistered or expected.** Set melanopic EDI values above 120000 lx to missing
+
+**Current analysis.** ActLumus melEDI values at or above 100000 lx are treated as outside the instrument's valid operating range and set to invalid rather than retained.
+
+**Why.** The strict upper-bound rule follows the approved saturation decision and is applied before metric calculation.
+
+**Affected hypotheses.** All hypotheses (H01–H11)
+
+**What this means for interpretation.** Extremely high invalid readings do not contribute to exposure metrics or model samples.
+
+**Related records.** None
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/decisions/saturation_boundary.md`
+
+</details>
+
+### IMP-017: Timestamp integrity; DST fall-back {#imp-017}
+
+**Topic.** Timestamp integrity; DST fall-back
+
+**Current disposition.** Implemented
+
+**Preregistered or expected.** International site-local timestamps retain their absolute instants and remain uniquely keyed through daylight-saving transitions
+
+**Current analysis.** Timestamp processing uses UTC to preserve real instants and a separate local wall-clock axis for cross-site clock-time summaries. Repeated fall-back minutes are averaged only for clock-aligned profiles and retained as separate real intervals for elapsed-time and sequential metrics.
+
+**Why.** The dual-axis rule prevents daylight-saving transitions from either duplicating wall-clock profiles or erasing real elapsed intervals.
+
+**Affected hypotheses.** All hypotheses (H01–H11)
+
+**What this means for interpretation.** Clock-aligned and elapsed-time metrics can legitimately treat the repeated hour differently; the distinction is recorded in preparation provenance.
+
+**Related records.** None
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/findings/timestamp_dst_fallback.md`
+- `audit/decisions/metric_implementation_parameters.md`
+
+</details>
+
+### IMP-018: State precedence; measurement context {#imp-018}
+
+**Topic.** State precedence; measurement context
+
+**Current disposition.** Implemented
+
+**Preregistered or expected.** The sleep diary defines the relevant sleepprep-to-wake bedside window; wear logs are not sufficiently consistent to define sleep
+
+**Current analysis.** Diary state is authoritative for sleep context. Wear='sleep' is provenance only; wear='off' invalidates waking measurements outside diary sleep, while off or missing wear during diary sleep and site-leave records are retained according to the approved context rules.
+
+**Why.** The rule separates measurement-context validity from the participant's diary-defined state.
+
+**Affected hypotheses.** All hypotheses (H01–H11)
+
+**What this means for interpretation.** Waking non-wear is excluded, whereas retained sleep values remain environmental rather than verified worn exposure.
+
+**Related records.** [DEV-005](preregistration_deviations.qmd#dev-005)
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/findings/state_precedence_and_channel_mask.md`
+- `audit/decisions/placement_decision.md`
+
+</details>
+
+### DEV-019: H02 and H11 participant-day inclusion {#dev-019}
+
+**Topic.** H02 and H11 participant-day inclusion
+
+**Current disposition.** Implemented
+
+**Preregistered or expected.** The registration excludes days using declared coverage rules and does not exclude a day merely because its binned outcome is constant
+
+**Current analysis.** H02 and H11 preserve supported constant profiles and exclude only otherwise eligible participant-days whose finite one-minute melEDI values are all exactly zero under the approved upstream plausibility rule.
+
+**Why.** Individual zero observations are valid; the day-level exclusion targets only an implausible complete zero signal and is retained as a data sensitivity.
+
+**Affected hypotheses.** H02 and H11
+
+**What this means for interpretation.** The accepted samples do not apply a general constant-profile deletion.
+
+**Related records.** [DEV-057](preregistration_deviations.qmd#dev-057)
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/decisions/all_zero_medi_day_exclusion.md`
+- `audit/handoffs/H02_worker_handoff.md`
+- `audit/handoffs/H11_worker_handoff.md`
+
+</details>
+
+### DEV-055: Daily 80% coverage denominator {#dev-055}
+
+**Topic.** Daily 80% coverage denominator
+
+**Current disposition.** Implemented
+
+**Preregistered or expected.** The signed preregistration excludes participant-days below 80% valid wear time with sleep excluded from the daily denominator
+
+**Current analysis.** Primary daily coverage uses finite melEDI in eligible hours against a fixed 1440-wall-minute day for the hybrid waking-plus-bedside-sleep record. Sleep-excluded denominators are fixed sensitivities.
+
+**Why.** The author retained the hybrid 24-hour construct as primary while requiring alternative denominators to show dependence on sleep handling.
+
+**Affected hypotheses.** All hypotheses (H01–H11)
+
+**What this means for interpretation.** Primary daily metrics intentionally treat unobserved eligible minutes as missing against the full wall-clock day and should be interpreted as hybrid full-day exposure summaries.
+
+**Related records.** [IMP-012](preregistration_deviations.qmd#imp-012)
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/decisions/daily_coverage_denominator.md`
+
+</details>
+
+### DEV-056: TUM exercise-diary participant key {#dev-056}
+
+**Topic.** TUM exercise-diary participant key
+
+**Current disposition.** Implemented
+
+**Preregistered or expected.** Questionnaire and diary source records should be joined under their correct immutable site-participant identifiers
+
+**Current analysis.** The corrected upstream TUM exercise diary assigns the seven affected May 2024 records to TUM_S001, not TUM_S101; no local identifier rewrite is applied.
+
+**Why.** The current melidosData source contains the corrected participant key and is pinned directly.
+
+**Affected hypotheses.** H06
+
+**What this means for interpretation.** H06 exercise analyses use the authoritative corrected participant identity without altering shared data locally.
+
+**Related records.** None
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/handoffs/H06_worker_handoff.md`
+- `audit/reconciliation/preparation06/tum_exercise_source_transition_columns.csv`
+
+</details>
+
+### DEV-057: Participant-day light-signal plausibility {#dev-057}
+
+**Topic.** Participant-day light-signal plausibility
+
+**Current disposition.** Implemented
+
+**Preregistered or expected.** The preregistration and submitted implementation use coverage and signal-validity rules but do not specify exclusion of an otherwise eligible complete day-long exact-zero melEDI series
+
+**Current analysis.** The main analysis excludes an otherwise eligible participant-day only when every finite one-minute melEDI value is exactly 0 lx. Individual zeros remain valid, raw rows remain auditable, and the former inclusion is a fixed data sensitivity.
+
+**Why.** A complete exact-zero day is treated as a signal-plausibility failure rather than ordinary darkness.
+
+**Affected hypotheses.** All hypotheses (H01–H11)
+
+**What this means for interpretation.** Affected samples lose only the documented all-zero participant-days; zero-capable metrics and models otherwise retain zero observations.
+
+**Related records.** None
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/decisions/all_zero_medi_day_exclusion.md`
+
+</details>
+
+## Metric and outcome definitions
+
+### DEV-007: Metric definition; darkest level window {#dev-007}
+
+**Topic.** Metric definition; darkest level window
+
+**Current disposition.** Implemented
+
+**Preregistered or expected.** Geometric mean melanopic EDI during the 5 darkest hours
+
+**Current analysis.** The darkest-window level metric is the geometric mean melEDI during the ten darkest supported hours (L10 mean); no L5 level metric is used.
+
+**Why.** The ten-hour window is the approved operational definition and is subject to the current complete-window support rule.
+
+**Affected hypotheses.** H01, H05, H06, H07, H08, and H10
+
+**What this means for interpretation.** Results labelled L10 mean refer to a ten-hour darkest supported window and must not be interpreted as L5.
+
+**Related records.** [DEV-054](preregistration_deviations.qmd#dev-054)
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/decisions/metric_implementation_parameters.md`
+- `audit/decisions/l10_numerical_zero_normalization.md`
+
+</details>
+
+### DEV-052: Melanopic EDI dose {#dev-052}
+
+**Topic.** Melanopic EDI dose
+
+**Current disposition.** Implemented; downstream updates in progress
+
+**Preregistered or expected.** Daily dose should represent an adequately supported integration interval
+
+**Current analysis.** Melanopic EDI dose is defined as observed actual-duration dose, with the approved time-sensitive correction applied only when profile-weighted coverage reaches 0.80. It is not treated as an unqualified complete-day sum when exposure is missing.
+
+**Why.** The rule preserves the observed integration interval and avoids universal scaling over missing low-exposure night periods.
+
+**Affected hypotheses.** H01, H05, H06, H07, H08, and H10
+
+**What this means for interpretation.** Dose scale and model samples can differ from the historical calculation; affected hypothesis branches must use their current resealed artifacts.
+
+**Related records.** [IMP-016](preregistration_deviations.qmd#imp-016)
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/decisions/metric_implementation_parameters.md`
+- `audit/decisions/metric_validity.md`
+
+</details>
+
+### DEV-053: IS and IV temporal support {#dev-053}
+
+**Topic.** IS and IV temporal support
+
+**Current disposition.** Implemented; downstream updates in progress
+
+**Preregistered or expected.** IS and IV should quantify repeated-day regularity and true adjacent-hour fragmentation without bridging unobserved time
+
+**Current analysis.** IS and IV use explicit one-hour grids and true temporal support: at least three eligible days, at least 20 repeated clock hours for IS, and at least 24 true adjacent pairs across three days for IV; repeated fall-back hours collapse only for IS.
+
+**Why.** These rules prevent missing intervals from being treated as observed regularity or adjacency.
+
+**Affected hypotheses.** H01, H05, H06, and H10
+
+**What this means for interpretation.** Values and estimability can differ from the historical gap-bridging implementation; downstream affected branches are selectively resealed.
+
+**Related records.** [IMP-014](preregistration_deviations.qmd#imp-014)
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/decisions/metric_implementation_parameters.md`
+- `audit/decisions/metric_validity.md`
+
+</details>
+
+### DEV-054: Window, continuous-period, and timing support {#dev-054}
+
+**Topic.** Window, continuous-period, and timing support
+
+**Current disposition.** Implemented; downstream updates in progress
+
+**Preregistered or expected.** M10/L10, continuous threshold periods, and threshold timings should represent supported contiguous clock intervals without compressing gaps
+
+**Current analysis.** M10/L10 require 20 consecutive supported 30-minute bins with deterministic ties and midnight wrap for L10; continuous periods terminate at gaps; mean timing is circular and duration-weighted; first and last timing require boundary support.
+
+**Why.** The rules preserve clock continuity and prevent incomplete windows or observed edges from being treated as complete events.
+
+**Affected hypotheses.** H01, H05, H06, H07, H08, H09, and H10
+
+**What this means for interpretation.** Window levels, durations, timings, missingness, and affected model samples can change; current resealed artifacts supersede historical gap-unaware calculations.
+
+**Related records.** [DEV-008](preregistration_deviations.qmd#dev-008) and [IMP-015](preregistration_deviations.qmd#imp-015)
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/decisions/metric_implementation_parameters.md`
+- `audit/decisions/metric_validity.md`
+
+</details>
+
+### DEV-058: MDER metric definition and support {#dev-058}
+
+**Topic.** MDER metric definition and support
+
+**Current disposition.** Implemented and independently verified
+
+**Preregistered or expected.** The submitted implementation averages available momentary MEDI/LIGHT ratios and the preregistration does not specify a ratio-of-integrals replacement
+
+**Current analysis.** MDER is the arithmetic mean of viable one-minute MEDI/LIGHT ratios. A minute is viable only when both channels are finite and strictly positive; a day requires at least 720 viable minutes on the fixed 1440-minute local wall-clock grid, otherwise MDER is missing for that day.
+
+**Why.** The author specified momentary ratios averaged across viable pairs and rejected ratios of integrals. The shared and gap-timing-unaware implementations were independently verified.
+
+**Affected hypotheses.** H01, H05, H06, and H10
+
+**What this means for interpretation.** MDER represents the average spectral ratio during viable paired minutes, not a ratio of daily totals; metric-specific missingness and model samples follow the 50% viable-minute rule.
+
+**Related records.** [IMP-013](preregistration_deviations.qmd#imp-013) and [DEV-051](preregistration_deviations.qmd#dev-051)
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/decisions/mder_mean_of_viable_ratios.md`
+
+</details>
+
+### IMP-023: H01 L10 midpoint response conversion {#imp-023}
+
+**Topic.** H01 L10 midpoint response conversion
+
+**Current disposition.** Implemented
+
+**Preregistered or expected.** The submitted H01 implementation linearized the L10 midpoint by moving clock times strictly after noon onto negative hours
+
+**Current analysis.** For H01 L10 midpoint models, clock times strictly after 16:00 are represented on the preceding negative-hour scale; a noon-based conversion is retained as a same-row, same-model sensitivity.
+
+**Why.** The primary conversion avoids splitting the darkest-window midpoint across midnight in the fitted linear timing model.
+
+**Affected hypotheses.** H01
+
+**What this means for interpretation.** H01 L10 midpoint coefficients depend on the declared circular-to-linear representation and are interpreted with its sensitivity.
+
+**Related records.** None
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/decisions/h01_gate_resolution.md`
+- `audit/handoffs/H01_worker_handoff.md`
+
+</details>
+
+### IMP-024: H01 time below 10 lx melEDI before sleep {#imp-024}
+
+**Topic.** H01 time below 10 lx melEDI before sleep
+
+**Current disposition.** Implemented
+
+**Preregistered or expected.** The outcome was described as time below 10 lx melEDI in the three hours before sleep and was checked against a three-hour ceiling
+
+**Current analysis.** Time below 10 lx melEDI before sleep is the cumulative duration across all diary-defined pre-sleep intervals on the local calendar date; no three-hour or six-hour cap is imposed, and values above six hours trigger an audit warning only.
+
+**Why.** This is the implemented construct accepted by the author and is now stated explicitly.
+
+**Affected hypotheses.** H01
+
+**What this means for interpretation.** The metric can exceed six hours and should not be interpreted as exposure within a fixed pre-sleep window.
+
+**Related records.** None
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/decisions/h01_gate_resolution.md`
+- `audit/handoffs/H01_worker_handoff.md`
+
+</details>
+
+## Hypothesis models, estimands, and inference
+
+### DEV-009: H01 model {#dev-009}
+
+**Topic.** H01 model
+
+**Current disposition.** Implemented
+
+**Preregistered or expected.** Metric ~ Site + Latitude + participant-within-site random intercept; photoperiod for day/night duration metrics
+
+**Current analysis.** H01 now evaluates overall site, photoperiod, absolute latitude, and same-frame site-versus-linear-latitude adequacy as separate prespecified model-level questions with complete 17-metric FDR families; it does not select between separate site and latitude models by AIC.
+
+**Why.** Site and latitude are structurally linked because each site has one latitude. The accepted analysis separates the questions and uses the adequacy comparison to show when a linear latitude gradient does not capture site differences.
+
+**Affected hypotheses.** H01
+
+**What this means for interpretation.** Site effects and latitude gradients are not mutually interchangeable, and an adequacy result is not a residual site effect after latitude adjustment.
+
+**Related records.** None
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/handoffs/H01_worker_handoff.md`
+- [H01 analysis preparation and provenance](../audit/hypotheses/H01/H01_analysis_preparation.qmd)
+
+</details>
+
+### DEV-010: H02 smooth basis {#dev-010}
+
+**Topic.** H02 smooth basis
+
+**Current disposition.** Implemented
+
+**Preregistered or expected.** Cyclic site-specific time smooth with bs='cc'
+
+**Current analysis.** H02 uses a cyclic common time smooth with sum-to-zero site time deviations whose marginal basis is not forced cyclic; a fully cyclic site and participant formulation is retained as a model-form sensitivity.
+
+**Why.** The accepted basis comparison favoured the cyclic common smooth and found no residual benefit from replacing it with a non-cyclic global smooth.
+
+**Affected hypotheses.** H02
+
+**What this means for interpretation.** Midnight continuity is enforced for the global curve; site-deviation topology is an acknowledged model-form choice tested in sensitivity analysis.
+
+**Related records.** None
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/decisions/h02_final_analysis.md`
+- `audit/handoffs/H02_worker_handoff.md`
+
+</details>
+
+### DEV-011: H02 model structure {#dev-011}
+
+**Topic.** H02 model structure
+
+**Current disposition.** Implemented
+
+**Preregistered or expected.** Registered formula does not state a separate overall time smooth
+
+**Current analysis.** H02 uses a cyclic common time smooth, sum-to-zero site time deviations, participant-specific time curves, and a participant-day intercept with boundary-aware AR(1) sequences.
+
+**Why.** The hierarchy was selected through the H02 model evaluation and is inherited by H11.
+
+**Affected hypotheses.** H02
+
+**What this means for interpretation.** Variation and uncertainty are partitioned across time, site, participant, and participant-day under this richer hierarchy rather than the simpler registered structure.
+
+**Related records.** [DEV-021](preregistration_deviations.qmd#dev-021)
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/decisions/h02_final_analysis.md`
+- `audit/handoffs/H02_worker_handoff.md`
+
+</details>
+
+### DEV-012: H02 outcome and epoch {#dev-012}
+
+**Topic.** H02 outcome and epoch
+
+**Current disposition.** Implemented
+
+**Preregistered or expected.** Hourly geometric mean melanopic EDI
+
+**Current analysis.** H02 models arithmetic-mean melEDI in supported 30-minute bins as log10(melEDI + 0.1 lx), while the registered hourly geometric-mean outcome remains documented as the preregistered specification.
+
+**Why.** The 30-minute zero-aware outcome preserves the temporal curve and exact zeros needed by the accepted model and diagnostic workflow.
+
+**Affected hypotheses.** H02
+
+**What this means for interpretation.** H02 estimates, sample counts, and autocorrelation refer to supported 30-minute arithmetic-mean observations, not registered hourly geometric means.
+
+**Related records.** [DEV-042](preregistration_deviations.qmd#dev-042)
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/decisions/h02_final_analysis.md`
+- `audit/handoffs/H02_worker_handoff.md`
+
+</details>
+
+### DEV-013: H03-H04 site structure {#dev-013}
+
+**Topic.** H03-H04 site structure
+
+**Current disposition.** Implemented
+
+**Preregistered or expected.** Predictor random slope by site
+
+**Current analysis.** H03 and H04 use fixed study-site adjustment for the population-average category association and fit separate category-by-site interaction models to evaluate variation among sites.
+
+**Why.** The available number and support of sites did not justify the registered random-slope formulation. Separating the average association from the site interaction makes the two questions explicit.
+
+**Affected hypotheses.** H03 and H04
+
+**What this means for interpretation.** Primary effects describe the study-site-average association; site interactions are separate tests and do not redefine the primary omnibus test.
+
+**Related records.** None
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/handoffs/H03_worker_handoff.md`
+- `audit/handoffs/H04_worker_handoff.md`
+
+</details>
+
+### DEV-014: H03-H04 error distribution {#dev-014}
+
+**Topic.** H03-H04 error distribution
+
+**Current disposition.** Implemented
+
+**Preregistered or expected.** Registered as LMM without a non-Gaussian family specified
+
+**Current analysis.** H03 and H04 use fixed-power quasi-Tweedie log-mean models with participant-cluster robust covariance rather than Gaussian linear mixed models.
+
+**Why.** The response is non-negative, right-skewed, and includes exact zeros. The accepted working mean models are supported by targeted diagnostics but are not treated as calibrated zero-generating distributions.
+
+**Affected hypotheses.** H03 and H04
+
+**What this means for interpretation.** Effects are multiplicative mean comparisons on the response scale; residual dependence and zero-mass mismatch remain stated limitations.
+
+**Related records.** None
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/handoffs/H03_worker_handoff.md`
+- `audit/handoffs/H04_worker_handoff.md`
+
+</details>
+
+### DEV-015: H06 outcome {#dev-015}
+
+**Topic.** H06 outcome
+
+**Current disposition.** Implemented
+
+**Preregistered or expected.** Daily light-exposure metrics
+
+**Current analysis.** Main H06 deliberately analyses supported hourly geometric-mean melEDI rather than the preregistered daily metric set. The more preregistration-aligned daily-metric analysis is retained separately as complementary evidence.
+
+**Why.** The author selected the hourly route for parsimony, interpretability, and direct temporal context after evaluating both formulations.
+
+**Affected hypotheses.** H06
+
+**What this means for interpretation.** The main H06 result concerns hourly melEDI and repeated supported hours; it must not be presented as the preregistered daily-metric estimand.
+
+**Related records.** None
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/decisions/h06_primary_selection_and_daily_complement.md`
+- `audit/handoffs/H06_worker_handoff.md`
+
+</details>
+
+### DEV-016: H07 predictors and outcome selection {#dev-016}
+
+**Topic.** H07 predictors and outcome selection
+
+**Current disposition.** Implemented
+
+**Preregistered or expected.** Absolute-latitude-by-photoperiod tensor applied to all level, duration, and exposure-history metrics
+
+**Current analysis.** H07 retains all nine eligible metrics. The registered latitude-by-photoperiod surface is reported as non-identifiable in this design, and a separately labelled site-adjusted nonlinear photoperiod analysis provides descriptive evidence, including a derivative-defined plateau pattern.
+
+**Why.** Absolute latitude is determined by site and the observed joint support cannot identify the registered surface. The adapted analysis avoids significance-based outcome selection and avoids a mechanistic ceiling claim.
+
+**Affected hypotheses.** H07
+
+**What this means for interpretation.** The nonlinear patterns are descriptive, sensitive to model and site choices, and are not causal latitude effects or evidence of a physiological ceiling.
+
+**Related records.** None
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/handoffs/H07_worker_handoff.md`
+
+</details>
+
+### DEV-017: H01 predictor scope {#dev-017}
+
+**Topic.** H01 predictor scope
+
+**Current disposition.** Implemented
+
+**Preregistered or expected.** Photoperiod adjustment was explicitly registered only for metrics with a day/night-duration component
+
+**Current analysis.** H01 includes photoperiod in all 17 primary metric models and retains the narrower literal preregistration scope as a named sensitivity.
+
+**Why.** The author approved a common primary adjustment set while preserving direct evidence for what changes under the literal registered scope.
+
+**Affected hypotheses.** H01
+
+**What this means for interpretation.** Primary H01 estimates are photoperiod-adjusted even for metrics where the preregistration named it only selectively.
+
+**Related records.** None
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/handoffs/H01_worker_handoff.md`
+
+</details>
+
+### DEV-018: H01 response models {#dev-018}
+
+**Topic.** H01 response models
+
+**Current disposition.** Implemented
+
+**Preregistered or expected.** H01 registered linear mixed models for the metric outcomes
+
+**Current analysis.** H01 uses an approved metric-specific set of Gaussian, transformed-Gaussian, and Tweedie models with fixed diagnostic criteria and prespecified alternatives across data scenarios.
+
+**Why.** The 17 metrics differ in scale, bounds, exact-zero mass, and tail behaviour, so one universal Gaussian mixed model is not adequate.
+
+**Affected hypotheses.** H01
+
+**What this means for interpretation.** Effect scales and diagnostic limitations differ by metric and are reported explicitly.
+
+**Related records.** None
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/handoffs/H01_worker_handoff.md`
+
+</details>
+
+### DEV-020: H02 photoperiod representation {#dev-020}
+
+**Topic.** H02 photoperiod representation
+
+**Current disposition.** Implemented
+
+**Preregistered or expected.** H02 registered time site participant pattern and an AR(1) correction; it did not register a categorical day/night-state temporal deviation
+
+**Current analysis.** The accepted H02 primary model omits the earlier day/night-state smooth and does not call that term photoperiod.
+
+**Why.** The term did not represent daily photoperiod duration and was removed during the H02 model evaluation.
+
+**Affected hypotheses.** H02
+
+**What this means for interpretation.** H02 temporal results are not adjusted for a day/night-state smooth labelled as photoperiod.
+
+**Related records.** None
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/decisions/h02_final_analysis.md`
+- `audit/handoffs/H02_worker_handoff.md`
+
+</details>
+
+### DEV-021: H02 hierarchy {#dev-021}
+
+**Topic.** H02 hierarchy
+
+**Current disposition.** Implemented
+
+**Preregistered or expected.** H02 registered participant-time patterns within sites
+
+**Current analysis.** H02 uses participant-specific time curves, a participant-day random intercept, and boundary-aware AR(1) sequence starts.
+
+**Why.** The repeated 30-minute structure requires participant, day, and within-sequence dependence beyond the registered simple participant effect.
+
+**Affected hypotheses.** H02
+
+**What this means for interpretation.** Uncertainty and fitted variation reflect this hierarchy; H11 inherits it.
+
+**Related records.** [DEV-011](preregistration_deviations.qmd#dev-011)
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/decisions/h02_final_analysis.md`
+- `audit/handoffs/H02_worker_handoff.md`
+
+</details>
+
+### DEV-022: H03 light-source categories {#dev-022}
+
+**Topic.** H03 light-source categories
+
+**Current disposition.** Implemented
+
+**Preregistered or expected.** H03 registered all prespecified hourly primary light-source categories
+
+**Current analysis.** H03 retains seven prespecified light-source categories under one placement-independent support rule: indoor electric light, outdoor electric light, indoor daylight, outdoor daylight, emissive display light, darkness during sleep, and external light during sleep.
+
+**Why.** The accepted reconstruction removed the historical manual placement-specific category deletions and reports unsupported category-site cells transparently.
+
+**Affected hypotheses.** H03
+
+**What this means for interpretation.** The H03 association pertains to the seven retained categories; sparse site-category cells are not silently removed to change the construct.
+
+**Related records.** None
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/handoffs/H03_worker_handoff.md`
+
+</details>
+
+### DEV-023: H03 primary test estimand {#dev-023}
+
+**Topic.** H03 primary test estimand
+
+**Current disposition.** Implemented
+
+**Preregistered or expected.** H03 registered a light-source association with predictor variation by site
+
+**Current analysis.** H03 uses the additive site-plus-light-source model for the primary six-restriction category omnibus and a separate category-by-site interaction model for site-specific variation and descriptive estimates.
+
+**Why.** Separating the two models isolates the study-site-average category association from the interaction question.
+
+**Affected hypotheses.** H03
+
+**What this means for interpretation.** The primary omnibus is not a joint association-plus-interaction test; site-varying summaries are secondary to that primary test.
+
+**Related records.** [DEV-013](preregistration_deviations.qmd#dev-013)
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/handoffs/H03_worker_handoff.md`
+
+</details>
+
+### DEV-024: H03 multiplicity and contrasts {#dev-024}
+
+**Topic.** H03 multiplicity and contrasts
+
+**Current disposition.** Implemented
+
+**Preregistered or expected.** H03 requires FDR control within a declared hypothesis family
+
+**Current analysis.** H03 applies FDR correction to explicitly assembled complete contrast families; category and site-interaction questions are labelled separately and no hidden by-group adjustment is described as a single family.
+
+**Why.** The accepted scripts and tests verify vector-wide adjustment and the reported contrast provenance.
+
+**Affected hypotheses.** H03
+
+**What this means for interpretation.** Highlighted contrasts depend on the declared complete family rather than software defaults.
+
+**Related records.** [IMP-001](preregistration_deviations.qmd#imp-001)
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/handoffs/H03_worker_handoff.md`
+
+</details>
+
+### DEV-025: H04 activity categories {#dev-025}
+
+**Topic.** H04 activity categories
+
+**Current disposition.** Implemented
+
+**Preregistered or expected.** H04 registered all prespecified hourly activity categories
+
+**Current analysis.** H04 converts selected activity flags to a long activity variable, collapses outdoor work, outdoor free time, and open-air travel into Outdoors before pivoting, removes duplicate labels within hour, gives each co-selected category weight 1/k, and retains Other only when it is the sole selected category for descriptive display.
+
+**Why.** This author-approved construction preserves multi-label hours without allowing them to contribute more total weight than single-label hours, while combining sparse conceptually related outdoor activities.
+
+**Affected hypotheses.** H04
+
+**What this means for interpretation.** H04 estimates compare the defined activity categories; Other is not part of the primary five-category omnibus and multi-label hours are fractionally weighted.
+
+**Related records.** None
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/handoffs/H04_worker_handoff.md`
+
+</details>
+
+### DEV-026: H04 primary test estimand {#dev-026}
+
+**Topic.** H04 primary test estimand
+
+**Current disposition.** Implemented
+
+**Preregistered or expected.** H04 registered an activity association with predictor variation by site
+
+**Current analysis.** H04 uses the additive site-plus-activity model for the primary activity omnibus and a separate activity-by-site interaction model for site-specific variation and descriptive estimates.
+
+**Why.** The separation isolates the study-site-average activity association from variation among sites.
+
+**Affected hypotheses.** H04
+
+**What this means for interpretation.** The primary result is not a joint main-plus-interaction test.
+
+**Related records.** [DEV-013](preregistration_deviations.qmd#dev-013)
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/handoffs/H04_worker_handoff.md`
+
+</details>
+
+### DEV-027: H04 multiplicity and contrasts {#dev-027}
+
+**Topic.** H04 multiplicity and contrasts
+
+**Current disposition.** Implemented
+
+**Preregistered or expected.** H04 requires FDR control within a declared hypothesis family
+
+**Current analysis.** H04 applies FDR correction to explicitly assembled complete activity and site-interaction contrast families rather than relying on hidden by-groups or default Dunnett adjustments.
+
+**Why.** The accepted scripts and tests verify the family definitions and displayed p-value provenance.
+
+**Affected hypotheses.** H04
+
+**What this means for interpretation.** Highlighted activity/site comparisons reflect the declared full families.
+
+**Related records.** [IMP-001](preregistration_deviations.qmd#imp-001)
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/handoffs/H04_worker_handoff.md`
+
+</details>
+
+### DEV-028: H05 registered model {#dev-028}
+
+**Topic.** H05 registered model
+
+**Current disposition.** Implemented
+
+**Preregistered or expected.** H05 registered correlation matrices plus a site-adjusted Metric ~ LEBA + (1|Site) model
+
+**Current analysis.** H05 uses site-adjusted association models for each personal light-exposure metric and LEBA factor rather than participant-level pooled bivariate correlations.
+
+**Why.** Site adjustment preserves the registered scientific question while the accepted fixed-site implementation supplies a stable population-average estimate and a separate site-interaction assessment.
+
+**Affected hypotheses.** H05
+
+**What this means for interpretation.** H05 effects are site-adjusted model associations, not pooled correlation coefficients.
+
+**Related records.** [IMP-006](preregistration_deviations.qmd#imp-006)
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/handoffs/H05_stage2_handoff.md`
+- `audit/handoffs/H05_stage3_handoff.md`
+
+</details>
+
+### DEV-029: H05 metric-factor set and multiplicity {#dev-029}
+
+**Topic.** H05 metric-factor set and multiplicity
+
+**Current disposition.** Implemented
+
+**Preregistered or expected.** The registration refers to selected metrics and LEBA factors with FDR within H05 but does not enumerate the complete family
+
+**Current analysis.** H05 analyses four LEBA factors across 17 metrics and treats each declared 68-test vector as a complete FDR family, including non-significant members.
+
+**Why.** The full factor-by-metric grid was retained prospectively in the reconstructed analysis and verified after metric-specific amendments.
+
+**Affected hypotheses.** H05
+
+**What this means for interpretation.** Individual raw associations are interpreted only in the context of their complete 68-test family; the accepted analysis retains no primary association after adjustment.
+
+**Related records.** [IMP-001](preregistration_deviations.qmd#imp-001)
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/handoffs/H05_stage3_handoff.md`
+- `audit/handoffs/H05_stage4_handoff.md`
+
+</details>
+
+### DEV-030: H06 predictor scope {#dev-030}
+
+**Topic.** H06 predictor scope
+
+**Current disposition.** Implemented
+
+**Preregistered or expected.** H06 registered weekday/weekend and free/work day, daily exercise, and sleep onset, wake time, and duration as predictors of daily exposure metrics
+
+**Current analysis.** Main H06 uses three primary predictors: work versus free day, Active versus Sedentary day, and previous-night sleep duration. Weekday/weekend is a sensitivity; other registered sleep and exercise predictors are exploratory rather than members of the primary family.
+
+**Why.** The author approved this narrower predictor set for parsimony and interpretability in the hourly adaptation.
+
+**Affected hypotheses.** H06
+
+**What this means for interpretation.** The primary H06 claim is limited to these three predictors and cannot be generalized to all preregistered sleep or exercise variables.
+
+**Related records.** [DEV-015](preregistration_deviations.qmd#dev-015)
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/handoffs/H06_worker_handoff.md`
+
+</details>
+
+### DEV-031: H06 model and site structure {#dev-031}
+
+**Topic.** H06 model and site structure
+
+**Current disposition.** Implemented
+
+**Preregistered or expected.** H06 registered metric-specific daily models with measure random slopes by site and participant nested in site
+
+**Current analysis.** Main H06 fits a zero-inclusive quasi-Poisson log-mean model with fixed site, participant-cluster HC3 covariance, and finite-cluster inference. The primary additive model estimates study-site-average associations; separate predictor-by-site models evaluate interactions. Local clock is reserved for a distinct exploratory nonlinear analysis.
+
+**Why.** The robust population-average route addresses repeated supported hours without claiming a Gaussian individual-level error model; the separate nonlinear analysis describes time of day.
+
+**Affected hypotheses.** H06
+
+**What this means for interpretation.** Primary ratios are marginal mean comparisons for supported hourly melEDI. Residual zero mass, clustering, site dependence, and temporal-model limitations remain explicit.
+
+**Related records.** [DEV-015](preregistration_deviations.qmd#dev-015)
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/handoffs/H06_worker_handoff.md`
+
+</details>
+
+### DEV-032: H06 multiplicity and contrasts {#dev-032}
+
+**Topic.** H06 multiplicity and contrasts
+
+**Current disposition.** Implemented
+
+**Preregistered or expected.** H06 requires FDR control within a declared hypothesis family
+
+**Current analysis.** Main H06 uses separately declared complete FDR families for the three primary average associations, three site interactions, three practical contrasts, and corresponding gap-timing-unaware sensitivity families; exploratory site screens are labelled separately.
+
+**Why.** The accepted reconstruction assembles vector-wide families and separates average effects from interactions.
+
+**Affected hypotheses.** H06
+
+**What this means for interpretation.** Adjusted decisions must be read within their declared three-member family and exploratory site screens cannot override a non-retained interaction.
+
+**Related records.** [IMP-001](preregistration_deviations.qmd#imp-001)
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/handoffs/H06_worker_handoff.md`
+
+</details>
+
+### DEV-033: H07 outcome selection and multiplicity {#dev-033}
+
+**Topic.** H07 outcome selection and multiplicity
+
+**Current disposition.** Implemented
+
+**Preregistered or expected.** H07 registered all nine eligible level, duration, and exposure-history outcomes with FDR within H07
+
+**Current analysis.** H07 retains the complete nine-metric outcome set and does not select metrics using H01 significance or H07 AIC. Non-identifiable or diagnostically limited planned members remain visible rather than being dropped from the family.
+
+**Why.** The complete-family reconstruction prevents upstream or within-analysis significance selection.
+
+**Affected hypotheses.** H07
+
+**What this means for interpretation.** The nonlinear descriptive evidence must be interpreted across all nine planned metrics, including non-identifiable and limited branches.
+
+**Related records.** [DEV-016](preregistration_deviations.qmd#dev-016)
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/handoffs/H07_worker_handoff.md`
+
+</details>
+
+### DEV-034: H07 response model {#dev-034}
+
+**Topic.** H07 response model
+
+**Current disposition.** Implemented
+
+**Preregistered or expected.** The registered H07 GAMM applies to metrics with different units and support properties
+
+**Current analysis.** H07 uses metric-specific response specifications and diagnostics rather than one universal zero-aware log-Gaussian model for level, duration, and dose outcomes.
+
+**Why.** The metrics differ in units, bounds, exact-zero mass, and tail behaviour; the accepted working families are chosen and assessed per metric.
+
+**Affected hypotheses.** H07
+
+**What this means for interpretation.** Model adequacy and the meaning of changes differ by metric, and the sleep-environment Tweedie branch remains descriptive because its zero-mass diagnostic fails.
+
+**Related records.** None
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/handoffs/H07_worker_handoff.md`
+
+</details>
+
+### DEV-035: H08 primary test estimand {#dev-035}
+
+**Topic.** H08 primary test estimand
+
+**Current disposition.** Implemented
+
+**Preregistered or expected.** H08 registered Metric ~ VLSQ8 * Site with the VLSQ-8 association and site heterogeneity distinguishable
+
+**Current analysis.** H08 estimates the study-site-average visual-light-sensitivity association separately from the visual-light-sensitivity-by-site interaction for each metric.
+
+**Why.** Separate nested comparisons preserve the registered distinction between an average association and variation among sites.
+
+**Affected hypotheses.** H08
+
+**What this means for interpretation.** A non-significant average association is not a joint statement that both the average and every site difference are absent.
+
+**Related records.** None
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/handoffs/H08_worker_handoff.md`
+
+</details>
+
+### DEV-036: H08 multiplicity {#dev-036}
+
+**Topic.** H08 multiplicity
+
+**Current disposition.** Implemented
+
+**Preregistered or expected.** H08 requires FDR within a declared family across nine outcomes
+
+**Current analysis.** H08 uses separate complete nine-metric FDR families for average associations and site interactions; scalar adjustments are not used.
+
+**Why.** The accepted Stage 2-4 artifacts and focused tests verify both vectors.
+
+**Affected hypotheses.** H08
+
+**What this means for interpretation.** No H08 association or site interaction is retained after its declared family adjustment.
+
+**Related records.** [IMP-001](preregistration_deviations.qmd#imp-001)
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/handoffs/H08_worker_handoff.md`
+
+</details>
+
+### DEV-037: H09 chronotype predictors {#dev-037}
+
+**Topic.** H09 chronotype predictors
+
+**Current disposition.** Implemented
+
+**Preregistered or expected.** H09 registered both MCTQ and MEQ chronotype predictors
+
+**Current analysis.** H09 includes both MCTQ midsleep on free days corrected for sleep debt and MEQ morningness score as distinct chronotype constructs, with separate models and families.
+
+**Why.** The author accepted the available aggregate fields after verifying their provenance and kept the instruments scientifically separate.
+
+**Affected hypotheses.** H09
+
+**What this means for interpretation.** MCTQ effects are per one hour later timing; MEQ effects are per ten points greater morning preference. They are not interchangeable measures.
+
+**Related records.** None
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/handoffs/H09_worker_handoff.md`
+
+</details>
+
+### DEV-038: H09 site adjustment {#dev-038}
+
+**Topic.** H09 site adjustment
+
+**Current disposition.** Implemented
+
+**Preregistered or expected.** H09 registered Metric ~ chronotype * Site with participant nested in site
+
+**Current analysis.** H09 reports site-adjusted main chronotype models and evaluates chronotype-by-site interactions separately; estimates and intervals come from the declared fitted model for each instrument and timing outcome.
+
+**Why.** The reconstruction removed significance-driven model-object substitution and tied every displayed estimate to its stored formula and sample.
+
+**Affected hypotheses.** H09
+
+**What this means for interpretation.** Chronotype slopes are study-site-adjusted associations; site interactions are a separate question.
+
+**Related records.** [IMP-009](preregistration_deviations.qmd#imp-009)
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/handoffs/H09_worker_handoff.md`
+
+</details>
+
+### DEV-039: H09 multiplicity and model selection {#dev-039}
+
+**Topic.** H09 multiplicity and model selection
+
+**Current disposition.** Implemented
+
+**Preregistered or expected.** H09 requires within-hypothesis FDR for five timing outcomes crossed with both registered chronotype instruments and site interactions
+
+**Current analysis.** H09 uses four separate complete five-outcome FDR families: MCTQ average associations, MEQ average associations, MCTQ-by-site interactions, and MEQ-by-site interactions. Model selection is not driven by adjusted significance.
+
+**Why.** The family partition reflects the two instruments and the distinction between average and interaction tests.
+
+**Affected hypotheses.** H09
+
+**What this means for interpretation.** Each reported adjusted p-value belongs to one named five-member family; non-estimable interaction branches remain visible.
+
+**Related records.** [IMP-001](preregistration_deviations.qmd#imp-001)
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/handoffs/H09_worker_handoff.md`
+
+</details>
+
+### DEV-040: H10 sex-by-site interaction {#dev-040}
+
+**Topic.** H10 sex-by-site interaction
+
+**Current disposition.** Implemented
+
+**Preregistered or expected.** H10 registered age and biological-sex predictors each interacting with site
+
+**Current analysis.** H10 now fits, tests, and reports both age-by-site and biological-sex-by-site interactions for all planned metrics, with non-estimable branches explicitly identified rather than omitted.
+
+**Why.** The accepted package restores the full registered interaction scope and seals placement-specific outputs.
+
+**Affected hypotheses.** H10
+
+**What this means for interpretation.** H10 can distinguish average age/sex associations from variation of those associations among sites; sparse interactions remain qualified by diagnostics.
+
+**Related records.** [IMP-011](preregistration_deviations.qmd#imp-011)
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/handoffs/H10_worker_handoff.md`
+
+</details>
+
+### DEV-041: H10 multiplicity {#dev-041}
+
+**Topic.** H10 multiplicity
+
+**Current disposition.** Implemented
+
+**Preregistered or expected.** H10 requires within-hypothesis FDR for age and sex associations and their site interactions
+
+**Current analysis.** H10 uses four separate complete 17-metric FDR families for age average associations, biological-sex average associations, age-by-site interactions, and biological-sex-by-site interactions.
+
+**Why.** The partition was fixed in the accepted analysis and all planned slots, including non-estimable ones, are retained.
+
+**Affected hypotheses.** H10
+
+**What this means for interpretation.** The current conclusion of 11 primary average associations and two chest age-by-site interactions is evaluated within these complete families.
+
+**Related records.** [IMP-001](preregistration_deviations.qmd#imp-001)
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/handoffs/H10_worker_handoff.md`
+
+</details>
+
+### DEV-042: H11 outcome and epoch {#dev-042}
+
+**Topic.** H11 outcome and epoch
+
+**Current disposition.** Implemented
+
+**Preregistered or expected.** H11 registered hourly geometric-mean melanopic EDI
+
+**Current analysis.** H11 deliberately inherits H02's zero-aware transformed arithmetic-mean melEDI in 30-minute bins rather than the registered hourly geometric-mean outcome.
+
+**Why.** Using the finalized H02 temporal frame provides consistent epoch, support, gap, autocorrelation, and placement provenance for the sex-specific curve analysis.
+
+**Affected hypotheses.** H11
+
+**What this means for interpretation.** H11 estimates sex-specific 30-minute daily curves on the inherited transformed scale; its sample size and dependence structure differ from the preregistered hourly analysis.
+
+**Related records.** [DEV-012](preregistration_deviations.qmd#dev-012)
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/handoffs/H11_worker_handoff.md`
+- `scripts/hypotheses/H11/h11_stage1.R`
+
+</details>
+
+### DEV-043: H11 sex estimand {#dev-043}
+
+**Topic.** H11 sex estimand
+
+**Current disposition.** Implemented
+
+**Preregistered or expected.** The registered H11 full model contains both a parametric sex effect and a sex-specific cyclic time smooth
+
+**Current analysis.** The accepted H11 full model contains a parametric biological-sex level term and a cyclic sex-specific time-deviation smooth. The primary test evaluates the complete level-plus-shape Female-minus-Male curve.
+
+**Why.** The author-approved construction restores the registered distinction between a time-constant level difference and a time-varying shape difference while making their joint curve the primary estimand.
+
+**Affected hypotheses.** H11
+
+**What this means for interpretation.** The global result is about the whole sex-specific curve; secondary level and shape tests are attribution analyses and do not replace it.
+
+**Related records.** None
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/handoffs/H11_worker_handoff.md`
+- `scripts/hypotheses/H11/h11_stage1.R`
+
+</details>
+
+### DEV-044: H11 temporal and site smooths {#dev-044}
+
+**Topic.** H11 temporal and site smooths
+
+**Current disposition.** Implemented
+
+**Preregistered or expected.** H11 registered cyclic sex smooths, a site factor smooth, and a site random effect
+
+**Current analysis.** H11 uses the finalized H02 temporal architecture: a cyclic global time smooth, a cyclic biological-sex deviation, sum-to-zero site time deviations, participant-specific time curves, and a participant-day intercept. The separate registered site random intercept is replaced by this inherited site and participant hierarchy.
+
+**Why.** The inherited architecture was selected and diagnosed in H02, then audited for H11 with boundary-aware autocorrelation and robust complete-curve inference.
+
+**Affected hypotheses.** H11
+
+**What this means for interpretation.** Site and participant temporal structure is richer than the preregistered formula; interpretation is conditional on the accepted inherited architecture and diagnostics.
+
+**Related records.** [DEV-011](preregistration_deviations.qmd#dev-011)
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/handoffs/H11_worker_handoff.md`
+- `scripts/hypotheses/H11/h11_stage1.R`
+
+</details>
+
+### DEV-045: H11 participant hierarchy {#dev-045}
+
+**Topic.** H11 participant hierarchy
+
+**Current disposition.** Implemented
+
+**Preregistered or expected.** H11 registered a participant random-effect smooth
+
+**Current analysis.** H11 models participant-specific time curves and participant-day intercepts rather than only a participant random intercept.
+
+**Why.** The accepted hierarchy reflects repeated 30-minute observations within days and repeated days within participants and is inherited from H02.
+
+**Affected hypotheses.** H11
+
+**What this means for interpretation.** Uncertainty and weighting account for participant and day structure; variance components are not interpreted using terminology from the superseded analysis.
+
+**Related records.** [DEV-011](preregistration_deviations.qmd#dev-011) and [IMP-005](preregistration_deviations.qmd#imp-005)
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/handoffs/H11_worker_handoff.md`
+
+</details>
+
+### DEV-047: H11 contextual activity analysis {#dev-047}
+
+**Topic.** H11 contextual activity analysis
+
+**Current disposition.** Implemented exploratory analysis
+
+**Preregistered or expected.** No activity-adjusted causal or mediation estimand was registered for H11
+
+**Current analysis.** H11 includes an explicitly exploratory same-sample activity-context sensitivity. It first refits the accepted model without activity on the activity-complete sample and then adds activity on exactly the same observations.
+
+**Why.** The paired same-sample design separates sample restriction from covariate adjustment as far as the observational data allow.
+
+**Affected hypotheses.** H11
+
+**What this means for interpretation.** The analysis cannot establish mediation or a behavioural mechanism; near-eye support was already lost through sample restriction and the chest attenuation is non-causal context only.
+
+**Related records.** None
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/handoffs/H11_worker_handoff.md`
+
+</details>
+
+### DEV-048: H11 curve inference and multiplicity {#dev-048}
+
+**Topic.** H11 curve inference and multiplicity
+
+**Current disposition.** Implemented
+
+**Preregistered or expected.** H11 registered one temporal sex hypothesis with FDR if multiple tests were used
+
+**Current analysis.** H11 uses one participant-cluster-robust global complete-curve test per placement as the primary decision. Level and shape form a secondary two-test FDR family. Displayed clock-time intervals are pointwise, not simultaneous, and do not define a familywise-significant period.
+
+**Why.** The author approved AR-whitened participant-cluster CR1 curve inference with smoothing-bias covariance and a finite-cluster reference distribution.
+
+**Affected hypotheses.** H11
+
+**What this means for interpretation.** The supported global curves may be described, but local clock ranges are descriptive and the secondary decomposition does not cleanly attribute the effect to level or shape.
+
+**Related records.** None
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/handoffs/H11_worker_handoff.md`
+
+</details>
+
+# Current qualifications {#current-qualification}
+
+This item remains scientifically relevant and open. It is not presented as resolved or as evidence that the qualification has no effect.
+
+## Entries
+
+### DEV-003: Inclusion criteria {#dev-003}
+
+**Topic.** Inclusion criteria
+
+**Current disposition.** Still open
+
+**Preregistered or expected.** Protocol age 18-65 and employment at least 80%
+
+**Current analysis.** The retained analysis population still includes the documented participants outside the preregistered age or employment criteria. Current hypothesis reports identify their exact fitted samples; exclusion-sensitivity coverage is not yet uniform across all affected hypotheses.
+
+**Why.** The deviation is real and should remain visible, but the earlier generic statement that exclusion did not matter is not a project-wide verified conclusion.
+
+**Affected hypotheses.** All hypotheses (H01–H11)
+
+**What this means for interpretation.** Generalization to the preregistered age and employment population remains a qualification until all affected analyses have a comparable exclusion sensitivity.
+
+**Related records.** None
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/ledgers/deviation_register.csv`
+- [H01 analysis preparation and provenance](../audit/hypotheses/H01/H01_analysis_preparation.qmd)
+- [H10 analysis preparation and provenance](../audit/hypotheses/H10/H10_analysis_preparation.qmd)
+
+</details>
+
+# Resolved implementation history {#resolved-implementation-history}
+
+These records document consequential earlier implementations that have been corrected, superseded, or resolved in current reporting. They are retained for traceability and do not describe the current method.
+
+## Entries
+
+### DEV-008: Metric definition; timing above 250 lx {#dev-008}
+
+**Topic.** Metric definition; timing above 250 lx
+
+**Current disposition.** Superseded
+
+**Preregistered or expected.** Midpoint of the longest period above 250 lx
+
+**Current analysis.** The registered midpoint of the longest qualifying period is again retained as the registered timing outcome. Mean timing above 250 lx is a distinct circular duration-weighted metric and, where used, is labelled as an adapted sensitivity rather than substituted for the registered midpoint.
+
+**Why.** The current metric implementation separates the two estimands and applies explicit support and boundary rules.
+
+**Affected hypotheses.** H01, H05, H06, H09, and H10
+
+**What this means for interpretation.** The earlier unlabelled substitution must not be described as current. Readers should distinguish longest-period midpoint from mean timing across all qualifying exposure.
+
+**Related records.** [DEV-054](preregistration_deviations.qmd#dev-054)
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/decisions/metric_implementation_parameters.md`
+- `audit/handoffs/H09_worker_handoff.md`
+
+</details>
+
+### IMP-001: H01 H05 H08 H09 H10 multiplicity {#imp-001}
+
+**Topic.** H01 H05 H08 H09 H10 multiplicity
+
+**Current disposition.** Resolved in the current analysis
+
+**Preregistered or expected.** FDR correction within each hypothesis family using the declared vector
+
+**Current analysis.** The affected accepted analyses now assemble complete p-value vectors and apply FDR correction to the declared family; scalar p.adjust calls with an artificial n are not used for current conclusions.
+
+**Why.** Focused hypothesis tests and manifests verify the complete-vector families after the repair.
+
+**Affected hypotheses.** H01, H05, H08, H09, and H10
+
+**What this means for interpretation.** Historical adjusted p-values from scalar calls must not be presented as current. Current reports use the declared family-specific FDR values.
+
+**Related records.** None
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/decisions/p_value_display_conventions.md`
+- `audit/handoffs/H01_worker_handoff.md`
+- `audit/handoffs/H05_stage3_handoff.md`
+- `audit/handoffs/H08_worker_handoff.md`
+- `audit/handoffs/H09_worker_handoff.md`
+- `audit/handoffs/H10_worker_handoff.md`
+
+</details>
+
+### IMP-003: Sample flow {#imp-003}
+
+**Topic.** Sample flow
+
+**Current disposition.** Resolved in current reporting
+
+**Preregistered or expected.** All exclusions reported transparently with compatible denominators
+
+**Current analysis.** Accepted reports no longer use one mixed-stage headline denominator. They report exact fitted samples for each placement, model, and sensitivity branch, with participant, participant-day or participant-hour, observation, and site counts as applicable.
+
+**Why.** Model-specific sample manifests and reader-report tests reconcile the displayed denominators with stored analysis frames.
+
+**Affected hypotheses.** All hypotheses (H01–H11)
+
+**What this means for interpretation.** Sample sizes remain unequal across outcomes and placements, but the earlier provenance ambiguity is resolved in current reporting.
+
+**Related records.** None
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/ledgers/sample_flow.csv`
+- `audit/handoffs/H01_worker_handoff.md`
+- `audit/handoffs/H02_worker_handoff.md`
+
+</details>
+
+### IMP-004: H01 model R2 {#imp-004}
+
+**Topic.** H01 model R2
+
+**Current disposition.** Resolved in the current analysis
+
+**Preregistered or expected.** Conditional R2 drawn from the selected model
+
+**Current analysis.** H01 model-fit summaries are drawn from the selected fitted models and the historical null-model conditional-R-squared indexing error is not used in the accepted report.
+
+**Why.** The H01 reporting-input and contract tests verify model-to-summary provenance.
+
+**Affected hypotheses.** H01
+
+**What this means for interpretation.** The earlier H01 conditional R-squared value is historical and must not be reused.
+
+**Related records.** None
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/handoffs/H01_worker_handoff.md`
+- `tests/hypotheses/H01/test_h01_reporting_inputs.R`
+
+</details>
+
+### IMP-005: H02 and H11 variance interpretation {#imp-005}
+
+**Topic.** H02 and H11 variance interpretation
+
+**Current disposition.** Resolved in the current analysis
+
+**Preregistered or expected.** H02 compares within- versus between-site fitted-pattern variation; H11 tests sex-specific patterns
+
+**Current analysis.** H02 reports explicitly defined fitted-curve dispersion and conditional Shapley allocation. H11 uses a separate robust complete-curve test and does not inherit the earlier isolated-term variance-explained terminology.
+
+**Why.** Both hypotheses were reconstructed and their accepted reports state the estimands directly.
+
+**Affected hypotheses.** H02 and H11
+
+**What this means for interpretation.** Neither H02 nor H11 should be described using the invalid historical isolated-term variance-explained claim.
+
+**Related records.** None
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/decisions/h02_final_analysis.md`
+- `audit/handoffs/H02_worker_handoff.md`
+- `audit/handoffs/H11_worker_handoff.md`
+
+</details>
+
+### IMP-006: H05 correlation inference {#imp-006}
+
+**Topic.** H05 correlation inference
+
+**Current disposition.** Resolved in the current analysis
+
+**Preregistered or expected.** Correlation coefficient and p-value come from the same registered correlation method
+
+**Current analysis.** H05 replaces the inconsistent pooled correlation display with site-adjusted factor-association models whose estimates, intervals, raw p-values, and FDR values come from the same fitted analysis.
+
+**Why.** The accepted 17-metric by four-factor package and complete 68-test families were rebuilt and verified.
+
+**Affected hypotheses.** H05
+
+**What this means for interpretation.** The historical Spearman-coefficient/Pearson-p-value pairing is not part of the current evidence.
+
+**Related records.** [DEV-028](preregistration_deviations.qmd#dev-028)
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/handoffs/H05_stage2_handoff.md`
+- `audit/handoffs/H05_stage3_handoff.md`
+
+</details>
+
+### IMP-007: H06 reporting {#imp-007}
+
+**Topic.** H06 reporting
+
+**Current disposition.** Resolved in the current analysis
+
+**Preregistered or expected.** H06 reports statistics produced by the H06 model
+
+**Current analysis.** Main H06 tables and prose are generated from the accepted H06 model outputs; the stale H04 site p-value is no longer used.
+
+**Why.** Focused H06 tests verify source identities and reader-table provenance.
+
+**Affected hypotheses.** H06
+
+**What this means for interpretation.** Current H06 claims are tied to H06 estimates and declared FDR families.
+
+**Related records.** [DEV-031](preregistration_deviations.qmd#dev-031)
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/handoffs/H06_worker_handoff.md`
+- `tests/hypotheses/H06/test_h06_stage3.R`
+
+</details>
+
+### IMP-008: H07 ceiling claim and display {#imp-008}
+
+**Topic.** H07 ceiling claim and display
+
+**Current disposition.** Resolved in the current analysis
+
+**Preregistered or expected.** Registered nonlinear analysis must identify a ceiling effect for eligible metrics
+
+**Current analysis.** H07 no longer claims a mechanistic ceiling and no longer uses the duplicated/omitted historical display. It reports a precisely defined derivative-based descriptive plateau pattern for all nine metrics.
+
+**Why.** The accepted derivative rule and paired fitted-curve/derivative figures were author approved and verified.
+
+**Affected hypotheses.** H07
+
+**What this means for interpretation.** The result is descriptive and pointwise; it does not establish an asymptote, equivalence, ceiling, or causal photoperiod effect.
+
+**Related records.** [DEV-016](preregistration_deviations.qmd#dev-016)
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/handoffs/H07_worker_handoff.md`
+
+</details>
+
+### IMP-009: H09 site adjustment and estimate provenance {#imp-009}
+
+**Topic.** H09 site adjustment and estimate provenance
+
+**Current disposition.** Resolved in the current analysis
+
+**Preregistered or expected.** Metric ~ chronotype * Site + participant nested in site
+
+**Current analysis.** H09 fits and reports distinct site-adjusted MCTQ and MEQ models, with estimates and tests taken from the declared model for each instrument.
+
+**Why.** The accepted report and manifests verify both constructs, formulas, samples, and output provenance.
+
+**Affected hypotheses.** H09
+
+**What this means for interpretation.** The historical chronotype-only estimate/model mismatch is not current.
+
+**Related records.** [DEV-037](preregistration_deviations.qmd#dev-037) and [DEV-038](preregistration_deviations.qmd#dev-038)
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/handoffs/H09_worker_handoff.md`
+
+</details>
+
+### IMP-010: Mixed-model comparison {#imp-010}
+
+**Topic.** Mixed-model comparison
+
+**Current disposition.** Resolved in the current analysis
+
+**Preregistered or expected.** Likelihood-based model comparison must be valid for the compared fixed-effect structures
+
+**Current analysis.** Where fixed-effect structures are compared, current mixed-model workflows use maximum likelihood for the comparison and refit the selected structure with REML where appropriate; invalid REML AIC comparisons are not used for accepted decisions.
+
+**Why.** Hypothesis-specific model registries and tests verify comparison and final-estimation methods.
+
+**Affected hypotheses.** H01, H02, H07, and H11
+
+**What this means for interpretation.** Historical model preferences based on incomparable REML AIC values are superseded.
+
+**Related records.** None
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/handoffs/H01_worker_handoff.md`
+- `audit/handoffs/H07_worker_handoff.md`
+- `audit/handoffs/H11_worker_handoff.md`
+
+</details>
+
+### IMP-011: H10 output provenance {#imp-011}
+
+**Topic.** H10 output provenance
+
+**Current disposition.** Resolved in the current analysis
+
+**Preregistered or expected.** Primary and chest outputs have distinct deterministic targets
+
+**Current analysis.** H10 uses distinct deterministic primary and chest output paths and seals both placements separately.
+
+**Why.** The accepted H10 manifests and tests verify non-overwriting targets and placement-specific outputs.
+
+**Affected hypotheses.** H10
+
+**What this means for interpretation.** The historical render-order overwrite risk is resolved and does not affect current H10 tables or figures.
+
+**Related records.** [DEV-040](preregistration_deviations.qmd#dev-040) and [DEV-041](preregistration_deviations.qmd#dev-041)
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/handoffs/H10_worker_handoff.md`
+
+</details>
+
+### IMP-013: MDER metric {#imp-013}
+
+**Topic.** MDER metric
+
+**Current disposition.** Superseded
+
+**Preregistered or expected.** MDER remains defined and comparable over its analytic sample
+
+**Current analysis.** The historical ratio-of-integrals MDER implementation is superseded. Current MDER is the arithmetic mean of viable one-minute momentary MEDI/LIGHT ratios with strict positivity and a 720-minute support rule.
+
+**Why.** The author explicitly rejected ratio of integrals and approved METRIC-010, followed by independent shared and gap-variant verification.
+
+**Affected hypotheses.** H01, H05, H06, and H10
+
+**What this means for interpretation.** Only METRIC-010/DEV-058 outputs are current; historical ratio-of-integrals results belong in the technical history section.
+
+**Related records.** [DEV-058](preregistration_deviations.qmd#dev-058)
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/decisions/mder_mean_of_viable_ratios.md`
+
+</details>
+
+### IMP-014: IS IV and continuous-period metrics {#imp-014}
+
+**Topic.** IS IV and continuous-period metrics
+
+**Current disposition.** Shared repair implemented; downstream updates in progress
+
+**Preregistered or expected.** Temporal metrics preserve observed continuity and do not bridge unobserved gaps
+
+**Current analysis.** IS, IV, and continuous-period metrics now use explicit temporal grids and gap-aware continuity rules. Affected hypothesis outputs are being selectively resealed rather than silently retaining the earlier gap-bridging values.
+
+**Why.** The shared metric decisions define true adjacency, minimum repeated-day support, and gap-terminated periods.
+
+**Affected hypotheses.** H01, H05, H06, and H10
+
+**What this means for interpretation.** Current values can differ from the historical implementation; downstream reports must use the sealed repaired identities or explicitly state that their selective reseal is pending.
+
+**Related records.** [DEV-053](preregistration_deviations.qmd#dev-053) and [DEV-054](preregistration_deviations.qmd#dev-054)
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/decisions/metric_validity.md`
+- `audit/decisions/metric_implementation_parameters.md`
+
+</details>
+
+### IMP-015: Brightest/darkest windows and 30-minute bins {#imp-015}
+
+**Topic.** Brightest/darkest windows and 30-minute bins
+
+**Current disposition.** Shared repair implemented; downstream updates in progress
+
+**Preregistered or expected.** Window and bin summaries have sufficient support for their intended duration
+
+**Current analysis.** M10/L10 windows, 30-minute bins, continuous periods, and threshold timings now require explicit interval support and do not compress missing gaps. Affected hypothesis outputs are being selectively resealed.
+
+**Why.** The repaired preparation enforces complete supported windows, deterministic ties, true boundaries, and clock-aware coverage.
+
+**Affected hypotheses.** All hypotheses (H01–H11)
+
+**What this means for interpretation.** Historical values based on incomplete windows or unsupported bins are superseded; the current consequence is limited to identified affected branches.
+
+**Related records.** [DEV-054](preregistration_deviations.qmd#dev-054)
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/decisions/metric_validity.md`
+- `audit/decisions/metric_implementation_parameters.md`
+
+</details>
+
+### IMP-016: Melanopic EDI dose {#imp-016}
+
+**Topic.** Melanopic EDI dose
+
+**Current disposition.** Shared repair implemented; downstream updates in progress
+
+**Preregistered or expected.** Daily dose represents a defined integration interval with adequate coverage
+
+**Current analysis.** Melanopic EDI dose now distinguishes observed-duration dose from the approved time-sensitive correction and applies the declared support rule.
+
+**Why.** The shared repair avoids treating an incomplete observed sum as a complete-day dose and avoids unconditional scaling across missing low-exposure periods.
+
+**Affected hypotheses.** H01, H05, H06, H07, H08, and H10
+
+**What this means for interpretation.** Dose scale, missingness, and affected model samples can change; only resealed outputs should be treated as current.
+
+**Related records.** [DEV-052](preregistration_deviations.qmd#dev-052)
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/decisions/metric_validity.md`
+- `audit/decisions/metric_implementation_parameters.md`
+
+</details>
+
+### IMP-019: Non-wear channel validity {#imp-019}
+
+**Topic.** Non-wear channel validity
+
+**Current disposition.** Resolved by current metric rules
+
+**Preregistered or expected.** Analytical MEDI and LIGHT channels use compatible validity masks when a metric requires paired support
+
+**Current analysis.** The historical channel-specific mask left finite broadband LIGHT values when melEDI was missing during waking non-wear. Current derived metrics require their declared valid channels and MDER requires both MEDI and LIGHT to be finite and strictly positive.
+
+**Why.** Channel-specific validity is now explicit in shared metric derivation and tests.
+
+**Affected hypotheses.** All hypotheses (H01–H11)
+
+**What this means for interpretation.** Invalid melEDI rows cannot enter melEDI metrics or current MDER merely because LIGHT remains finite.
+
+**Related records.** [DEV-058](preregistration_deviations.qmd#dev-058)
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/findings/state_precedence_and_channel_mask.md`
+- `audit/decisions/mder_mean_of_viable_ratios.md`
+
+</details>
+
+### IMP-021: H04 activity-by-site screen {#imp-021}
+
+**Topic.** H04 activity-by-site screen
+
+**Current disposition.** Resolved in the current analysis
+
+**Preregistered or expected.** A descriptive activity-by-site screen must use the activity variable named by H04
+
+**Current analysis.** The H04 descriptive activity-by-site screen now uses the actual H04 activity variable and no longer overwrites it with the H03 light-source factor.
+
+**Why.** The corrected H04 preparation and reader tests verify the activity construction and screen inputs.
+
+**Affected hypotheses.** H04
+
+**What this means for interpretation.** The historical screen cannot be used as evidence; the accepted H04 category handling is supported by the corrected reconstruction.
+
+**Related records.** [DEV-025](preregistration_deviations.qmd#dev-025)
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/handoffs/H04_worker_handoff.md`
+
+</details>
+
+### DEV-046: H11 photoperiod adjustment {#dev-046}
+
+**Topic.** H11 photoperiod adjustment
+
+**Current disposition.** Resolved in the current analysis
+
+**Preregistered or expected.** The H11 registration does not include a photoperiod-state temporal smooth
+
+**Current analysis.** The unregistered photoperiod-state temporal smooth used in the earlier H11 implementation is absent from the accepted H11 primary and null formulas.
+
+**Why.** The final analysis inherits the accepted H02 temporal formula and adds only the biological-sex level and cyclic sex-deviation terms for the primary comparison.
+
+**Affected hypotheses.** H11
+
+**What this means for interpretation.** The accepted sex curve is not conditional on an added photoperiod-state smooth.
+
+**Related records.** None
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `scripts/hypotheses/H11/h11_stage1.R`
+- `audit/handoffs/H11_worker_handoff.md`
+
+</details>
+
+### DEV-051: MDER metric definition {#dev-051}
+
+**Topic.** MDER metric definition
+
+**Current disposition.** Superseded
+
+**Preregistered or expected.** MDER is a melanopic daylight efficacy ratio calculated on a supported common signal domain
+
+**Current analysis.** The briefly approved ratio-of-integrals MDER modification is superseded by the later author-approved mean of viable momentary ratios.
+
+**Why.** METRIC-010 explicitly replaced METRIC-003 after author review and independent verification.
+
+**Affected hypotheses.** H01, H05, H06, and H10
+
+**What this means for interpretation.** DEV-051 is retained only as decision history; it must never define reader-facing current MDER.
+
+**Related records.** [DEV-058](preregistration_deviations.qmd#dev-058)
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/decisions/mder_mean_of_viable_ratios.md`
+
+</details>
+
+# Technical provenance {#technical-provenance}
+
+These records document environment, source, display, or documentation history. They support reproducibility but are not current scientific departures from the preregistered analysis.
+
+## Entries
+
+### DEV-002: Display reporting {#dev-002}
+
+**Topic.** Display reporting
+
+**Current disposition.** Historical display change
+
+**Preregistered or expected.** No registered display restriction
+
+**Current analysis.** Site-specific traces were removed from some earlier journal-limited displays but retained where scientifically necessary in the current reports and source artifacts.
+
+**Why.** The change concerned display density rather than the fitted analysis.
+
+**Affected hypotheses.** All hypotheses (H01–H11)
+
+**What this means for interpretation.** Readers should use the current figures and tables; the historical omission is not a current analytical method.
+
+**Related records.** None
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/ledgers/deviation_register.csv`
+
+</details>
+
+### DOC-001: H08-H11 {#doc-001}
+
+**Topic.** H08-H11
+
+**Current disposition.** Documentation pending
+
+**Preregistered or expected.** All deviations must be explicitly documented and labelled exploratory
+
+**Current analysis.** Accepted H08-H11 deviations are traceable in their analysis records and current reports. The consolidated reader-facing preregistration-deviation page is the pending documentation repair.
+
+**Why.** The scientific decisions are complete; the remaining work is to translate the authoritative current dispositions into stable reader anchors without reproducing stale audit wording.
+
+**Affected hypotheses.** H08, H09, H10, and H11
+
+**What this means for interpretation.** Until the consolidated page is generated and linked, H08-H11 deviation documentation remains distributed across hypothesis reports and analysis records.
+
+**Related records.** None
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/handoffs/H08_worker_handoff.md`
+- `audit/handoffs/H09_worker_handoff.md`
+- `audit/handoffs/H10_worker_handoff.md`
+- `audit/handoffs/H11_worker_handoff.md`
+
+</details>
+
+### IMP-020: Source epoch and one-minute aggregation {#imp-020}
+
+**Topic.** Source epoch and one-minute aggregation
+
+**Current disposition.** Source clarified
+
+**Preregistered or expected.** Every participant stream is aggregated according to its verified regular source epoch without silently discarding supported data
+
+**Current analysis.** The pinned source releases contain both 60-second and 1-second near-eye streams in addition to predominant 10-second streams; preparation aggregates from actual timestamps rather than assuming six equal subepochs per minute.
+
+**Why.** The source-epoch audit disproved a universal six-subepoch rule.
+
+**Affected hypotheses.** All hypotheses (H01–H11)
+
+**What this means for interpretation.** Minute-level summaries and coverage checks depend on actual source timing, not an assumed device epoch count.
+
+**Related records.** None
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/findings/heterogeneous_source_epochs.md`
+
+</details>
+
+### DEV-049: Computational environment {#dev-049}
+
+**Topic.** Computational environment
+
+**Current disposition.** Implemented; verification in progress
+
+**Preregistered or expected.** The signed preregistration names R 4.5
+
+**Current analysis.** Current scientific computation and targeted renders use R 4.6.1 with the project library and documented package replacements. Hypothesis-specific outputs are resealed under that environment as they are completed.
+
+**Why.** The author required the R 4.6.1 migration; deterministic environment audits and targeted package/version manifests record version-sensitive identities.
+
+**Affected hypotheses.** All hypotheses (H01–H11)
+
+**What this means for interpretation.** Environment version is a reproducibility record rather than a biological or statistical deviation. Final project-wide closure remains pending until all active branches finish.
+
+**Related records.** None
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/environment/r-4.6.1-baseline.md`
+- `audit/environment/deterministic-environment-audit.md`
+- `audit/environment/r-4.6.1-lock-snapshot.md`
+
+</details>
+
+### DEV-050: LightLogR and analysis APIs {#dev-050}
+
+**Topic.** LightLogR and analysis APIs
+
+**Current disposition.** Implemented; verification in progress
+
+**Preregistered or expected.** The manuscript reports LightLogR 0.10.2 and analysis outputs from the earlier package/runtime stack
+
+**Current analysis.** Current preparation uses LightLogR 0.10.3-compatible public APIs, explicit interval bounds, and repaired circular-time calls; affected outputs are selectively rebuilt and resealed.
+
+**Why.** The API migration prevents partial matching, implicit boundary semantics, and reliance on non-exported helpers.
+
+**Affected hypotheses.** All hypotheses (H01–H11)
+
+**What this means for interpretation.** The changes can affect boundary states and temporal metrics, so only current sealed artifacts should be used. This belongs in technical provenance, not the main scientific-deviation narrative.
+
+**Related records.** None
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/environment/lightlogr-api-audit.md`
+- `audit/decisions/metric_implementation_parameters.md`
+
+</details>
+
+### IMP-022: M10/L10 analytical metric scope {#imp-022}
+
+**Topic.** M10/L10 analytical metric scope
+
+**Current disposition.** Scope clarified
+
+**Preregistered or expected.** The registered and manuscript-facing brightest/darkest-window timing outcomes are the M10 and L10 midpoints
+
+**Current analysis.** Window onset and offset values produced during M10/L10 derivation are retained only as internal boundary diagnostics and are excluded from the analytical metric registry.
+
+**Why.** They support verification of the selected ten-hour window but are not preregistered analytical outcomes.
+
+**Affected hypotheses.** H01, H05, H06, H09, and H10
+
+**What this means for interpretation.** No hypothesis may treat these boundary diagnostics as additional tested metrics.
+
+**Related records.** [DEV-054](preregistration_deviations.qmd#dev-054)
+
+<details>
+<summary>Current evidence sources</summary>
+
+- `audit/decisions/metric_implementation_parameters.md`
+
+</details>
+
+# Source and update note {#source-and-update-note}
+
+This page was generated deterministically on 2026-08-12 from the preserved historical deviation register, the hypothesis crosswalk, and the REPORT-016 current reader-disposition overlay. The stable IDs and historical expected statements come from the register; every current disposition, implementation, rationale, consequence, relationship, and source locator comes from the overlay and reconciled crosswalk.
+
+The page does not change data, samples, metrics, models, estimates, uncertainty intervals, p-values, model checks, sensitivity analyses, or scientific claims.
+

@@ -593,31 +593,19 @@ steps use. The production workflow reads the fixed light-logger, sleep-diary,
 and wear-log releases from nine study sites. It checks their identities,
 converts the logger observations to complete one-minute values, preserves both
 actual and local clock time, and assigns a measurement context to each minute.
-Its outputs enter Preparation 02, where hourly and daily coverage is assessed.
+Its outputs enter [Preparation 02](02_coverage_sample_flow.qmd), where hourly
+and daily coverage is assessed.
 
-The exact inputs are the 35 fixed local source files recorded in
-[`pinned_downloads.csv`](../../artifacts/12_manifests/pinned_downloads.csv).
-Their repository revisions, DOIs, URLs, byte sizes, and SHA-256 digital
-fingerprints are propagated to
-[`source_audit.csv`](../../artifacts/02_aligned/source_audit.csv). A SHA-256
-fingerprint is used here to establish file identity; it does not describe the
-scientific contents of the file.
-
-::: {.callout-note appearance="simple" title="What is calculated during this render?"}
-This report reads already stored CSV manifests and audits. During rendering it
-checks the existence, byte size, and SHA-256 fingerprint of every listed
-Preparation 01 artifact and fixed source file; checks the columns needed for
-the displays; and calculates only compact descriptive totals from stored audit
-rows. It does not retrieve a source file, import logger data, aggregate a
-minute, align a diary or wear period, replace a signal value, rebuild an
-artifact, or run the production verifier.
-:::
+The scientific inputs are 35 fixed local source files: light-logger,
+sleep-diary, and wear-log files from recorded site releases. Their exact
+release identities and file checks are documented in the technical sections
+at the end of this page.
 
 ```{mermaid}
 %%| label: fig-preparation01-chain
 %%| fig-cap: "Position of Preparation 01 in the data-to-analysis chain. The report reads the stored outputs of these operations but does not execute them."
 %%| fig-alt: "Flow diagram from fixed site releases through source-identity checks, one-minute aggregation, sleep and wear interval preparation, and state alignment to the one-minute files used for coverage assessment in Preparation 02."
-flowchart LR
+flowchart TB
   A["Fixed site releases<br/>light, sleep diary, wear log"] --> B["Verify source identity<br/>revision, DOI, SHA-256"]
   B --> C["Retain actual and<br/>local clock time"]
   C --> D["Require complete original<br/>readings for each minute"]
@@ -632,7 +620,7 @@ flowchart LR
 The production import uses one recorded release per site. Table
 @tbl-preparation01-source-identity shows the human-readable site names in the
 submitted-manuscript order. The source audit contains four inputs per site
-(sleep diary, wear log, near-eye light, and chest light), except Tübingen,
+(sleep diary, wear log, near-eye light, and chest light), except Tübingen (DE),
 where no chest logger file is part of the study input.
 
 ```{r}
@@ -685,9 +673,10 @@ Two time coordinates are retained because they answer different questions.
 measure elapsed time. `datetime_wall` represents the local clock reading, so
 08:00 has the same time-of-day meaning at every site. At an autumn clock
 change, one local minute can correspond to two actual instants. The stored
-audit contains 360 such participant-level wall-clock minutes—120 for Madrid
-near-eye data, 120 for Madrid chest data, and 120 for Tübingen near-eye data.
-They remain distinct in UTC and are not discarded or averaged at this stage.
+audit contains 360 such participant-level wall-clock minutes—120 for
+Madrid (ES) near-eye data, 120 for Madrid (ES) chest data, and 120 for
+Tübingen (DE) near-eye data.
+They remain distinct in UTC and are not discarded or averaged during import.
 
 The original logger interval is inferred separately for each participant and
 placement. A one-minute value is retained only when all expected original
@@ -923,6 +912,24 @@ Near-eye and chest measurements remain separate. Chest measurements are a
 complementary placement and are not pooled with the near-eye data.
 
 ## 7. Checks that had to pass
+
+The 35 fixed source files are recorded in
+[`pinned_downloads.csv`](../../artifacts/12_manifests/pinned_downloads.csv).
+Their repository revisions, DOIs, URLs, byte sizes, and SHA-256 digital
+fingerprints are propagated to
+[`source_audit.csv`](../../artifacts/02_aligned/source_audit.csv). A SHA-256
+fingerprint establishes file identity; it does not describe scientific
+contents.
+
+::: {.callout-note appearance="simple" title="What is calculated during this render?"}
+This report reads already stored CSV manifests and audits. During rendering it
+checks the existence, byte size, and SHA-256 fingerprint of every listed
+Preparation 01 artifact and fixed source file; checks the columns needed for
+the displays; and calculates only compact descriptive totals from stored audit
+rows. It does not retrieve a source file, import logger data, aggregate a
+minute, align a diary or wear period, replace a signal value, rebuild an
+artifact, or run the production verifier.
+:::
 
 The stored audits expose the checks performed during production. Rendering
 does not rerun their producing verifier; it confirms the identities of the

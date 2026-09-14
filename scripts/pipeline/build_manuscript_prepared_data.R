@@ -1,7 +1,7 @@
 # Build the manuscript-prepared-data sensitivity inputs without fitting models.
 #
-# Source paths_io.R, assertions.R, metric_display_registry.R, and
-# manuscript_prepared_data.R first.
+# Source paths_io.R, assertions.R, metric_display_registry.R, time_support.R,
+# and manuscript_prepared_data.R first.
 
 manuscript_prepared_output_variable_dictionary <- function() {
   dictionary <- manuscript_prepared_variable_dictionary()
@@ -20,8 +20,11 @@ manuscript_prepared_output_metric_mapping <- function(root = project_root()) {
     mapping$metric_id == "dose_time_sensitive_corrected_medi"
   ] <- "Uncorrected manuscript-prepared dose"
   mapping$variant_label[
-    mapping$metric_id == "mder_ratio_of_integrals"
-  ] <- "Mean of epoch-wise melEDI/illuminance ratios"
+    mapping$metric_id == "mder_mean_of_viable_ratios"
+  ] <- paste(
+    "Gap-timing-unaware mean of viable one-minute",
+    "melEDI/illuminance ratios"
+  )
   mapping
 }
 
@@ -45,6 +48,7 @@ manuscript_prepared_output_paths <- function(
           c(
             "participant_metrics",
             "participant_day_metrics",
+            "mder_support",
             "thirty_minute_data",
             "one_hour_data",
             "normalized_input_references"
@@ -55,6 +59,7 @@ manuscript_prepared_output_paths <- function(
       c(
         "participant_metrics",
         "participant_day_metrics",
+        "mder_support",
         "thirty_minute_data",
         "one_hour_data",
         "normalized_input_references"
@@ -67,6 +72,7 @@ manuscript_prepared_output_paths <- function(
           c(
             "participant_metrics",
             "participant_day_metrics",
+            "mder_support",
             "thirty_minute_data",
             "one_hour_data",
             "normalized_input_references",
@@ -81,6 +87,7 @@ manuscript_prepared_output_paths <- function(
       c(
         "participant_metrics",
         "participant_day_metrics",
+        "mder_support",
         "thirty_minute_data",
         "one_hour_data",
         "normalized_input_references",
@@ -197,6 +204,7 @@ build_manuscript_prepared_data <- function(
 
   participant <- list()
   participant_day <- list()
+  mder_support <- list()
   thirty_minute <- list()
   one_hour <- list()
 
@@ -221,6 +229,14 @@ build_manuscript_prepared_data <- function(
       position,
       analysis_unit = "participant_day"
     )
+    mder_support[[position]] <- manuscript_prepared_build_mder_support(
+      preprocessed,
+      position
+    )
+    participant_day[[position]] <- manuscript_prepared_replace_mder(
+      participant_day[[position]],
+      mder_support[[position]]
+    )
     thirty_source <- separate[[
       paste0("metric_", position, "_participanthour")
     ]] |>
@@ -241,6 +257,7 @@ build_manuscript_prepared_data <- function(
   outputs <- list(
     participant_metrics = dplyr::bind_rows(participant),
     participant_day_metrics = dplyr::bind_rows(participant_day),
+    mder_support = dplyr::bind_rows(mder_support),
     thirty_minute_data = dplyr::bind_rows(thirty_minute),
     one_hour_data = dplyr::bind_rows(one_hour),
     normalized_input_references = references

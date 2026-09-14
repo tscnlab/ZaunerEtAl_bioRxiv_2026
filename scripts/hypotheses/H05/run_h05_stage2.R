@@ -25,16 +25,29 @@ if (!identical(as.character(getRversion()), "4.6.1")) {
 }
 
 required_packages <- c(
-  "dplyr", "tidyr", "purrr", "tibble", "readr", "digest", "openssl",
-  "lme4", "glmmTMB", "performance", "DHARMa", "ggplot2", "scales",
+  "dplyr",
+  "tidyr",
+  "purrr",
+  "tibble",
+  "readr",
+  "digest",
+  "openssl",
+  "lme4",
+  "glmmTMB",
+  "performance",
+  "DHARMa",
+  "ggplot2",
+  "scales",
   "stringr"
 )
-missing_packages <- required_packages[!vapply(
-  required_packages,
-  requireNamespace,
-  logical(1),
-  quietly = TRUE
-)]
+missing_packages <- required_packages[
+  !vapply(
+    required_packages,
+    requireNamespace,
+    logical(1),
+    quietly = TRUE
+  )
+]
 if (length(missing_packages) > 0L) {
   h05_abort(
     "H05 Stage 2 is missing project package(s): %s",
@@ -102,13 +115,61 @@ h05_build_manifest <- function() {
       normalizePath(artifact_files, winslash = "/", mustWork = TRUE) !=
         normalizePath(manifest_path, winslash = "/", mustWork = FALSE)
   ]
+  artifact_relative <- vapply(
+    artifact_files,
+    h05_relative_path,
+    character(1)
+  )
+  downstream_patterns <- c(
+    "^artifacts/10_figures/H05/H05_reader_",
+    "^artifacts/11_source_data/H05/H05_reader_",
+    paste0(
+      "^artifacts/11_source_data/H05/",
+      "H05_gap_timing_unaware_dataset[.]csv$"
+    ),
+    "^artifacts/11_source_data/H05/H05_preparation_",
+    "^artifacts/12_manifests/H05/H05_stage3_",
+    "^artifacts/12_manifests/H05/H05_preparation_report_",
+    "^artifacts/12_manifests/H05/H05_figure_"
+  )
+  downstream_artifact <- Reduce(
+    `|`,
+    lapply(downstream_patterns, grepl, x = artifact_relative)
+  )
+  artifact_files <- artifact_files[!downstream_artifact]
   code_and_report <- c(
     file.path(root, "scripts/hypotheses/H05/h05_contract.R"),
     file.path(root, "scripts/hypotheses/H05/h05_modeling.R"),
     file.path(root, "scripts/hypotheses/H05/run_h05_stage2.R"),
+    file.path(
+      root,
+      "scripts/hypotheses/H05/refresh_h05_mder_metric010.R"
+    ),
+    file.path(
+      root,
+      "scripts/hypotheses/H05/finalize_h05_metric010_reconciliation.R"
+    ),
+    file.path(
+      root,
+      "scripts/hypotheses/H05/reseal_h05_gap_mder_metric010.R"
+    ),
+    file.path(
+      root,
+      "scripts/hypotheses/H05/reseal_h05_l10_metric011.R"
+    ),
+    file.path(
+      root,
+      "scripts/hypotheses/H05/build_h05_metric011_displays.R"
+    ),
     file.path(root, "tests/hypotheses/H05/test_h05_stage2.R"),
-    file.path(root, "audit/hypotheses/H05/02_implementation_and_v0_comparison.qmd"),
-    file.path(root, "audit/hypotheses/H05/02_implementation_and_v0_comparison.html"),
+    file.path(
+      root,
+      "audit/hypotheses/H05/02_implementation_and_v0_comparison.qmd"
+    ),
+    file.path(
+      root,
+      "audit/hypotheses/H05/02_implementation_and_v0_comparison.html"
+    ),
     file.path(root, "audit/handoffs/H05_stage2_handoff.md")
   )
   files <- sort(unique(c(
@@ -141,9 +202,12 @@ input_contract <- h05_input_contract(root)
 input_audit <- dplyr::bind_rows(lapply(names(input_contract), function(role) {
   item <- input_contract[[role]]
   paths <- c(item$path, if (!is.null(item$manifest)) item$manifest)
-  expected <- c(item$sha256, if (!is.null(item$manifest_sha256)) {
-    item$manifest_sha256
-  })
+  expected <- c(
+    item$sha256,
+    if (!is.null(item$manifest_sha256)) {
+      item$manifest_sha256
+    }
+  )
   labels <- c(role, if (!is.null(item$manifest)) paste0(role, "_manifest"))
   dplyr::bind_rows(lapply(seq_along(paths), function(index) {
     observed <- artifact_sha256(paths[[index]])
@@ -215,18 +279,30 @@ metric_contract_comparison <- tibble::tibble(
   ) |>
   dplyr::ungroup()
 core_metric_fields <- c(
-  "metric_order", "metric_id", "analysis_unit", "source_field",
-  "source_unit", "manuscript_name", "manuscript_category", "display_unit"
+  "metric_order",
+  "metric_id",
+  "analysis_unit",
+  "source_field",
+  "source_unit",
+  "manuscript_name",
+  "manuscript_category",
+  "display_unit"
 )
-if (any(!metric_contract_comparison$identical[
-  metric_contract_comparison$field %in% core_metric_fields
-])) {
+if (
+  any(
+    !metric_contract_comparison$identical[
+      metric_contract_comparison$field %in% core_metric_fields
+    ]
+  )
+) {
   h05_abort("Main and manuscript-prepared core H05 metric contracts differ")
 }
 if (
-  any(!stats::complete.cases(
-    metric_registry[c("manuscript_name", "display_unit", "response_family")]
-  )) ||
+  any(
+    !stats::complete.cases(
+      metric_registry[c("manuscript_name", "display_unit", "response_family")]
+    )
+  ) ||
     nrow(approval_registry) != 13L ||
     any(!approval_registry$approved)
 ) {
@@ -442,7 +518,10 @@ for (run_index in seq_len(nrow(run_registry))) {
           )
         )
         add_result("effects", h05_bind_identity(identity, h05_empty_effect()))
-        add_result("tests", h05_bind_identity(identity, h05_lrt_summary(empty_bundle)))
+        add_result(
+          "tests",
+          h05_bind_identity(identity, h05_lrt_summary(empty_bundle))
+        )
         add_result(
           "model_manifest",
           h05_bind_identity(identity, h05_model_manifest_rows(empty_bundle))
@@ -580,10 +659,8 @@ for (run_index in seq_len(nrow(run_registry))) {
             participants = dplyr::n_distinct(exact_frame$participant_key),
             participant_days = nrow(exact_frame),
             sites = nlevels(exact_frame$site),
-            leba_participant_mean =
-              exact_factor_frame$scaling$leba_participant_mean,
-            leba_participant_sd =
-              exact_factor_frame$scaling$leba_participant_sd,
+            leba_participant_mean = exact_factor_frame$scaling$leba_participant_mean,
+            leba_participant_sd = exact_factor_frame$scaling$leba_participant_sd,
             model_frame_hash = exact_factor_frame$scaling$model_frame_hash
           )
           add_result(
@@ -670,7 +747,8 @@ family_audit <- tests |>
       .data$p_adjusted,
       adjust_p_family(.data$p_raw, method = "BH", n = 68L),
       tolerance = 1e-14
-    ) == TRUE,
+    ) ==
+      TRUE,
     .groups = "drop"
   )
 if (
@@ -744,8 +822,8 @@ random_site <- results$random_site |>
     relationship = "many-to-one"
   ) |>
   dplyr::mutate(
-    estimate_change_random_minus_fixed =
-      .data$estimate_model_per_point - .data$fixed_estimate_model_per_point,
+    estimate_change_random_minus_fixed = .data$estimate_model_per_point -
+      .data$fixed_estimate_model_per_point,
     sign_concordant = dplyr::if_else(
       is.finite(.data$estimate_model_per_point) &
         is.finite(.data$fixed_estimate_model_per_point) &
@@ -757,8 +835,10 @@ random_site <- results$random_site |>
     relative_absolute_change = dplyr::if_else(
       is.finite(.data$fixed_estimate_model_per_point) &
         abs(.data$fixed_estimate_model_per_point) > 1e-12,
-      abs(.data$estimate_change_random_minus_fixed /
-        .data$fixed_estimate_model_per_point),
+      abs(
+        .data$estimate_change_random_minus_fixed /
+          .data$fixed_estimate_model_per_point
+      ),
       NA_real_
     ),
     stability_class = dplyr::case_when(
@@ -841,8 +921,7 @@ paired_effects <- effects |>
     names_sep = "__"
   ) |>
   dplyr::mutate(
-    estimate_difference_chest_minus_near_eye =
-      .data$estimate_model_per_sd__chest -
+    estimate_difference_chest_minus_near_eye = .data$estimate_model_per_sd__chest -
       .data$estimate_model_per_sd__glasses,
     sign_concordant = dplyr::if_else(
       is.finite(.data$estimate_model_per_sd__chest) &
@@ -851,9 +930,8 @@ paired_effects <- effects |>
         sign(.data$estimate_model_per_sd__glasses),
       NA
     ),
-    component_intervals_overlap =
-      .data$conf_low_model_per_sd__chest <=
-        .data$conf_high_model_per_sd__glasses &
+    component_intervals_overlap = .data$conf_low_model_per_sd__chest <=
+      .data$conf_high_model_per_sd__glasses &
       .data$conf_low_model_per_sd__glasses <=
         .data$conf_high_model_per_sd__chest,
     stability_class = dplyr::case_when(
@@ -896,15 +974,14 @@ mpd_comparison <- effects |>
     names_sep = "__"
   ) |>
   dplyr::mutate(
-    estimate_difference_mpd_minus_main =
-      .data$estimate_model_per_sd__manuscript_prepared_data -
+    estimate_difference_mpd_minus_main = .data$estimate_model_per_sd__manuscript_prepared_data -
       .data$estimate_model_per_sd__main,
     sign_concordant = sign(
       .data$estimate_model_per_sd__manuscript_prepared_data
-    ) == sign(.data$estimate_model_per_sd__main),
-    component_intervals_overlap =
-      .data$conf_low_model_per_sd__manuscript_prepared_data <=
-        .data$conf_high_model_per_sd__main &
+    ) ==
+      sign(.data$estimate_model_per_sd__main),
+    component_intervals_overlap = .data$conf_low_model_per_sd__manuscript_prepared_data <=
+      .data$conf_high_model_per_sd__main &
       .data$conf_low_model_per_sd__main <=
         .data$conf_high_model_per_sd__manuscript_prepared_data
   )
@@ -919,15 +996,14 @@ exact_bout <- results$exact_bout |>
       dplyr::select(
         .data$factor_id,
         all_available_estimate_model_per_sd = .data$estimate_model_per_sd,
-        all_available_estimate_practical_per_sd =
-          .data$estimate_practical_per_sd
+        all_available_estimate_practical_per_sd = .data$estimate_practical_per_sd
       ),
     by = "factor_id",
     relationship = "one-to-one"
   ) |>
   dplyr::mutate(
-    estimate_change_exact_minus_all_model_scale =
-      .data$estimate_model_per_sd - .data$all_available_estimate_model_per_sd,
+    estimate_change_exact_minus_all_model_scale = .data$estimate_model_per_sd -
+      .data$all_available_estimate_model_per_sd,
     sign_concordant = sign(.data$estimate_model_per_sd) ==
       sign(.data$all_available_estimate_model_per_sd)
   )
@@ -1006,8 +1082,7 @@ v0_to_new <- v0_associations |>
     relationship = "one-to-one"
   ) |>
   dplyr::mutate(
-    v0_repaired_rho_change =
-      .data$new_descriptive_rho - .data$spearman_rho,
+    v0_repaired_rho_change = .data$new_descriptive_rho - .data$spearman_rho,
     primary_bh_flag = .data$fixed_site_p_adjusted <= 0.05
   )
 
@@ -1152,7 +1227,8 @@ h05_v0_plot <- function(data, corrected = FALSE, title) {
         .data$v0_display_flag
       },
       label = paste0(
-        "rho=", sprintf("%.2f", .data$spearman_rho),
+        "rho=",
+        sprintf("%.2f", .data$spearman_rho),
         if (corrected) "\nq=" else "\np=",
         scales::pvalue(.data$displayed_p, accuracy = 0.001)
       )
@@ -1298,7 +1374,10 @@ h05_write_csv(
   primary_figure_data,
   file.path(roots$source_data, "H05_primary_effect_overview_data.csv")
 )
-effect_limit <- max(abs(primary_figure_data$estimate_model_per_sd), na.rm = TRUE)
+effect_limit <- max(
+  abs(primary_figure_data$estimate_model_per_sd),
+  na.rm = TRUE
+)
 primary_plot <- ggplot2::ggplot(
   primary_figure_data,
   ggplot2::aes(x = .data$factor_display, y = .data$metric_display)
@@ -1399,8 +1478,7 @@ diagnostic_plot <- ggplot2::ggplot(
     ),
     labels = c(
       acceptable = "Acceptable",
-      acceptable_with_specified_limitations =
-        "Acceptable with specified limitations",
+      acceptable_with_specified_limitations = "Acceptable with specified limitations",
       not_acceptable = "Not acceptable"
     ),
     name = "Adequacy"

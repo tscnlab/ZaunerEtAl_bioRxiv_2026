@@ -1,0 +1,17 @@
+Read-only preflight:
+shasum -a 256 audit/report_harmonization/owner_orders/72_manuscript_svg_exports_released.md audit/report_harmonization/owner_orders/72_manuscript_svg_exports_proposed.md audit/report_harmonization/report018_order72_release/release_manifest.csv
+RENV_CONFIG_AUTOLOADER_ENABLED=FALSE Rscript --vanilla -e '<71-row release-manifest SHA-256 and byte verification>'
+RENV_CONFIG_AUTOLOADER_ENABLED=FALSE Rscript --vanilla -e '<R 4.6.1 library and required-package availability check>'
+
+Source verification:
+RENV_CONFIG_AUTOLOADER_ENABLED=FALSE Rscript --vanilla -e '<parse export_h02_figure4_svg.R>'
+air format --check audit/hypotheses/H02/report018_order72_svg_export/export_h02_figure4_svg.R
+
+Single authorized export attempt:
+RENV_CONFIG_AUTOLOADER_ENABLED=FALSE NATHEALTH_PROJECT_ROOT='/Users/zauner/Documents/Arbeit/12-TUM/MeLiDos/WP2.2.5_Data_Analysis/ZaunerEtAl_bioRxiv_2026' Rscript --vanilla audit/hypotheses/H02/report018_order72_svg_export/export_h02_figure4_svg.R
+
+First required raster-comparison command, invoked inside the export script:
+/usr/bin/sips -s format png -z 4200 3300 /Users/zauner/Documents/Arbeit/12-TUM/MeLiDos/WP2.2.5_Data_Analysis/ZaunerEtAl_bioRxiv_2026/audit/hypotheses/H02/report018_order72_svg_export/candidate/figure4_exact_layout_replication.svg --out /Users/zauner/Documents/Arbeit/12-TUM/MeLiDos/WP2.2.5_Data_Analysis/ZaunerEtAl_bioRxiv_2026/audit/hypotheses/H02/report018_order72_svg_export/qa/candidate_raster_3300x4200.png
+
+Result:
+sips status 13; fail-closed stop; no patch, substitution, or retry.

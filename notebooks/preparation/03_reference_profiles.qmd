@@ -542,7 +542,7 @@ map_names <- c(
   dose = "melEDI dose",
   M10 = "Brightest 10 hours (M10)",
   L10 = "Darkest 10 hours (L10)",
-  paired_channel_coverage = "Paired-signal coverage for MDER",
+  paired_channel_coverage = "Historical paired-channel map",
   timing_above_250 = "Timing above 250 lx melEDI"
 )
 map_use <- c(
@@ -551,7 +551,10 @@ map_use <- c(
   support_only =
     "Checks whether enough relevant times were observed; does not change the value.",
   paired_coverage_only =
-    "Checks paired melEDI and illuminance coverage; does not change the ratio."
+    paste(
+      "Retained historical support record; it is not used by the current",
+      "MDER method."
+    )
 )
 map_support_display <- map_support |>
   dplyr::group_by(
@@ -754,8 +757,8 @@ artifact_handoff <- tibble::tribble(
   ),
   paste0(
     "Metric-specific temporal weights and permissions for dose, M10, L10, ",
-    "MDER paired coverage, and threshold timing. The paired RDS file enters ",
-    "metric derivation."
+    "and threshold timing. Historical paired-channel MDER maps remain in ",
+    "the file for provenance but are not used by the current MDER method."
   ),
   wrap_provenance_path(
     "artifacts/04_reference_profiles/reference_profile_support.csv"
@@ -812,9 +815,7 @@ The exact scientific inputs were:
 
 - [near-eye Rule A one-minute records](../../artifacts/03_coverage/light_glasses_coverage.rds);
 - [chest Rule A one-minute records](../../artifacts/03_coverage/light_chest_coverage.rds);
-- [the stored Rule A settings](../../artifacts/03_coverage/coverage_settings.csv);
-  and
-- [the current Preparation 03 artifact manifest](../../artifacts/12_manifests/reference_profile_artifacts.csv).
+- [the stored Rule A settings](../../artifacts/03_coverage/coverage_settings.csv).
 
 The outputs are the fixed intensity profiles, the strict-threshold timing
 distribution, metric-specific relevance maps, their support summaries, and
@@ -822,22 +823,12 @@ the provenance records under
 `artifacts/04_reference_profiles/`. They are passed to
 [Preparation 04](04_metric_derivation.qmd).
 
-::: {.callout-note appearance="simple" title="What is calculated during this render?"}
-This page reads already stored Preparation 03 artifacts. During rendering, it
-checks their paths, byte sizes, SHA-256 fingerprints, required columns, stored
-row counts, and recorded support summaries. It also filters the stored pooled
-profiles for the displayed figure and calculates compact descriptive totals
-from the stored support tables. Rendering does **not** relearn a profile,
-rebuild a relevance map, reconstruct scientific values from one-minute data,
-write an analytical artifact, or run any Preparation 03 verifier.
-:::
-
 ```{mermaid}
 %%| label: fig-reference-profile-chain
 %%| fig-cap: "Preparation 03 data flow. The production scripts ran before this report; rendering reads their stored outputs only."
 %%| fig-alt: "Flow diagram from near-eye and chest one-minute records that passed Preparation 02 Rule A, through an unchanged actual-time record and a separate local-clock learning copy, into participant-balanced 30-minute intensity profiles and strict greater-than-250-lux timing distributions. These produce metric-specific support maps and stored artifacts used in Preparation 04."
 
-flowchart LR
+flowchart TB
   A["Preparation 02<br/>Rule A one-minute records"] --> B["Preserve actual time<br/>make local-clock learning copy"]
   B --> C["30-minute participant-balanced<br/>intensity profiles"]
   B --> D["30-minute strict >250 lx<br/>timing distributions"]
@@ -847,12 +838,12 @@ flowchart LR
   F --> G["Preparation 04<br/>metric derivation"]
 ```
 
-## What the production step did
+## How the reference profiles are defined
 
-The production workflow separated time alignment, profile learning, and
-artifact verification so that each scientific operation had a narrow,
-checkable responsibility. @tbl-learning-decisions states the rules in the
-order in which they affected the data.
+The profiles separate time alignment, participant weighting, and support
+requirements so that each scientific decision is explicit.
+@tbl-learning-decisions states the rules in the order in which they affected
+the data.
 
 ```{r}
 #| label: tbl-learning-decisions
@@ -971,8 +962,8 @@ ggplot(
 ## Exact inputs and clock handling
 
 The near-eye and chest input files retained their actual-time rows and were
-identified by SHA-256 fingerprints before profile learning. @tbl-profile-inputs
-shows the participant and minute support for each signal. The slight
+identified before profile learning. @tbl-profile-inputs shows the participant
+and minute support for each signal. The slight
 signal-specific differences in usable minutes reflect the stored missing
 values; one signal was not used to erase an observed value in the other.
 
@@ -1109,7 +1100,8 @@ map_support_display |>
   prep_gt(
     source_note = paste0(
       "Only the additive missing-dose correction may alter a metric ",
-      "value. M10, L10, threshold timing, and MDER maps are support-only."
+      "value. M10, L10, and threshold-timing maps are support-only; the ",
+      "historical paired-channel maps are not used by current MDER."
     )
   ) |>
   gt::cols_width(
@@ -1122,11 +1114,39 @@ map_support_display |>
 
 The M10 and L10 maps check whether enough relevant times were observed for the
 brightest and darkest 10-hour windows. The timing map checks support for the
-first, last, and mean timing above 250 lx. The MDER maps require paired melEDI
-and illuminance observations. None of these support-only maps scales a level,
-duration, timing, or ratio. No L5 profile or map was produced.
+first, last, and mean timing above 250 lx. None of these active support-only
+maps scales a level, duration, or timing, and no L5 profile or map was
+produced.
 
-## What is verified for the current artifacts
+For current MDER, the daily value is the arithmetic mean of viable one-minute
+melEDI-to-illuminance ratios. No reference profile weights, scales, or gates
+that calculation. The stored paired-channel maps describe an earlier
+ratio-of-integrals method and are retained only as historical provenance; they
+are not active Preparation 04 inputs for MDER.
+
+## Limitation of current independent verification
+
+Independent reconstruction of the current reference-profile input remains incomplete.
+
+The current files pass the identity and internal-consistency checks described
+below, but those checks do not independently reconstruct the scientific
+values. This incomplete provenance check is not evidence that a current
+profile, metric, or downstream result is incorrect.
+
+## Technical provenance and file checks
+
+The current Preparation 03 artifact inventory is
+[`reference_profile_artifacts.csv`](../../artifacts/12_manifests/reference_profile_artifacts.csv).
+
+::: {.callout-note appearance="simple" title="What is calculated during this render?"}
+This page reads already stored Preparation 03 artifacts. During rendering, it
+checks their paths, byte sizes, SHA-256 fingerprints, required columns, stored
+row counts, and recorded support summaries. It also filters the stored pooled
+profiles for the displayed figure and calculates compact descriptive totals
+from the stored support tables. Rendering does **not** relearn a profile,
+rebuild a relevance map, reconstruct scientific values from one-minute data,
+write an analytical artifact, or run any Preparation 03 verifier.
+:::
 
 The current manifest and every file it lists passed the bounded identity
 checks in @tbl-current-validation. Stored dimensions and support fields are
@@ -1154,23 +1174,7 @@ current_validation |>
   )
 ```
 
-::: {.callout-note appearance="simple" title="Version-specific independent verification"}
-The complete independent reconstruction that passed **394 of 394 checks**
-applied to the **preceding** manifest with SHA-256
-`c8e02302521360d3a5cb18f49e0a97aed4a1f0ea64343ead68bde274cddce10d`.
-It reconstructed 288 median-profile groups and 36 strict-threshold
-distributions and matched that manifest's 11 file fingerprints. It must not
-be treated as verification of the current manifest
-`5e08099602682a4b951b0304764f341932ef2f03ccd4c62f32793ea82084e062`.
-
-[PREP-002](../../audit/decisions/preparation03_version_specific_verification.md)
-therefore records independent reconstruction of the current manifest as open
-audit item **FIND-043**. This provenance gap is not evidence that a current
-profile, metric, or downstream result is incorrect. This report does not run
-the verifier.
-:::
-
-## Producing scripts in execution order
+### Producing scripts in execution order
 
 @tbl-script-execution-map identifies the code that originally produced and
 checked these artifacts. The two-column layout keeps the scientific operation
@@ -1195,7 +1199,7 @@ script_map |>
   )
 ```
 
-## Artifacts passed to metric derivation
+### Artifacts passed to metric derivation
 
 Preparation 04 reads the stored RDS forms of the fixed profiles and relevance
 maps. The CSV forms provide the paired reader- and machine-readable source
@@ -1236,7 +1240,7 @@ runtime_display |>
   )
 ```
 
-## Handoff to Preparation 04
+### Handoff to Preparation 04
 
 Preparation 03 passes forward fixed, versioned temporal reference information:
 13,824 intensity-profile rows, 1,728 strict-threshold distribution rows, and
@@ -1244,3 +1248,17 @@ Preparation 03 passes forward fixed, versioned temporal reference information:
 settings, input fingerprints, and artifact manifest. Preparation 04 may read
 and apply those stored objects under their recorded permissions. It may not
 relearn, interpolate, or silently substitute a profile during rendering.
+
+::: {.callout-note appearance="simple" title="Version-specific verification record"}
+The complete independent reconstruction that passed **394 of 394 checks**
+applied to the **preceding** manifest with SHA-256
+`c8e02302521360d3a5cb18f49e0a97aed4a1f0ea64343ead68bde274cddce10d`.
+It reconstructed 288 median-profile groups and 36 strict-threshold
+distributions and matched that manifest's 11 file fingerprints. It must not
+be treated as verification of the current manifest
+`5e08099602682a4b951b0304764f341932ef2f03ccd4c62f32793ea82084e062`.
+
+[PREP-002](../../audit/decisions/preparation03_version_specific_verification.md)
+records independent reconstruction of the current manifest as open audit item
+**FIND-043**. This report does not run that verifier.
+:::

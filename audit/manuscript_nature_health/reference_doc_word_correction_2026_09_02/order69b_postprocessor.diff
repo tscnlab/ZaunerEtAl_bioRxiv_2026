@@ -1,0 +1,87 @@
+--- order69b-preimage/scripts/manuscript_nature_health/prepare_word_manuscript.py
++++ order69b-postimage/scripts/manuscript_nature_health/prepare_word_manuscript.py
+@@ -429,8 +429,76 @@
+     settings = document.settings._element
+     if settings.find(qn("w:doNotAutoCompressPictures")) is None:
+         settings.append(OxmlElement("w:doNotAutoCompressPictures"))
++
++
++def suppress_linked_footer_line_numbers(document: Document):
++    footer_parts = {}
++    footer_references = document.element.body.xpath(
++        ".//w:sectPr/w:footerReference",
++    )
++    for footer_reference in footer_references:
++        relationship_id = footer_reference.get(qn("r:id"))
++        if relationship_id is None:
++            raise RuntimeError("Linked footer reference lacks a relationship ID")
++        try:
++            footer_part = document.part.related_parts[relationship_id]
++        except KeyError as exc:
++            raise RuntimeError(
++                f"Could not resolve linked footer relationship {relationship_id}",
++            ) from exc
++        if local_name(footer_part.element) != "ftr":
++            raise RuntimeError(
++                f"Linked footer relationship {relationship_id} is not a footer part",
++            )
++        footer_parts[str(footer_part.partname)] = footer_part
+ 
++    if len(footer_parts) != 2:
++        raise RuntimeError(
++            f"Expected exactly two linked footer parts, found {len(footer_parts)}",
++        )
+ 
++    for part_name, footer_part in sorted(footer_parts.items()):
++        paragraphs = footer_part.element.xpath(".//w:p")
++        if len(paragraphs) != 2:
++            raise RuntimeError(
++                f"Expected two paragraphs in {part_name}, found {len(paragraphs)}",
++            )
++        page_instruction_fields = [
++            field
++            for field in footer_part.element.xpath(".//w:instrText")
++            if clean_text(field.text or "").upper() == "PAGE"
++        ]
++        page_simple_fields = [
++            field
++            for field in footer_part.element.xpath(".//w:fldSimple")
++            if clean_text(field.get(qn("w:instr"), "")).upper() == "PAGE"
++        ]
++        if len(page_instruction_fields) + len(page_simple_fields) != 1:
++            raise RuntimeError(
++                f"Expected one PAGE field in {part_name}",
++            )
++
++        for paragraph in paragraphs:
++            if paragraph.xpath("./w:pPr/w:suppressLineNumbers"):
++                raise RuntimeError(
++                    f"Footer paragraph in {part_name} already suppresses line numbers",
++                )
++            paragraph_properties = paragraph.find(qn("w:pPr"))
++            if paragraph_properties is None:
++                paragraph_properties = OxmlElement("w:pPr")
++                paragraph.insert(0, paragraph_properties)
++            suppression = OxmlElement("w:suppressLineNumbers")
++            insertion_index = len(paragraph_properties)
++            for trailing_name in ("w:rPr", "w:sectPr", "w:pPrChange"):
++                trailing_element = paragraph_properties.find(qn(trailing_name))
++                if trailing_element is not None:
++                    insertion_index = min(
++                        insertion_index,
++                        paragraph_properties.index(trailing_element),
++                    )
++            paragraph_properties.insert(insertion_index, suppression)
++
++
+ def set_final_portrait_section(document: Document, base_sect_pr):
+     section_properties = document.element.body.find(qn("w:sectPr"))
+     if section_properties is None:
+@@ -754,6 +822,7 @@
+         wrap_landscape(document, first, last, base_sect_pr)
+ 
+     set_final_portrait_section(document, base_sect_pr)
++    suppress_linked_footer_line_numbers(document)
+ 
+     args.output_docx.parent.mkdir(parents=True, exist_ok=True)
+     document.save(args.output_docx)
