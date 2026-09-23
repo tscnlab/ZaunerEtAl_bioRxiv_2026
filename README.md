@@ -2,6 +2,8 @@
 
 This Quarto project reproduces the manuscript **The health-relevant architecture of the everyday light exposome**, its supplementary information, and the accompanying preparation and analysis pages. The analysis uses the local data supplied in this repository.
 
+> **Current and legacy analyses.** The `main` branch and [current analysis website](https://tscnlab.github.io/ZaunerEtAl_bioRxiv_2026/) contain the latest analysis, prepared for [bioRxiv version 3](https://www.biorxiv.org/content/10.64898/2026.06.04.730226v3), whose update is forthcoming. The analysis reported in [version 1](https://www.biorxiv.org/content/10.64898/2026.06.04.730226v1) and [version 2](https://www.biorxiv.org/content/10.64898/2026.06.04.730226v2) is preserved in the [legacy branch](https://github.com/tscnlab/ZaunerEtAl_bioRxiv_2026/tree/legacy).
+
 ## Software and environment
 
 Use R 4.6.1 and Quarto 1.9.37 for the reference environment. R package versions are recorded in `renv.lock`. A working C++ compiler for R is required because the recommendation models compile their likelihood and prediction code with TMB and Rcpp. On macOS this requires the Xcode Command Line Tools; on Windows use the Rtools release appropriate for your R version.
