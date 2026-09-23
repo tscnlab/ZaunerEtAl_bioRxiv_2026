@@ -1,5 +1,3 @@
-# H03 data assembly, join checks, support rules, and scenario frames.
-
 h03_key_columns <- function() {
   c("site", "Id", "local_date", "clock_minute")
 }
@@ -268,7 +266,7 @@ h03_prepare_primary_frame <- function(
     h03_abort("%s candidate contains an invalid melEDI outcome", placement)
   }
   if (!identical(unique(candidate$zero_offset), 0.1)) {
-    h03_abort("%s candidate does not use the accepted 0.1 lx offset", placement)
+    h03_abort("%s candidate does not use the selected 0.1 lx offset", placement)
   }
 
   list(joined = joined, frame = candidate)
@@ -359,14 +357,6 @@ h03_sample_summary <- function(frame, scenario_id, placement) {
       frame$spans_diary_state_boundary %in% TRUE |
         frame$spans_measurement_context_boundary %in% TRUE,
       na.rm = TRUE
-    ),
-    frame_sha256 = digest::digest(
-      frame[, c(
-        "site", "Id", "local_date", "clock_minute", "light_source",
-        "geo_medi_1h"
-      )],
-      algo = "sha256",
-      serialize = TRUE
     )
   )
 }

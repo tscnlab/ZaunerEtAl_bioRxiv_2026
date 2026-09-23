@@ -1,8 +1,0 @@
-step,observed,expected,timestamp_utc,status,detail
-server_start,127.0.0.1:48763,loopback-only listener,2026-08-21T07:58:46Z,PASS,"Temporary read-only server started from _build/nathealth and bound only to 127.0.0.1."
-result_load,HTTP 200,HTTP 200,2026-08-21T07:58:46Z,PASS,"The preserved H06_daily result HTML loaded successfully."
-link_checks,3 HTTP 200 responses,3 HTTP 200 responses,2026-08-21T08:11:40Z,PASS,"The result page, reciprocal companion, and representative source-data CSV resolved through loopback."
-browser_tabs_closed,0 remaining tabs,0 remaining tabs,2026-08-21T08:12:24Z,PASS,"The result QA tab and dedicated figure-inspection tab were closed."
-viewport_reset,TRUE,TRUE,2026-08-21T08:12:24Z,PASS,"The temporary viewport override was reset."
-server_stop,exit 0,exit 0,2026-08-21T08:12:29Z,PASS,"The temporary server received an interrupt and exited normally."
-listener_teardown,no listener on 127.0.0.1:48763,no listener,2026-08-21T08:12:33Z,PASS,"A fresh lsof check found no remaining TCP listener on the QA port."

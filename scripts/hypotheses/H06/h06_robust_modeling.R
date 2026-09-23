@@ -1,5 +1,3 @@
-# H06 population-mean GLMs, participant-cluster inference, and diagnostics.
-
 h06_robust_capture <- function(expression) {
   warnings <- character()
   value <- withCallingHandlers(
@@ -41,7 +39,7 @@ h06_prepare_robust_frame <- function(frame, formula) {
     )
   }
   if (any(!stats::complete.cases(data[variables]))) {
-    h06_abort("H06 robust model received an incomplete approved formula row")
+    h06_abort("H06 robust model received an incomplete declared formula row")
   }
   if ("site" %in% variables) {
     data$site <- droplevels(factor(data$site, levels = levels(data$site)))
@@ -630,7 +628,7 @@ h06_fit_diagnostics_robust <- function(bundle, run_id, model_role) {
       collapse = " | "
     ),
     fit_error = bundle$fit_error,
-    numerical_gate_pass =
+    numerical_check_pass =
       isTRUE(fit$converged) && fit$rank == ncol(design) &&
       all(is.finite(stats::coef(fit))) && covariance$finite &&
       covariance$positive_definite && covariance$condition_number < 1e10 &&

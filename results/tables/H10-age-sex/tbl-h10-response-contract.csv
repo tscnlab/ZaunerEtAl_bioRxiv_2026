@@ -1,0 +1,18 @@
+Order,Metric,Unit,Family,Transform,Effect scale
+1,Interdaily stability,participant,gaussian,logit,odds ratio
+2,Intradaily variability,participant,gaussian,identity,difference
+3,Mean melEDI,participant day,gaussian,log10 offset 0.1,ratio
+4,Brightest 10 h mean,participant day,gaussian,log10 offset 0.1,ratio
+5,Darkest 10 h mean,participant day,gaussian,log10 offset 0.1,ratio
+6,"Time above 1,000 lx melEDI",participant day,tweedie_log,identity,ratio
+7,Time above 250 lx melEDI during wake,participant day,tweedie_log,identity,ratio
+8,Time below 10 lx melEDI before sleep,participant day,gaussian,identity,difference
+9,Time below 1 lx melEDI during sleep,participant day,tweedie_log,identity,ratio
+10,Longest continuous period above 250 lx melEDI,participant day,gaussian,log10 offset 0.1,ratio
+11,Midpoint of the brightest 10 hours,participant day,gaussian,clock minutes,difference
+12,Midpoint of the darkest 10 hours,participant day,gaussian,clock minutes after 16,difference
+13,Mean timing of exposure above 250 lx melEDI,participant day,gaussian,clock minutes,difference
+14,First light timing above 250 lx melEDI,participant day,gaussian,clock minutes,difference
+15,Last light timing above 250 lx melEDI,participant day,gaussian,clock minutes,difference
+16,melEDI dose,participant day,gaussian,log10 offset 0.1,ratio
+17,Melanopic daylight efficacy ratio,participant day,gaussian,identity,difference

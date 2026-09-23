@@ -1,4 +1,4 @@
-# Define the approved H01 response, multiplicity, and scenario contracts.
+# Define H01 responses, multiplicity families, and analysis scenarios.
 
 h01_abort <- function(message, ..., call. = FALSE) {
   stop(sprintf(message, ...), call. = call.)
@@ -34,7 +34,7 @@ h01_metric_registry <- function() {
     "identity", "difference", TRUE, 0, 24, 6,
     paste0(
       "Calendar-day cumulative duration with a six-hour audit threshold; ",
-      "identity-scale Gaussian selected by the H01 candidate assessment"
+      "identity-scale Gaussian response model"
     ),
     9L, "duration_below_1_sleep_environment", "participant_day",
     "tweedie_log", "identity", "ratio", TRUE, 0, NA_real_, NA_real_,
@@ -83,7 +83,7 @@ h01_family_registry <- function() {
 
 h01_run_registry <- function() {
   tidyr::crossing(
-    data_scenario_id = c("main", "manuscript_prepared_data"),
+    data_scenario_id = c("main", "alternative_preprocessing"),
     placement = c("glasses", "chest"),
     sample_scenario = c("all_available", "paired_common_sample")
   ) |>
@@ -98,10 +98,10 @@ h01_run_registry <- function() {
         data_scenario_id == "main" &
           placement == "glasses" &
           sample_scenario == "all_available" ~ "primary",
-        data_scenario_id == "manuscript_prepared_data" &
+        data_scenario_id == "alternative_preprocessing" &
           placement == "glasses" &
           sample_scenario == "all_available" ~
-            "manuscript_prepared_data_sensitivity",
+            "alternative_preprocessing_sensitivity",
         placement == "chest" & sample_scenario == "all_available" ~
           "complementary_chest",
         sample_scenario == "paired_common_sample" ~
@@ -113,38 +113,11 @@ h01_run_registry <- function() {
 
 h01_input_contract <- function(root) {
   list(
-    main = list(
-      path = file.path(root, "artifacts/06_model_data/H01.rds"),
-      manifest = file.path(
-        root,
-        "artifacts/12_manifests/H01_model_data_artifacts.csv"
-      ),
-      manifest_sha256 =
-        "25978c5d6903e6e835c1aff6a9bc2e7552b85295e8d840d3dd65bbf9b1eb6b72"
-    ),
-    manuscript_prepared_data = list(
-      path = file.path(
-        root,
-        paste0(
-          "artifacts/06_model_data/H01/scenarios/",
-          "manuscript_prepared_data/H01.rds"
-        )
-      ),
-      manifest = file.path(
-        root,
-        paste0(
-          "artifacts/12_manifests/",
-          "H01_manuscript_prepared_data_artifacts.csv"
-        )
-      ),
-      manifest_sha256 =
-        "e0d98178ede61b74353e3a654e7f1b53d7e1c915833a2cda74eea45ed02f383b"
-    ),
-    implementation_contract_sha256 =
-      "62e5af96d08062945ad41b9031c0cfeb749fb7917db83deea2666bff98aa86de",
-    shared_implementation_sha256 =
-      "f0224802bd9b11900c0b446e759c8ce8495788f0fde6afd9101f76ccfabb8303",
-    model_implementation_id = "new_h01_h11"
+    main = list(path = file.path(root, "results/intermediate/model_data/H01.rds")),
+    alternative_preprocessing = list(path = file.path(
+      root,
+      "results/intermediate/model_data/H01/scenarios/alternative_preprocessing/H01.rds"
+    ))
   )
 }
 
@@ -286,19 +259,4 @@ h01_primary_seed <- function(
   placement_offset <- if (placement == "glasses") 0L else 10000L
   sample_offset <- if (sample_scenario == "all_available") 0L else 1000L
   20260730L + data_offset + placement_offset + sample_offset + metric_order
-}
-
-h01_code_paths <- function(root) {
-  file.path(
-    root,
-    "scripts/hypotheses/H01",
-    c(
-      "h01_contract.R",
-      "h01_modeling.R",
-      "run_h01_models.R",
-      "audit_h01_major_gates.R",
-      "build_h01_worker_manifest.R",
-      "build_h01_comparisons.R"
-    )
-  )
 }

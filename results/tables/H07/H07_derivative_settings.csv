@@ -1,0 +1,15 @@
+setting,value
+difference_scheme,central with boundary-aware one-sided differences
+scientific_target,Observed pooled photoperiod association within each metric and placement
+model,adapted_photoperiod_smooth
+smooth,"s(photoperiod_hours, k = 6, bs = 'tp')"
+grid,100 equally spaced points from exact metric-specific minimum to maximum recorded photoperiod
+derivative,First derivative of the fitted photoperiod smooth on its model/link scale
+primary_difference,Central; forward at the lower boundary and backward at the upper boundary
+primary_eps_hours,0.01
+primary_uncertainty,95% pointwise interval using unconditional covariance where available
+transition,Previous grid point has lower interval limit > 0; current and every later point have intervals containing 0
+pooled_support_role,Diagnostic only; not an eligibility criterion
+leave_one_site_out_role,Influence diagnostic only; not an eligibility criterion
+multiplicity,No curve-wide or cross-metric adjustment; post-result descriptive rule
+interpretation,"Derivative-defined plateau pattern; not equivalence, a mechanistic ceiling, or a causal effect"

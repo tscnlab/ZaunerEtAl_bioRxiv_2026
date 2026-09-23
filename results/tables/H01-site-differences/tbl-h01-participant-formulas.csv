@@ -1,0 +1,6 @@
+Model,Formula
+Site full,response_value ~ site + photoperiod_centered_hours
+No site,response_value ~ photoperiod_centered_hours
+No photoperiod,response_value ~ site
+Latitude full,response_value ~ absolute_latitude_10deg_centered + photoperiod_centered_hours
+Random site,response_value ~ photoperiod_centered_hours + (1 | site)

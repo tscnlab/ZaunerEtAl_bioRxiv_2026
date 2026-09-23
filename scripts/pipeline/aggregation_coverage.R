@@ -1,7 +1,3 @@
-# Canonical order: annotate both time axes, aggregate raw subepochs, align
-# measurement state and apply signal limits, then evaluate coarse coverage.
-# The wall-clock representation below is derived only for coverage decisions;
-# it never replaces the real-time rows used by elapsed-time metrics.
 
 validate_coverage_fraction <- function(
   x,

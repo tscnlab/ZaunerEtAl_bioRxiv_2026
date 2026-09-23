@@ -1,5 +1,3 @@
-# Define the accepted H06-002 model and H06-003 Stage 3 provenance contract.
-
 h06_abort <- function(message, ..., call. = FALSE) {
   stop(sprintf(message, ...), call. = call.)
 }
@@ -128,16 +126,6 @@ h06_exploratory_formula_set <- function() {
       "previous_sleep_duration_centered_h + wake_centered_h"
     ))
   )
-}
-
-h06_gamm_formula <- function() {
-  stats::as.formula(paste(
-    "log10_melEDI_offset ~ site + work_free_day * activity_status +",
-    "previous_sleep_duration_centered_h +",
-    "s(clock_hour, by = day_activity_group, bs = 'cc', k = 16, id = 1) +",
-    "s(participant_key, bs = 're') +",
-    "s(participant_day_key, bs = 're')"
-  ))
 }
 
 h06_day_activity_levels <- function() {
@@ -328,117 +316,9 @@ h06_multiplicity_registry <- function() {
 }
 
 h06_input_contract <- function(root) {
-  tibble::tribble(
-    ~input_role,
-    ~relative_path,
-    ~expected_sha256,
-    "primary_near_eye_hourly",
-    "artifacts/06_model_data/base/metrics_glasses_one_hour_context.rds",
-    "7591bcfaae4b49fdde2053160848e170895092b223f96108e538066ce210a951",
-    "complementary_chest_hourly",
-    "artifacts/06_model_data/base/metrics_chest_one_hour_context.rds",
-    "18134eec529c36e5fd47c7b3bb1e3b909628b97986cd91eff8e59ee9b5343cbb",
-    "gap_timing_unaware_hourly",
-    "artifacts/06_model_data/scenarios/manuscript_prepared_data/one_hour_data.rds",
-    "3c9a44d67d3267a3daa2a1392b096bdd89d80d62155edc44bdfe6c048ac4c105",
-    "normalized_exercise_diary",
-    "artifacts/06_model_data/normalized_inputs/exercisediary.rds",
-    "5bffe44cdd9c65f3d1dc20575d10b3f0a403577f3cf9109e83cfea95a2ae7107",
-    "normalized_sleep_diary",
-    "artifacts/06_model_data/normalized_inputs/sleepdiaries.rds",
-    "110819d74503c895170552c1f2214aca83de51cadd23bde7525aa821ee0b0e15",
-    "temporal_provenance",
-    "artifacts/06_model_data/temporal_provenance/wall_outcome_links.csv",
-    "0e8baf5e7548efff60c2cc2c4eda3418dfcddb02b5523acb30506f8a77890850",
-    "site_display_registry",
-    "config/site_display_registry.csv",
-    "3d669d459ecc27d3154bbb5ff5b0d64cb510805d486b45264443228c44a6d809",
-    "model_input_source_pins",
-    "config/model_input_source_pins.csv",
-    "3fbf9f40125c60e1d0779d2b2d524e79534597586c60ec236a1ce16299e18831",
-    "current_base_model_manifest",
-    "artifacts/12_manifests/base_model_data_artifacts.csv",
-    "8344bdc0339a53079bf9eeb7d86de1ad7c15373641c3a0a5a01d040b418895ce",
-    "approved_stage1_source",
-    "audit/hypotheses/H06/01_audit_and_plan.qmd",
-    "393fd87c908302c1681925dcc451b27be31e652758592da8a81c775ff09aaf26",
-    "approved_stage1_render",
-    "audit/hypotheses/H06/01_audit_and_plan.html",
-    "186ab355deb0ba41f276c55c0490e9e0edbe7be1060c40fe2f4c366ed8eee8ae",
-    "stage2_gate_decision",
-    "audit/decisions/h06_stage1a_gate_and_stage2_transition.md",
-    "882057ec11ce5e6a56d5b7268b3b501d372c2ec5a34de21a1ef0fa4ebcf07a52",
-    "approved_stage2_source",
-    "audit/hypotheses/H06/02_implementation_and_v0_comparison.qmd",
-    "736926de3576a7dceaed7b92fb65f65a05d8f6d32604d533fd9eb6e45e26a36d",
-    "approved_stage2_render",
-    "audit/hypotheses/H06/02_implementation_and_v0_comparison.html",
-    "eea3da853bb23db96a59759d11a8f7eeb838e2e42960bf71ab96830030289b75",
-    "approved_stage2_manifest",
-    "artifacts/12_manifests/H06/H06_stage2_artifacts.csv",
-    "2407f2045d960be1025dbd5e338d0df9a733bd4caf2afc29f16a9680fb355752",
-    "stage3_gate_decision",
-    "audit/decisions/h06_stage2_gate_and_stage3_transition.md",
-    "88fb0bae10e24d3fb300de64d8c6959865a5cfa7ed9ced98e66ae2dffbe0617d",
-    "stage4_gate_decision",
-    "audit/decisions/h06_stage3_gate_and_stage4_transition.md",
-    "a97f3b9dc7f2b3b42d27ae970773ea50cd479046891594de5b0955a52e5dfaa4",
-    "v0_near_eye_table",
-    "tables/H6.docx",
-    "20a259c13c5d0637c11f3522ed6fdca12d18d8f7df27b6ab8b1bf5787c330b80",
-    "v0_chest_table",
-    "tables/chest/H6.docx",
-    "4db844c889df3ee0d628f2d017a82dacd81c87c2e3e1ac02b6694bb1c8f40893",
-    "v0_near_eye_light",
-    "data/preprocessed_glasses_2.RData",
-    "0d00bac25d955d45447f74cc9c3ad6a5f5dfa1de1282d8d619c9468f72e0c430",
-    "v0_chest_light",
-    "data/preprocessed_chest_2.RData",
-    "b289c17c64d1bd24166fa3873da9aa8f22a5f57c793a7282ecb201dc77dcd274"
-  ) |>
-    dplyr::mutate(path = file.path(root, .data$relative_path))
-}
-
-h06_base_input_bundle_sha256 <- function() {
-  "168f25e18b6e494aa7a0272923041ad8249e25adb9ff3742d22e2f4cacf1bdf8"
-}
-
-h06_v0_output_summary <- function() {
-  tibble::tribble(
-    ~placement,
-    ~participant_hours,
-    ~reference_melEDI_lx,
-    ~free_vs_work_ratio,
-    ~light_vs_none_ratio,
-    ~moderate_vs_none_ratio,
-    ~vigorous_vs_none_ratio,
-    ~sleep_ratio_per_hour,
-    ~conditional_r2,
-    ~marginal_r2,
-    ~participant_random_multiplier,
-    "glasses",
-    16406L,
-    75.79,
-    0.92,
-    1.85,
-    1.74,
-    1.50,
-    0.92,
-    0.42,
-    0.15,
-    2.36,
-    "chest",
-    18124L,
-    96.18,
-    0.92,
-    1.49,
-    1.61,
-    1.21,
-    0.92,
-    0.37,
-    0.13,
-    2.26
-  )
+ tibble::tibble(input_role=c("primary_near_eye_hourly","complementary_chest_hourly","gap_timing_unaware_hourly","normalized_exercise_diary","normalized_sleep_diary","temporal_provenance","site_display_registry"),
+ relative_path=c("results/intermediate/model_data/base/metrics_glasses_one_hour_context.rds","results/intermediate/model_data/base/metrics_chest_one_hour_context.rds","results/intermediate/model_data/scenarios/alternative_preprocessing/one_hour_data.rds","results/intermediate/model_data/normalized_inputs/exercisediary.rds","results/intermediate/model_data/normalized_inputs/sleepdiaries.rds","results/intermediate/model_data/temporal_provenance/wall_outcome_links.csv","config/site_display_registry.csv")) |>
+ dplyr::mutate(path=file.path(root,.data$relative_path))
 }
 
 h06_validate_contract <- function() {
@@ -462,7 +342,7 @@ h06_validate_contract <- function() {
       any(grepl("clock_hour", formula_text, fixed = TRUE)) ||
       any(grepl("exercise_intensity", formula_text, fixed = TRUE))
   ) {
-    h06_abort("The H06 Stage 2 contract is internally inconsistent")
+    h06_abort("The H06 contract is internally inconsistent")
   }
   invisible(TRUE)
 }

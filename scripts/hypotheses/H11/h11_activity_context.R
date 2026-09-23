@@ -1,22 +1,14 @@
-# H11 exploratory activity-context sensitivity helpers.
-#
-# These functions preserve the accepted H02/H11 temporal model, sample
-# hierarchy, true-time AR boundaries, and participant-cluster-robust inference
-# while comparing restricted-unadjusted and activity-adjusted fits on one exact
-# activity-complete sample per placement.
-
 h11_activity_abort <- function(message, ..., call. = FALSE) {
   stop(sprintf(message, ...), call. = call.)
 }
 
 h11_activity_paths <- function(root) {
   list(
-    model_data = file.path(root, "artifacts/06_model_data/H11/activity_context"),
-    models = file.path(root, "artifacts/07_models/H11/activity_context"),
-    diagnostics = file.path(root, "artifacts/08_diagnostics/H11/activity_context"),
-    tables = file.path(root, "artifacts/09_tables/H11/activity_context"),
-    source_data = file.path(root, "artifacts/11_source_data/H11/activity_context"),
-    manifests = file.path(root, "artifacts/12_manifests/H11")
+    model_data = file.path(root, "results/intermediate/model_data/H11/activity_context"),
+    models = file.path(root, "results/models/H11/activity_context"),
+    diagnostics = file.path(root, "results/csv/diagnostics/H11/activity_context"),
+    tables = file.path(root, "results/tables/H11/activity_context"),
+    source_data = file.path(root, "results/csv/source_data/H11/activity_context")
   )
 }
 
@@ -147,19 +139,19 @@ h11_activity_prepare_diary <- function(diary) {
     activity_code = activity_code,
     activity_eligible = activity_eligible
   )
-  audit <- prepared_all |>
+  diagnostic <- prepared_all |>
     dplyr::mutate(
-      audit_state = dplyr::case_when(
+      diagnostic_state = dplyr::case_when(
         is.na(.data$interval_start_utc) | is.na(.data$interval_end_utc) ~
           "diary_interval_missing_utc_bounds",
         !.data$interval_analysis_eligible ~ "diary_interval_not_analysis_eligible",
         .data$activity_cardinality != "exactly_one_selected" ~
           .data$activity_cardinality,
         is.na(.data$activity_code) ~ "exactly_one_other_excluded",
-        TRUE ~ "eligible_v0_five_level_activity"
+        TRUE ~ "eligible_five_level_activity"
       )
     ) |>
-    dplyr::count(.data$audit_state, name = "diary_intervals") |>
+    dplyr::count(.data$diagnostic_state, name = "diary_intervals") |>
     dplyr::mutate(
       percent_of_diary_intervals =
         100 * .data$diary_intervals / nrow(prepared_all)
@@ -169,7 +161,7 @@ h11_activity_prepare_diary <- function(diary) {
       !is.na(.data$interval_start_utc),
       !is.na(.data$interval_end_utc)
     )
-  list(data = prepared, audit = audit)
+  list(data = prepared, diagnostic = diagnostic)
 }
 
 h11_activity_floor_utc_hour <- function(x) {
@@ -189,7 +181,7 @@ h11_activity_attach <- function(frame, diary, run_id) {
   missing <- setdiff(required, names(frame))
   if (length(missing) > 0L) {
     h11_activity_abort(
-      "Accepted H11 frame %s lacks: %s",
+      "Primary H11 frame %s lacks: %s",
       run_id,
       paste(missing, collapse = ", ")
     )
@@ -232,10 +224,10 @@ h11_activity_attach <- function(frame, diary, run_id) {
         .data$activity_cardinality != "exactly_one_selected" ~
           .data$activity_cardinality,
         is.na(.data$activity_code) ~ "exactly_one_other_excluded",
-        TRUE ~ "retained_v0_five_level_activity"
+        TRUE ~ "retained_five_level_activity"
       )
     )
-  join_audit <- joined |>
+  join_diagnostic <- joined |>
     dplyr::count(.data$activity_join_status, name = "observations_30_minute") |>
     dplyr::mutate(
       run_id = run_id,
@@ -245,7 +237,7 @@ h11_activity_attach <- function(frame, diary, run_id) {
     )
 
   output <- joined |>
-    dplyr::filter(.data$activity_join_status == "retained_v0_five_level_activity") |>
+    dplyr::filter(.data$activity_join_status == "retained_five_level_activity") |>
     dplyr::mutate(inherited_AR_start = as.logical(.data$AR_start)) |>
     h02_prepare_fit_data() |>
     dplyr::group_by(.data$participant_day) |>
@@ -329,24 +321,7 @@ h11_activity_attach <- function(frame, diary, run_id) {
   if (continuity_violation != 0L) {
     h11_activity_abort("Recomputed AR boundaries failed for %s", run_id)
   }
-  list(data = output, join_audit = join_audit)
-}
-
-h11_activity_frame_hash <- function(data) {
-  keys <- data |>
-    dplyr::transmute(
-      site = as.character(.data$site),
-      participant = as.character(.data$participant),
-      participant_day = as.character(.data$participant_day),
-      source_utc_start = format(.data$source_utc_start, tz = "UTC", usetz = TRUE),
-      source_utc_end = format(.data$source_utc_end, tz = "UTC", usetz = TRUE),
-      clock_bin = as.integer(.data$clock_bin),
-      AR_start = as.logical(.data$AR_start),
-      response = as.numeric(.data$response),
-      sex = as.character(.data$sex),
-      activity = as.character(.data$activity)
-    )
-  digest::digest(keys, algo = "sha256", serialize = TRUE)
+  list(data = output, join_diagnostic = join_diagnostic)
 }
 
 h11_activity_sample_row <- function(data, run_id, placement) {
@@ -368,8 +343,7 @@ h11_activity_sample_row <- function(data, run_id, placement) {
     female_observations_30_minute = sum(data$sex == "Female"),
     male_observations_30_minute = sum(data$sex == "Male"),
     sites = dplyr::n_distinct(data$site),
-    AR_sequences = sum(data$AR_start),
-    frame_sha256 = h11_activity_frame_hash(data)
+    AR_sequences = sum(data$AR_start)
   )
 }
 
@@ -397,10 +371,10 @@ h11_activity_support <- function(data, run_id, placement) {
 
 h11_activity_validate_fit <- function(fit, formula, data, method, rho, model_id) {
   if (!inherits(fit, "bam")) {
-    h11_activity_abort("Checkpoint %s is not an mgcv BAM fit", model_id)
+    h11_activity_abort("Model %s is not an mgcv BAM fit", model_id)
   }
-  if (!h11_stage2_formula_equal(fit, formula)) {
-    h11_activity_abort("Checkpoint %s has the wrong formula", model_id)
+  if (!h11_formula_equal(fit, formula)) {
+    h11_activity_abort("Model %s has the wrong formula", model_id)
   }
   if (
     stats::nobs(fit) != nrow(data) ||
@@ -411,19 +385,19 @@ h11_activity_validate_fit <- function(fit, formula, data, method, rho, model_id)
         check.attributes = FALSE
       ))
   ) {
-    h11_activity_abort("Checkpoint %s is not aligned to its exact frame", model_id)
+    h11_activity_abort("Model %s is not aligned to its exact frame", model_id)
   }
   observed_rho <- if (is.null(fit$AR1.rho)) 0 else as.numeric(fit$AR1.rho)
   if (
     !identical(as.character(fit$method), method) ||
       !isTRUE(all.equal(observed_rho, rho, tolerance = 1e-12))
   ) {
-    h11_activity_abort("Checkpoint %s has the wrong method or rho", model_id)
+    h11_activity_abort("Model %s has the wrong method or rho", model_id)
   }
   invisible(TRUE)
 }
 
-h11_activity_checkpoint_fit <- function(
+h11_activity_fit_and_save <- function(
     formula,
     data,
     method,
@@ -435,29 +409,6 @@ h11_activity_checkpoint_fit <- function(
   dir.create(run_directory, recursive = TRUE, showWarnings = FALSE)
   model_path <- file.path(run_directory, paste0(model_id, ".rds"))
   metadata_path <- file.path(run_directory, paste0(model_id, "__metadata.rds"))
-  frame_sha256 <- h11_activity_frame_hash(data)
-  if (file.exists(model_path) && file.exists(metadata_path)) {
-    fit <- readRDS(model_path)
-    metadata <- readRDS(metadata_path)
-    h11_activity_validate_fit(fit, formula, data, method, rho, model_id)
-    if (
-      !identical(metadata$frame_sha256, frame_sha256) ||
-        !isTRUE(metadata$discrete)
-    ) {
-      h11_activity_abort("Checkpoint metadata mismatch for %s", model_id)
-    }
-    metadata$checkpoint_reused <- TRUE
-    return(list(
-      fit = fit,
-      metadata = metadata,
-      model_path = model_path,
-      metadata_path = metadata_path
-    ))
-  }
-  if (xor(file.exists(model_path), file.exists(metadata_path))) {
-    h11_activity_abort("Incomplete activity-model checkpoint for %s", model_id)
-  }
-  message("  fitting ", run_id, " / ", model_id)
   started <- proc.time()[["elapsed"]]
   fit <- h02_fit_bam(
     formula = formula,
@@ -475,9 +426,7 @@ h11_activity_checkpoint_fit <- function(
     method = method,
     rho = rho,
     discrete = TRUE,
-    frame_sha256 = frame_sha256,
     elapsed_seconds = elapsed,
-    checkpoint_reused = FALSE,
     completed_at = format(Sys.time(), tz = "Europe/Berlin", usetz = TRUE),
     R_version = as.character(getRversion()),
     mgcv_version = as.character(utils::packageVersion("mgcv"))
@@ -505,8 +454,6 @@ h11_activity_model_row <- function(result, run_id, placement, model_variant) {
       formula = result$metadata$formula,
       discrete = result$metadata$discrete,
       elapsed_seconds = result$metadata$elapsed_seconds,
-      checkpoint_reused = result$metadata$checkpoint_reused,
-      frame_sha256 = result$metadata$frame_sha256,
       R_version = result$metadata$R_version,
       mgcv_version = result$metadata$mgcv_version,
       .after = "run_id"
@@ -630,7 +577,7 @@ h11_activity_robust_test <- function(
   D <- contract$L[female_rows, , drop = FALSE] -
     contract$L[male_rows, , drop = FALSE]
   block <- h11_activity_sex_block(fit, D, run_id)
-  tested <- h11_stage2_robust_wald(fit, D, block$rank, context)
+  tested <- h11_robust_wald(fit, D, block$rank, context)
 
   contribution <- rowSums(tested$influence^2)
   contribution_share <- contribution / sum(contribution)
@@ -685,7 +632,7 @@ h11_activity_robust_test <- function(
     ),
     inferential_role = paste(
       "Exploratory contextual sensitivity; cannot replace or invalidate",
-      "the accepted primary all-available result"
+      "the retained primary all-available result"
     )
   )
   diagnostics <- tibble::tibble(
@@ -717,7 +664,7 @@ h11_activity_robust_test <- function(
     delete_one_participant_p_maximum = max(delete_one_p),
     delete_one_participant_below_0_05 = sum(delete_one_p < 0.05),
     robust_context_elapsed_seconds = context$elapsed_seconds,
-    method_status = "accepted_H11_METHOD_001_through_007"
+    method_status = "sex_by_time_model"
   )
   list(
     comparison = comparison,
@@ -741,7 +688,7 @@ h11_activity_pointwise_curves <- function(
   lookup <- contract$lookup
   beta <- stats::coef(fit)
   eta <- drop(L %*% beta)
-  curve_covariance <- h11_stage2_robust_target_covariance(
+  curve_covariance <- h11_robust_target_covariance(
     robust_context,
     L
   )$covariance
@@ -776,7 +723,7 @@ h11_activity_pointwise_curves <- function(
   female_rows <- which(lookup$sex == "Female")
   D <- L[female_rows, , drop = FALSE] - L[male_rows, , drop = FALSE]
   difference <- drop(D %*% beta)
-  contrast_covariance <- h11_stage2_robust_target_covariance(
+  contrast_covariance <- h11_robust_target_covariance(
     robust_context,
     D
   )$covariance

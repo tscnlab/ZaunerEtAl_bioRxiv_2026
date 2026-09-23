@@ -1,9 +1,3 @@
-# Shared display helpers for p-values in Nature Health reports.
-#
-# Scientific artifacts retain full numeric precision. These functions create
-# display labels and carry an already-determined significance decision for
-# styling. They never calculate multiplicity adjustments or decide which
-# inferential rule applies.
 
 nh_validate_p_values <- function(value) {
   if (!is.numeric(value)) {

@@ -1,0 +1,131 @@
+---
+title: "Import and align light recordings"
+---
+
+The analysis starts from the downloaded MeLiDos releases in `data/downloaded/recordings`. Each file is selected by site, measurement type, and the release commit in `config/site_sources.csv`. The computation below requires no download and does not use a stored analysis result.
+
+```{r}
+#| label: import-setup
+#| echo: false
+source("scripts/project.R")
+analysis_setup()
+for (helper in c("paths_io", "assertions", "time_axes", "time_support", "state_alignment", "aggregation_coverage", "import_sources", "build_import_alignment")) {
+  source(file.path("scripts/pipeline", paste0(helper, ".R")))
+}
+root <- project_root()
+paths <- pipeline_paths(root)
+ensure_pipeline_directories(paths)
+site_sources <- read_site_sources("config/site_sources.csv")
+```
+
+## Source recordings and diary intervals
+
+The site time zone determines how recorded wall-clock labels are converted to actual UTC instants. Sleep-diary intervals run from attempted sleep preparation to waking; the three-hour pre-sleep interval is treated separately. Wear logs identify off-body periods. Keeping explicit, half-open intervals avoids filling gaps by carrying a state forward.
+
+```{r}
+#| label: import-state-intervals
+state_pairs <- list()
+source_inventory <- list()
+for (site in site_sources$site) {
+  site_row <- site_sources[site_sources$site == site, ]
+  sleep_source <- recording_source(site_sources, site, "sleepdiaries")
+  wear_source <- recording_source(site_sources, site, "wearlog")
+  state_pairs[[site]] <- prepare_state_interval_pair(
+    sleep_source$data, wear_source$data, site, site_row$timezone
+  )
+  for (kind in c("sleep", "wear")) {
+    input <- if (kind == "sleep") sleep_source else wear_source
+    intervals <- decorate_state_intervals(
+      state_pairs[[site]][[kind]], site, site_row$timezone, kind,
+      input$specification, input$downloaded_source
+    )
+    write_rds_artifact(intervals, file.path(paths$aligned, "state_intervals",
+      paste0(site, "_", kind, "_intervals.rds")), "preparation/01-import-and-alignment.qmd")
+  }
+  source_inventory[[site]] <- tibble::tibble(
+    site = site, repository = site_row$repository, release = site_row$commit,
+    doi = site_row$doi, timezone = site_row$timezone,
+    sleep_intervals = nrow(state_pairs[[site]]$sleep$intervals),
+    wear_intervals = nrow(state_pairs[[site]]$wear$intervals)
+  )
+}
+dplyr::bind_rows(source_inventory)
+```
+
+These interval counts describe the information available for aligning each recording. They do not select analysis days; coverage is evaluated in the next document.
+
+## One-minute measurements and measurement context
+
+Each native recording is aggregated to one minute only when every expected subepoch supplies a finite value. Both actual elapsed time and local wall-clock time are retained. The alignment joins are checked for duplicate keys and preserve the number of measurement rows. Values at or above 100,000 lx melEDI exceed the device operating boundary and are marked unusable.
+
+```{r}
+#| label: import-recordings
+aligned_paths <- list(glasses = character(), chest = character())
+recording_summary <- list()
+for (site in site_sources$site) {
+  site_row <- site_sources[site_sources$site == site, ]
+  placements <- c("glasses", if (isTRUE(site_row$has_chest)) "chest")
+  for (placement in placements) {
+    input <- recording_source(site_sources, site, paste0("light_", placement))
+    validate_light_stream(input$data, site, placement, site_row$timezone)
+    annotated <- annotate_time_axes(input$data, timezone = site_row$timezone,
+                                    datetime_col = "Datetime", site = site)
+    annotated$position <- placement
+    assert_unique_key(annotated, c("site", "Id", "position", "datetime_utc"))
+    minute_data <- aggregate_native_epoch_to_minute(
+      annotated, signal_cols = c("MEDI", "LIGHT"),
+      id_cols = c("site", "Id", "position"),
+      expected_subepochs = NULL, minimum_finite_subepochs = NULL,
+      minimum_finite_fraction = 1, datetime_utc_col = "datetime_utc",
+      datetime_wall_col = "datetime_wall", implicit_col = "is.implicit"
+    )
+    minute_data$source_repository <- input$specification$repository
+    minute_data$source_commit <- input$specification$commit
+    minute_data$source_doi <- input$specification$doi
+    minute_data$source_sha256 <- input$downloaded_source$sha256
+    write_rds_artifact(minute_data, file.path(paths$imported, "minute",
+      paste0(site, "_", placement, "_minute.rds")), "preparation/01-import-and-alignment.qmd")
+    minute_data$Datetime <- minute_data$datetime_utc
+    sleep_joined <- attach_states_checked(minute_data, state_pairs[[site]]$sleep$intervals,
+                                         stream_keys = "Id")
+    wear_joined <- attach_states_checked(sleep_joined, state_pairs[[site]]$wear$intervals,
+                                        stream_keys = "Id")
+    aligned <- derive_measurement_context(dplyr::ungroup(wear_joined),
+      placement = placement, brown_state_col = "State.Brown", wear_col = "wear",
+      medi_col = "MEDI", light_col = "LIGHT", saturation_threshold = 100000)
+    aligned <- dplyr::ungroup(aligned)
+    validate_aligned_stream(aligned, 100000)
+    stopifnot(nrow(aligned) == nrow(minute_data))
+    path <- file.path(paths$aligned, "site_position", paste0(site, "_", placement, "_aligned.rds"))
+    write_rds_artifact(aligned, path, "preparation/01-import-and-alignment.qmd")
+    aligned_paths[[placement]] <- c(aligned_paths[[placement]], path)
+    recording_summary[[paste(site, placement)]] <- tibble::tibble(
+      site = site, placement = placement, participants = dplyr::n_distinct(aligned$Id),
+      recorded_minutes = nrow(aligned), finite_melEDI = sum(is.finite(aligned$MEDI))
+    )
+    rm(input, annotated, minute_data, sleep_joined, wear_joined, aligned)
+    invisible(gc())
+  }
+}
+dplyr::bind_rows(recording_summary)
+```
+
+## Analysis inputs
+
+The next document receives a chronologically ordered table for each sensor placement. Site and participant identifiers remain part of every measurement key.
+
+```{r}
+#| label: import-combined-outputs
+#| code-fold: true
+for (placement in names(aligned_paths)) {
+  combined <- dplyr::bind_rows(lapply(aligned_paths[[placement]], readRDS)) |>
+    dplyr::arrange(.data$site, .data$Id, .data$datetime_utc)
+  assert_unique_key(combined, c("site", "Id", "position", "datetime_utc"))
+  write_rds_artifact(combined, file.path(paths$aligned,
+    paste0("light_", placement, "_aligned.rds")), "preparation/01-import-and-alignment.qmd")
+  rm(combined)
+  invisible(gc())
+}
+write_csv_artifact(dplyr::bind_rows(recording_summary),
+  file.path(paths$diagnostics, "recording_summary.csv"), "preparation/01-import-and-alignment.qmd")
+```

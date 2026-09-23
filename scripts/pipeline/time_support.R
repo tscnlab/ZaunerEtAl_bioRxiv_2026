@@ -1,3 +1,4 @@
+
 validate_equal_lengths <- function(..., .names = NULL) {
   values <- list(...)
   lengths <- vapply(values, length, integer(1))

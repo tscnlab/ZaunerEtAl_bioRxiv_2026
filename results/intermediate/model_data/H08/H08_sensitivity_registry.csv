@@ -1,0 +1,12 @@
+sensitivity_order,sensitivity_id,change,inferential_role
+1,primary_near_eye,None,Primary
+2,complementary_chest,Placement only,Complementary
+3,paired_common_placement,Restrict both placements to identical eight-site participant-days,Placement concordance
+4,gap_timing_unaware,Prepared metric values and available days,Data-preparation sensitivity
+5,main_gap_common_sample,Restrict both preparation scenarios to identical participant-days,Data-preparation common-sample sensitivity
+6,photoperiod_adjusted,Add centred linear photoperiod,Descriptive model sensitivity
+7,participant_summary,One natural-scale daily mean per participant before response representation,Unequal-day-weighting sensitivity
+8,longest_period_exact_only,Use exactly identifiable periods only,Metric-identifiability sensitivity
+9,observed_dose_common_sample,Replace corrected dose by observed dose on corrected-dose rows,Correction-dependence sensitivity
+10,leave_one_site_out,Remove one whole site per additive-model refit,Influence diagnostic
+11,coverage_and_all_zero_deferred,Rules B/C and all-zero-inclusive metrics are not H08-ready,Deferred prepared-data sensitivity

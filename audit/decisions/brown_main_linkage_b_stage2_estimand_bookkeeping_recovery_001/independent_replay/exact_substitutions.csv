@@ -1,4 +1,0 @@
-"old","new"
-"  family <- families[[i]]","  family_table <- as.data.frame(families[[i]])"
-"    z <- family[family$sample_id == sample, ]","    z <- family_table[family_table[[""sample_id""]] == sample, , drop = FALSE]"
-"c(""estimand_interface.R"", ""06_derive_primary_estimands.R"")","c(""estimand_interface.R"", ""06_derive_primary_estimands_v2.R"")"

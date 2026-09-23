@@ -1,14 +1,17 @@
-# Support-aware personal light-exposure metric derivation.
 
 metric_day_key <- c("site", "Id", "position", "local_date")
+
 metric_participant_key <- c("site", "Id", "position")
+
 state_support_candidate_cutoffs <- c(0.70, 0.80, 0.90)
+
 mder_primary_viable_fraction <- 0.50
+
 mder_metric_failure_reasons <- c(
   "no_viable_momentary_ratio",
   "below_viable_ratio_fraction"
 )
-numerical_zero_decision_id <- "METRIC-011"
+
 numerical_zero_rule <- paste0(
   "normalize_to_zero_only_if_abs(raw_backtransform)<=",
   "100*.Machine$double.eps*max(1,abs(shifted_mean),abs(zero_offset))",
@@ -39,7 +42,7 @@ validate_state_support_candidate_cutoffs <- function(
       ))
   ) {
     abort_pipeline(
-      "The cutoff-neutral state-support gate is fixed at 0.70, 0.80, and 0.90"
+      "The state-support comparison is fixed at 0.70, 0.80, and 0.90"
     )
   }
   candidate_cutoffs
@@ -189,7 +192,6 @@ new_numerical_zero_audit_record <- function(
       source_missing_minutes = as.integer(source_missing_minutes),
       source_real_minutes = as.integer(source_real_minutes),
       source_valid_real_minutes = as.integer(source_valid_real_minutes),
-      numerical_zero_decision_id = numerical_zero_decision_id,
       numerical_zero_rule = numerical_zero_rule,
       numerical_zero_reason = backtransform$numerical_zero_reason,
       raw_value_preserved = TRUE
@@ -2476,7 +2478,7 @@ state_support_cutoff_site_diagnostics <- function(
   summary
 }
 
-derive_state_support_gate_diagnostics <- function(
+derive_state_support_diagnostics <- function(
   coverage,
   state_intervals,
   placement,
@@ -2489,7 +2491,7 @@ derive_state_support_gate_diagnostics <- function(
     coverage,
     state_intervals = state_intervals,
     placement = placement,
-    object = paste0(placement, " state-support gate input")
+    object = paste0(placement, " state-support diagnostic input")
   )
   groups <- split(
     seq_len(nrow(true_grid)),
@@ -2746,7 +2748,6 @@ derive_metric_set <- function(
         .data$valid_medi_wall_minutes,
       source_real_minutes = .data$source_real_minutes,
       source_valid_real_minutes = .data$source_observed_real_minutes,
-      numerical_zero_decision_id = numerical_zero_decision_id,
       numerical_zero_rule = numerical_zero_rule,
       numerical_zero_reason = .data$.numerical_zero_reason,
       raw_value_preserved = TRUE

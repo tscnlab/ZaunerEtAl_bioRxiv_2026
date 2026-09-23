@@ -1,0 +1,7 @@
+Instrument,Role,Formula
+MCTQ MSFsc,Site only,timing_hour ~ site + (1 | site:Id)
+MCTQ MSFsc,Average chronotype association,timing_hour ~ site + mctq_hour_centered + (1 | site:Id)
+MCTQ MSFsc,Chronotype-by-site interaction,timing_hour ~ site * mctq_hour_centered + (1 | site:Id)
+MEQ,Site only,timing_hour ~ site + (1 | site:Id)
+MEQ,Average chronotype association,timing_hour ~ site + meq_10_centered + (1 | site:Id)
+MEQ,Chronotype-by-site interaction,timing_hour ~ site * meq_10_centered + (1 | site:Id)

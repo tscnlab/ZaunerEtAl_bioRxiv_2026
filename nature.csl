@@ -40,7 +40,7 @@
   </macro>
   <macro name="access">
     <choose>
-      <if variable="volume" type="article dataset software" match="any"/>
+      <if variable="volume" type="article article-journal dataset software webpage" match="any"/>
       <else-if variable="DOI">
         <text variable="DOI" prefix="doi:"/>
       </else-if>
@@ -49,7 +49,10 @@
   <macro name="access-data">
     <choose>
       <if type="dataset software" match="any">
-        <text variable="DOI" prefix="https://doi.org/"/>
+        <choose>
+          <if variable="DOI"><text variable="DOI" prefix="https://doi.org/"/></if>
+          <else><text variable="URL"/></else>
+        </choose>
       </if>
     </choose>
   </macro>
@@ -91,6 +94,7 @@
       <else-if type="dataset software" match="any">
         <group delimiter=" ">
           <text variable="publisher"/>
+          <text variable="version" prefix="Version "/>
           <text macro="access-data"/>
           <date date-parts="year" form="text" variable="issued" prefix="(" suffix=")"/>
         </group>

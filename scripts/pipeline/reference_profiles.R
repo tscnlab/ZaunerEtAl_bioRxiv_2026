@@ -1,3 +1,4 @@
+
 clock_bin <- function(clock_minute, bin_minutes = 30L) {
   if (
     !is.numeric(clock_minute) ||
@@ -522,11 +523,6 @@ participant_probability_quantile <- function(x, probability) {
   )
 }
 
-# Learn a timing distribution from one-row-per-wall-minute data. The hierarchy
-# is deliberate: valid minutes form a participant-day/bin probability, days
-# are averaged equally within participant/bin, and participants are averaged
-# equally within profile/bin. Consequently, neither long days nor participants
-# with more retained days receive additional weight.
 learn_exceedance_distribution_profile <- function(
   data,
   value_col,

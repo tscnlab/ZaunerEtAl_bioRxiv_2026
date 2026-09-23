@@ -1,10 +1,9 @@
-# Publication-facing gt tables. The visual grammar intentionally follows the
-# manuscript-generating tables in Descriptives.qmd. Scientific calculations
-# and denominators are prepared upstream; this file only arranges, annotates,
-# styles, and exports those verified values.
+# Publication tables built from the descriptive summaries. Scientific
+# calculations and denominators are prepared upstream; this file arranges,
+# annotates, styles, and exports those values.
 
 site_wide_display_data <- function(data, row_fields) {
-  sites <- replica_site_levels()
+  sites <- display_site_levels()
   row_keys <- data |>
     dplyr::select(dplyr::all_of(row_fields)) |>
     dplyr::distinct() |>
@@ -31,7 +30,7 @@ label_registered_site_columns <- function(table, include_overall = TRUE) {
   table
 }
 
-style_submitted_site_columns <- function(table) {
+style_site_columns <- function(table) {
   palette <- descriptive_site_palette()
   for (site in descriptive_site_order()) {
     table <- table |>
@@ -177,7 +176,7 @@ build_participant_site_publication_gt <- function(
     ) |>
     gt::sub_missing() |>
     label_registered_site_columns() |>
-    style_submitted_site_columns() |>
+    style_site_columns() |>
     gt::tab_style(
       style = gt::cell_text(align = "center"),
       locations = list(gt::cells_body(), gt::cells_column_labels())
@@ -286,7 +285,7 @@ build_participant_site_manuscript_publication_gt <- function(data) {
 }
 
 metric_thumbnail_plot <- function(metric_values, metric_id) {
-  contract <- replica_metric_contract()
+  contract <- display_metric_contract()
   row <- contract[contract$metric_id == metric_id, , drop = FALSE]
   if (nrow(row) != 1L) stop("Unknown thumbnail metric: ", metric_id, call. = FALSE)
   plot_data <- metric_values |>
@@ -429,10 +428,21 @@ build_metric_publication_gt <- function(data, metric_values) {
     metric_thumbnail_plot(metric_values, metric_id)
   })
   thumbnail_names <- wide$table_name
+  thumbnail_html <- vapply(
+    seq_along(thumbnails),
+    function(i) metric_thumbnail_html(thumbnails[[i]], thumbnail_names[[i]]),
+    character(1)
+  )
+  # The saved table carries its finished images, without needing plotting
+  # functions or the original analysis environment when another page reads it.
+  thumbnail_formatter <- function(x) thumbnail_html
+  environment(thumbnail_formatter) <- list2env(
+    list(thumbnail_html = thumbnail_html), parent = baseenv()
+  )
 
   table <- wide |>
     dplyr::select(
-      "category", "metric_display", "unit", dplyr::all_of(replica_site_levels()),
+      "category", "metric_display", "unit", dplyr::all_of(display_site_levels()),
       "scaling", "distribution"
     ) |>
     gt::gt(
@@ -446,7 +456,7 @@ build_metric_publication_gt <- function(data, metric_values) {
     gt::cols_label(
       unit = "Unit", scaling = "Scaling", distribution = "Distribution"
     ) |>
-    style_submitted_site_columns() |>
+    style_site_columns() |>
     gt::tab_footnote(
       footnote = gt::md(paste0(
         "**Median** (25th percentile, 75th percentile), ",
@@ -473,13 +483,7 @@ build_metric_publication_gt <- function(data, metric_values) {
       locations = gt::cells_column_labels(columns = "scaling")
     ) |>
     gt::text_transform(
-      fn = function(x) {
-        vapply(
-          seq_along(thumbnails),
-          function(i) metric_thumbnail_html(thumbnails[[i]], thumbnail_names[[i]]),
-          character(1)
-        )
-      },
+      fn = thumbnail_formatter,
       locations = gt::cells_body(columns = "distribution")
     ) |>
     gt::tab_footnote(
@@ -493,7 +497,7 @@ build_metric_publication_gt <- function(data, metric_values) {
     gt::cols_width(
       gt::stub() ~ gt::px(240),
       unit ~ gt::px(80),
-      dplyr::all_of(replica_site_levels()) ~ gt::px(120),
+      dplyr::all_of(display_site_levels()) ~ gt::px(120),
       scaling ~ gt::px(100),
       distribution ~ gt::px(190)
     ) |>
@@ -604,7 +608,7 @@ build_recommendation_publication_gt <- function(data) {
         USE.NAMES = FALSE
       )
     ) |>
-    dplyr::arrange(factor(.data$site, levels = replica_site_levels())) |>
+    dplyr::arrange(factor(.data$site, levels = display_site_levels())) |>
     dplyr::select(
       "site", "row_kind", "reader_site", "wake_context",
       "pre_sleep_context", "sleep_context", "combined_context", "wake_time",
@@ -777,76 +781,4 @@ build_recommendation_publication_gt <- function(data) {
 
   stopifnot(identical(data, input_before), inherits(table, "gt_tbl"))
   table
-}
-
-publication_table_export_spec <- function() {
-  data.frame(
-    table_id = c(
-      "participant_site_characteristics", "participant_site_manuscript",
-      "near_eye_metric_summary", "recommendation_context"
-    ),
-    filename = c(
-      "participant_site_characteristics_replica.png",
-      "participant_site_characteristics_manuscript_replica.png",
-      "metric_descriptive_summary_replica.png",
-      "recommendation_context_replica.png"
-    ),
-    original_path = c(
-      "tables/tbl1.png", "assets/tbl1_red.png", "tables/tbl2.png",
-      "tables/Brown_table.png"
-    ),
-    viewport_width_px = c(1200L, 1200L, 1900L, 992L),
-    placement = c(
-      "mixed_or_not_applicable", "mixed_or_not_applicable", "near_eye",
-      "near_eye"
-    ),
-    source_data = c(
-      "artifacts/09_tables/descriptives/participant_site_characteristics_replica.csv",
-      paste0(
-        "artifacts/09_tables/descriptives/",
-        "participant_site_characteristics_manuscript_replica.csv"
-      ),
-      "artifacts/09_tables/descriptives/metric_descriptive_summary_replica.csv",
-      "artifacts/09_tables/descriptives/recommendation_context_replica.csv"
-    ),
-    stringsAsFactors = FALSE
-  )
-}
-
-save_publication_table_exports <- function(
-  paths, participant_data, metric_data, metric_values, recommendation_data
-) {
-  tables <- list(
-    participant_site_characteristics =
-      build_participant_site_publication_gt(participant_data),
-    participant_site_manuscript =
-      build_participant_site_manuscript_publication_gt(participant_data),
-    near_eye_metric_summary =
-      build_metric_publication_gt(metric_data, metric_values),
-    recommendation_context =
-      build_recommendation_publication_gt(recommendation_data)
-  )
-  spec <- publication_table_export_spec()
-  records <- lapply(seq_len(nrow(spec)), function(i) {
-    table_id <- spec$table_id[[i]]
-    path <- file.path(paths$table_dir, spec$filename[[i]])
-    gt::gtsave(
-      data = tables[[table_id]], filename = path,
-      vwidth = spec$viewport_width_px[[i]]
-    )
-    record <- file_artifact_record(
-      path, paths$root,
-      artifact_type = "descriptive_table_png",
-      placement = spec$placement[[i]],
-      source_data = spec$source_data[[i]]
-    )
-    record$table_id <- table_id
-    record$viewport_width_px <- spec$viewport_width_px[[i]]
-    record
-  })
-  list(
-    tables = tables,
-    records = dplyr::bind_rows(records),
-    spec = spec
-  )
 }

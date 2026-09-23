@@ -1,0 +1,3 @@
+Component,Family,Evaluated Wilkinson formula,Method,Discrete,Basis k
+occurrence,Binomial occurrence with logit link,"melEDI_positive ~ previous_sleep_duration_centered_h + site +      work_free_day * activity_status + s(clock_hour, by = day_activity_group,      bs = ""cc"", k = 16, id = 1) + s(participant_key, bs = ""re"") +      s(participant_day_key, bs = ""re"")",fREML,TRUE,16
+positive_magnitude,Gamma positive magnitude with log link,"response_value ~ previous_sleep_duration_centered_h + site +      work_free_day * activity_status + s(clock_hour, by = day_activity_group,      bs = ""cc"", k = 16, id = 1) + s(participant_key, bs = ""re"") +      s(participant_day_key, bs = ""re"")",fREML,TRUE,16

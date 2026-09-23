@@ -1,0 +1,1346 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.37">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Prepare the analysis datasets – Personal light exposome</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../preparation/07-example-days.html" rel="next">
+<link href="../preparation/05-questionnaires-and-diaries.html" rel="prev">
+<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-7f8f88aac4f3542376d5c11b86a4c14d.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-158031087360bce0ff56dc785ce39e06.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+
+<link rel="stylesheet" href="../styles/navigation.css">
+</head>
+
+<body class="nav-fixed quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-xl " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="../index.html">
+    <span class="navbar-title">Personal light exposome</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../index.html"> 
+<span class="menu-text">Manuscript</span></a>
+  </li>  
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-study--data" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Study &amp; data</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-study--data">    
+        <li class="dropdown-header">Prepare the analysis data</li>
+        <li>
+    <a class="dropdown-item" href="../preparation/01-import-and-alignment.html">
+ <span class="dropdown-text">Import and alignment</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../preparation/02-coverage-and-samples.html">
+ <span class="dropdown-text">Coverage and samples</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../preparation/03-reference-profiles.html">
+ <span class="dropdown-text">Reference profiles</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../preparation/04-light-metrics.html">
+ <span class="dropdown-text">Light metrics</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../preparation/05-questionnaires-and-diaries.html">
+ <span class="dropdown-text">Questionnaires and diaries</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../preparation/06-analysis-datasets.html">
+ <span class="dropdown-text">Analysis datasets</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../preparation/07-example-days.html">
+ <span class="dropdown-text">Example days</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Understand the study</li>
+        <li>
+    <a class="dropdown-item" href="../analyses/descriptives.html">
+ <span class="dropdown-text">Descriptive summaries</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../analyses/sensor-placement.html">
+ <span class="dropdown-text">Sensor placement</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-environment" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Environment</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-environment">    
+        <li class="dropdown-header">Site and daily patterns</li>
+        <li>
+    <a class="dropdown-item" href="../analyses/H01-site-differences.html#findings">
+ <span class="dropdown-text">H01 · Findings: site differences</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../analyses/H01-site-differences.html#methods">
+ <span class="dropdown-text">H01 · Data and methods</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../analyses/H02-daily-patterns.html#findings">
+ <span class="dropdown-text">H02 · Findings: daily patterns</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../analyses/H02-daily-patterns.html#methods">
+ <span class="dropdown-text">H02 · Data and methods</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-behaviour--time" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Behaviour &amp; time</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-behaviour--time">    
+        <li class="dropdown-header">Reported context</li>
+        <li>
+    <a class="dropdown-item" href="../analyses/H03-light-source.html#findings">
+ <span class="dropdown-text">H03 · Findings: light source</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../analyses/H03-light-source.html#methods">
+ <span class="dropdown-text">H03 · Data and methods</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../analyses/H04-activity.html#findings">
+ <span class="dropdown-text">H04 · Findings: activity</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../analyses/H04-activity.html#methods">
+ <span class="dropdown-text">H04 · Data and methods</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Habitual and daily context</li>
+        <li>
+    <a class="dropdown-item" href="../analyses/H05-habitual-behaviour.html#findings">
+ <span class="dropdown-text">H05 · Findings: habitual behaviour</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../analyses/H05-habitual-behaviour.html#methods">
+ <span class="dropdown-text">H05 · Data and methods</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../analyses/H06-day-type-exercise-sleep.html#findings">
+ <span class="dropdown-text">H06 · Findings: day type, exercise and sleep</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../analyses/H06-day-type-exercise-sleep.html#methods">
+ <span class="dropdown-text">H06 · Data and methods</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Photoperiod</li>
+        <li>
+    <a class="dropdown-item" href="../analyses/H07-photoperiod.html#findings">
+ <span class="dropdown-text">H07 · Findings: photoperiod and transitions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../analyses/H07-photoperiod.html#methods">
+ <span class="dropdown-text">H07 · Data and methods</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Light recommendations</li>
+        <li>
+    <a class="dropdown-item" href="../analyses/recommendation-adherence.html">
+ <span class="dropdown-text">Recommendation adherence</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../analyses/cross-state-association.html">
+ <span class="dropdown-text">Associations between daily periods</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-individual-factors" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Individual factors</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-individual-factors">    
+        <li class="dropdown-header">Individual characteristics</li>
+        <li>
+    <a class="dropdown-item" href="../analyses/H08-light-sensitivity.html#findings">
+ <span class="dropdown-text">H08 · Findings: light sensitivity</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../analyses/H08-light-sensitivity.html#methods">
+ <span class="dropdown-text">H08 · Data and methods</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../analyses/H09-chronotype.html#findings">
+ <span class="dropdown-text">H09 · Findings: chronotype</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../analyses/H09-chronotype.html#methods">
+ <span class="dropdown-text">H09 · Data and methods</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../analyses/H10-age-sex.html#findings">
+ <span class="dropdown-text">H10 · Findings: age and sex</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../analyses/H10-age-sex.html#methods">
+ <span class="dropdown-text">H10 · Data and methods</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../analyses/H11-sex-daily-patterns.html#findings">
+ <span class="dropdown-text">H11 · Findings: sex and daily patterns</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../analyses/H11-sex-daily-patterns.html#methods">
+ <span class="dropdown-text">H11 · Data and methods</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-supporting-material" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Supporting material</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-supporting-material">    
+        <li class="dropdown-header">Read and reproduce</li>
+        <li>
+    <a class="dropdown-item" href="../supplementary.html">
+ <span class="dropdown-text">Supplementary information</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../README.html">
+ <span class="dropdown-text">Reproduce the analysis</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../preregistration-deviations.html">
+ <span class="dropdown-text">Preregistration deviations</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Additional analyses and displays</li>
+        <li>
+    <a class="dropdown-item" href="../analyses/alternative-preprocessing.html">
+ <span class="dropdown-text">Alternative preprocessing</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../analyses/publication-displays.html">
+ <span class="dropdown-text">Publication figures and tables</span></a>
+  </li>  
+    </ul>
+  </li>
+</ul>
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/tscnlab/ZaunerEtAl_bioRxiv_2026"> <i class="bi bi-github" role="img" aria-label="Source repository">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#alternative-preprocessing-inputs" id="toc-alternative-preprocessing-inputs" class="nav-link active" data-scroll-target="#alternative-preprocessing-inputs">Alternative preprocessing inputs</a></li>
+  <li><a href="#site-and-solar-context" id="toc-site-and-solar-context" class="nav-link" data-scroll-target="#site-and-solar-context">Site and solar context</a></li>
+  <li><a href="#true-elapsed-time-sequences" id="toc-true-elapsed-time-sequences" class="nav-link" data-scroll-target="#true-elapsed-time-sequences">True elapsed-time sequences</a></li>
+  <li><a href="#join-participant-metadata-to-outcomes" id="toc-join-participant-metadata-to-outcomes" class="nav-link" data-scroll-target="#join-participant-metadata-to-outcomes">Join participant metadata to outcomes</a></li>
+  <li><a href="#model-rows-and-complete-case-samples" id="toc-model-rows-and-complete-case-samples" class="nav-link" data-scroll-target="#model-rows-and-complete-case-samples">Model rows and complete-case samples</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../preparation/01-import-and-alignment.html">Prepare the analysis data</a></li><li class="breadcrumb-item"><a href="../preparation/06-analysis-datasets.html">Analysis datasets</a></li></ol></nav>
+<div class="quarto-title">
+<div class="quarto-title-block"><div><h1 class="title">Prepare the analysis datasets</h1><button type="button" class="btn code-tools-button" id="quarto-code-tools-source"><i class="bi"></i> Code</button></div></div>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<p>This document assembles model inputs without fitting models. It uses the derived light metrics and normalized questionnaires, computes civil photoperiod for each site-date, and preserves true elapsed-time sequences for temporal models. A fixed local alternative baseline supports the comparison of preprocessing choices.</p>
+<section id="alternative-preprocessing-inputs" class="level2">
+<h2 class="anchored" data-anchor-id="alternative-preprocessing-inputs">Alternative preprocessing inputs</h2>
+<p>The six files in <code>data/alternative-baseline</code> contain the fixed input baseline for the alternative preprocessing scenario. Their object names and structures are checked on import. The same current definition of MDER is applied to its one-minute input: average only positive, finite simultaneous melEDI/illuminance ratios, with viable pairs for at least half of the day. Other fixed baseline metrics retain their values. Hourly means are recomputed from the baseline minute series.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>source_contract <span class="ot">&lt;-</span> <span class="fu">alternative_preprocessing_source_contract</span>()</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>source_objects <span class="ot">&lt;-</span> stats<span class="sc">::</span><span class="fu">setNames</span>(<span class="fu">lapply</span>(<span class="fu">seq_len</span>(<span class="fu">nrow</span>(source_contract)), <span class="cf">function</span>(index) {</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">alternative_preprocessing_load_rdata</span>(<span class="fu">file.path</span>(root, <span class="st">"data"</span>, <span class="st">"alternative-baseline"</span>,</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">basename</span>(source_contract<span class="sc">$</span>path[index])), source_contract<span class="sc">$</span>expected_objects[index])</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>}), source_contract<span class="sc">$</span>source_id)</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>mapping <span class="ot">&lt;-</span> <span class="fu">alternative_preprocessing_output_metric_mapping</span>(root)</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>participant <span class="ot">&lt;-</span> participant_day <span class="ot">&lt;-</span> mder_support <span class="ot">&lt;-</span> thirty_minute <span class="ot">&lt;-</span> one_hour <span class="ot">&lt;-</span> <span class="fu">list</span>()</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (position <span class="cf">in</span> <span class="fu">alternative_preprocessing_positions</span>()) {</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>  nested <span class="ot">&lt;-</span> source_objects[[<span class="fu">paste0</span>(<span class="st">"metrics_"</span>, position)]][[<span class="fu">paste0</span>(<span class="st">"metrics_"</span>, position)]]</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>  separate <span class="ot">&lt;-</span> source_objects[[<span class="fu">paste0</span>(<span class="st">"metrics_separate_"</span>, position)]]</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>  preprocessed <span class="ot">&lt;-</span> source_objects[[<span class="fu">paste0</span>(<span class="st">"preprocessed_"</span>, position, <span class="st">"_2"</span>)]][[<span class="fu">paste0</span>(<span class="st">"light_"</span>, position, <span class="st">"_processed2"</span>)]]</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>  participant[[position]] <span class="ot">&lt;-</span> <span class="fu">alternative_preprocessing_extract_metric_rows</span>(nested, mapping, position, <span class="st">"participant"</span>)</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>  participant_day[[position]] <span class="ot">&lt;-</span> <span class="fu">alternative_preprocessing_extract_metric_rows</span>(nested, mapping, position, <span class="st">"participant_day"</span>)</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>  mder_support[[position]] <span class="ot">&lt;-</span> <span class="fu">alternative_preprocessing_build_mder_support</span>(preprocessed, position)</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>  participant_day[[position]] <span class="ot">&lt;-</span> <span class="fu">alternative_preprocessing_replace_mder</span>(participant_day[[position]], mder_support[[position]])</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>  thirty_source <span class="ot">&lt;-</span> <span class="fu">alternative_preprocessing_add_occurrence</span>(separate[[<span class="fu">paste0</span>(<span class="st">"metric_"</span>, position, <span class="st">"_participanthour"</span>)]])</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>  thirty_minute[[position]] <span class="ot">&lt;-</span> <span class="fu">alternative_preprocessing_normalize_clock_data</span>(thirty_source, position, <span class="st">"30_minute"</span>)</span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>  one_hour[[position]] <span class="ot">&lt;-</span> <span class="fu">alternative_preprocessing_normalize_clock_data</span>(</span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>    <span class="fu">alternative_preprocessing_build_one_hour</span>(preprocessed), position, <span class="st">"one_hour"</span>)</span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>alternative <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">participant_metrics =</span> dplyr<span class="sc">::</span><span class="fu">bind_rows</span>(participant),</span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>  <span class="at">participant_day_metrics =</span> dplyr<span class="sc">::</span><span class="fu">bind_rows</span>(participant_day),</span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>  <span class="at">mder_support =</span> dplyr<span class="sc">::</span><span class="fu">bind_rows</span>(mder_support),</span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>  <span class="at">thirty_minute_data =</span> dplyr<span class="sc">::</span><span class="fu">bind_rows</span>(thirty_minute), <span class="at">one_hour_data =</span> dplyr<span class="sc">::</span><span class="fu">bind_rows</span>(one_hour))</span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a>alternative_paths <span class="ot">&lt;-</span> <span class="fu">alternative_preprocessing_output_paths</span>(root)</span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (name <span class="cf">in</span> <span class="fu">names</span>(alternative)) {</span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>  <span class="fu">write_result_pair</span>(alternative[[name]], <span class="fu">sub</span>(<span class="st">"[.]rds$"</span>, <span class="st">""</span>, alternative_paths<span class="sc">$</span>rds[[name]]))</span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a><span class="fu">write_csv_artifact</span>(mapping, alternative_paths<span class="sc">$</span>csv[[<span class="st">"metric_crosswalk"</span>]], <span class="st">"preparation/06-analysis-datasets.qmd"</span>)</span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a>tibble<span class="sc">::</span><span class="fu">tibble</span>(<span class="at">table =</span> <span class="fu">names</span>(alternative), <span class="at">rows =</span> <span class="fu">vapply</span>(alternative, nrow, <span class="fu">integer</span>(<span class="dv">1</span>)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 5 × 2
+  table                    rows
+  &lt;chr&gt;                   &lt;int&gt;
+1 participant_metrics       590
+2 participant_day_metrics 27328
+3 mder_support             1708
+4 thirty_minute_data      81744
+5 one_hour_data           40464</code></pre>
+</div>
+</div>
+</section>
+<section id="site-and-solar-context" class="level2">
+<h2 class="anchored" data-anchor-id="site-and-solar-context">Site and solar context</h2>
+<p>Civil photoperiod runs from dawn to dusk at solar altitude −6°. The union of primary and alternative participant-day dates gives both scenarios the same site metadata and astronomical context. The time-zone conversion retains daylight-saving transitions explicitly.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>metric_paths <span class="ot">&lt;-</span> <span class="fu">site_solar_default_metric_paths</span>(root)</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>metric_inputs <span class="ot">&lt;-</span> <span class="fu">read_site_solar_metric_inputs</span>(metric_paths, root)</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="fu">validate_site_solar_resolution_domains</span>(metric_inputs)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 6 × 5
+  input_role        placement resolution participant_days daily_domain_matches
+  &lt;chr&gt;             &lt;chr&gt;     &lt;chr&gt;                 &lt;int&gt; &lt;lgl&gt;               
+1 glasses_daily     glasses   daily                   816 TRUE                
+2 glasses_30_minute glasses   30_minute               816 TRUE                
+3 glasses_one_hour  glasses   one_hour                816 TRUE                
+4 chest_daily       chest     daily                   902 TRUE                
+5 chest_30_minute   chest     30_minute               902 TRUE                
+6 chest_one_hour    chest     one_hour                902 TRUE                </code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>dates <span class="ot">&lt;-</span> <span class="fu">derive_site_solar_date_domain</span>(metric_inputs,</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">supplemental_dates =</span> <span class="fu">list</span>(alternative<span class="sc">$</span>participant_day_metrics))</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>context <span class="ot">&lt;-</span> <span class="fu">build_site_solar_context</span>(dates, <span class="fu">read_site_metadata</span>(<span class="st">"config/site_metadata.csv"</span>))</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>context_checks <span class="ot">&lt;-</span> <span class="fu">audit_site_solar_context_joins</span>(metric_inputs, context)</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(<span class="fu">all</span>(context_checks<span class="sc">$</span>unmatched_rows <span class="sc">==</span> <span class="dv">0</span>L))</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="fu">write_rds_artifact</span>(context, <span class="fu">file.path</span>(paths<span class="sc">$</span>model_data, <span class="st">"context"</span>, <span class="st">"site_solar_context.rds"</span>),</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>  <span class="st">"preparation/06-analysis-datasets.qmd"</span>)</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="fu">write_csv_artifact</span>(<span class="fu">format_site_solar_context_csv</span>(context),</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">file.path</span>(paths<span class="sc">$</span>model_data, <span class="st">"context"</span>, <span class="st">"site_solar_context.csv"</span>), <span class="st">"preparation/06-analysis-datasets.qmd"</span>)</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>dplyr<span class="sc">::</span><span class="fu">select</span>(context, dplyr<span class="sc">::</span><span class="fu">any_of</span>(<span class="fu">c</span>(<span class="st">"site"</span>, <span class="st">"local_date"</span>, <span class="st">"photoperiod_hours"</span>, <span class="st">"civil_dawn_wall"</span>, <span class="st">"civil_dusk_wall"</span>))) <span class="sc">|&gt;</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">head</span>(<span class="dv">12</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 12 × 3
+   site  local_date photoperiod_hours
+   &lt;chr&gt; &lt;date&gt;                 &lt;dbl&gt;
+ 1 BAUA  2025-06-11              18.1
+ 2 BAUA  2025-06-12              18.2
+ 3 BAUA  2025-06-13              18.2
+ 4 BAUA  2025-06-14              18.2
+ 5 BAUA  2025-06-15              18.2
+ 6 BAUA  2025-06-16              18.2
+ 7 BAUA  2025-06-17              18.2
+ 8 BAUA  2025-06-25              18.2
+ 9 BAUA  2025-06-26              18.2
+10 BAUA  2025-06-27              18.2
+11 BAUA  2025-06-28              18.2
+12 BAUA  2025-06-29              18.2</code></pre>
+</div>
+</div>
+</section>
+<section id="true-elapsed-time-sequences" class="level2">
+<h2 class="anchored" data-anchor-id="true-elapsed-time-sequences">True elapsed-time sequences</h2>
+<p>The temporal models need actual elapsed time as well as local clock time. For each sensor placement and resolution, the following joins link observed UTC source intervals to the corresponding wall-clock outcomes. This preserves the outcome grid while recording gaps and repeated local clock times.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>source_outputs <span class="ot">&lt;-</span> link_outputs <span class="ot">&lt;-</span> <span class="fu">list</span>()</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (placement <span class="cf">in</span> <span class="fu">c</span>(<span class="st">"glasses"</span>, <span class="st">"chest"</span>)) {</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  coverage <span class="ot">&lt;-</span> <span class="fu">readRDS</span>(<span class="fu">file.path</span>(paths<span class="sc">$</span>coverage, <span class="fu">paste0</span>(<span class="st">"light_"</span>, placement, <span class="st">"_coverage.rds"</span>)))</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (resolution <span class="cf">in</span> <span class="fu">c</span>(<span class="st">"30_minute"</span>, <span class="st">"one_hour"</span>)) {</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>    metric <span class="ot">&lt;-</span> <span class="fu">readRDS</span>(<span class="fu">file.path</span>(paths<span class="sc">$</span>metrics, <span class="fu">paste0</span>(<span class="st">"metrics_"</span>, placement, <span class="st">"_"</span>, resolution, <span class="st">".rds"</span>)))</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>    sequence <span class="ot">&lt;-</span> <span class="fu">build_temporal_sequence_provenance</span>(coverage, metric, placement, resolution)</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>    label <span class="ot">&lt;-</span> <span class="fu">paste</span>(placement, resolution)</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>    source_outputs[[label]] <span class="ot">&lt;-</span> sequence<span class="sc">$</span>source_bins</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>    link_outputs[[label]] <span class="ot">&lt;-</span> sequence<span class="sc">$</span>wall_links</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rm</span>(coverage)</span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">invisible</span>(<span class="fu">gc</span>())</span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>source_bins <span class="ot">&lt;-</span> dplyr<span class="sc">::</span><span class="fu">bind_rows</span>(source_outputs) <span class="sc">|&gt;</span></span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">arrange</span>(.data<span class="sc">$</span>resolution, .data<span class="sc">$</span>site, .data<span class="sc">$</span>Id, .data<span class="sc">$</span>position, .data<span class="sc">$</span>true_utc_start)</span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>wall_links <span class="ot">&lt;-</span> dplyr<span class="sc">::</span><span class="fu">bind_rows</span>(link_outputs) <span class="sc">|&gt;</span></span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">arrange</span>(.data<span class="sc">$</span>resolution, .data<span class="sc">$</span>site, .data<span class="sc">$</span>Id, .data<span class="sc">$</span>position, .data<span class="sc">$</span>local_date, .data<span class="sc">$</span>wall_bin_start_minute)</span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a><span class="fu">validate_combined_temporal_provenance</span>(source_bins, wall_links)</span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>sequence_root <span class="ot">&lt;-</span> <span class="fu">file.path</span>(paths<span class="sc">$</span>model_data, <span class="st">"temporal_provenance"</span>)</span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a><span class="fu">write_rds_artifact</span>(source_bins, <span class="fu">file.path</span>(sequence_root, <span class="st">"true_utc_source_bins.rds"</span>), <span class="st">"preparation/06-analysis-datasets.qmd"</span>)</span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a><span class="fu">write_rds_artifact</span>(wall_links, <span class="fu">file.path</span>(sequence_root, <span class="st">"wall_outcome_links.rds"</span>), <span class="st">"preparation/06-analysis-datasets.qmd"</span>)</span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a><span class="fu">write_csv_artifact</span>(<span class="fu">temporal_provenance_csv_data</span>(source_bins), <span class="fu">file.path</span>(sequence_root, <span class="st">"true_utc_source_bins.csv"</span>), <span class="st">"preparation/06-analysis-datasets.qmd"</span>)</span>
+<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a><span class="fu">write_csv_artifact</span>(<span class="fu">temporal_provenance_csv_data</span>(wall_links), <span class="fu">file.path</span>(sequence_root, <span class="st">"wall_outcome_links.csv"</span>), <span class="st">"preparation/06-analysis-datasets.qmd"</span>)</span>
+<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a>dplyr<span class="sc">::</span><span class="fu">count</span>(source_bins, .data<span class="sc">$</span>position, .data<span class="sc">$</span>resolution)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 4 × 3
+  position resolution     n
+  &lt;chr&gt;    &lt;chr&gt;      &lt;int&gt;
+1 chest    30_minute  43296
+2 chest    one_hour   21648
+3 glasses  30_minute  39172
+4 glasses  one_hour   19586</code></pre>
+</div>
+</div>
+</section>
+<section id="join-participant-metadata-to-outcomes" class="level2">
+<h2 class="anchored" data-anchor-id="join-participant-metadata-to-outcomes">Join participant metadata to outcomes</h2>
+<p>These joins preserve measurement keys and outcome values. Questionnaire fields use participant identifiers, while photoperiod uses site and local date. The model tables retain explicit availability indicators for missing questionnaire information.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>metric_specification <span class="ot">&lt;-</span> <span class="fu">base_model_metric_specification</span>(root)</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>metric_inputs <span class="ot">&lt;-</span> stats<span class="sc">::</span><span class="fu">setNames</span>(<span class="fu">lapply</span>(metric_specification<span class="sc">$</span>path, readRDS), metric_specification<span class="sc">$</span>input_id)</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>normalized_specification <span class="ot">&lt;-</span> <span class="fu">base_model_normalized_specification</span>(root)</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>normalized_inputs <span class="ot">&lt;-</span> stats<span class="sc">::</span><span class="fu">setNames</span>(<span class="fu">lapply</span>(normalized_specification<span class="sc">$</span>path, readRDS), normalized_specification<span class="sc">$</span>modality)</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (index <span class="cf">in</span> <span class="fu">seq_len</span>(<span class="fu">nrow</span>(metric_specification))) {</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>  spec <span class="ot">&lt;-</span> metric_specification[index, ]</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">validate_base_model_metric_input</span>(metric_inputs[[spec<span class="sc">$</span>input_id]], spec<span class="sc">$</span>placement, spec<span class="sc">$</span>resolution)</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>  selected <span class="ot">&lt;-</span> <span class="fu">base_model_select_analysis_metrics</span>(metric_inputs[[spec<span class="sc">$</span>input_id]],</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>    spec<span class="sc">$</span>input_id, spec<span class="sc">$</span>placement, spec<span class="sc">$</span>resolution)</span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">stopifnot</span>(<span class="fu">all</span>(selected<span class="sc">$</span>audit<span class="sc">$</span>status <span class="sc">==</span> <span class="st">"PASS"</span>), <span class="fu">all</span>(selected<span class="sc">$</span>audit<span class="sc">$</span>row_order_preserved),</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>    <span class="fu">all</span>(selected<span class="sc">$</span>audit<span class="sc">$</span>key_set_preserved), <span class="sc">!</span><span class="fu">any</span>(selected<span class="sc">$</span>audit<span class="sc">$</span>outcome_values_recalculated))</span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>  metric_inputs[[spec<span class="sc">$</span>input_id]] <span class="ot">&lt;-</span> selected<span class="sc">$</span>data</span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (modality <span class="cf">in</span> <span class="fu">names</span>(normalized_inputs)) {</span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">validate_base_model_normalized_input</span>(normalized_inputs[[modality]], modality)</span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>participant_metadata <span class="ot">&lt;-</span> <span class="fu">base_model_build_participant_metadata</span>(normalized_inputs, metric_inputs)</span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a>data_tables <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">participant_metadata =</span> participant_metadata)</span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (placement <span class="cf">in</span> <span class="fu">base_model_placements</span>()) {</span>
+<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a>  day_id <span class="ot">&lt;-</span> <span class="fu">paste0</span>(placement, <span class="st">"_participant_day"</span>)</span>
+<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a>  participant_id <span class="ot">&lt;-</span> <span class="fu">paste0</span>(placement, <span class="st">"_participant"</span>)</span>
+<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a>  day <span class="ot">&lt;-</span> <span class="fu">base_model_join_context</span>(metric_inputs[[day_id]], context, placement, <span class="st">"participant_day"</span>, day_id)</span>
+<span id="cb9-23"><a href="#cb9-23" aria-hidden="true" tabindex="-1"></a>  data_tables[[<span class="fu">paste0</span>(placement, <span class="st">"_participant_day_context"</span>)]] <span class="ot">&lt;-</span> day<span class="sc">$</span>data</span>
+<span id="cb9-24"><a href="#cb9-24" aria-hidden="true" tabindex="-1"></a>  data_tables[[participant_id]] <span class="ot">&lt;-</span> metric_inputs[[participant_id]]</span>
+<span id="cb9-25"><a href="#cb9-25" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (resolution <span class="cf">in</span> <span class="fu">c</span>(<span class="st">"30_minute"</span>, <span class="st">"one_hour"</span>)) {</span>
+<span id="cb9-26"><a href="#cb9-26" aria-hidden="true" tabindex="-1"></a>    id <span class="ot">&lt;-</span> <span class="fu">paste</span>(placement, resolution, <span class="at">sep =</span> <span class="st">"_"</span>)</span>
+<span id="cb9-27"><a href="#cb9-27" aria-hidden="true" tabindex="-1"></a>    joined <span class="ot">&lt;-</span> <span class="fu">base_model_join_context</span>(metric_inputs[[id]], context, placement, resolution, id)</span>
+<span id="cb9-28"><a href="#cb9-28" aria-hidden="true" tabindex="-1"></a>    data_tables[[<span class="fu">paste0</span>(id, <span class="st">"_context"</span>)]] <span class="ot">&lt;-</span> joined<span class="sc">$</span>data</span>
+<span id="cb9-29"><a href="#cb9-29" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb9-30"><a href="#cb9-30" aria-hidden="true" tabindex="-1"></a>  joined <span class="ot">&lt;-</span> <span class="fu">base_model_join_participant_metadata</span>(day<span class="sc">$</span>data, participant_metadata,</span>
+<span id="cb9-31"><a href="#cb9-31" aria-hidden="true" tabindex="-1"></a>    placement, <span class="st">"participant_day"</span>, <span class="fu">paste0</span>(day_id, <span class="st">"_context"</span>))</span>
+<span id="cb9-32"><a href="#cb9-32" aria-hidden="true" tabindex="-1"></a>  data_tables[[<span class="fu">paste0</span>(placement, <span class="st">"_participant_day_enriched"</span>)]] <span class="ot">&lt;-</span> joined<span class="sc">$</span>data</span>
+<span id="cb9-33"><a href="#cb9-33" aria-hidden="true" tabindex="-1"></a>  joined <span class="ot">&lt;-</span> <span class="fu">base_model_join_participant_metadata</span>(metric_inputs[[participant_id]], participant_metadata,</span>
+<span id="cb9-34"><a href="#cb9-34" aria-hidden="true" tabindex="-1"></a>    placement, <span class="st">"participant"</span>, participant_id)</span>
+<span id="cb9-35"><a href="#cb9-35" aria-hidden="true" tabindex="-1"></a>  data_tables[[<span class="fu">paste0</span>(placement, <span class="st">"_participant_enriched"</span>)]] <span class="ot">&lt;-</span> joined<span class="sc">$</span>data</span>
+<span id="cb9-36"><a href="#cb9-36" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb9-37"><a href="#cb9-37" aria-hidden="true" tabindex="-1"></a>base_paths <span class="ot">&lt;-</span> <span class="fu">base_model_paths</span>(root)</span>
+<span id="cb9-38"><a href="#cb9-38" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(<span class="fu">setequal</span>(<span class="fu">names</span>(data_tables), <span class="fu">names</span>(base_paths<span class="sc">$</span>data_paths)))</span>
+<span id="cb9-39"><a href="#cb9-39" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (name <span class="cf">in</span> <span class="fu">names</span>(data_tables)) <span class="fu">write_rds_artifact</span>(data_tables[[name]], base_paths<span class="sc">$</span>data_paths[[name]],</span>
+<span id="cb9-40"><a href="#cb9-40" aria-hidden="true" tabindex="-1"></a>  <span class="st">"preparation/06-analysis-datasets.qmd"</span>)</span>
+<span id="cb9-41"><a href="#cb9-41" aria-hidden="true" tabindex="-1"></a>tibble<span class="sc">::</span><span class="fu">tibble</span>(<span class="at">table =</span> <span class="fu">names</span>(data_tables), <span class="at">rows =</span> <span class="fu">vapply</span>(data_tables, nrow, <span class="fu">integer</span>(<span class="dv">1</span>)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 13 × 2
+   table                             rows
+   &lt;chr&gt;                            &lt;int&gt;
+ 1 participant_metadata               191
+ 2 glasses_participant_day_context    816
+ 3 glasses_participant                141
+ 4 glasses_30_minute_context        39168
+ 5 glasses_one_hour_context         19584
+ 6 glasses_participant_day_enriched   816
+ 7 glasses_participant_enriched       141
+ 8 chest_participant_day_context      902
+ 9 chest_participant                  154
+10 chest_30_minute_context          43296
+11 chest_one_hour_context           21648
+12 chest_participant_day_enriched     902
+13 chest_participant_enriched         154</code></pre>
+</div>
+</div>
+</section>
+<section id="model-rows-and-complete-case-samples" class="level2">
+<h2 class="anchored" data-anchor-id="model-rows-and-complete-case-samples">Model rows and complete-case samples</h2>
+<p>Site comparisons use the same metric definitions and centering procedure in both preprocessing scenarios. The all-available and paired-placement samples are kept separate. The alternative baseline cannot reconstruct every minute-level support quantity, which remains explicitly unavailable rather than being inferred from stored daily values.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>contract <span class="ot">&lt;-</span> <span class="fu">h01_metric_contract</span>(root)</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>inputs <span class="ot">&lt;-</span> stats<span class="sc">::</span><span class="fu">setNames</span>(<span class="fu">lapply</span>(<span class="fu">h01_placements</span>(), <span class="cf">function</span>(placement) {</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">list</span>(<span class="at">participant_day =</span> data_tables[[<span class="fu">paste0</span>(placement, <span class="st">"_participant_day_enriched"</span>)]],</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">participant =</span> data_tables[[<span class="fu">paste0</span>(placement, <span class="st">"_participant_enriched"</span>)]],</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">admissibility =</span> readr<span class="sc">::</span><span class="fu">read_csv</span>(<span class="fu">h01_admissibility_input_paths</span>(root)[[placement]], <span class="at">show_col_types =</span> <span class="cn">FALSE</span>),</span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">metric_support =</span> readr<span class="sc">::</span><span class="fu">read_csv</span>(<span class="fu">h01_metric_support_input_paths</span>(root)[[placement]], <span class="at">show_col_types =</span> <span class="cn">FALSE</span>))</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>}), <span class="fu">h01_placements</span>())</span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>inputs <span class="ot">&lt;-</span> <span class="fu">h01_add_main_support_status</span>(inputs)</span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>adapted <span class="ot">&lt;-</span> <span class="fu">h01_build_alternative_preprocessing_inputs</span>(root)</span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>scenario_inputs <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">main =</span> <span class="fu">list</span>(<span class="at">inputs =</span> inputs, <span class="at">contract =</span> contract),</span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">alternative_preprocessing =</span> <span class="fu">list</span>(<span class="at">inputs =</span> adapted<span class="sc">$</span>inputs, <span class="at">contract =</span> adapted<span class="sc">$</span>contract))</span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>model_sample_flow <span class="ot">&lt;-</span> <span class="fu">list</span>()</span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (data_scenario_id <span class="cf">in</span> <span class="fu">names</span>(scenario_inputs)) {</span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a>  specification <span class="ot">&lt;-</span> scenario_inputs[[data_scenario_id]]</span>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a>  centered <span class="ot">&lt;-</span> <span class="fu">h01_build_model_rows_from_inputs</span>(specification<span class="sc">$</span>inputs, specification<span class="sc">$</span>contract,</span>
+<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">data_scenario_id =</span> data_scenario_id, <span class="at">model_implementation_id =</span> <span class="st">"hypothesis_models"</span>)</span>
+<span id="cb11-17"><a href="#cb11-17" aria-hidden="true" tabindex="-1"></a>  rows <span class="ot">&lt;-</span> centered<span class="sc">$</span>rows <span class="sc">|&gt;</span></span>
+<span id="cb11-18"><a href="#cb11-18" aria-hidden="true" tabindex="-1"></a>    dplyr<span class="sc">::</span><span class="fu">arrange</span>(<span class="fu">factor</span>(.data<span class="sc">$</span>scenario, <span class="at">levels =</span> <span class="fu">h01_scenarios</span>()),</span>
+<span id="cb11-19"><a href="#cb11-19" aria-hidden="true" tabindex="-1"></a>      <span class="fu">factor</span>(.data<span class="sc">$</span>placement, <span class="at">levels =</span> <span class="fu">h01_placements</span>()), .data<span class="sc">$</span>metric_order,</span>
+<span id="cb11-20"><a href="#cb11-20" aria-hidden="true" tabindex="-1"></a>      .data<span class="sc">$</span>site, .data<span class="sc">$</span>Id, .data<span class="sc">$</span>local_date)</span>
+<span id="cb11-21"><a href="#cb11-21" aria-hidden="true" tabindex="-1"></a>  status <span class="ot">&lt;-</span> <span class="fu">h01_scenario_status</span>(specification<span class="sc">$</span>contract, data_scenario_id, <span class="st">"hypothesis_models"</span>)</span>
+<span id="cb11-22"><a href="#cb11-22" aria-hidden="true" tabindex="-1"></a>  object <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">hypothesis_id =</span> <span class="st">"H01"</span>, <span class="at">model_rows =</span> rows,</span>
+<span id="cb11-23"><a href="#cb11-23" aria-hidden="true" tabindex="-1"></a>    <span class="at">metric_contract =</span> specification<span class="sc">$</span>contract, <span class="at">sample_flow =</span> <span class="fu">h01_build_sample_flow</span>(rows, status),</span>
+<span id="cb11-24"><a href="#cb11-24" aria-hidden="true" tabindex="-1"></a>    <span class="at">exclusion_reasons =</span> <span class="fu">h01_build_exclusion_summary</span>(rows, status), <span class="at">scenario_status =</span> status,</span>
+<span id="cb11-25"><a href="#cb11-25" aria-hidden="true" tabindex="-1"></a>    <span class="at">predictor_centers =</span> centered<span class="sc">$</span>centers, <span class="at">variable_dictionary =</span> <span class="fu">h01_variable_dictionary</span>(),</span>
+<span id="cb11-26"><a href="#cb11-26" aria-hidden="true" tabindex="-1"></a>    <span class="at">metadata =</span> <span class="fu">list</span>(<span class="at">r_version =</span> <span class="fu">as.character</span>(<span class="fu">getRversion</span>()), <span class="at">data_scenario_id =</span> data_scenario_id,</span>
+<span id="cb11-27"><a href="#cb11-27" aria-hidden="true" tabindex="-1"></a>      <span class="at">model_implementation_id =</span> <span class="st">"hypothesis_models"</span>, <span class="at">site_levels =</span> <span class="fu">sort</span>(<span class="fu">unique</span>(rows<span class="sc">$</span>site))))</span>
+<span id="cb11-28"><a href="#cb11-28" aria-hidden="true" tabindex="-1"></a>  output_paths <span class="ot">&lt;-</span> <span class="cf">if</span> (data_scenario_id <span class="sc">==</span> <span class="st">"main"</span>) <span class="fu">h01_model_data_paths</span>(root) <span class="cf">else</span></span>
+<span id="cb11-29"><a href="#cb11-29" aria-hidden="true" tabindex="-1"></a>    <span class="fu">h01_alternative_preprocessing_output_paths</span>(root)</span>
+<span id="cb11-30"><a href="#cb11-30" aria-hidden="true" tabindex="-1"></a>  <span class="fu">write_rds_artifact</span>(object, output_paths<span class="sc">$</span>rds, <span class="st">"preparation/06-analysis-datasets.qmd"</span>)</span>
+<span id="cb11-31"><a href="#cb11-31" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (name <span class="cf">in</span> <span class="fu">intersect</span>(<span class="fu">names</span>(object), <span class="fu">names</span>(output_paths<span class="sc">$</span>csv))) {</span>
+<span id="cb11-32"><a href="#cb11-32" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (<span class="fu">is.data.frame</span>(object[[name]])) <span class="fu">write_csv_artifact</span>(object[[name]], output_paths<span class="sc">$</span>csv[[name]],</span>
+<span id="cb11-33"><a href="#cb11-33" aria-hidden="true" tabindex="-1"></a>      <span class="st">"preparation/06-analysis-datasets.qmd"</span>)</span>
+<span id="cb11-34"><a href="#cb11-34" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb11-35"><a href="#cb11-35" aria-hidden="true" tabindex="-1"></a>  model_sample_flow[[data_scenario_id]] <span class="ot">&lt;-</span> object<span class="sc">$</span>sample_flow</span>
+<span id="cb11-36"><a href="#cb11-36" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb11-37"><a href="#cb11-37" aria-hidden="true" tabindex="-1"></a>dplyr<span class="sc">::</span><span class="fu">bind_rows</span>(model_sample_flow, <span class="at">.id =</span> <span class="st">"data_scenario"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb11-38"><a href="#cb11-38" aria-hidden="true" tabindex="-1"></a>  <span class="fu">head</span>(<span class="dv">20</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 20 × 25
+   data_scenario placement data_scenario_id model_implementation_id scenario    
+   &lt;chr&gt;         &lt;chr&gt;     &lt;chr&gt;            &lt;chr&gt;                   &lt;chr&gt;       
+ 1 main          glasses   main             hypothesis_models       all_availab…
+ 2 main          glasses   main             hypothesis_models       all_availab…
+ 3 main          glasses   main             hypothesis_models       all_availab…
+ 4 main          glasses   main             hypothesis_models       all_availab…
+ 5 main          glasses   main             hypothesis_models       all_availab…
+ 6 main          glasses   main             hypothesis_models       all_availab…
+ 7 main          glasses   main             hypothesis_models       all_availab…
+ 8 main          glasses   main             hypothesis_models       all_availab…
+ 9 main          glasses   main             hypothesis_models       all_availab…
+10 main          glasses   main             hypothesis_models       all_availab…
+11 main          glasses   main             hypothesis_models       all_availab…
+12 main          glasses   main             hypothesis_models       all_availab…
+13 main          glasses   main             hypothesis_models       all_availab…
+14 main          glasses   main             hypothesis_models       all_availab…
+15 main          glasses   main             hypothesis_models       all_availab…
+16 main          glasses   main             hypothesis_models       all_availab…
+17 main          glasses   main             hypothesis_models       all_availab…
+18 main          glasses   main             hypothesis_models       all_availab…
+19 main          glasses   main             hypothesis_models       all_availab…
+20 main          glasses   main             hypothesis_models       all_availab…
+# ℹ 20 more variables: metric_order &lt;int&gt;, metric_id &lt;chr&gt;,
+#   analysis_unit &lt;chr&gt;, stage &lt;chr&gt;, scope &lt;chr&gt;, site &lt;chr&gt;,
+#   model_observations &lt;int&gt;, participants &lt;int&gt;, participant_days &lt;int&gt;,
+#   participant_hours &lt;int&gt;, contributing_participant_days &lt;int&gt;,
+#   metric_support_missing_observations &lt;int&gt;,
+#   metric_support_valid_hours &lt;dbl&gt;, metric_support_expected_hours &lt;dbl&gt;,
+#   prepared_record_support_missing_observations &lt;int&gt;, …</code></pre>
+</div>
+</div>
+
+
+<!-- -->
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+    const viewSource = window.document.getElementById('quarto-view-source') ||
+                       window.document.getElementById('quarto-code-tools-source');
+    if (viewSource) {
+      const sourceUrl = viewSource.getAttribute("data-quarto-source-url");
+      viewSource.addEventListener("click", function(e) {
+        if (sourceUrl) {
+          // rstudio viewer pane
+          if (/\bcapabilities=\b/.test(window.location)) {
+            window.open(sourceUrl);
+          } else {
+            window.location.href = sourceUrl;
+          }
+        } else {
+          const modal = new bootstrap.Modal(document.getElementById('quarto-embedded-source-code-modal'));
+          modal.show();
+        }
+        return false;
+      });
+    }
+    function toggleCodeHandler(show) {
+      return function(e) {
+        const detailsSrc = window.document.querySelectorAll(".cell > details > .sourceCode");
+        for (let i=0; i<detailsSrc.length; i++) {
+          const details = detailsSrc[i].parentElement;
+          if (show) {
+            details.open = true;
+          } else {
+            details.removeAttribute("open");
+          }
+        }
+        const cellCodeDivs = window.document.querySelectorAll(".cell > .sourceCode");
+        const fromCls = show ? "hidden" : "unhidden";
+        const toCls = show ? "unhidden" : "hidden";
+        for (let i=0; i<cellCodeDivs.length; i++) {
+          const codeDiv = cellCodeDivs[i];
+          if (codeDiv.classList.contains(fromCls)) {
+            codeDiv.classList.remove(fromCls);
+            codeDiv.classList.add(toCls);
+          } 
+        }
+        return false;
+      }
+    }
+    const hideAllCode = window.document.getElementById("quarto-hide-all-code");
+    if (hideAllCode) {
+      hideAllCode.addEventListener("click", toggleCodeHandler(false));
+    }
+    const showAllCode = window.document.getElementById("quarto-show-all-code");
+    if (showAllCode) {
+      showAllCode.addEventListener("click", toggleCodeHandler(true));
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+            // target, if specified
+            link.setAttribute("target", "_blank");
+            if (link.getAttribute("rel") === null) {
+              link.setAttribute("rel", "noopener");
+            }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="../preparation/05-questionnaires-and-diaries.html" class="pagination-link" aria-label="Questionnaires and diaries">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">Questionnaires and diaries</span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../preparation/07-example-days.html" class="pagination-link" aria-label="Example days">
+        <span class="nav-page-text">Example days</span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav><div class="modal fade" id="quarto-embedded-source-code-modal" tabindex="-1" aria-labelledby="quarto-embedded-source-code-modal-label" aria-hidden="true"><div class="modal-dialog modal-dialog-scrollable"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="quarto-embedded-source-code-modal-label">Source Code</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13" data-shortcodes="false"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co">---</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="an">title:</span><span class="co"> "Prepare the analysis datasets"</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="co">---</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>This document assembles model inputs without fitting models. It uses the derived light metrics and normalized questionnaires, computes civil photoperiod for each site-date, and preserves true elapsed-time sequences for temporal models. A fixed local alternative baseline supports the comparison of preprocessing choices.</span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: setup</span></span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a><span class="co">#| echo: false</span></span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a><span class="fu">source</span>(<span class="st">"scripts/project.R"</span>)</span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a><span class="fu">analysis_setup</span>()</span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (helper <span class="cf">in</span> <span class="fu">c</span>(<span class="st">"paths_io"</span>, <span class="st">"assertions"</span>, <span class="st">"time_axes"</span>, <span class="st">"time_support"</span>, <span class="st">"state_alignment"</span>, <span class="st">"aggregation_coverage"</span>, <span class="st">"metric_display_registry"</span>, <span class="st">"alternative_preprocessing"</span>, <span class="st">"build_alternative_preprocessing"</span>, <span class="st">"site_solar_context"</span>, <span class="st">"build_site_solar_context"</span>, <span class="st">"base_model_data"</span>, <span class="st">"build_base_model_data"</span>, <span class="st">"h01_model_data"</span>, <span class="st">"build_h01_model_data"</span>, <span class="st">"h01_alternative_preprocessing_adapter"</span>, <span class="st">"temporal_sequence_provenance"</span>)) {</span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">source</span>(<span class="fu">file.path</span>(<span class="st">"scripts/pipeline"</span>, <span class="fu">paste0</span>(helper, <span class="st">".R"</span>)))</span>
+<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a>root <span class="ot">&lt;-</span> <span class="fu">project_root</span>()</span>
+<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a>paths <span class="ot">&lt;-</span> <span class="fu">pipeline_paths</span>(root)</span>
+<span id="cb13-19"><a href="#cb13-19" aria-hidden="true" tabindex="-1"></a><span class="fu">ensure_pipeline_directories</span>(paths)</span>
+<span id="cb13-20"><a href="#cb13-20" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb13-21"><a href="#cb13-21" aria-hidden="true" tabindex="-1"></a><span class="fu">## Alternative preprocessing inputs</span></span>
+<span id="cb13-22"><a href="#cb13-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-23"><a href="#cb13-23" aria-hidden="true" tabindex="-1"></a>The six files in <span class="in">`data/alternative-baseline`</span> contain the fixed input baseline for the alternative preprocessing scenario. Their object names and structures are checked on import. The same current definition of MDER is applied to its one-minute input: average only positive, finite simultaneous melEDI/illuminance ratios, with viable pairs for at least half of the day. Other fixed baseline metrics retain their values. Hourly means are recomputed from the baseline minute series.</span>
+<span id="cb13-24"><a href="#cb13-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-27"><a href="#cb13-27" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb13-28"><a href="#cb13-28" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: alternative-inputs</span></span>
+<span id="cb13-29"><a href="#cb13-29" aria-hidden="true" tabindex="-1"></a>source_contract <span class="ot">&lt;-</span> <span class="fu">alternative_preprocessing_source_contract</span>()</span>
+<span id="cb13-30"><a href="#cb13-30" aria-hidden="true" tabindex="-1"></a>source_objects <span class="ot">&lt;-</span> stats<span class="sc">::</span><span class="fu">setNames</span>(<span class="fu">lapply</span>(<span class="fu">seq_len</span>(<span class="fu">nrow</span>(source_contract)), <span class="cf">function</span>(index) {</span>
+<span id="cb13-31"><a href="#cb13-31" aria-hidden="true" tabindex="-1"></a>  <span class="fu">alternative_preprocessing_load_rdata</span>(<span class="fu">file.path</span>(root, <span class="st">"data"</span>, <span class="st">"alternative-baseline"</span>,</span>
+<span id="cb13-32"><a href="#cb13-32" aria-hidden="true" tabindex="-1"></a>    <span class="fu">basename</span>(source_contract<span class="sc">$</span>path[index])), source_contract<span class="sc">$</span>expected_objects[index])</span>
+<span id="cb13-33"><a href="#cb13-33" aria-hidden="true" tabindex="-1"></a>}), source_contract<span class="sc">$</span>source_id)</span>
+<span id="cb13-34"><a href="#cb13-34" aria-hidden="true" tabindex="-1"></a>mapping <span class="ot">&lt;-</span> <span class="fu">alternative_preprocessing_output_metric_mapping</span>(root)</span>
+<span id="cb13-35"><a href="#cb13-35" aria-hidden="true" tabindex="-1"></a>participant <span class="ot">&lt;-</span> participant_day <span class="ot">&lt;-</span> mder_support <span class="ot">&lt;-</span> thirty_minute <span class="ot">&lt;-</span> one_hour <span class="ot">&lt;-</span> <span class="fu">list</span>()</span>
+<span id="cb13-36"><a href="#cb13-36" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (position <span class="cf">in</span> <span class="fu">alternative_preprocessing_positions</span>()) {</span>
+<span id="cb13-37"><a href="#cb13-37" aria-hidden="true" tabindex="-1"></a>  nested <span class="ot">&lt;-</span> source_objects[[<span class="fu">paste0</span>(<span class="st">"metrics_"</span>, position)]][[<span class="fu">paste0</span>(<span class="st">"metrics_"</span>, position)]]</span>
+<span id="cb13-38"><a href="#cb13-38" aria-hidden="true" tabindex="-1"></a>  separate <span class="ot">&lt;-</span> source_objects[[<span class="fu">paste0</span>(<span class="st">"metrics_separate_"</span>, position)]]</span>
+<span id="cb13-39"><a href="#cb13-39" aria-hidden="true" tabindex="-1"></a>  preprocessed <span class="ot">&lt;-</span> source_objects[[<span class="fu">paste0</span>(<span class="st">"preprocessed_"</span>, position, <span class="st">"_2"</span>)]][[<span class="fu">paste0</span>(<span class="st">"light_"</span>, position, <span class="st">"_processed2"</span>)]]</span>
+<span id="cb13-40"><a href="#cb13-40" aria-hidden="true" tabindex="-1"></a>  participant[[position]] <span class="ot">&lt;-</span> <span class="fu">alternative_preprocessing_extract_metric_rows</span>(nested, mapping, position, <span class="st">"participant"</span>)</span>
+<span id="cb13-41"><a href="#cb13-41" aria-hidden="true" tabindex="-1"></a>  participant_day[[position]] <span class="ot">&lt;-</span> <span class="fu">alternative_preprocessing_extract_metric_rows</span>(nested, mapping, position, <span class="st">"participant_day"</span>)</span>
+<span id="cb13-42"><a href="#cb13-42" aria-hidden="true" tabindex="-1"></a>  mder_support[[position]] <span class="ot">&lt;-</span> <span class="fu">alternative_preprocessing_build_mder_support</span>(preprocessed, position)</span>
+<span id="cb13-43"><a href="#cb13-43" aria-hidden="true" tabindex="-1"></a>  participant_day[[position]] <span class="ot">&lt;-</span> <span class="fu">alternative_preprocessing_replace_mder</span>(participant_day[[position]], mder_support[[position]])</span>
+<span id="cb13-44"><a href="#cb13-44" aria-hidden="true" tabindex="-1"></a>  thirty_source <span class="ot">&lt;-</span> <span class="fu">alternative_preprocessing_add_occurrence</span>(separate[[<span class="fu">paste0</span>(<span class="st">"metric_"</span>, position, <span class="st">"_participanthour"</span>)]])</span>
+<span id="cb13-45"><a href="#cb13-45" aria-hidden="true" tabindex="-1"></a>  thirty_minute[[position]] <span class="ot">&lt;-</span> <span class="fu">alternative_preprocessing_normalize_clock_data</span>(thirty_source, position, <span class="st">"30_minute"</span>)</span>
+<span id="cb13-46"><a href="#cb13-46" aria-hidden="true" tabindex="-1"></a>  one_hour[[position]] <span class="ot">&lt;-</span> <span class="fu">alternative_preprocessing_normalize_clock_data</span>(</span>
+<span id="cb13-47"><a href="#cb13-47" aria-hidden="true" tabindex="-1"></a>    <span class="fu">alternative_preprocessing_build_one_hour</span>(preprocessed), position, <span class="st">"one_hour"</span>)</span>
+<span id="cb13-48"><a href="#cb13-48" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb13-49"><a href="#cb13-49" aria-hidden="true" tabindex="-1"></a>alternative <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">participant_metrics =</span> dplyr<span class="sc">::</span><span class="fu">bind_rows</span>(participant),</span>
+<span id="cb13-50"><a href="#cb13-50" aria-hidden="true" tabindex="-1"></a>  <span class="at">participant_day_metrics =</span> dplyr<span class="sc">::</span><span class="fu">bind_rows</span>(participant_day),</span>
+<span id="cb13-51"><a href="#cb13-51" aria-hidden="true" tabindex="-1"></a>  <span class="at">mder_support =</span> dplyr<span class="sc">::</span><span class="fu">bind_rows</span>(mder_support),</span>
+<span id="cb13-52"><a href="#cb13-52" aria-hidden="true" tabindex="-1"></a>  <span class="at">thirty_minute_data =</span> dplyr<span class="sc">::</span><span class="fu">bind_rows</span>(thirty_minute), <span class="at">one_hour_data =</span> dplyr<span class="sc">::</span><span class="fu">bind_rows</span>(one_hour))</span>
+<span id="cb13-53"><a href="#cb13-53" aria-hidden="true" tabindex="-1"></a>alternative_paths <span class="ot">&lt;-</span> <span class="fu">alternative_preprocessing_output_paths</span>(root)</span>
+<span id="cb13-54"><a href="#cb13-54" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (name <span class="cf">in</span> <span class="fu">names</span>(alternative)) {</span>
+<span id="cb13-55"><a href="#cb13-55" aria-hidden="true" tabindex="-1"></a>  <span class="fu">write_result_pair</span>(alternative[[name]], <span class="fu">sub</span>(<span class="st">"[.]rds$"</span>, <span class="st">""</span>, alternative_paths<span class="sc">$</span>rds[[name]]))</span>
+<span id="cb13-56"><a href="#cb13-56" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb13-57"><a href="#cb13-57" aria-hidden="true" tabindex="-1"></a><span class="fu">write_csv_artifact</span>(mapping, alternative_paths<span class="sc">$</span>csv[[<span class="st">"metric_crosswalk"</span>]], <span class="st">"preparation/06-analysis-datasets.qmd"</span>)</span>
+<span id="cb13-58"><a href="#cb13-58" aria-hidden="true" tabindex="-1"></a>tibble<span class="sc">::</span><span class="fu">tibble</span>(<span class="at">table =</span> <span class="fu">names</span>(alternative), <span class="at">rows =</span> <span class="fu">vapply</span>(alternative, nrow, <span class="fu">integer</span>(<span class="dv">1</span>)))</span>
+<span id="cb13-59"><a href="#cb13-59" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb13-60"><a href="#cb13-60" aria-hidden="true" tabindex="-1"></a><span class="fu">## Site and solar context</span></span>
+<span id="cb13-61"><a href="#cb13-61" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-62"><a href="#cb13-62" aria-hidden="true" tabindex="-1"></a>Civil photoperiod runs from dawn to dusk at solar altitude −6°. The union of primary and alternative participant-day dates gives both scenarios the same site metadata and astronomical context. The time-zone conversion retains daylight-saving transitions explicitly.</span>
+<span id="cb13-63"><a href="#cb13-63" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-66"><a href="#cb13-66" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb13-67"><a href="#cb13-67" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: solar-context</span></span>
+<span id="cb13-68"><a href="#cb13-68" aria-hidden="true" tabindex="-1"></a>metric_paths <span class="ot">&lt;-</span> <span class="fu">site_solar_default_metric_paths</span>(root)</span>
+<span id="cb13-69"><a href="#cb13-69" aria-hidden="true" tabindex="-1"></a>metric_inputs <span class="ot">&lt;-</span> <span class="fu">read_site_solar_metric_inputs</span>(metric_paths, root)</span>
+<span id="cb13-70"><a href="#cb13-70" aria-hidden="true" tabindex="-1"></a><span class="fu">validate_site_solar_resolution_domains</span>(metric_inputs)</span>
+<span id="cb13-71"><a href="#cb13-71" aria-hidden="true" tabindex="-1"></a>dates <span class="ot">&lt;-</span> <span class="fu">derive_site_solar_date_domain</span>(metric_inputs,</span>
+<span id="cb13-72"><a href="#cb13-72" aria-hidden="true" tabindex="-1"></a>  <span class="at">supplemental_dates =</span> <span class="fu">list</span>(alternative<span class="sc">$</span>participant_day_metrics))</span>
+<span id="cb13-73"><a href="#cb13-73" aria-hidden="true" tabindex="-1"></a>context <span class="ot">&lt;-</span> <span class="fu">build_site_solar_context</span>(dates, <span class="fu">read_site_metadata</span>(<span class="st">"config/site_metadata.csv"</span>))</span>
+<span id="cb13-74"><a href="#cb13-74" aria-hidden="true" tabindex="-1"></a>context_checks <span class="ot">&lt;-</span> <span class="fu">audit_site_solar_context_joins</span>(metric_inputs, context)</span>
+<span id="cb13-75"><a href="#cb13-75" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(<span class="fu">all</span>(context_checks<span class="sc">$</span>unmatched_rows <span class="sc">==</span> <span class="dv">0</span>L))</span>
+<span id="cb13-76"><a href="#cb13-76" aria-hidden="true" tabindex="-1"></a><span class="fu">write_rds_artifact</span>(context, <span class="fu">file.path</span>(paths<span class="sc">$</span>model_data, <span class="st">"context"</span>, <span class="st">"site_solar_context.rds"</span>),</span>
+<span id="cb13-77"><a href="#cb13-77" aria-hidden="true" tabindex="-1"></a>  <span class="st">"preparation/06-analysis-datasets.qmd"</span>)</span>
+<span id="cb13-78"><a href="#cb13-78" aria-hidden="true" tabindex="-1"></a><span class="fu">write_csv_artifact</span>(<span class="fu">format_site_solar_context_csv</span>(context),</span>
+<span id="cb13-79"><a href="#cb13-79" aria-hidden="true" tabindex="-1"></a>  <span class="fu">file.path</span>(paths<span class="sc">$</span>model_data, <span class="st">"context"</span>, <span class="st">"site_solar_context.csv"</span>), <span class="st">"preparation/06-analysis-datasets.qmd"</span>)</span>
+<span id="cb13-80"><a href="#cb13-80" aria-hidden="true" tabindex="-1"></a>dplyr<span class="sc">::</span><span class="fu">select</span>(context, dplyr<span class="sc">::</span><span class="fu">any_of</span>(<span class="fu">c</span>(<span class="st">"site"</span>, <span class="st">"local_date"</span>, <span class="st">"photoperiod_hours"</span>, <span class="st">"civil_dawn_wall"</span>, <span class="st">"civil_dusk_wall"</span>))) <span class="sc">|&gt;</span></span>
+<span id="cb13-81"><a href="#cb13-81" aria-hidden="true" tabindex="-1"></a>  <span class="fu">head</span>(<span class="dv">12</span>)</span>
+<span id="cb13-82"><a href="#cb13-82" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb13-83"><a href="#cb13-83" aria-hidden="true" tabindex="-1"></a><span class="fu">## True elapsed-time sequences</span></span>
+<span id="cb13-84"><a href="#cb13-84" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-85"><a href="#cb13-85" aria-hidden="true" tabindex="-1"></a>The temporal models need actual elapsed time as well as local clock time. For each sensor placement and resolution, the following joins link observed UTC source intervals to the corresponding wall-clock outcomes. This preserves the outcome grid while recording gaps and repeated local clock times.</span>
+<span id="cb13-86"><a href="#cb13-86" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-89"><a href="#cb13-89" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb13-90"><a href="#cb13-90" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: elapsed-time-sequences</span></span>
+<span id="cb13-91"><a href="#cb13-91" aria-hidden="true" tabindex="-1"></a>source_outputs <span class="ot">&lt;-</span> link_outputs <span class="ot">&lt;-</span> <span class="fu">list</span>()</span>
+<span id="cb13-92"><a href="#cb13-92" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (placement <span class="cf">in</span> <span class="fu">c</span>(<span class="st">"glasses"</span>, <span class="st">"chest"</span>)) {</span>
+<span id="cb13-93"><a href="#cb13-93" aria-hidden="true" tabindex="-1"></a>  coverage <span class="ot">&lt;-</span> <span class="fu">readRDS</span>(<span class="fu">file.path</span>(paths<span class="sc">$</span>coverage, <span class="fu">paste0</span>(<span class="st">"light_"</span>, placement, <span class="st">"_coverage.rds"</span>)))</span>
+<span id="cb13-94"><a href="#cb13-94" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (resolution <span class="cf">in</span> <span class="fu">c</span>(<span class="st">"30_minute"</span>, <span class="st">"one_hour"</span>)) {</span>
+<span id="cb13-95"><a href="#cb13-95" aria-hidden="true" tabindex="-1"></a>    metric <span class="ot">&lt;-</span> <span class="fu">readRDS</span>(<span class="fu">file.path</span>(paths<span class="sc">$</span>metrics, <span class="fu">paste0</span>(<span class="st">"metrics_"</span>, placement, <span class="st">"_"</span>, resolution, <span class="st">".rds"</span>)))</span>
+<span id="cb13-96"><a href="#cb13-96" aria-hidden="true" tabindex="-1"></a>    sequence <span class="ot">&lt;-</span> <span class="fu">build_temporal_sequence_provenance</span>(coverage, metric, placement, resolution)</span>
+<span id="cb13-97"><a href="#cb13-97" aria-hidden="true" tabindex="-1"></a>    label <span class="ot">&lt;-</span> <span class="fu">paste</span>(placement, resolution)</span>
+<span id="cb13-98"><a href="#cb13-98" aria-hidden="true" tabindex="-1"></a>    source_outputs[[label]] <span class="ot">&lt;-</span> sequence<span class="sc">$</span>source_bins</span>
+<span id="cb13-99"><a href="#cb13-99" aria-hidden="true" tabindex="-1"></a>    link_outputs[[label]] <span class="ot">&lt;-</span> sequence<span class="sc">$</span>wall_links</span>
+<span id="cb13-100"><a href="#cb13-100" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb13-101"><a href="#cb13-101" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rm</span>(coverage)</span>
+<span id="cb13-102"><a href="#cb13-102" aria-hidden="true" tabindex="-1"></a>  <span class="fu">invisible</span>(<span class="fu">gc</span>())</span>
+<span id="cb13-103"><a href="#cb13-103" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb13-104"><a href="#cb13-104" aria-hidden="true" tabindex="-1"></a>source_bins <span class="ot">&lt;-</span> dplyr<span class="sc">::</span><span class="fu">bind_rows</span>(source_outputs) <span class="sc">|&gt;</span></span>
+<span id="cb13-105"><a href="#cb13-105" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">arrange</span>(.data<span class="sc">$</span>resolution, .data<span class="sc">$</span>site, .data<span class="sc">$</span>Id, .data<span class="sc">$</span>position, .data<span class="sc">$</span>true_utc_start)</span>
+<span id="cb13-106"><a href="#cb13-106" aria-hidden="true" tabindex="-1"></a>wall_links <span class="ot">&lt;-</span> dplyr<span class="sc">::</span><span class="fu">bind_rows</span>(link_outputs) <span class="sc">|&gt;</span></span>
+<span id="cb13-107"><a href="#cb13-107" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">arrange</span>(.data<span class="sc">$</span>resolution, .data<span class="sc">$</span>site, .data<span class="sc">$</span>Id, .data<span class="sc">$</span>position, .data<span class="sc">$</span>local_date, .data<span class="sc">$</span>wall_bin_start_minute)</span>
+<span id="cb13-108"><a href="#cb13-108" aria-hidden="true" tabindex="-1"></a><span class="fu">validate_combined_temporal_provenance</span>(source_bins, wall_links)</span>
+<span id="cb13-109"><a href="#cb13-109" aria-hidden="true" tabindex="-1"></a>sequence_root <span class="ot">&lt;-</span> <span class="fu">file.path</span>(paths<span class="sc">$</span>model_data, <span class="st">"temporal_provenance"</span>)</span>
+<span id="cb13-110"><a href="#cb13-110" aria-hidden="true" tabindex="-1"></a><span class="fu">write_rds_artifact</span>(source_bins, <span class="fu">file.path</span>(sequence_root, <span class="st">"true_utc_source_bins.rds"</span>), <span class="st">"preparation/06-analysis-datasets.qmd"</span>)</span>
+<span id="cb13-111"><a href="#cb13-111" aria-hidden="true" tabindex="-1"></a><span class="fu">write_rds_artifact</span>(wall_links, <span class="fu">file.path</span>(sequence_root, <span class="st">"wall_outcome_links.rds"</span>), <span class="st">"preparation/06-analysis-datasets.qmd"</span>)</span>
+<span id="cb13-112"><a href="#cb13-112" aria-hidden="true" tabindex="-1"></a><span class="fu">write_csv_artifact</span>(<span class="fu">temporal_provenance_csv_data</span>(source_bins), <span class="fu">file.path</span>(sequence_root, <span class="st">"true_utc_source_bins.csv"</span>), <span class="st">"preparation/06-analysis-datasets.qmd"</span>)</span>
+<span id="cb13-113"><a href="#cb13-113" aria-hidden="true" tabindex="-1"></a><span class="fu">write_csv_artifact</span>(<span class="fu">temporal_provenance_csv_data</span>(wall_links), <span class="fu">file.path</span>(sequence_root, <span class="st">"wall_outcome_links.csv"</span>), <span class="st">"preparation/06-analysis-datasets.qmd"</span>)</span>
+<span id="cb13-114"><a href="#cb13-114" aria-hidden="true" tabindex="-1"></a>dplyr<span class="sc">::</span><span class="fu">count</span>(source_bins, .data<span class="sc">$</span>position, .data<span class="sc">$</span>resolution)</span>
+<span id="cb13-115"><a href="#cb13-115" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb13-116"><a href="#cb13-116" aria-hidden="true" tabindex="-1"></a><span class="fu">## Join participant metadata to outcomes</span></span>
+<span id="cb13-117"><a href="#cb13-117" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-118"><a href="#cb13-118" aria-hidden="true" tabindex="-1"></a>These joins preserve measurement keys and outcome values. Questionnaire fields use participant identifiers, while photoperiod uses site and local date. The model tables retain explicit availability indicators for missing questionnaire information.</span>
+<span id="cb13-119"><a href="#cb13-119" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-122"><a href="#cb13-122" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb13-123"><a href="#cb13-123" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: join-analysis-data</span></span>
+<span id="cb13-124"><a href="#cb13-124" aria-hidden="true" tabindex="-1"></a>metric_specification <span class="ot">&lt;-</span> <span class="fu">base_model_metric_specification</span>(root)</span>
+<span id="cb13-125"><a href="#cb13-125" aria-hidden="true" tabindex="-1"></a>metric_inputs <span class="ot">&lt;-</span> stats<span class="sc">::</span><span class="fu">setNames</span>(<span class="fu">lapply</span>(metric_specification<span class="sc">$</span>path, readRDS), metric_specification<span class="sc">$</span>input_id)</span>
+<span id="cb13-126"><a href="#cb13-126" aria-hidden="true" tabindex="-1"></a>normalized_specification <span class="ot">&lt;-</span> <span class="fu">base_model_normalized_specification</span>(root)</span>
+<span id="cb13-127"><a href="#cb13-127" aria-hidden="true" tabindex="-1"></a>normalized_inputs <span class="ot">&lt;-</span> stats<span class="sc">::</span><span class="fu">setNames</span>(<span class="fu">lapply</span>(normalized_specification<span class="sc">$</span>path, readRDS), normalized_specification<span class="sc">$</span>modality)</span>
+<span id="cb13-128"><a href="#cb13-128" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (index <span class="cf">in</span> <span class="fu">seq_len</span>(<span class="fu">nrow</span>(metric_specification))) {</span>
+<span id="cb13-129"><a href="#cb13-129" aria-hidden="true" tabindex="-1"></a>  spec <span class="ot">&lt;-</span> metric_specification[index, ]</span>
+<span id="cb13-130"><a href="#cb13-130" aria-hidden="true" tabindex="-1"></a>  <span class="fu">validate_base_model_metric_input</span>(metric_inputs[[spec<span class="sc">$</span>input_id]], spec<span class="sc">$</span>placement, spec<span class="sc">$</span>resolution)</span>
+<span id="cb13-131"><a href="#cb13-131" aria-hidden="true" tabindex="-1"></a>  selected <span class="ot">&lt;-</span> <span class="fu">base_model_select_analysis_metrics</span>(metric_inputs[[spec<span class="sc">$</span>input_id]],</span>
+<span id="cb13-132"><a href="#cb13-132" aria-hidden="true" tabindex="-1"></a>    spec<span class="sc">$</span>input_id, spec<span class="sc">$</span>placement, spec<span class="sc">$</span>resolution)</span>
+<span id="cb13-133"><a href="#cb13-133" aria-hidden="true" tabindex="-1"></a>  <span class="fu">stopifnot</span>(<span class="fu">all</span>(selected<span class="sc">$</span>audit<span class="sc">$</span>status <span class="sc">==</span> <span class="st">"PASS"</span>), <span class="fu">all</span>(selected<span class="sc">$</span>audit<span class="sc">$</span>row_order_preserved),</span>
+<span id="cb13-134"><a href="#cb13-134" aria-hidden="true" tabindex="-1"></a>    <span class="fu">all</span>(selected<span class="sc">$</span>audit<span class="sc">$</span>key_set_preserved), <span class="sc">!</span><span class="fu">any</span>(selected<span class="sc">$</span>audit<span class="sc">$</span>outcome_values_recalculated))</span>
+<span id="cb13-135"><a href="#cb13-135" aria-hidden="true" tabindex="-1"></a>  metric_inputs[[spec<span class="sc">$</span>input_id]] <span class="ot">&lt;-</span> selected<span class="sc">$</span>data</span>
+<span id="cb13-136"><a href="#cb13-136" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb13-137"><a href="#cb13-137" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (modality <span class="cf">in</span> <span class="fu">names</span>(normalized_inputs)) {</span>
+<span id="cb13-138"><a href="#cb13-138" aria-hidden="true" tabindex="-1"></a>  <span class="fu">validate_base_model_normalized_input</span>(normalized_inputs[[modality]], modality)</span>
+<span id="cb13-139"><a href="#cb13-139" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb13-140"><a href="#cb13-140" aria-hidden="true" tabindex="-1"></a>participant_metadata <span class="ot">&lt;-</span> <span class="fu">base_model_build_participant_metadata</span>(normalized_inputs, metric_inputs)</span>
+<span id="cb13-141"><a href="#cb13-141" aria-hidden="true" tabindex="-1"></a>data_tables <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">participant_metadata =</span> participant_metadata)</span>
+<span id="cb13-142"><a href="#cb13-142" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (placement <span class="cf">in</span> <span class="fu">base_model_placements</span>()) {</span>
+<span id="cb13-143"><a href="#cb13-143" aria-hidden="true" tabindex="-1"></a>  day_id <span class="ot">&lt;-</span> <span class="fu">paste0</span>(placement, <span class="st">"_participant_day"</span>)</span>
+<span id="cb13-144"><a href="#cb13-144" aria-hidden="true" tabindex="-1"></a>  participant_id <span class="ot">&lt;-</span> <span class="fu">paste0</span>(placement, <span class="st">"_participant"</span>)</span>
+<span id="cb13-145"><a href="#cb13-145" aria-hidden="true" tabindex="-1"></a>  day <span class="ot">&lt;-</span> <span class="fu">base_model_join_context</span>(metric_inputs[[day_id]], context, placement, <span class="st">"participant_day"</span>, day_id)</span>
+<span id="cb13-146"><a href="#cb13-146" aria-hidden="true" tabindex="-1"></a>  data_tables[[<span class="fu">paste0</span>(placement, <span class="st">"_participant_day_context"</span>)]] <span class="ot">&lt;-</span> day<span class="sc">$</span>data</span>
+<span id="cb13-147"><a href="#cb13-147" aria-hidden="true" tabindex="-1"></a>  data_tables[[participant_id]] <span class="ot">&lt;-</span> metric_inputs[[participant_id]]</span>
+<span id="cb13-148"><a href="#cb13-148" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (resolution <span class="cf">in</span> <span class="fu">c</span>(<span class="st">"30_minute"</span>, <span class="st">"one_hour"</span>)) {</span>
+<span id="cb13-149"><a href="#cb13-149" aria-hidden="true" tabindex="-1"></a>    id <span class="ot">&lt;-</span> <span class="fu">paste</span>(placement, resolution, <span class="at">sep =</span> <span class="st">"_"</span>)</span>
+<span id="cb13-150"><a href="#cb13-150" aria-hidden="true" tabindex="-1"></a>    joined <span class="ot">&lt;-</span> <span class="fu">base_model_join_context</span>(metric_inputs[[id]], context, placement, resolution, id)</span>
+<span id="cb13-151"><a href="#cb13-151" aria-hidden="true" tabindex="-1"></a>    data_tables[[<span class="fu">paste0</span>(id, <span class="st">"_context"</span>)]] <span class="ot">&lt;-</span> joined<span class="sc">$</span>data</span>
+<span id="cb13-152"><a href="#cb13-152" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb13-153"><a href="#cb13-153" aria-hidden="true" tabindex="-1"></a>  joined <span class="ot">&lt;-</span> <span class="fu">base_model_join_participant_metadata</span>(day<span class="sc">$</span>data, participant_metadata,</span>
+<span id="cb13-154"><a href="#cb13-154" aria-hidden="true" tabindex="-1"></a>    placement, <span class="st">"participant_day"</span>, <span class="fu">paste0</span>(day_id, <span class="st">"_context"</span>))</span>
+<span id="cb13-155"><a href="#cb13-155" aria-hidden="true" tabindex="-1"></a>  data_tables[[<span class="fu">paste0</span>(placement, <span class="st">"_participant_day_enriched"</span>)]] <span class="ot">&lt;-</span> joined<span class="sc">$</span>data</span>
+<span id="cb13-156"><a href="#cb13-156" aria-hidden="true" tabindex="-1"></a>  joined <span class="ot">&lt;-</span> <span class="fu">base_model_join_participant_metadata</span>(metric_inputs[[participant_id]], participant_metadata,</span>
+<span id="cb13-157"><a href="#cb13-157" aria-hidden="true" tabindex="-1"></a>    placement, <span class="st">"participant"</span>, participant_id)</span>
+<span id="cb13-158"><a href="#cb13-158" aria-hidden="true" tabindex="-1"></a>  data_tables[[<span class="fu">paste0</span>(placement, <span class="st">"_participant_enriched"</span>)]] <span class="ot">&lt;-</span> joined<span class="sc">$</span>data</span>
+<span id="cb13-159"><a href="#cb13-159" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb13-160"><a href="#cb13-160" aria-hidden="true" tabindex="-1"></a>base_paths <span class="ot">&lt;-</span> <span class="fu">base_model_paths</span>(root)</span>
+<span id="cb13-161"><a href="#cb13-161" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(<span class="fu">setequal</span>(<span class="fu">names</span>(data_tables), <span class="fu">names</span>(base_paths<span class="sc">$</span>data_paths)))</span>
+<span id="cb13-162"><a href="#cb13-162" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (name <span class="cf">in</span> <span class="fu">names</span>(data_tables)) <span class="fu">write_rds_artifact</span>(data_tables[[name]], base_paths<span class="sc">$</span>data_paths[[name]],</span>
+<span id="cb13-163"><a href="#cb13-163" aria-hidden="true" tabindex="-1"></a>  <span class="st">"preparation/06-analysis-datasets.qmd"</span>)</span>
+<span id="cb13-164"><a href="#cb13-164" aria-hidden="true" tabindex="-1"></a>tibble<span class="sc">::</span><span class="fu">tibble</span>(<span class="at">table =</span> <span class="fu">names</span>(data_tables), <span class="at">rows =</span> <span class="fu">vapply</span>(data_tables, nrow, <span class="fu">integer</span>(<span class="dv">1</span>)))</span>
+<span id="cb13-165"><a href="#cb13-165" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb13-166"><a href="#cb13-166" aria-hidden="true" tabindex="-1"></a><span class="fu">## Model rows and complete-case samples</span></span>
+<span id="cb13-167"><a href="#cb13-167" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-168"><a href="#cb13-168" aria-hidden="true" tabindex="-1"></a>Site comparisons use the same metric definitions and centering procedure in both preprocessing scenarios. The all-available and paired-placement samples are kept separate. The alternative baseline cannot reconstruct every minute-level support quantity, which remains explicitly unavailable rather than being inferred from stored daily values.</span>
+<span id="cb13-169"><a href="#cb13-169" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-172"><a href="#cb13-172" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb13-173"><a href="#cb13-173" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: assemble-site-model-rows</span></span>
+<span id="cb13-174"><a href="#cb13-174" aria-hidden="true" tabindex="-1"></a>contract <span class="ot">&lt;-</span> <span class="fu">h01_metric_contract</span>(root)</span>
+<span id="cb13-175"><a href="#cb13-175" aria-hidden="true" tabindex="-1"></a>inputs <span class="ot">&lt;-</span> stats<span class="sc">::</span><span class="fu">setNames</span>(<span class="fu">lapply</span>(<span class="fu">h01_placements</span>(), <span class="cf">function</span>(placement) {</span>
+<span id="cb13-176"><a href="#cb13-176" aria-hidden="true" tabindex="-1"></a>  <span class="fu">list</span>(<span class="at">participant_day =</span> data_tables[[<span class="fu">paste0</span>(placement, <span class="st">"_participant_day_enriched"</span>)]],</span>
+<span id="cb13-177"><a href="#cb13-177" aria-hidden="true" tabindex="-1"></a>    <span class="at">participant =</span> data_tables[[<span class="fu">paste0</span>(placement, <span class="st">"_participant_enriched"</span>)]],</span>
+<span id="cb13-178"><a href="#cb13-178" aria-hidden="true" tabindex="-1"></a>    <span class="at">admissibility =</span> readr<span class="sc">::</span><span class="fu">read_csv</span>(<span class="fu">h01_admissibility_input_paths</span>(root)[[placement]], <span class="at">show_col_types =</span> <span class="cn">FALSE</span>),</span>
+<span id="cb13-179"><a href="#cb13-179" aria-hidden="true" tabindex="-1"></a>    <span class="at">metric_support =</span> readr<span class="sc">::</span><span class="fu">read_csv</span>(<span class="fu">h01_metric_support_input_paths</span>(root)[[placement]], <span class="at">show_col_types =</span> <span class="cn">FALSE</span>))</span>
+<span id="cb13-180"><a href="#cb13-180" aria-hidden="true" tabindex="-1"></a>}), <span class="fu">h01_placements</span>())</span>
+<span id="cb13-181"><a href="#cb13-181" aria-hidden="true" tabindex="-1"></a>inputs <span class="ot">&lt;-</span> <span class="fu">h01_add_main_support_status</span>(inputs)</span>
+<span id="cb13-182"><a href="#cb13-182" aria-hidden="true" tabindex="-1"></a>adapted <span class="ot">&lt;-</span> <span class="fu">h01_build_alternative_preprocessing_inputs</span>(root)</span>
+<span id="cb13-183"><a href="#cb13-183" aria-hidden="true" tabindex="-1"></a>scenario_inputs <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">main =</span> <span class="fu">list</span>(<span class="at">inputs =</span> inputs, <span class="at">contract =</span> contract),</span>
+<span id="cb13-184"><a href="#cb13-184" aria-hidden="true" tabindex="-1"></a>  <span class="at">alternative_preprocessing =</span> <span class="fu">list</span>(<span class="at">inputs =</span> adapted<span class="sc">$</span>inputs, <span class="at">contract =</span> adapted<span class="sc">$</span>contract))</span>
+<span id="cb13-185"><a href="#cb13-185" aria-hidden="true" tabindex="-1"></a>model_sample_flow <span class="ot">&lt;-</span> <span class="fu">list</span>()</span>
+<span id="cb13-186"><a href="#cb13-186" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (data_scenario_id <span class="cf">in</span> <span class="fu">names</span>(scenario_inputs)) {</span>
+<span id="cb13-187"><a href="#cb13-187" aria-hidden="true" tabindex="-1"></a>  specification <span class="ot">&lt;-</span> scenario_inputs[[data_scenario_id]]</span>
+<span id="cb13-188"><a href="#cb13-188" aria-hidden="true" tabindex="-1"></a>  centered <span class="ot">&lt;-</span> <span class="fu">h01_build_model_rows_from_inputs</span>(specification<span class="sc">$</span>inputs, specification<span class="sc">$</span>contract,</span>
+<span id="cb13-189"><a href="#cb13-189" aria-hidden="true" tabindex="-1"></a>    <span class="at">data_scenario_id =</span> data_scenario_id, <span class="at">model_implementation_id =</span> <span class="st">"hypothesis_models"</span>)</span>
+<span id="cb13-190"><a href="#cb13-190" aria-hidden="true" tabindex="-1"></a>  rows <span class="ot">&lt;-</span> centered<span class="sc">$</span>rows <span class="sc">|&gt;</span></span>
+<span id="cb13-191"><a href="#cb13-191" aria-hidden="true" tabindex="-1"></a>    dplyr<span class="sc">::</span><span class="fu">arrange</span>(<span class="fu">factor</span>(.data<span class="sc">$</span>scenario, <span class="at">levels =</span> <span class="fu">h01_scenarios</span>()),</span>
+<span id="cb13-192"><a href="#cb13-192" aria-hidden="true" tabindex="-1"></a>      <span class="fu">factor</span>(.data<span class="sc">$</span>placement, <span class="at">levels =</span> <span class="fu">h01_placements</span>()), .data<span class="sc">$</span>metric_order,</span>
+<span id="cb13-193"><a href="#cb13-193" aria-hidden="true" tabindex="-1"></a>      .data<span class="sc">$</span>site, .data<span class="sc">$</span>Id, .data<span class="sc">$</span>local_date)</span>
+<span id="cb13-194"><a href="#cb13-194" aria-hidden="true" tabindex="-1"></a>  status <span class="ot">&lt;-</span> <span class="fu">h01_scenario_status</span>(specification<span class="sc">$</span>contract, data_scenario_id, <span class="st">"hypothesis_models"</span>)</span>
+<span id="cb13-195"><a href="#cb13-195" aria-hidden="true" tabindex="-1"></a>  object <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">hypothesis_id =</span> <span class="st">"H01"</span>, <span class="at">model_rows =</span> rows,</span>
+<span id="cb13-196"><a href="#cb13-196" aria-hidden="true" tabindex="-1"></a>    <span class="at">metric_contract =</span> specification<span class="sc">$</span>contract, <span class="at">sample_flow =</span> <span class="fu">h01_build_sample_flow</span>(rows, status),</span>
+<span id="cb13-197"><a href="#cb13-197" aria-hidden="true" tabindex="-1"></a>    <span class="at">exclusion_reasons =</span> <span class="fu">h01_build_exclusion_summary</span>(rows, status), <span class="at">scenario_status =</span> status,</span>
+<span id="cb13-198"><a href="#cb13-198" aria-hidden="true" tabindex="-1"></a>    <span class="at">predictor_centers =</span> centered<span class="sc">$</span>centers, <span class="at">variable_dictionary =</span> <span class="fu">h01_variable_dictionary</span>(),</span>
+<span id="cb13-199"><a href="#cb13-199" aria-hidden="true" tabindex="-1"></a>    <span class="at">metadata =</span> <span class="fu">list</span>(<span class="at">r_version =</span> <span class="fu">as.character</span>(<span class="fu">getRversion</span>()), <span class="at">data_scenario_id =</span> data_scenario_id,</span>
+<span id="cb13-200"><a href="#cb13-200" aria-hidden="true" tabindex="-1"></a>      <span class="at">model_implementation_id =</span> <span class="st">"hypothesis_models"</span>, <span class="at">site_levels =</span> <span class="fu">sort</span>(<span class="fu">unique</span>(rows<span class="sc">$</span>site))))</span>
+<span id="cb13-201"><a href="#cb13-201" aria-hidden="true" tabindex="-1"></a>  output_paths <span class="ot">&lt;-</span> <span class="cf">if</span> (data_scenario_id <span class="sc">==</span> <span class="st">"main"</span>) <span class="fu">h01_model_data_paths</span>(root) <span class="cf">else</span></span>
+<span id="cb13-202"><a href="#cb13-202" aria-hidden="true" tabindex="-1"></a>    <span class="fu">h01_alternative_preprocessing_output_paths</span>(root)</span>
+<span id="cb13-203"><a href="#cb13-203" aria-hidden="true" tabindex="-1"></a>  <span class="fu">write_rds_artifact</span>(object, output_paths<span class="sc">$</span>rds, <span class="st">"preparation/06-analysis-datasets.qmd"</span>)</span>
+<span id="cb13-204"><a href="#cb13-204" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (name <span class="cf">in</span> <span class="fu">intersect</span>(<span class="fu">names</span>(object), <span class="fu">names</span>(output_paths<span class="sc">$</span>csv))) {</span>
+<span id="cb13-205"><a href="#cb13-205" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (<span class="fu">is.data.frame</span>(object[[name]])) <span class="fu">write_csv_artifact</span>(object[[name]], output_paths<span class="sc">$</span>csv[[name]],</span>
+<span id="cb13-206"><a href="#cb13-206" aria-hidden="true" tabindex="-1"></a>      <span class="st">"preparation/06-analysis-datasets.qmd"</span>)</span>
+<span id="cb13-207"><a href="#cb13-207" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb13-208"><a href="#cb13-208" aria-hidden="true" tabindex="-1"></a>  model_sample_flow[[data_scenario_id]] <span class="ot">&lt;-</span> object<span class="sc">$</span>sample_flow</span>
+<span id="cb13-209"><a href="#cb13-209" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb13-210"><a href="#cb13-210" aria-hidden="true" tabindex="-1"></a>dplyr<span class="sc">::</span><span class="fu">bind_rows</span>(model_sample_flow, <span class="at">.id =</span> <span class="st">"data_scenario"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb13-211"><a href="#cb13-211" aria-hidden="true" tabindex="-1"></a>  <span class="fu">head</span>(<span class="dv">20</span>)</span>
+<span id="cb13-212"><a href="#cb13-212" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+</code></pre></div><button title="Copy to Clipboard" class="code-copy-button" data-in-quarto-modal=""><i class="bi"></i></button></div>
+</div></div></div></div></div>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

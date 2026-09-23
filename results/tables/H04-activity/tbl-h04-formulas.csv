@@ -1,0 +1,6 @@
+Model,Exact Wilkinson formula supplied to R
+Primary population mean,geo_medi_1h ~ site + activity
+Primary five-category null,geo_medi_1h ~ site + other_indicator
+Secondary six-category null,geo_medi_1h ~ site
+Named-category activity-by-site interaction,geo_medi_1h ~ site * activity_named
+Exploratory time of day,"geo_medi_1h ~ s(time_hour, bs = ""cc"", k = 12) + s(time_hour, activity, bs = ""sz"", k = 12) + s(time_hour, site, bs = ""sz"", k = 12) + s(time_hour, participant, bs = ""fs"", k = 10) + s(participant_day, bs = ""re"")"

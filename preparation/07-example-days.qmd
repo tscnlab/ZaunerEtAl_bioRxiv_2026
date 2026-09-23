@@ -1,0 +1,57 @@
+---
+title: "Example participant days"
+---
+
+One reproducibly selected participant-day from each site illustrates the near-eye light recording, diary-defined sleep, and reported non-wear periods. Days must satisfy the coverage rules and contain one identifiable sleep-preparation transition and one waking transition. A fixed seed controls the selection. Site labels are joined from `config/site_metadata.csv`.
+
+```{r}
+#| label: setup
+#| echo: false
+source("scripts/project.R")
+analysis_setup()
+for (helper in c("paths_io", "assertions", "prepared_day_showcase")) {
+  source(file.path("scripts/pipeline", paste0(helper, ".R")))
+}
+root <- project_root()
+paths <- pipeline_paths(root)
+ensure_pipeline_directories(paths)
+```
+
+```{r}
+#| label: select-example-days
+coverage <- readRDS(file.path(paths$coverage, "light_glasses_coverage.rds"))
+context <- readRDS(file.path(paths$model_data, "context", "site_solar_context.rds"))
+site_metadata <- utils::read.csv("config/site_metadata.csv", stringsAsFactors = FALSE,
+  check.names = FALSE, fileEncoding = "UTF-8")
+coverage <- dplyr::left_join(coverage,
+  dplyr::select(site_metadata, site, location),
+  by = "site", relationship = "many-to-one")
+examples <- derive_prepared_day_showcase(coverage, context, site_metadata,
+  seed = prepared_day_showcase_seed())
+examples$selected_summary
+```
+The vertical extent of each light trace shows measured melEDI, while the overlaid intervals distinguish sleep and non-wear. Civil dawn and dusk provide site-specific astronomical context.
+
+```{r}
+#| label: fig-example-days
+#| fig-cap: "Near-eye light exposure, diary-defined sleep and non-wear for one selected participant-day per site. Civil dawn and dusk mark the local solar context."
+plot <- make_prepared_day_showcase_plot(examples$plot_data)
+plot
+```
+
+```{r}
+#| label: save-example-days
+#| code-fold: true
+write_csv_artifact(examples$selected_summary, file.path(paths$diagnostics,
+  "prepared_day_showcase", "selected_days.csv"), "preparation/07-example-days.qmd")
+write_csv_artifact(examples$eligible_counts, file.path(paths$diagnostics,
+  "prepared_day_showcase", "eligible_day_counts.csv"), "preparation/07-example-days.qmd")
+write_csv_artifact(examples$source_data, file.path(paths$source_data,
+  "prepared_day_showcase.csv"), "preparation/07-example-days.qmd")
+write_csv_artifact(examples$plot_data, file.path(paths$source_data,
+  "prepared_day_showcase_plot.csv"), "preparation/07-example-days.qmd")
+write_prepared_day_showcase_plot(plot, file.path(paths$figures, "prepared_day_showcase.png"),
+  device = ragg::agg_png)
+write_prepared_day_showcase_plot(plot, file.path(paths$figures, "prepared_day_showcase.svg"),
+  device = svglite::svglite)
+```

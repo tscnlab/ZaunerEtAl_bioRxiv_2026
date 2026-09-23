@@ -1,6 +1,4 @@
-# Build site/solar context from the finalized metric date domain.
-#
-# Source paths_io.R, assertions.R, site_solar_context.R before this file.
+# Validate the date domain and format solar context.
 
 site_solar_metric_roles <- function() {
   tibble::tribble(
@@ -41,123 +39,6 @@ site_solar_default_metric_paths <- function(root) {
   stats::setNames(
     file.path(paths$metrics, roles$filename),
     roles$input_role
-  )
-}
-
-site_solar_artifact_paths <- function(root) {
-  paths <- pipeline_paths(root)
-  context_root <- file.path(paths$model_data, "context")
-  list(
-    root = normalizePath(root, winslash = "/", mustWork = TRUE),
-    context_root = context_root,
-    context_rds = file.path(context_root, "site_solar_context.rds"),
-    context_csv = file.path(context_root, "site_solar_context.csv"),
-    join_audit = file.path(
-      context_root,
-      "site_solar_context_join_audit.csv"
-    ),
-    manifest = file.path(
-      paths$manifests,
-      "site_solar_context_artifacts.csv"
-    )
-  )
-}
-
-resolve_site_solar_metric_paths <- function(metric_paths, root) {
-  expected <- site_solar_metric_roles()$input_role
-  if (is.null(metric_paths)) {
-    metric_paths <- site_solar_default_metric_paths(root)
-  }
-  if (
-    !is.character(metric_paths) ||
-      is.null(names(metric_paths)) ||
-      anyNA(metric_paths) ||
-      any(!nzchar(metric_paths)) ||
-      anyDuplicated(names(metric_paths)) ||
-      !setequal(names(metric_paths), expected)
-  ) {
-    abort_pipeline(
-      paste0(
-        "`metric_paths` must be a named character vector with roles: %s"
-      ),
-      paste(expected, collapse = ", ")
-    )
-  }
-  metric_paths <- metric_paths[expected]
-  missing <- !file.exists(metric_paths)
-  if (any(missing)) {
-    abort_pipeline(
-      "Required metric input(s) do not exist: %s",
-      paste(metric_paths[missing], collapse = ", ")
-    )
-  }
-  vapply(
-    metric_paths,
-    normalizePath,
-    character(1),
-    winslash = "/",
-    mustWork = TRUE
-  )
-}
-
-resolve_site_solar_supplemental_date_paths <- function(
-  supplemental_date_paths = NULL
-) {
-  if (is.null(supplemental_date_paths)) {
-    return(stats::setNames(character(), character()))
-  }
-  if (
-    !is.character(supplemental_date_paths) ||
-      is.null(names(supplemental_date_paths)) ||
-      length(supplemental_date_paths) == 0L ||
-      anyNA(supplemental_date_paths) ||
-      any(!nzchar(supplemental_date_paths)) ||
-      anyNA(names(supplemental_date_paths)) ||
-      any(!nzchar(names(supplemental_date_paths))) ||
-      anyDuplicated(names(supplemental_date_paths)) ||
-      any(names(supplemental_date_paths) %in% site_solar_metric_roles()$input_role)
-  ) {
-    abort_pipeline(
-      paste0(
-        "`supplemental_date_paths` must be NULL or a uniquely named ",
-        "character vector whose names differ from the main metric roles"
-      )
-    )
-  }
-  missing <- !file.exists(supplemental_date_paths)
-  if (any(missing)) {
-    abort_pipeline(
-      "Supplemental site-date input(s) do not exist: %s",
-      paste(supplemental_date_paths[missing], collapse = ", ")
-    )
-  }
-  vapply(
-    supplemental_date_paths,
-    normalizePath,
-    character(1),
-    winslash = "/",
-    mustWork = TRUE
-  )
-}
-
-site_solar_resolution_key <- function(resolution) {
-  base <- c("site", "Id", "position", "local_date")
-  switch(
-    resolution,
-    daily = base,
-    `30_minute` = c(base, "clock_bin"),
-    one_hour = c(base, "clock_minute"),
-    abort_pipeline("Unknown metric resolution: %s", resolution)
-  )
-}
-
-site_solar_expected_clock_grid <- function(resolution) {
-  switch(
-    resolution,
-    daily = NULL,
-    `30_minute` = seq.int(0L, 1410L, by = 30L),
-    one_hour = seq.int(0L, 1380L, by = 60L),
-    abort_pipeline("Unknown metric resolution: %s", resolution)
   )
 }
 
@@ -268,44 +149,6 @@ read_site_solar_metric_inputs <- function(metric_paths, root) {
     )
   }
   attr(inputs, "paths") <- metric_paths
-  inputs
-}
-
-read_site_solar_supplemental_dates <- function(supplemental_date_paths) {
-  inputs <- lapply(
-    supplemental_date_paths,
-    readRDS
-  )
-  names(inputs) <- names(supplemental_date_paths)
-  for (input_role in names(inputs)) {
-    data <- inputs[[input_role]]
-    if (!is.data.frame(data) || nrow(data) == 0L) {
-      abort_pipeline(
-        "Supplemental site-date input `%s` must be a non-empty data frame",
-        input_role
-      )
-    }
-    assert_columns(
-      data,
-      c("site", "local_date"),
-      object = paste0("supplemental site-date input `", input_role, "`")
-    )
-    assert_no_missing_key(
-      data,
-      c("site", "local_date"),
-      object = paste0("supplemental site-date input `", input_role, "`")
-    )
-    if (
-      !is.character(data$site) ||
-        !inherits(data$local_date, "Date") ||
-        length(setdiff(unique(data$site), expected_site_codes())) > 0L
-    ) {
-      abort_pipeline(
-        "Supplemental site-date input `%s` has invalid site/date fields",
-        input_role
-      )
-    }
-  }
   inputs
 }
 
@@ -461,236 +304,60 @@ format_site_solar_context_csv <- function(context) {
   output
 }
 
-site_solar_relative_path <- function(path, anchor, object) {
-  path <- normalizePath(path, winslash = "/", mustWork = TRUE)
-  anchor <- normalizePath(anchor, winslash = "/", mustWork = TRUE)
-  prefix <- paste0(anchor, "/")
-  if (!startsWith(path, prefix)) {
+resolve_site_solar_metric_paths <- function(metric_paths, root) {
+  expected <- site_solar_metric_roles()$input_role
+  if (is.null(metric_paths)) {
+    metric_paths <- site_solar_default_metric_paths(root)
+  }
+  if (
+    !is.character(metric_paths) ||
+      is.null(names(metric_paths)) ||
+      anyNA(metric_paths) ||
+      any(!nzchar(metric_paths)) ||
+      anyDuplicated(names(metric_paths)) ||
+      !setequal(names(metric_paths), expected)
+  ) {
     abort_pipeline(
-      "%s is outside its declared provenance root: %s",
-      object,
-      path
+      paste0(
+        "`metric_paths` must be a named character vector with roles: %s"
+      ),
+      paste(expected, collapse = ", ")
     )
   }
-  substring(path, nchar(prefix) + 1L)
-}
-
-site_solar_manifest_columns <- function() {
-  c(
-    "path",
-    "sha256",
-    "bytes",
-    "producer",
-    "r_version",
-    "artifact_type",
-    "rows",
-    "columns",
-    "site_metadata_path",
-    "site_metadata_sha256",
-    "input_paths",
-    "input_sha256",
-    "date_domain_rule",
-    "site_dates",
-    "sites",
-    "dst_transition_site_dates",
-    "solar_depression_deg",
-    "solar_altitude_boundary_deg",
-    "solar_noon_role",
-    "true_instant_plane",
-    "wall_clock_plane",
-    "lightlogr_version",
-    "suntools_version",
-    "status"
-  )
-}
-
-site_solar_manifest_row <- function(metadata, output_root) {
-  row <- manifest_row(metadata)
-  row$path <- site_solar_relative_path(
-    metadata$path,
-    output_root,
-    "Site/solar output artifact"
-  )
-  row |>
-    dplyr::select(dplyr::all_of(site_solar_manifest_columns()))
-}
-
-site_solar_input_provenance <- function(metric_paths, input_root) {
-  input_hashes <- vapply(metric_paths, artifact_sha256, character(1))
-  relative_paths <- vapply(
+  metric_paths <- metric_paths[expected]
+  missing <- !file.exists(metric_paths)
+  if (any(missing)) {
+    abort_pipeline(
+      "Required metric input(s) do not exist: %s",
+      paste(metric_paths[missing], collapse = ", ")
+    )
+  }
+  vapply(
     metric_paths,
-    site_solar_relative_path,
+    normalizePath,
     character(1),
-    anchor = input_root,
-    object = "Site/solar metric input"
-  )
-  list(
-    input_paths = paste(
-      paste(names(relative_paths), relative_paths, sep = "="),
-      collapse = "|"
-    ),
-    input_sha256 = paste(
-      paste(names(input_hashes), input_hashes, sep = "="),
-      collapse = "|"
-    ),
-    hashes = input_hashes
+    winslash = "/",
+    mustWork = TRUE
   )
 }
 
-build_site_solar_context_artifacts <- function(
-  root = project_root(),
-  site_metadata_path = file.path(root, "config", "site_metadata.csv"),
-  metric_paths = NULL,
-  supplemental_date_paths = NULL,
-  input_root = root
-) {
-  root <- normalizePath(root, winslash = "/", mustWork = TRUE)
-  input_root <- normalizePath(
-    input_root,
-    winslash = "/",
-    mustWork = TRUE
+site_solar_resolution_key <- function(resolution) {
+  base <- c("site", "Id", "position", "local_date")
+  switch(
+    resolution,
+    daily = base,
+    `30_minute` = c(base, "clock_bin"),
+    one_hour = c(base, "clock_minute"),
+    abort_pipeline("Unknown metric resolution: %s", resolution)
   )
-  paths <- site_solar_artifact_paths(root)
-  metric_paths <- resolve_site_solar_metric_paths(metric_paths, root)
-  supplemental_date_paths <-
-    resolve_site_solar_supplemental_date_paths(
-      supplemental_date_paths
-    )
-  site_metadata_path <- normalizePath(
-    site_metadata_path,
-    winslash = "/",
-    mustWork = TRUE
-  )
-  site_metadata <- read_site_metadata(site_metadata_path)
-  inputs <- read_site_solar_metric_inputs(metric_paths, root)
-  supplemental_dates <- read_site_solar_supplemental_dates(
-    supplemental_date_paths
-  )
-  resolution_audit <- validate_site_solar_resolution_domains(inputs)
-  date_domain <- derive_site_solar_date_domain(
-    inputs,
-    supplemental_dates = supplemental_dates
-  )
-  context <- build_site_solar_context(
-    site_dates = date_domain,
-    site_metadata = site_metadata
-  )
-  join_audit <- audit_site_solar_context_joins(inputs, context)
+}
 
-  input_provenance <- site_solar_input_provenance(
-    c(metric_paths, supplemental_date_paths),
-    input_root = input_root
-  )
-  site_metadata_sha256 <- artifact_sha256(site_metadata_path)
-  settings <- tibble::tibble(
-    date_domain_rule = if (length(supplemental_date_paths) == 0L) {
-      "typed_union_of_glasses_and_chest_daily_metric_keys"
-    } else {
-      paste0(
-        "typed_union_of_main_daily_metric_and_declared_",
-        "supplemental_site_date_keys"
-      )
-    },
-    site_dates = nrow(date_domain),
-    sites = dplyr::n_distinct(date_domain$site),
-    dst_transition_site_dates = sum(context$local_day_crosses_dst),
-    solar_depression_deg = 6,
-    solar_altitude_boundary_deg = -6,
-    solar_noon_role = "contextual_metadata_only",
-    true_instant_plane = "POSIXct_UTC",
-    wall_clock_plane = "local_label_and_scalar_minute",
-    resolution_domains_match_daily = all(
-      resolution_audit$daily_domain_matches
-    ),
-    zero_unmatched_joins = all(join_audit$unmatched_rows == 0L)
-  )
-  attr(context, "site_solar_settings") <- settings
-  attr(context, "site_metadata_sha256") <- site_metadata_sha256
-  attr(context, "input_sha256") <- input_provenance$hashes
-
-  producer <- "scripts/pipeline/build_site_solar_context.R"
-  common_metadata <- list(
-    site_metadata_path = site_solar_relative_path(
-      site_metadata_path,
-      input_root,
-      "Site metadata input"
-    ),
-    site_metadata_sha256 = site_metadata_sha256,
-    input_paths = input_provenance$input_paths,
-    input_sha256 = input_provenance$input_sha256,
-    date_domain_rule = settings$date_domain_rule,
-    site_dates = settings$site_dates,
-    sites = settings$sites,
-    dst_transition_site_dates = settings$dst_transition_site_dates,
-    solar_depression_deg = 6,
-    solar_altitude_boundary_deg = -6,
-    solar_noon_role = "contextual_metadata_only",
-    true_instant_plane = "POSIXct_UTC",
-    wall_clock_plane = "local_label_and_scalar_minute",
-    lightlogr_version = as.character(
-      utils::packageVersion("LightLogR")
-    ),
-    suntools_version = as.character(utils::packageVersion("suntools")),
-    status = "PASS"
-  )
-
-  context_rds_metadata <- write_rds_artifact(
-    context,
-    paths$context_rds,
-    producer = producer,
-    metadata = c(
-      list(
-        artifact_type = "site_solar_context_rds",
-        rows = nrow(context),
-        columns = ncol(context)
-      ),
-      common_metadata
-    )
-  )
-  context_csv <- format_site_solar_context_csv(context)
-  context_csv_metadata <- write_csv_artifact(
-    context_csv,
-    paths$context_csv,
-    producer = producer,
-    metadata = c(
-      list(artifact_type = "site_solar_context_csv"),
-      common_metadata
-    )
-  )
-  join_audit_metadata <- write_csv_artifact(
-    join_audit,
-    paths$join_audit,
-    producer = producer,
-    metadata = c(
-      list(artifact_type = "site_solar_context_join_audit"),
-      common_metadata
-    )
-  )
-  manifest <- dplyr::bind_rows(
-    site_solar_manifest_row(context_rds_metadata, root),
-    site_solar_manifest_row(context_csv_metadata, root),
-    site_solar_manifest_row(join_audit_metadata, root)
-  ) |>
-    dplyr::arrange(.data$artifact_type)
-  manifest_metadata <- write_csv_artifact(
-    manifest,
-    paths$manifest,
-    producer = producer
-  )
-
-  list(
-    context = context,
-    context_csv = context_csv,
-    join_audit = join_audit,
-    resolution_audit = resolution_audit,
-    date_domain = date_domain,
-    manifest = manifest,
-    paths = paths,
-    artifact_metadata = list(
-      context_rds = context_rds_metadata,
-      context_csv = context_csv_metadata,
-      join_audit = join_audit_metadata,
-      manifest = manifest_metadata
-    )
+site_solar_expected_clock_grid <- function(resolution) {
+  switch(
+    resolution,
+    daily = NULL,
+    `30_minute` = seq.int(0L, 1410L, by = 30L),
+    one_hour = seq.int(0L, 1380L, by = 60L),
+    abort_pipeline("Unknown metric resolution: %s", resolution)
   )
 }

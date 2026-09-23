@@ -1,4 +1,4 @@
-# Shared near-eye/chest builder for the submitted Figure 4 visual contract.
+# Shared near-eye/chest builder for the daily-pattern figure.
 # Scientific calculations are performed from stored H02 BAM fits in R. The
 # builder does not refit models and uses pointwise conditional 95% intervals.
 
@@ -28,7 +28,7 @@ h02_build_figure_contract <- function(
     !setequal(fitted_sites, fitted_registry$site) ||
       nrow(predictions) != length(fitted_sites) * 48L
   ) {
-    h02_abort("DISPLAY-001 or prediction coverage failed for %s", run_id)
+    h02_abort("Site labels or prediction coverage are incomplete for %s", run_id)
   }
   display_levels <- fitted_registry$display_name
   palette <- stats::setNames(

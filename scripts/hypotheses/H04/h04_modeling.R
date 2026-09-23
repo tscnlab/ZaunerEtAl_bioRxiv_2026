@@ -1,5 +1,3 @@
-# H04 Stage 2 weighted quasi-Tweedie fitting, inference, and diagnostics.
-
 h04_capture_warnings <- function(expression) {
   warnings <- character()
   value <- withCallingHandlers(
@@ -110,7 +108,7 @@ h04_fit_quasi <- function(
 
 h04_covariance_diagnostics <- function(
   covariance,
-  relative_tolerance = h04_specification()$interaction_gate$eigen_relative_tolerance
+  relative_tolerance = h04_specification()$interaction_check$eigen_relative_tolerance
 ) {
   finite <- is.matrix(covariance) && all(is.finite(covariance))
   if (!finite || nrow(covariance) < 1L) {
@@ -345,7 +343,7 @@ h04_equal_site_estimands <- function(bundle, family_id = "H04-F2") {
     )
   }
   reference <- mean_objects[[h04_specification()$reference_label]]
-  support <- h04_category_support_stage2(bundle$data)
+  support <- h04_category_support(bundle$data)
 
   output <- lapply(activities, function(activity) {
     object <- mean_objects[[activity]]
@@ -1022,7 +1020,7 @@ h04_interaction_estimands <- function(bundle, architecture, cell_support) {
     dplyr::arrange(.data$activity_display_order, .data$site_display_order)
 }
 
-h04_interaction_gate_row <- function(
+h04_interaction_check_row <- function(
   bundle,
   placement,
   architecture,
@@ -1039,17 +1037,17 @@ h04_interaction_gate_row <- function(
     is.finite(site_estimands$cell_conf_low_lx[supported]) &
       is.finite(site_estimands$cell_conf_high_lx[supported])
   )
-  gate_pass <- isTRUE(bundle$fit$converged) &&
+  check_pass <- isTRUE(bundle$fit$converged) &&
     bundle$fit$rank == ncol(stats::model.matrix(bundle$fit)) &&
     all(is.finite(stats::coef(bundle$fit))) &&
     covariance_diagnostic$finite &&
     covariance_diagnostic$positive_definite &&
     covariance_diagnostic$condition_number <=
-      spec$interaction_gate$maximum_condition_number &&
+      spec$interaction_check$maximum_condition_number &&
     max(clusters$score_share) <=
-      spec$interaction_gate$maximum_cluster_score_share &&
+      spec$interaction_check$maximum_cluster_score_share &&
     max(clusters$leverage_share) <=
-      spec$interaction_gate$maximum_cluster_leverage_share &&
+      spec$interaction_check$maximum_cluster_leverage_share &&
     finite_supported_intervals
   tibble::tibble(
     placement = placement,
@@ -1072,13 +1070,13 @@ h04_interaction_gate_row <- function(
     finite_supported_intervals = finite_supported_intervals,
     fit_warnings = paste(bundle$fit_warnings, collapse = " | "),
     covariance_warnings = paste(bundle$covariance_warnings, collapse = " | "),
-    gate_pass = gate_pass
+    check_pass = check_pass
   )
 }
 
-h04_run_heterogeneity_gate <- function(frame, placement, root) {
+h04_run_heterogeneity_check <- function(frame, placement, root) {
   formulas <- h04_formula_set()
-  support <- h04_site_category_support_stage2(frame, root)
+  support <- h04_site_category_support(frame, root)
   run_architecture <- function(architecture) {
     data <- h04_prepare_heterogeneity_frame(frame, architecture)
     formula <- if (architecture == "five_named") {
@@ -1098,7 +1096,7 @@ h04_run_heterogeneity_gate <- function(frame, placement, root) {
       architecture,
       support
     )
-    gate <- h04_interaction_gate_row(
+    estimability_check <- h04_interaction_check_row(
       bundle,
       placement,
       architecture,
@@ -1109,23 +1107,23 @@ h04_run_heterogeneity_gate <- function(frame, placement, root) {
       bundle = bundle,
       restriction = restriction,
       estimands = estimands,
-      gate = gate
+      estimability_check = estimability_check
     )
   }
   full <- run_architecture("five_named")
-  if (isTRUE(full$gate$gate_pass)) {
+  if (isTRUE(full$estimability_check$check_pass)) {
     selected <- full
     selected_architecture <- "five_named"
-    gates <- full$gate
+    checks <- full$estimability_check
   } else {
     fallback <- run_architecture("core")
     selected <- fallback
-    selected_architecture <- if (isTRUE(fallback$gate$gate_pass)) {
+    selected_architecture <- if (isTRUE(fallback$estimability_check$check_pass)) {
       "core"
     } else {
       "non_estimable"
     }
-    gates <- dplyr::bind_rows(full$gate, fallback$gate)
+    checks <- dplyr::bind_rows(full$estimability_check, fallback$estimability_check)
   }
   test <- if (selected_architecture == "non_estimable") {
     tibble::tibble(
@@ -1137,7 +1135,7 @@ h04_run_heterogeneity_gate <- function(frame, placement, root) {
       p_raw = NA_real_,
       covariance_minimum_eigenvalue = NA_real_,
       covariance_condition_number = NA_real_,
-      status = "GATE_NON_ESTIMABLE"
+      status = "MODEL_NON_ESTIMABLE"
     )
   } else {
     h04_wald_f(selected$bundle, selected$restriction)
@@ -1156,136 +1154,8 @@ h04_run_heterogeneity_gate <- function(frame, placement, root) {
   list(
     selected_architecture = selected_architecture,
     selected = selected,
-    gate = gates,
+    estimability_check = checks,
     test = test,
     cell_support = support
-  )
-}
-
-h04_fit_v0_bridge <- function(data, placement) {
-  formulas <- h04_formula_set()
-  contrasts(data$site) <- stats::contr.sum(nlevels(data$site))
-  contrasts(data$activity_v0) <- stats::contr.treatment(
-    nlevels(data$activity_v0),
-    base = 1L
-  )
-  full_capture <- h04_capture_warnings(glmmTMB::glmmTMB(
-    formula = formulas$v0_full,
-    data = data,
-    REML = FALSE,
-    family = glmmTMB::tweedie(link = "log"),
-    contrasts = list(
-      site = stats::contr.sum,
-      activity_v0 = stats::contr.treatment
-    )
-  ))
-  null_capture <- h04_capture_warnings(glmmTMB::glmmTMB(
-    formula = formulas$v0_site_only,
-    data = data,
-    REML = FALSE,
-    family = glmmTMB::tweedie(link = "log"),
-    contrasts = list(site = stats::contr.sum)
-  ))
-  full <- full_capture$value
-  null <- null_capture$value
-  comparison <- stats::anova(null, full)
-  means <- emmeans::emmeans(
-    full,
-    specs = ~activity_v0,
-    type = "response",
-    weights = "equal"
-  )
-  means_table <- summary(means, infer = c(TRUE, TRUE)) |>
-    as.data.frame() |>
-    tibble::as_tibble()
-  ratios <- summary(
-    emmeans::contrast(
-      means,
-      method = "trt.vs.ctrl",
-      ref = 1L,
-      adjust = "none"
-    ),
-    infer = c(TRUE, TRUE),
-    type = "response"
-  ) |>
-    as.data.frame() |>
-    tibble::as_tibble()
-  response_column <- intersect(c("response", "emmean"), names(means_table))[1L]
-  mean_lower <- intersect(
-    c("asymp.LCL", "lower.CL", "response.LCL"),
-    names(means_table)
-  )[1L]
-  mean_upper <- intersect(
-    c("asymp.UCL", "upper.CL", "response.UCL"),
-    names(means_table)
-  )[1L]
-  ratio_column <- intersect(c("ratio", "response"), names(ratios))[1L]
-  ratio_lower <- intersect(
-    c("asymp.LCL", "lower.CL", "response.LCL"),
-    names(ratios)
-  )[1L]
-  ratio_upper <- intersect(
-    c("asymp.UCL", "upper.CL", "response.UCL"),
-    names(ratios)
-  )[1L]
-  list(
-    full = full,
-    null = null,
-    model_table = tibble::tibble(
-      placement = placement,
-      model_id = c("v0_site_only", "v0_full_joint"),
-      formula = c(
-        h04_formula_text(formulas$v0_site_only),
-        h04_formula_text(formulas$v0_full)
-      ),
-      long_rows = nrow(data),
-      unique_participant_hours = dplyr::n_distinct(
-        interaction(
-          data$site,
-          data$Id,
-          data$local_date,
-          data$clock_minute,
-          drop = TRUE
-        )
-      ),
-      participants = dplyr::n_distinct(data$participant),
-      participant_days = dplyr::n_distinct(data$participant_day),
-      sites = dplyr::n_distinct(data$site),
-      categories = dplyr::n_distinct(data$activity_v0),
-      convergence_code = c(null$fit$convergence, full$fit$convergence),
-      positive_definite_hessian = c(null$sdr$pdHess, full$sdr$pdHess),
-      warnings = c(
-        paste(null_capture$warnings, collapse = " | "),
-        paste(full_capture$warnings, collapse = " | ")
-      )
-    ),
-    test = tibble::tibble(
-      placement = placement,
-      test_id = "V0_joint_category_plus_interaction_LRT",
-      reduced_formula = h04_formula_text(formulas$v0_site_only),
-      full_formula = h04_formula_text(formulas$v0_full),
-      restrictions_added = comparison$Df[2L] - comparison$Df[1L],
-      likelihood_ratio_chisq = comparison$Chisq[2L],
-      p_raw = comparison$`Pr(>Chisq)`[2L],
-      interpretation = paste(
-        "jointly adds activity main effects and site interactions;",
-        "not the repaired H04-F1 primary test"
-      )
-    ),
-    means = tibble::tibble(
-      placement = placement,
-      activity_v0 = as.character(means_table$activity_v0),
-      estimated_mean_lx = means_table[[response_column]],
-      conf_low_lx = means_table[[mean_lower]],
-      conf_high_lx = means_table[[mean_upper]]
-    ),
-    ratios = tibble::tibble(
-      placement = placement,
-      contrast = ratios$contrast,
-      ratio_to_home = ratios[[ratio_column]],
-      conf_low = ratios[[ratio_lower]],
-      conf_high = ratios[[ratio_upper]],
-      p_raw_unadjusted = ratios$p.value
-    )
   )
 }

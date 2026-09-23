@@ -1,0 +1,14 @@
+diagnostic,acceptable_rule,threshold
+optimizer_gradient,maximum absolute raw gradient < 0.002,0.002
+singularity,isSingular(tolerance = 1e-4) is false,1e-4
+qq_correlation,normal-score Q-Q correlation >= 0.970,0.97
+residual_skewness,absolute residual skewness <= 2,2
+residual_excess_kurtosis,absolute excess kurtosis <= 7,7
+standardized_residual,maximum absolute standardized residual <= 5,5
+heteroscedasticity_fitted,absolute Spearman correlation <= 0.20,0.2
+heteroscedasticity_site,largest/smallest site residual SD <= 2.5,2.5
+temporal_lag1,absolute adjacent-day residual correlation <= 0.20 or stable AR(1) correction,0.2
+linearity_aic,spline improvement < 4 AIC units unless curvature < 0.25 h,4
+linearity_departure,maximum anchored spline departure < 0.25 h unless AIC improvement < 4,0.25
+influence_dfbeta,absolute participant DFBETA <= 2/sqrt(participants) or stable deletion refit,
+material_effect_change,absolute slope change < 0.25 local clock hours,0.25

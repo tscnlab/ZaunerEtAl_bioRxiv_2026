@@ -1,7 +1,0 @@
-# Independent checker path correction
-
-The first read-only central production audit completed its seven-target and full live/candidate inventory checks, then stopped because its local path resolver prepended the shared project root to four already absolute Brown worktree paths. No file output or project change occurred in that attempt. The uncorrected audit source is retained as `check_installed_absolute_path_preimage.R`.
-
-The correction changes only path resolution: retain absolute protected paths; prepend the shared root only to relative paths. Expected hashes, byte sizes, protection membership and every other check remain unchanged. This is a temporary independent-checker error, not a production or owner failure.
-
-The second audit completed all 4,617 protected identity checks, then stopped at a redundant count assertion because it imported the owner's 46 classified transitions from its complete 7,763-check closure as though all 46 belonged to the 4,617-row protected subset. Direct row-key comparison shows 24 protected rows over exactly the same seven authorized paths: two each for S4/S7 and four each for the other five targets. All remaining 4,593 rows were live-exact. The corrected assertion requires that exact seven-path set and 24 protected occurrences. No identity or transition allowlist changed. The prior source is retained as `check_installed_count_preimage.R`. No project file or output changed in either stopped audit.

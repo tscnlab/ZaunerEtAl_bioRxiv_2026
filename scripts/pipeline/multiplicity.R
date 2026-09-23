@@ -1,3 +1,4 @@
+
 extract_comparison_p <- function(comparison, engine) {
   if (is.null(comparison)) {
     return(NA_real_)

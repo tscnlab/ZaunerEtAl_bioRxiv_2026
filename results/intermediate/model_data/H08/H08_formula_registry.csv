@@ -1,0 +1,10 @@
+analysis_kind,formula_id,formula
+participant_day,site_only,response_value ~ site + (1 | site:Id)
+participant_day,additive,response_value ~ site + VLSQ8_c + (1 | site:Id)
+participant_day,interaction,response_value ~ site * VLSQ8_c + (1 | site:Id)
+photoperiod_sensitivity,site_only,response_value ~ site + photoperiod_c + (1 | site:Id)
+photoperiod_sensitivity,additive,response_value ~ site + photoperiod_c + VLSQ8_c + (1 | site:Id)
+photoperiod_sensitivity,interaction,response_value ~ site * VLSQ8_c + photoperiod_c + (1 | site:Id)
+participant_summary_sensitivity,site_only,participant_response ~ site
+participant_summary_sensitivity,additive,participant_response ~ site + VLSQ8_c
+participant_summary_sensitivity,interaction,participant_response ~ site * VLSQ8_c

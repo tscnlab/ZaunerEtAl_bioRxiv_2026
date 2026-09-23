@@ -1,107 +1,205 @@
 project:
   type: website
   output-dir: docs
-  render:
-    - data_preparation.qmd
-    - metric_preparation.qmd
-    - Descriptives.qmd
-    - RQ1.qmd
-    - RQ2.qmd
-    - RQ3.qmd
-    - RQ1_chest.qmd
-    - RQ2_chest.qmd
-    - RQ3_chest.qmd
-    - index.qmd
-
-manuscript:
   resources:
-    - data/metric_types.xlsx
+    - .nojekyll
+  execute-dir: project
+  post-render: Rscript scripts/reporting/word-layout.R
+  render:
+    - preparation/01-import-and-alignment.qmd
+    - preparation/02-coverage-and-samples.qmd
+    - preparation/03-reference-profiles.qmd
+    - preparation/04-light-metrics.qmd
+    - preparation/05-questionnaires-and-diaries.qmd
+    - preparation/06-analysis-datasets.qmd
+    - preparation/07-example-days.qmd
+    - analyses/alternative-preprocessing.qmd
+    - analyses/sensor-placement.qmd
+    - analyses/descriptives.qmd
+    - analyses/H01-site-differences.qmd
+    - analyses/H02-daily-patterns.qmd
+    - analyses/H03-light-source.qmd
+    - analyses/H04-activity.qmd
+    - analyses/H05-habitual-behaviour.qmd
+    - analyses/H06-day-type-exercise-sleep.qmd
+    - analyses/H07-photoperiod.qmd
+    - analyses/H08-light-sensitivity.qmd
+    - analyses/H09-chronotype.qmd
+    - analyses/H10-age-sex.qmd
+    - analyses/H11-sex-daily-patterns.qmd
+    - analyses/recommendation-adherence.qmd
+    - analyses/cross-state-association.qmd
+    - analyses/publication-displays.qmd
+    - preregistration-deviations.qmd
+    - README.md
+    - index.qmd
+    - supplementary.qmd
+
+engine: knitr
+params:
+  bootstrap_replicates: null
+
+execute:
+  freeze: false
+  cache: false
+  error: false
+  warning: true
+  message: false
+  echo: true
 
 website:
-  title: "Multi-country comparison of the light exposome"
-  site-url: https://tscnlab.github.io/ZaunerEtAl_bioRxiv_2026
-  repo-url: https://github.com/tscnlab/ZaunerEtAl_bioRxiv_2026/
-  issue-url: https://github.com/tscnlab/ZaunerEtAl_bioRxiv_2026/issues
-  repo-actions: [edit, issue]
+  title: Personal light exposome
+  repo-url: https://github.com/tscnlab/ZaunerEtAl_bioRxiv_2026
   page-navigation: true
-  bread-crumbs: true
-  sidebar:
-    style: "docked"
+  navbar:
+    pinned: true
+    collapse-below: xl
     search: true
-    contents:
+    left:
       - href: index.qmd
-        text: <strong>Manuscript</strong>
-      - href: https://github.com/MeLiDosProject
-        text: Data source
-      - text: "License"
-        href: LICENSE.md
-      - text: ---
-      - text: <strong>General</strong>
-      - href: data_preparation.qmd
-        text: "Data preparation"
-      - href: metric_preparation.qmd
-        text: "Metric preparation"
-      - href: Descriptives.qmd
-        text: "Descriptive summaries"
-      - text: ---
-      - text: <strong>Glasses-level analysis</strong>
-      - href: RQ1.qmd
-        text: "RQ1: environmental effects"
-      - href: RQ2.qmd
-        text: "RQ2: behavioural effects"
-      - href: RQ3.qmd
-        text: "RQ3: individual effects"
-      - text: ---
-      - text: <strong>Chest-level analysis</strong>
-      - href: RQ1_chest.qmd
-        text: "RQ1: environmental effects"
-      - href: RQ2_chest.qmd
-        text: "RQ2: behavioural effects"
-      - href: RQ3_chest.qmd
-        text: "RQ3: individual effects"
+        text: Manuscript
+      - sidebar:study
+      - sidebar:environment
+      - sidebar:behaviour
+      - sidebar:individual
+      - sidebar:supporting
+    right:
       - icon: github
         href: https://github.com/tscnlab/ZaunerEtAl_bioRxiv_2026
-        aria-label: Quarto GitHub
-
+        aria-label: Source repository
+  sidebar:
+    - id: study
+      title: Study & data
+      style: floating
+      search: false
+      contents:
+        - section: Prepare the analysis data
+          contents:
+            - text: Import and alignment
+              href: preparation/01-import-and-alignment.qmd
+            - text: Coverage and samples
+              href: preparation/02-coverage-and-samples.qmd
+            - text: Reference profiles
+              href: preparation/03-reference-profiles.qmd
+            - text: Light metrics
+              href: preparation/04-light-metrics.qmd
+            - text: Questionnaires and diaries
+              href: preparation/05-questionnaires-and-diaries.qmd
+            - text: Analysis datasets
+              href: preparation/06-analysis-datasets.qmd
+            - text: Example days
+              href: preparation/07-example-days.qmd
+        - section: Understand the study
+          contents:
+            - text: Descriptive summaries
+              href: analyses/descriptives.qmd
+            - text: Sensor placement
+              href: analyses/sensor-placement.qmd
+    - id: environment
+      title: Environment
+      style: floating
+      search: false
+      contents:
+        - section: Site and daily patterns
+          contents:
+            - text: 'H01 · Findings: site differences'
+              href: analyses/H01-site-differences.html#findings
+            - text: H01 · Data and methods
+              href: analyses/H01-site-differences.html#methods
+            - text: 'H02 · Findings: daily patterns'
+              href: analyses/H02-daily-patterns.html#findings
+            - text: H02 · Data and methods
+              href: analyses/H02-daily-patterns.html#methods
+    - id: behaviour
+      title: Behaviour & time
+      style: floating
+      search: false
+      contents:
+        - section: Reported context
+          contents:
+            - text: 'H03 · Findings: light source'
+              href: analyses/H03-light-source.html#findings
+            - text: H03 · Data and methods
+              href: analyses/H03-light-source.html#methods
+            - text: 'H04 · Findings: activity'
+              href: analyses/H04-activity.html#findings
+            - text: H04 · Data and methods
+              href: analyses/H04-activity.html#methods
+        - section: Habitual and daily context
+          contents:
+            - text: 'H05 · Findings: habitual behaviour'
+              href: analyses/H05-habitual-behaviour.html#findings
+            - text: H05 · Data and methods
+              href: analyses/H05-habitual-behaviour.html#methods
+            - text: 'H06 · Findings: day type, exercise and sleep'
+              href: analyses/H06-day-type-exercise-sleep.html#findings
+            - text: H06 · Data and methods
+              href: analyses/H06-day-type-exercise-sleep.html#methods
+        - section: Photoperiod
+          contents:
+            - text: 'H07 · Findings: photoperiod and transitions'
+              href: analyses/H07-photoperiod.html#findings
+            - text: H07 · Data and methods
+              href: analyses/H07-photoperiod.html#methods
+        - section: Light recommendations
+          contents:
+            - text: Recommendation adherence
+              href: analyses/recommendation-adherence.qmd
+            - text: Associations between daily periods
+              href: analyses/cross-state-association.qmd
+    - id: individual
+      title: Individual factors
+      style: floating
+      search: false
+      contents:
+        - section: Individual characteristics
+          contents:
+            - text: 'H08 · Findings: light sensitivity'
+              href: analyses/H08-light-sensitivity.html#findings
+            - text: H08 · Data and methods
+              href: analyses/H08-light-sensitivity.html#methods
+            - text: 'H09 · Findings: chronotype'
+              href: analyses/H09-chronotype.html#findings
+            - text: H09 · Data and methods
+              href: analyses/H09-chronotype.html#methods
+            - text: 'H10 · Findings: age and sex'
+              href: analyses/H10-age-sex.html#findings
+            - text: H10 · Data and methods
+              href: analyses/H10-age-sex.html#methods
+            - text: 'H11 · Findings: sex and daily patterns'
+              href: analyses/H11-sex-daily-patterns.html#findings
+            - text: H11 · Data and methods
+              href: analyses/H11-sex-daily-patterns.html#methods
+    - id: supporting
+      title: Supporting material
+      style: floating
+      search: false
+      contents:
+        - section: Read and reproduce
+          contents:
+            - text: Supplementary information
+              href: supplementary.qmd
+            - text: Reproduce the analysis
+              href: README.md
+            - text: Preregistration deviations
+              href: preregistration-deviations.qmd
+        - section: Additional analyses and displays
+          contents:
+            - text: Alternative preprocessing
+              href: analyses/alternative-preprocessing.qmd
+            - text: Publication figures and tables
+              href: analyses/publication-displays.qmd
+sidebar: false
 
 format:
   html:
-    theme:
-      - cosmo
-      - brand
-    css: styles.css
-    html-math-method: katex
-    link-external-newwindow: true
+    theme: cosmo
+    css: styles/navigation.css
     toc: true
-    # comments:
-      # hypothesis: true
-    format:
-    code-link: true
-    code-line-numbers: true
-    toc-location: left
-    toc-depth: 3
-    toc-expand: 2
-  # typst:
-  #   toc: true
-  #   toc-depth: 3
-  #   number-sections: true
-  #   papersize: a4
-  #   fig-format: png
-  #   fig-dpi: 600
-  #   fig-height: 3.45
-format-links:
-  - html
-  # - format: typst
-  #   text: PDF
-  #   icon: file-pdf
+    toc-location: right
+    code-tools: true
+    code-fold: false
+    link-external-newwindow: true
 
-date: last-modified
-
-language:
-  title-block-published: "Last modified:"
-
-execute:
-  warning: false
-  error: false
-  echo: true
-  freeze: auto
+bibliography: references.bib
+csl: nature.csl

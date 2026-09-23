@@ -1,5 +1,3 @@
-# H03 quasi-Tweedie fitting, robust inference, estimands, and diagnostics.
-
 h03_capture_warnings <- function(expression) {
   warnings <- character()
   value <- withCallingHandlers(
@@ -87,7 +85,7 @@ h03_fit_quasi <- function(
 
 h03_covariance_diagnostics <- function(covariance, relative_tolerance = NULL) {
   if (is.null(relative_tolerance)) {
-    relative_tolerance <- h03_specification()$interaction_gate$
+    relative_tolerance <- h03_specification()$interaction_check$
       eigen_relative_tolerance
   }
   finite <- is.matrix(covariance) && all(is.finite(covariance))
@@ -716,7 +714,7 @@ h03_interaction_restriction <- function(bundle, architecture) {
   )
 }
 
-h03_interaction_interval_gate <- function(
+h03_interaction_interval_check <- function(
   bundle,
   architecture,
   cell_support,
@@ -761,7 +759,7 @@ h03_interaction_interval_gate <- function(
   all(is.finite(variances[supported]) & variances[supported] > 0)
 }
 
-h03_interaction_gate_row <- function(
+h03_interaction_check_row <- function(
   bundle,
   placement,
   architecture,
@@ -778,13 +776,13 @@ h03_interaction_gate_row <- function(
   restriction_diagnostics <- h03_covariance_diagnostics(
     restriction_covariance
   )
-  intervals_finite <- h03_interaction_interval_gate(
+  intervals_finite <- h03_interaction_interval_check(
     bundle,
     architecture,
     cell_support,
     spec
   )
-  thresholds <- spec$interaction_gate
+  thresholds <- spec$interaction_check
   hard_pass <- diagnostics$converged &
     diagnostics$full_rank &
     diagnostics$finite_coefficients &
@@ -829,7 +827,7 @@ h03_interaction_gate_row <- function(
       thresholds$maximum_cluster_score_share,
     maximum_cluster_leverage_share_allowed =
       thresholds$maximum_cluster_leverage_share,
-    gate_pass = hard_pass,
+    check_pass = hard_pass,
     effect_estimates_emitted = FALSE,
     effect_p_values_emitted = FALSE,
     warnings = paste(
@@ -839,7 +837,7 @@ h03_interaction_gate_row <- function(
   )
 }
 
-h03_run_interaction_gate <- function(
+h03_run_interaction_check <- function(
   frame,
   placement,
   category_registry,
@@ -872,7 +870,7 @@ h03_run_interaction_gate <- function(
     full_bundle,
     full_architecture
   )
-  full_gate <- h03_interaction_gate_row(
+  full_check <- h03_interaction_check_row(
     full_bundle,
     placement,
     full_architecture,
@@ -880,9 +878,9 @@ h03_run_interaction_gate <- function(
     cell_support,
     spec
   )
-  if (isTRUE(full_gate$gate_pass)) {
+  if (isTRUE(full_check$check_pass)) {
     return(list(
-      gate = full_gate,
+      estimability_check = full_check,
       selected_architecture = full_architecture,
       selected_bundle = full_bundle,
       selected_restriction = full_restriction,
@@ -905,7 +903,7 @@ h03_run_interaction_gate <- function(
     core_bundle,
     "fallback_core"
   )
-  core_gate <- h03_interaction_gate_row(
+  core_check <- h03_interaction_check_row(
     core_bundle,
     placement,
     "fallback_core",
@@ -913,14 +911,14 @@ h03_run_interaction_gate <- function(
     cell_support,
     spec
   )
-  if (!isTRUE(core_gate$gate_pass)) {
+  if (!isTRUE(core_check$check_pass)) {
     h03_abort(
-      "%s full and fallback interaction architectures both failed the gate",
+      "%s full and fallback interaction architectures both failed the check",
       placement
     )
   }
   list(
-    gate = dplyr::bind_rows(full_gate, core_gate),
+    estimability_check = dplyr::bind_rows(full_check, core_check),
     selected_architecture = "fallback_core",
     selected_bundle = core_bundle,
     selected_restriction = core_restriction,
@@ -1290,144 +1288,5 @@ h03_fit_additive_run <- function(
     omnibus = omnibus,
     diagnostics = diagnostics,
     sample = sample
-  )
-}
-
-h03_v0_bridge <- function(frame, placement, spec) {
-  data <- frame |>
-    dplyr::filter(
-      as.character(.data$light_source) %in% spec$v0_levels
-    ) |>
-    dplyr::mutate(
-      site = droplevels(factor(.data$site)),
-      light_source_v0 = factor(
-        as.character(.data$light_source),
-        levels = spec$v0_levels
-      ),
-      participant = droplevels(factor(.data$participant))
-    ) |>
-    droplevels()
-  contrasts(data$site) <- stats::contr.sum(nlevels(data$site))
-  contrasts(data$light_source_v0) <- stats::contr.treatment(
-    nlevels(data$light_source_v0),
-    base = 1L
-  )
-  formulas <- h03_formula_set()
-  full_capture <- h03_capture_warnings(glmmTMB::glmmTMB(
-    formula = formulas$v0_bridge_full,
-    data = data,
-    REML = FALSE,
-    family = glmmTMB::tweedie(link = "log"),
-    contrasts = list(
-      site = stats::contr.sum,
-      light_source_v0 = stats::contr.treatment
-    )
-  ))
-  site_capture <- h03_capture_warnings(glmmTMB::glmmTMB(
-    formula = formulas$v0_bridge_site_only,
-    data = data,
-    REML = FALSE,
-    family = glmmTMB::tweedie(link = "log"),
-    contrasts = list(site = stats::contr.sum)
-  ))
-  full <- full_capture$value
-  site_only <- site_capture$value
-  comparison <- stats::anova(site_only, full)
-  marginal <- emmeans::emmeans(
-    full,
-    specs = ~ light_source_v0,
-    type = "response",
-    weights = "equal"
-  )
-  ratios <- summary(
-    emmeans::contrast(
-      marginal,
-      method = "trt.vs.ctrl",
-      ref = 1L,
-      adjust = "none"
-    ),
-    infer = c(TRUE, TRUE),
-    type = "response"
-  ) |>
-    as.data.frame() |>
-    tibble::as_tibble()
-  ratio_column <- intersect(c("ratio", "response"), names(ratios))
-  lower_column <- intersect(
-    c("asymp.LCL", "lower.CL", "response.LCL"),
-    names(ratios)
-  )
-  upper_column <- intersect(
-    c("asymp.UCL", "upper.CL", "response.UCL"),
-    names(ratios)
-  )
-  if (length(ratio_column) != 1L) {
-    h03_abort("Could not identify the V0 bridge response-ratio column")
-  }
-  ratio_table <- tibble::tibble(
-    placement = placement,
-    contrast = ratios$contrast,
-    ratio = ratios[[ratio_column]],
-    conf_low = if (length(lower_column) == 1L) {
-      ratios[[lower_column]]
-    } else {
-      NA_real_
-    },
-    conf_high = if (length(upper_column) == 1L) {
-      ratios[[upper_column]]
-    } else {
-      NA_real_
-    },
-    p_raw_unadjusted = ratios$p.value
-  )
-  model_table <- tibble::tibble(
-    placement = placement,
-    model_id = c("v0_site_only", "v0_full_joint"),
-    formula = c(
-      paste(deparse(formulas$v0_bridge_site_only), collapse = " "),
-      paste(deparse(formulas$v0_bridge_full), collapse = " ")
-    ),
-    observations = nrow(data),
-    participants = dplyr::n_distinct(data$participant),
-    participant_days = dplyr::n_distinct(data$participant_day),
-    sites = dplyr::n_distinct(data$site),
-    categories = dplyr::n_distinct(data$light_source_v0),
-    convergence_code = c(site_only$fit$convergence, full$fit$convergence),
-    positive_definite_hessian = c(
-      site_only$sdr$pdHess,
-      full$sdr$pdHess
-    ),
-    singular = c(
-      isTRUE(performance::check_singularity(site_only)),
-      isTRUE(performance::check_singularity(full))
-    ),
-    warnings = c(
-      paste(site_capture$warnings, collapse = " | "),
-      paste(full_capture$warnings, collapse = " | ")
-    )
-  )
-  test <- tibble::tibble(
-    placement = placement,
-    test_id = "v0_joint_category_plus_interaction_lrt_bridge",
-    reduced_formula = paste(
-      deparse(formulas$v0_bridge_site_only),
-      collapse = " "
-    ),
-    full_formula = paste(deparse(formulas$v0_bridge_full), collapse = " "),
-    restrictions_added = comparison$Df[2L] - comparison$Df[1L],
-    likelihood_ratio_chisq = comparison$Chisq[2L],
-    p_raw = comparison$`Pr(>Chisq)`[2L],
-    categories = 5L,
-    interpretation = paste(
-      "jointly adds four category main effects and site interactions;",
-      "not the H03-F1 primary omnibus"
-    )
-  )
-  list(
-    data = data,
-    full = full,
-    site_only = site_only,
-    model_table = model_table,
-    test = test,
-    ratios = ratio_table
   )
 }

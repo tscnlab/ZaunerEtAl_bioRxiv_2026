@@ -1,0 +1,10 @@
+formula_id,formula
+primary_population_mean,geo_medi_1h ~ site + light_source
+full_site_heterogeneity,geo_medi_1h ~ site * light_source
+chest_observed_cell_heterogeneity,geo_medi_1h ~ 0 + site_source_cell
+fallback_core_site_heterogeneity,geo_medi_1h ~ site * light_source_core
+secondary_mundlak_audit,geo_medi_1h ~ site + light_source + between_source_1 + between_source_2 +      between_source_3 + between_source_4 + between_source_5 +      between_source_6
+temporal_no_category,"h03_temporal_response ~ s(time_hour, bs = ""cc"", k = 12) + s(time_hour,      site, bs = ""sz"", k = 12) + s(time_hour, participant, bs = ""fs"",      k = 10) + s(participant_day, bs = ""re"")"
+temporal_category,"h03_temporal_response ~ s(time_hour, bs = ""cc"", k = 12) + s(time_hour,      light_source, bs = ""sz"", k = 12) + s(time_hour, site, bs = ""sz"",      k = 12) + s(time_hour, participant, bs = ""fs"", k = 10) +      s(participant_day, bs = ""re"")"
+temporal_category_raw_mean,"geo_medi_1h ~ s(time_hour, bs = ""cc"", k = 12) + s(time_hour,      light_source, bs = ""sz"", k = 12) + s(time_hour, site, bs = ""sz"",      k = 12) + s(time_hour, participant, bs = ""fs"", k = 10) +      s(participant_day, bs = ""re"")"
+temporal_category_cyclic_sz,"h03_temporal_response ~ s(time_hour, bs = ""cc"", k = 12) + s(time_hour,      light_source, bs = ""sz"", k = 12, xt = list(bs = ""cc"")) +      s(time_hour, site, bs = ""sz"", k = 12, xt = list(bs = ""cc"")) +      s(time_hour, participant, bs = ""fs"", k = 10) + s(participant_day,      bs = ""re"")"

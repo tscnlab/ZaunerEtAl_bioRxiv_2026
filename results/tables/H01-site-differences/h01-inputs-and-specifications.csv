@@ -1,0 +1,18 @@
+manuscript_name,analysis_unit,response_family,response_transform
+Interdaily stability,participant,gaussian,logit
+Intradaily variability,participant,gaussian,identity
+Mean melEDI,participant_day,gaussian,log10_offset_0.1
+Brightest 10 h mean,participant_day,gaussian,log10_offset_0.1
+Darkest 10 h mean,participant_day,gaussian,log10_offset_0.1
+"Time above 1,000 lx melEDI",participant_day,tweedie_log,identity
+Time above 250 lx melEDI during wake,participant_day,tweedie_log,identity
+Time below 10 lx melEDI before sleep,participant_day,gaussian,identity
+Time below 1 lx melEDI during sleep,participant_day,tweedie_log,identity
+Longest continuous period above 250 lx melEDI,participant_day,gaussian,log10_offset_0.1
+Midpoint of the brightest 10 hours,participant_day,gaussian,clock_hours
+Midpoint of the darkest 10 hours,participant_day,gaussian,clock_hours_midnight_after_16
+Mean timing of exposure above 250 lx melEDI,participant_day,gaussian,clock_hours
+First light timing above 250 lx melEDI,participant_day,gaussian,clock_hours
+Last light timing above 250 lx melEDI,participant_day,gaussian,clock_hours
+melEDI dose,participant_day,gaussian,log10_offset_0.1
+Melanopic daylight efficacy ratio,participant_day,gaussian,identity

@@ -1,0 +1,7 @@
+analysis_unit,formula_id,formula
+participant,fixed_full,response_value ~ site + leba_centered
+participant,fixed_reduced,response_value ~ site
+participant,random_site,response_value ~ leba_centered + (1 | site)
+participant_day,fixed_full,response_value ~ site + leba_centered + (1 | participant_key)
+participant_day,fixed_reduced,response_value ~ site + (1 | participant_key)
+participant_day,random_site,response_value ~ leba_centered + (1 | site) + (1 | participant_key)

@@ -1,0 +1,8 @@
+Aspect,Registered,Analysis,Reason_or_consequence
+Primary placement,Chest primary; near-eye repeat,Near-eye primary; chest complementary,Near-eye better represents light close to the eye; placements are not pooled.
+Outcome and epoch,Hourly geometric-mean melEDI,30-minute arithmetic-mean melEDI,Provides clock-resolved support but changes the outcome and dependence structure.
+Response scale,No zero-handling transform specified,log10(melEDI + 0.1 lx),Retains exact zero observations while defining a finite modelling scale.
+Global time effect,No separate overall smooth,"Cyclic global time smooth, k = 12",Makes site curves deviations from one shared daily profile.
+Site smooth,Site-specific cyclic cc smooths,"Sum-to-zero sz deviations, k = 12; default time marginal is not cyclic",Sum-to-zero site contrasts replace reference-site comparisons.
+Participant hierarchy,Participant-time factor smooth,Participant factor smooth (k = 10) plus participant-day random intercept,Separates person-specific shape from day-to-day level shifts.
+Variance target,Within-participant variance exceeds between-site variance,Integrated fitted-curve dispersion plus conditional Shapley allocation,The reported quantities are explicitly defined and are not response variance explained.

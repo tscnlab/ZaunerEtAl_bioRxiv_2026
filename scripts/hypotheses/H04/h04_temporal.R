@@ -1,5 +1,3 @@
-# H04 exploratory temporal GAMs for fractionally weighted activity memberships.
-
 h04_prepare_temporal_data <- function(frame) {
   data <- h04_add_activity_ar_sequences(frame)
   site_levels <- levels(droplevels(data$site))
@@ -751,61 +749,7 @@ h04_temporal_uncertainty_contract <- function(curves) {
       ),
       resampling_replicates = dplyr::first(.data$resampling_replicates),
       simultaneous_band = dplyr::first(.data$simultaneous_band),
-      curve_wide_inference = dplyr::first(.data$curve_wide_inference),
-      author_decision = "approved in H04 task on 2026-08-11"
-    )
-}
-
-h04_temporal_bootstrap_supersession <- function(checkpoint_directory) {
-  checkpoint_paths <- if (dir.exists(checkpoint_directory)) {
-    list.files(
-      checkpoint_directory,
-      pattern = "[.]rds$",
-      full.names = TRUE
-    )
-  } else {
-    character()
-  }
-  checkpoint_status <- dplyr::bind_rows(lapply(
-    checkpoint_paths,
-    function(path) {
-      checkpoint <- readRDS(path)
-      checkpoint$status |>
-        dplyr::mutate(checkpoint_file = basename(path), .before = 1)
-    }
-  ))
-  if (nrow(checkpoint_status) == 0L) {
-    return(tibble::tibble(
-      placement = character(),
-      placement_id = character(),
-      completed_checkpoint_files = integer(),
-      successful_checkpoint_files = integer(),
-      unsuccessful_checkpoint_files = integer(),
-      pilot_completion_status = character(),
-      supersession_status = character(),
-      superseded_by = character(),
-      author_decision_date = character()
-    ))
-  }
-  checkpoint_status |>
-    dplyr::group_by(.data$placement, .data$placement_id) |>
-    dplyr::summarise(
-      completed_checkpoint_files = dplyr::n(),
-      successful_checkpoint_files = sum(.data$successful %in% TRUE),
-      unsuccessful_checkpoint_files = sum(!(.data$successful %in% TRUE)),
-      .groups = "drop"
-    ) |>
-    dplyr::mutate(
-      pilot_completion_status = "stopped before the 50-success target",
-      supersession_status = paste(
-        "preserved as superseded provenance; excluded from estimates,",
-        "intervals, figures, tests, and scientific claims"
-      ),
-      superseded_by = paste(
-        "H03-aligned fitted-coefficient covariance with pointwise 95%",
-        "intervals and no curve-wide inference"
-      ),
-      author_decision_date = "2026-08-11"
+      curve_wide_inference = dplyr::first(.data$curve_wide_inference)
     )
 }
 
@@ -1298,7 +1242,7 @@ h04_temporal_figure <- function(
       ),
       subtitle = paste(
         "Global time is cyclic; activity and site deviations use thin-plate sz bases.",
-        "Open endpoints expose accepted midnight separation."
+        "Open endpoints expose selected midnight separation."
       ),
       x = "Local time (hours)",
       y = "Equal-site standardized melEDI (lx)"

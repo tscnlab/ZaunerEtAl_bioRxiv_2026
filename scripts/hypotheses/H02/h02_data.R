@@ -1,4 +1,4 @@
-# Build H02-only model frames from approved prepared artifacts.
+# Build H02-only model frames from prepared measurements.
 
 h02_key <- c("site", "Id", "position", "local_date", "clock_bin")
 h02_pair_key <- c("site", "Id", "local_date", "clock_bin")
@@ -6,7 +6,7 @@ h02_pair_key <- c("site", "Id", "local_date", "clock_bin")
 h02_temporal_links <- function(root) {
   links <- readRDS(file.path(
     root,
-    "artifacts/06_model_data/temporal_provenance/wall_outcome_links.rds"
+    "results/intermediate/model_data/temporal_provenance/wall_outcome_links.rds"
   ))
   links |>
     dplyr::filter(.data$resolution == "30_minute") |>
@@ -63,7 +63,7 @@ h02_main_grid <- function(path, scenario_id, links) {
       is.finite(grid$metric_value_lx))
   if (any(!support_ok)) {
     h02_abort(
-      "Main H02 input violates the approved >=15 valid-minute support rule"
+      "Main H02 input violates the >=15 valid-minute support rule"
     )
   }
   dplyr::transmute(
@@ -94,7 +94,7 @@ h02_clock_bin_from_proxy <- function(x) {
   as.integer(lt$hour * 60L + lt$min)
 }
 
-h02_manuscript_grid <- function(path, links) {
+h02_alternative_grid <- function(path, links) {
   grid <- readRDS(path)
   assert_columns(
     grid,
@@ -107,11 +107,11 @@ h02_manuscript_grid <- function(path, links) {
       "local_clock_datetime_utc_proxy",
       "medi_arithmetic_mean_lx"
     ),
-    "manuscript-prepared H02 grid"
+    "alternative-preprocessing H02 grid"
   )
   grid <- dplyr::transmute(
     grid,
-    data_scenario_id = "manuscript_prepared_data",
+    data_scenario_id = "alternative_preprocessing",
     site = as.character(.data$site),
     Id = as.character(.data$Id),
     position = as.character(.data$position),
@@ -126,19 +126,19 @@ h02_manuscript_grid <- function(path, links) {
     failure_reason = dplyr::if_else(
       is.finite(.data$medi_arithmetic_mean_lx),
       NA_character_,
-      "manuscript_prepared_nonfinite"
+      "alternative_preprocessing_nonfinite"
     )
   )
-  assert_unique_key(grid, h02_key, "manuscript-prepared H02 grid")
+  assert_unique_key(grid, h02_key, "alternative-preprocessing H02 grid")
   if (any(!grid$clock_bin %in% seq.int(0L, 1410L, by = 30L))) {
-    h02_abort("Manuscript-prepared H02 input contains non-30-minute bins")
+    h02_abort("Alternative-preprocessing H02 input contains non-30-minute bins")
   }
   left_join_checked(
     grid,
     links,
     by = h02_key,
     relationship = "one-to-one",
-    x_name = "manuscript-prepared H02 grid",
+    x_name = "alternative-preprocessing H02 grid",
     y_name = "temporal links"
   )
 }
@@ -205,7 +205,7 @@ h02_assign_sequences <- function(frame) {
       anyNA(frame$one_to_one_elapsed_coordinate)
   ) {
     h02_abort(
-      "A finite H02 outcome lacks approved true-elapsed temporal provenance"
+      "A finite H02 outcome lacks its true-elapsed-time mapping"
     )
   }
   if (

@@ -1,0 +1,92 @@
+---
+title: "Questionnaires and contextual diaries"
+---
+
+The downloaded questionnaire and diary files add demographic characteristics, chronotype, habitual behaviour, visual light sensitivity, exercise, and reported light context. Source releases are selected from `config/site_sources.csv`, with the corrected TUM exercise-diary release selected in `config/model_input_source_pins.csv`. Sleep diaries reuse the same local release used during recording alignment.
+
+```{r}
+#| label: setup
+#| echo: false
+source("scripts/project.R")
+analysis_setup()
+for (helper in c("paths_io", "assertions", "time_axes", "time_support", "state_alignment", "aggregation_coverage", "import_sources", "model_input_acquisition", "model_input_normalization")) {
+  source(file.path("scripts/pipeline", paste0(helper, ".R")))
+}
+root <- project_root()
+paths <- pipeline_paths(root)
+ensure_pipeline_directories(paths)
+```
+## Read the declared local inputs
+
+The object name and data-frame structure are checked for every file. The input table below shows which releases are used, including any modality-specific release selection.
+
+```{r}
+#| label: read-questionnaires
+site_sources <- read_site_sources("config/site_sources.csv")
+catalog <- model_input_source_catalog()
+pins <- readr::read_csv("config/model_input_source_pins.csv", show_col_types = FALSE)
+records <- list()
+for (site in site_sources$site) {
+  site_row <- site_sources[site_sources$site == site, ]
+  for (modality in model_input_normalization_modalities()) {
+    specification <- catalog[catalog$modality == modality, ]
+    release <- site_row$commit
+    override <- pins[pins$site == site & pins$modality == modality, ]
+    stopifnot(nrow(override) <= 1L)
+    if (nrow(override) == 1L) release <- override$commit
+    directory <- if (modality == "sleepdiaries") "recordings" else "questionnaires"
+    path <- file.path(root, "data", "downloaded", directory,
+      paste0(site, "_", modality, "_", substr(release, 1, 12), ".RData"))
+    source_record <- tibble::tibble(site = site, modality = modality,
+      repository = site_row$repository, commit = release, doi = site_row$doi,
+      relative_source_path = specification$relative_source_path,
+      object_name = specification$object_name, sha256 = artifact_sha256(path))
+    records[[paste(site, modality, sep = "/")]] <- list(
+      site = site, modality = modality, manifest = source_record,
+      site_source = site_row, data = read_downloaded_object(path, specification$object_name))
+  }
+}
+input_summary <- dplyr::bind_rows(lapply(records, function(record) {
+  tibble::tibble(site = record$site, modality = record$modality,
+    release = record$manifest$commit, rows = nrow(record$data))
+}))
+input_summary
+```
+## Normalize types, labels, and time variables
+
+Normalization preserves questionnaire values and factor levels. Timestamp columns retain both actual UTC time and local wall-clock representations. Free-text descriptions are excluded from model inputs. Checks enforce unique participant keys where required, valid intervals, and unchanged non-text values.
+
+```{r}
+#| label: normalize-questionnaires
+source_checks <- build_model_input_source_audits(records)
+validate_model_input_source_audits(source_checks)
+normalized <- build_normalized_model_inputs(records = records, audits = source_checks)
+key_checks <- build_model_input_key_audit(normalized)
+interval_checks <- build_model_input_interval_audits(normalized)
+value_checks <- build_model_input_value_preservation_audit(records, normalized, source_checks$labels)
+validate_normalized_model_inputs(normalized, key_checks, interval_checks, value_checks)
+expected_rows <- vapply(model_input_normalization_modalities(), function(modality) {
+  sum(vapply(records[vapply(records, `[[`, character(1), "modality") == modality],
+    function(record) nrow(record$data), integer(1)))
+}, integer(1))
+stopifnot(identical(expected_rows, vapply(normalized, nrow, integer(1))))
+normalized_summary <- tibble::tibble(modality = names(normalized),
+  rows = vapply(normalized, nrow, integer(1)),
+  columns = vapply(normalized, ncol, integer(1)))
+normalized_summary
+```
+
+```{r}
+#| label: save-questionnaire-inputs
+#| code-fold: true
+for (modality in names(normalized)) {
+  write_rds_artifact(normalized[[modality]], file.path(paths$model_data,
+    "normalized_inputs", paste0(modality, ".rds")), "preparation/05-questionnaires-and-diaries.qmd")
+}
+write_csv_artifact(input_summary, file.path(paths$diagnostics, "questionnaire_inputs.csv"),
+  "preparation/05-questionnaires-and-diaries.qmd")
+write_csv_artifact(source_checks$missingness,
+  file.path(paths$diagnostics, "questionnaire_missingness.csv"),
+  "preparation/05-questionnaires-and-diaries.qmd")
+```
+These normalized tables are shared across the primary and alternative preprocessing scenarios. The next document joins their participant-level fields to the light metrics and retains interval-level diaries for the contextual models.

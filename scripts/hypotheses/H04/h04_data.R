@@ -1,5 +1,3 @@
-# H04 Stage 2 data assembly and exact scenario frames.
-
 h04_refactor_frame <- function(frame) {
   frame <- as.data.frame(frame)
   frame$site <- droplevels(factor(frame$site))
@@ -42,17 +40,6 @@ h04_set_analysis_frame <- function(frame, analysis_weight = NULL) {
   frame$analysis_weight <- as.numeric(analysis_weight)
   frame$analysis_hour_id <- h04_analysis_hour_id(frame)
   frame
-}
-
-h04_filter_complete_hours <- function(frame, predicate) {
-  keep <- frame |>
-    dplyr::mutate(.keep_row = predicate(.)) |>
-    dplyr::group_by(.data$analysis_hour_id) |>
-    dplyr::summarise(keep_hour = all(.data$.keep_row), .groups = "drop") |>
-    dplyr::filter(.data$keep_hour)
-  frame |>
-    dplyr::semi_join(keep, by = "analysis_hour_id") |>
-    h04_set_analysis_frame()
 }
 
 h04_prepare_paired_frames <- function(near_eye, chest) {
@@ -333,7 +320,7 @@ h04_mundlak_support <- function(frame, placement) {
     dplyr::arrange(.data$display_order)
 }
 
-h04_category_support_stage2 <- function(frame) {
+h04_category_support <- function(frame) {
   registry <- h04_activity_registry()
   frame |>
     dplyr::group_by(
@@ -364,7 +351,7 @@ h04_category_support_stage2 <- function(frame) {
     dplyr::arrange(.data$display_order)
 }
 
-h04_site_category_support_stage2 <- function(frame, root) {
+h04_site_category_support <- function(frame, root) {
   bundle <- list(long = frame)
   h04_cell_support(bundle) |>
     dplyr::left_join(
@@ -488,83 +475,4 @@ h04_add_activity_ar_sequences <- function(frame) {
     h04_abort("Concurrent activity rows became temporal lag neighbours")
   }
   data
-}
-
-h04_prepare_v0_data <- function(raw, diary, placement, root) {
-  key <- h04_key_columns()
-  flags <- c(
-    "act_sleep",
-    "act_home",
-    "act_road_vehicle",
-    "act_road_open",
-    "act_working_indoor",
-    "act_working_outdoor",
-    "act_free_outdoor",
-    "act_other"
-  )
-  site_levels <- h04_site_levels(root)
-  raw |>
-    dplyr::mutate(
-      local_date = as.Date(.data$local_date),
-      geo_medi_1h = .data$metric_value_lx
-    ) |>
-    dplyr::filter(
-      .data$bin_admissible %in% TRUE,
-      is.finite(.data$geo_medi_1h)
-    ) |>
-    dplyr::select(dplyr::all_of(key), "geo_medi_1h") |>
-    dplyr::inner_join(
-      diary$eligible |>
-        dplyr::select(
-          dplyr::all_of(key),
-          dplyr::all_of(flags),
-          "participant",
-          "participant_day"
-        ),
-      by = key,
-      relationship = "one-to-one"
-    ) |>
-    tidyr::pivot_longer(
-      cols = dplyr::all_of(flags),
-      names_to = "activity_source",
-      values_to = "selected"
-    ) |>
-    dplyr::filter(.data$selected %in% TRUE) |>
-    dplyr::distinct(
-      dplyr::across(dplyr::all_of(key)),
-      .data$activity_source,
-      .keep_all = TRUE
-    ) |>
-    dplyr::mutate(
-      activity_v0 = dplyr::recode(
-        .data$activity_source,
-        act_home = "home",
-        act_sleep = "sleep",
-        act_road_vehicle = "road_vehicle",
-        act_working_indoor = "working_indoor",
-        act_road_open = "outdoor",
-        act_working_outdoor = "outdoor",
-        act_free_outdoor = "outdoor",
-        act_other = NA_character_
-      )
-    ) |>
-    dplyr::filter(!is.na(.data$activity_v0)) |>
-    dplyr::mutate(
-      placement = placement,
-      site = droplevels(factor(.data$site, levels = site_levels)),
-      Id = droplevels(factor(.data$Id)),
-      participant = droplevels(factor(.data$participant)),
-      participant_day = droplevels(factor(.data$participant_day)),
-      activity_v0 = factor(
-        .data$activity_v0,
-        levels = c(
-          "home",
-          "sleep",
-          "road_vehicle",
-          "working_indoor",
-          "outdoor"
-        )
-      )
-    ) |>
-    droplevels()
 }

@@ -1,6 +1,3 @@
-# Define pure contracts and transformations for the H01 model-data artifact.
-#
-# Source paths_io.R, assertions.R, and metric_display_registry.R first.
 
 h01_abort <- function(..., call. = FALSE) {
   message <- sprintf(...)
@@ -175,20 +172,6 @@ h01_implementation_contract_columns <- function() {
   )
 }
 
-h01_implementation_contract_sha256 <- function(contract) {
-  validate_h01_metric_contract(contract)
-  fields <- h01_implementation_contract_columns()
-  text <- apply(
-    as.data.frame(contract[fields], stringsAsFactors = FALSE),
-    1L,
-    paste,
-    collapse = "\u001f"
-  )
-  unname(unclass(as.character(openssl::sha256(charToRaw(
-    paste(text, collapse = "\u001e")
-  )))))
-}
-
 validate_h01_metric_contract <- function(
   contract,
   object = deparse(substitute(contract))
@@ -242,41 +225,18 @@ validate_h01_metric_contract <- function(
 
 h01_model_data_paths <- function(root, output_root = root) {
   root <- normalizePath(root, winslash = "/", mustWork = TRUE)
-  output_root <- normalizePath(
-    output_root,
-    winslash = "/",
-    mustWork = TRUE
-  )
-  model_root <- file.path(output_root, "artifacts", "06_model_data")
+  output_root <- normalizePath(output_root, winslash = "/", mustWork = TRUE)
+  model_root <- file.path(output_root, "results", "intermediate", "model_data")
   support_root <- file.path(model_root, "H01")
-  csv_paths <- c(
-    model_rows = file.path(support_root, "model_rows.csv"),
-    metric_contract = file.path(support_root, "metric_contract.csv"),
-    sample_flow = file.path(support_root, "sample_flow.csv"),
-    exclusion_reasons = file.path(support_root, "exclusion_reasons.csv"),
-    scenario_status = file.path(support_root, "scenario_status.csv"),
-    predictor_centers = file.path(support_root, "predictor_centers.csv"),
-    variable_dictionary = file.path(support_root, "variable_dictionary.csv"),
-    input_provenance = file.path(support_root, "input_provenance.csv")
-  )
-  list(
-    root = root,
-    output_root = output_root,
-    model_root = model_root,
-    support_root = support_root,
-    rds = file.path(model_root, "H01.rds"),
-    csv = csv_paths,
-    manifest = file.path(
-      output_root,
-      "artifacts",
-      "12_manifests",
-      "H01_model_data_artifacts.csv"
-    )
-  )
+  tables <- c("model_rows", "metric_contract", "sample_flow", "exclusion_reasons",
+              "scenario_status", "predictor_centers", "variable_dictionary")
+  list(root = root, output_root = output_root, model_root = model_root,
+       support_root = support_root, rds = file.path(model_root, "H01.rds"),
+       csv = stats::setNames(file.path(support_root, paste0(tables, ".csv")), tables))
 }
 
 h01_base_input_paths <- function(root) {
-  base <- file.path(root, "artifacts", "06_model_data", "base")
+  base <- file.path(root, "results", "intermediate/model_data", "base")
   list(
     glasses = c(
       participant_day = file.path(
@@ -302,7 +262,7 @@ h01_base_input_paths <- function(root) {
 }
 
 h01_admissibility_input_paths <- function(root) {
-  metric_root <- file.path(root, "artifacts", "05_metrics")
+  metric_root <- file.path(root, "results", "intermediate/metrics")
   c(
     glasses = file.path(
       metric_root,
@@ -316,7 +276,7 @@ h01_admissibility_input_paths <- function(root) {
 }
 
 h01_metric_support_input_paths <- function(root) {
-  metric_root <- file.path(root, "artifacts", "05_metrics")
+  metric_root <- file.path(root, "results", "intermediate/metrics")
   c(
     glasses = file.path(
       metric_root,
@@ -1249,7 +1209,7 @@ h01_build_model_rows_from_inputs <- function(
   inputs,
   contract,
   data_scenario_id = "main",
-  model_implementation_id = "new_h01_h11"
+  model_implementation_id = "hypothesis_models"
 ) {
   h01_validate_data_scenario_id(data_scenario_id)
   h01_validate_data_scenario_id(model_implementation_id)
@@ -1381,7 +1341,7 @@ h01_add_predictor_centers <- function(rows) {
 h01_scenario_status <- function(
   contract,
   data_scenario_id = "main",
-  model_implementation_id = "new_h01_h11"
+  model_implementation_id = "hypothesis_models"
 ) {
   h01_validate_data_scenario_id(data_scenario_id)
   h01_validate_data_scenario_id(model_implementation_id)
@@ -1775,7 +1735,6 @@ h01_output_contract <- function() {
   list(
     top_level = c(
       "hypothesis_id",
-      "status",
       "model_rows",
       "metric_contract",
       "sample_flow",
@@ -1783,7 +1742,6 @@ h01_output_contract <- function() {
       "scenario_status",
       "predictor_centers",
       "variable_dictionary",
-      "input_provenance",
       "metadata"
     ),
     model_row_key = c(

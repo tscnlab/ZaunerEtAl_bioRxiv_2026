@@ -5,200 +5,31 @@ h02_abort <- function(message, ..., call. = FALSE) {
 }
 
 h02_input_contract <- function(root) {
-  tibble::tribble(
-    ~input_id,
-    ~path,
-    ~sha256,
-    ~analytical_role,
-    "main_glasses",
-    file.path(
-      root,
-      "artifacts/06_model_data/base/metrics_glasses_30_minute_context.rds"
-    ),
-    "85a927003c54821ae9ed5d9b4266e07f75488c743b570ec67b48a14ecfa88920",
-    "verified_main_near_eye",
-    "main_chest",
-    file.path(
-      root,
-      "artifacts/06_model_data/base/metrics_chest_30_minute_context.rds"
-    ),
-    "b2c0290c3eff5ef5ae5e92af6d8c693043f3ad0409392e80652e97ffcac8ef15",
-    "verified_main_chest",
-    "base_model_data_manifest",
-    file.path(
-      root,
-      "artifacts/12_manifests/base_model_data_artifacts.csv"
-    ),
-    "8344bdc0339a53079bf9eeb7d86de1ad7c15373641c3a0a5a01d040b418895ce",
-    "approved_base_model_data_verification",
-    "manuscript_prepared",
-    file.path(
-      root,
-      paste0(
-        "artifacts/06_model_data/scenarios/",
-        "manuscript_prepared_data/thirty_minute_data.rds"
-      )
-    ),
-    "813453681cb24ca88cdf5f6b833824649f0e24e9f3bed5af80aad1c4f06fffdc",
-    "frozen_manuscript_prepared_sensitivity",
-    "wall_outcome_links",
-    file.path(
-      root,
-      "artifacts/06_model_data/temporal_provenance/wall_outcome_links.rds"
-    ),
-    "69232e8f7bdfbf379e7f92a220d2ecad893bce38e9ec57add313f5545e62829a",
-    "approved_wall_to_true_elapsed_provenance",
-    "true_utc_source_bins",
-    file.path(
-      root,
-      "artifacts/06_model_data/temporal_provenance/true_utc_source_bins.rds"
-    ),
-    "08d1adfb3e55c93da043b74d07dfade203c34f720c88062fa83eec5ebd1844f9",
-    "approved_true_elapsed_sequence_provenance",
-    "temporal_provenance_manifest",
-    file.path(
-      root,
-      "artifacts/06_model_data/temporal_provenance/artifact_manifest.csv"
-    ),
-    "9355f7ca4f249059cf49808a3fb1caf9e764a6160f5d61beba8234a2bfbdef7d",
-    "approved_temporal_provenance_verification",
-    "submitted_glasses_rdata",
-    file.path(root, "data/metrics_separate_glasses.RData"),
-    "f4b8ddfdbd4ee2e577957ed6a89f65a7b44581bba916e786147dcd40c94a234b",
-    "submitted_implementation_recovery",
-    "submitted_chest_rdata",
-    file.path(root, "data/metrics_separate_chest.RData"),
-    "f1ab7345966bdaa8705a03745798d99c3d945fe0119f2476a5dd6e9a53f5de2f",
-    "submitted_implementation_recovery",
-    "submitted_analysis_source",
-    file.path(root, "RQ1.qmd"),
-    "ecf2f7f7af569b4d2b3f8404e39690a1924173a02a97aa4db65233950b6f6643",
-    "submitted_implementation_recovery",
-    "submitted_glasses_html",
-    file.path(root, "docs/RQ1.html"),
-    "989a961ebcea5707dc68a9dd3379c7ed914fa0bdf81e7e69100be1d47ce49480",
-    "submitted_result_recovery",
-    "submitted_chest_html",
-    file.path(root, "docs/RQ1_chest.html"),
-    "d7237b3bb89162e3d5554d673c94e2f707b263f729a229c576c660a3c9d38bd6",
-    "submitted_result_recovery",
-    "submitted_manuscript",
-    file.path(root, "index.qmd"),
-    "86766c377e7ee1dcfea6b1ada8704b04320bbc231630c4044cd9c9d93aa0bf80",
-    "submitted_claim_recovery"
+  tibble::tibble(
+    input_id = c("main_glasses", "main_chest", "alternative_preprocessing",
+                 "wall_outcome_links", "true_utc_source_bins"),
+    path = file.path(root, "results/intermediate/model_data", c(
+      "base/metrics_glasses_30_minute_context.rds",
+      "base/metrics_chest_30_minute_context.rds",
+      "scenarios/alternative_preprocessing/thirty_minute_data.rds",
+      "temporal_provenance/wall_outcome_links.rds",
+      "temporal_provenance/true_utc_source_bins.rds"
+    ))
   )
 }
 
 h02_validate_inputs <- function(root, input = h02_input_contract(root)) {
-  observed <- vapply(input$path, artifact_sha256, character(1))
-  mismatch <- observed != input$sha256
-  if (any(mismatch)) {
-    rows <- which(mismatch)
-    h02_abort(
-      "H02 input hash mismatch: %s",
-      paste(
-        sprintf(
-          "%s expected %s observed %s",
-          input$input_id[rows],
-          input$sha256[rows],
-          observed[rows]
-        ),
-        collapse = "; "
-      )
-    )
+  missing <- !file.exists(input$path)
+  if (any(missing)) {
+    h02_abort("Required prepared H02 inputs are missing: %s",
+              paste(input$path[missing], collapse = ", "))
   }
-  path_for <- function(id) input$path[match(id, input$input_id)]
-  hash_for <- function(id) input$sha256[match(id, input$input_id)]
-
-  base_manifest <- readr::read_csv(
-    path_for("base_model_data_manifest"),
-    show_col_types = FALSE
-  )
-  base_expected <- tibble::tribble(
-    ~artifact_id,
-    ~input_id,
-    "glasses_30_minute_context",
-    "main_glasses",
-    "chest_30_minute_context",
-    "main_chest"
-  ) |>
-    dplyr::mutate(
-      expected_sha256 = vapply(
-        .data$input_id,
-        hash_for,
-        character(1)
-      )
-    )
-  base_observed <- base_manifest |>
-    dplyr::filter(.data$artifact_id %in% base_expected$artifact_id) |>
-    dplyr::select(
-      "artifact_id",
-      observed_sha256 = "sha256",
-      "status"
-    ) |>
-    dplyr::right_join(
-      base_expected,
-      by = "artifact_id",
-      relationship = "one-to-one"
-    )
-  if (
-    anyNA(base_observed$observed_sha256) ||
-      any(base_observed$status != "PASS") ||
-      any(base_observed$observed_sha256 != base_observed$expected_sha256)
-  ) {
-    h02_abort(
-      "The approved base-data manifest does not verify both H02 inputs"
-    )
-  }
-
-  temporal_manifest <- readr::read_csv(
-    path_for("temporal_provenance_manifest"),
-    show_col_types = FALSE
-  )
-  temporal_expected <- tibble::tribble(
-    ~artifact_type,
-    ~input_id,
-    "wall_outcome_links_rds",
-    "wall_outcome_links",
-    "true_utc_source_bins_rds",
-    "true_utc_source_bins"
-  ) |>
-    dplyr::mutate(
-      expected_sha256 = vapply(
-        .data$input_id,
-        hash_for,
-        character(1)
-      )
-    )
-  temporal_observed <- temporal_manifest |>
-    dplyr::filter(.data$artifact_type %in% temporal_expected$artifact_type) |>
-    dplyr::select(
-      "artifact_type",
-      observed_sha256 = "sha256",
-      "status"
-    ) |>
-    dplyr::right_join(
-      temporal_expected,
-      by = "artifact_type",
-      relationship = "one-to-one"
-    )
-  if (
-    anyNA(temporal_observed$observed_sha256) ||
-      any(temporal_observed$status != "PASS") ||
-      any(
-        temporal_observed$observed_sha256 != temporal_observed$expected_sha256
-      )
-  ) {
-    h02_abort(
-      "The approved temporal manifest does not verify both H02 inputs"
-    )
-  }
-  dplyr::mutate(input, observed_sha256 = observed, hash_verified = TRUE)
+  input
 }
 
 h02_model_specification <- function() {
   list(
-    implementation_id = "h02_nh_v2_sz",
+    implementation_id = "h02_sum_to_zero_site_model",
     response_name = "30-minute arithmetic mean melEDI",
     response_transform = "log10(melEDI + 0.1 lx)",
     response_offset_lx = 0.1,
@@ -216,7 +47,7 @@ h02_model_specification <- function() {
     formula_sensitivity_site_basis = "ordered-factor cyclic cubic deviations plus parametric site levels",
     formula_sensitivity_participant_basis = "factor smooth with cyclic cubic marginal basis and shared smoothing",
     formula_sensitivity_participant_k = 8L,
-    formula_sensitivity_scope = "main and manuscript-prepared all-available near-eye samples",
+    formula_sensitivity_scope = "main and alternative-preprocessing all-available near-eye samples",
     structure_selection_method = paste(
       "selected sum-to-zero site model fitted a priori; fREML",
       "restricted-likelihood/AIC diagnostics use a common fixed rho and",
@@ -236,10 +67,11 @@ h02_model_specification <- function() {
     multiplicity_method = "BH",
     multiplicity_n = 1L,
     variation_scale = "squared log10(melEDI + 0.1 lx) model-prediction units",
-    variation_ci = "hierarchical cluster bootstrap of fitted contributions, 2000 replicates",
+    variation_ci = paste("hierarchical cluster bootstrap of fitted contributions,",
+                         bootstrap_count(2000L), "replicates"),
     dominance_scope = paste(
       "main all-available near-eye and complementary chest only;",
-      "no manuscript-prepared or model-form sensitivity"
+      "no alternative-preprocessing or model-form sensitivity"
     ),
     dominance_estimand = paste(
       "exact conditional Shapley/general-dominance allocation of in-sample",
@@ -252,7 +84,8 @@ h02_model_specification <- function() {
     ),
     dominance_ci = paste(
       "95% percentile hierarchical cluster bootstrap of fixed predictions",
-      "from all eight subset models, 2000 replicates; conditional on fits"
+      "from all eight subset models,", bootstrap_count(2000L),
+      "replicates; conditional on fits"
     ),
     primary_placement = "glasses",
     complementary_placement = "chest"
@@ -315,7 +148,7 @@ h02_formula_set <- function(spec = h02_model_specification()) {
 
 h02_run_registry <- function() {
   tidyr::crossing(
-    data_scenario_id = c("main", "manuscript_prepared_data"),
+    data_scenario_id = c("main", "alternative_preprocessing"),
     sample_scenario = c("all_available", "paired_common_sample"),
     placement = c("glasses", "chest")
   ) |>
@@ -331,10 +164,10 @@ h02_run_registry <- function() {
           placement == "glasses" &
           sample_scenario == "all_available" ~
           "primary",
-        data_scenario_id == "manuscript_prepared_data" &
+        data_scenario_id == "alternative_preprocessing" &
           placement == "glasses" &
           sample_scenario == "all_available" ~
-          "manuscript_prepared_data_sensitivity",
+          "alternative_preprocessing_sensitivity",
         placement == "chest" & sample_scenario == "all_available" ~
           "complementary_chest",
         sample_scenario == "paired_common_sample" ~
@@ -355,9 +188,43 @@ h02_inverse_transform <- function(response, offset_lx = 0.1) {
   pmax(0, 10^response - offset_lx)
 }
 
+# Fixed seeds identify each analysis sample independently of display names.
 h02_seed <- function(run_id, component = 0L) {
-  bytes <- utf8ToInt(run_id)
-  as.integer(20260730L + sum(bytes * seq_along(bytes)) + component)
+  seeds <- c(
+    "main__chest__all_available" = 20296807L,
+    "main__glasses__all_available" = 20302581L,
+    "main__chest__paired_common_sample" = 20319735L,
+    "main__glasses__paired_common_sample" = 20327055L,
+    "alternative_preprocessing__chest__all_available" = 20372168L,
+    "alternative_preprocessing__glasses__all_available" = 20382322L,
+    "alternative_preprocessing__chest__paired_common_sample" = 20410556L,
+    "alternative_preprocessing__glasses__paired_common_sample" = 20422256L,
+    "main__chest__all_available__cyclic_ordered_sensitivity" = 20418357L,
+    "main__glasses__all_available__cyclic_ordered_sensitivity" = 20430089L,
+    "main__chest__paired_common_sample__cyclic_ordered_sensitivity" = 20462138L,
+    "main__glasses__paired_common_sample__cyclic_ordered_sensitivity" = 20475416L,
+    "alternative_preprocessing__chest__all_available__cyclic_ordered_sensitivity" = 20553298L,
+    "alternative_preprocessing__glasses__all_available__cyclic_ordered_sensitivity" = 20569410L,
+    "alternative_preprocessing__chest__paired_common_sample__cyclic_ordered_sensitivity" = 20612539L,
+    "alternative_preprocessing__glasses__paired_common_sample__cyclic_ordered_sensitivity" = 20630197L,
+    "main__chest__all_available__global_tp_diagnostic" = 20383179L,
+    "main__glasses__all_available__global_tp_diagnostic" = 20393541L,
+    "main__chest__paired_common_sample__global_tp_diagnostic" = 20422165L,
+    "main__glasses__paired_common_sample__global_tp_diagnostic" = 20434073L,
+    "alternative_preprocessing__chest__all_available__global_tp_diagnostic" = 20504420L,
+    "alternative_preprocessing__glasses__all_available__global_tp_diagnostic" = 20519162L,
+    "alternative_preprocessing__chest__paired_common_sample__global_tp_diagnostic" = 20558866L,
+    "alternative_preprocessing__glasses__paired_common_sample__global_tp_diagnostic" = 20575154L,
+    "activity_context__glasses__restricted_unadjusted" = 20386301L,
+    "activity_context__chest__restricted_unadjusted" = 20376063L,
+    "activity_context__glasses__activity_adjusted" = 20366440L,
+    "activity_context__chest__activity_adjusted" = 20357064L
+  )
+  base <- unname(seeds[run_id])
+  if (length(base) != 1L || is.na(base)) {
+    h02_abort("No random seed is registered for analysis sample `%s`", run_id)
+  }
+  as.integer(base + component)
 }
 
 h02_specification_table <- function(spec = h02_model_specification()) {

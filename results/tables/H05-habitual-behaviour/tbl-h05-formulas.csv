@@ -1,0 +1,7 @@
+Model,Exact Wilkinson formula
+Participant-day primary full,`response_value ~ site + leba_centered + (1 | participant_key)`
+Participant-day primary reduced,`response_value ~ site + (1 | participant_key)`
+Participant primary full,`response_value ~ site + leba_centered`
+Participant primary reduced,`response_value ~ site`
+Participant-day random-site sensitivity,`response_value ~ leba_centered + (1 | site) + (1 | participant_key)`
+Participant random-site sensitivity,`response_value ~ leba_centered + (1 | site)`

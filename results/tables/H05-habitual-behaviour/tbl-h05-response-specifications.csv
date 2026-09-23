@@ -1,0 +1,18 @@
+Group,Metric,Level,Model,Transform,Reported effect
+Stability and light level,Interdaily stability,Participant,Gaussian,Logit,Odds ratio
+Stability and light level,Intradaily variability,Participant,Gaussian,None,Difference
+Stability and light level,Mean melEDI,Participant-day,Gaussian,log10(value + 0.1),Ratio
+Stability and light level,Brightest 10 h mean,Participant-day,Gaussian,log10(value + 0.1),Ratio
+Stability and light level,Darkest 10 h mean,Participant-day,Gaussian,log10(value + 0.1),Ratio
+Duration and continuous periods,"Time above 1,000 lx melEDI",Participant-day,"Tweedie, log link",None,Ratio
+Duration and continuous periods,Time above 250 lx melEDI during wake,Participant-day,"Tweedie, log link",None,Ratio
+Duration and continuous periods,Time below 10 lx melEDI before sleep,Participant-day,Gaussian,None,Difference
+Duration and continuous periods,Time below 1 lx melEDI during sleep,Participant-day,"Tweedie, log link",None,Ratio
+Duration and continuous periods,Longest continuous period above 250 lx melEDI,Participant-day,Gaussian,log10(value + 0.1),Ratio
+Timing,Midpoint of the brightest 10 hours,Participant-day,Gaussian,Continuous clock hours,Difference
+Timing,Midpoint of the darkest 10 hours,Participant-day,Gaussian,Clock hours; strict after-16:00 shift,Difference
+Timing,Mean timing of exposure above 250 lx melEDI,Participant-day,Gaussian,Continuous clock hours,Difference
+Timing,First light timing above 250 lx melEDI,Participant-day,Gaussian,Continuous clock hours,Difference
+Timing,Last light timing above 250 lx melEDI,Participant-day,Gaussian,Continuous clock hours,Difference
+Exposure history and spectrum,melEDI dose,Participant-day,Gaussian,log10(value + 0.1),Ratio
+Exposure history and spectrum,Melanopic daylight efficacy ratio,Participant-day,Gaussian,None,Difference

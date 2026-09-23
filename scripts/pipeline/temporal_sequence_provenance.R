@@ -950,3 +950,65 @@ temporal_provenance_csv_data <- function(data) {
   }
   output
 }
+
+validate_combined_temporal_provenance <- function(
+  source_bins,
+  wall_links
+) {
+  assert_unique_key(
+    source_bins,
+    c("resolution", temporal_participant_key, "true_utc_start"),
+    object = "combined true-UTC source bins"
+  )
+  assert_unique_key(
+    source_bins,
+    "source_bin_id",
+    object = "combined true-UTC source-bin IDs"
+  )
+  assert_unique_key(
+    wall_links,
+    temporal_wall_key,
+    object = "combined wall outcome links"
+  )
+  assert_unique_key(
+    wall_links,
+    "outcome_row_id",
+    object = "combined wall outcome IDs"
+  )
+  if (
+    any(
+      source_bins$repeated_fall_back_source_bin &
+        source_bins$sequence_eligible
+    ) ||
+      any(
+        !wall_links$one_to_one_elapsed_coordinate &
+          wall_links$source_bin_links == 2L &
+          wall_links$relationship_type != "two_to_one_averaged_fall_back"
+      )
+  ) {
+    abort_pipeline(
+      "A fall-back averaged outcome is sequence-eligible or mislabeled"
+    )
+  }
+  mapped_source <- source_bins |>
+    dplyr::count(
+      dplyr::across(dplyr::all_of(temporal_wall_key)),
+      name = "reconstructed_links"
+    )
+  link_check <- wall_links |>
+    dplyr::left_join(
+      mapped_source,
+      by = temporal_wall_key,
+      relationship = "one-to-one"
+    ) |>
+    dplyr::mutate(
+      reconstructed_links = dplyr::coalesce(
+        .data$reconstructed_links,
+        0L
+      )
+    )
+  if (any(link_check$source_bin_links != link_check$reconstructed_links)) {
+    abort_pipeline("Combined wall-link cardinalities do not reconcile")
+  }
+  invisible(TRUE)
+}

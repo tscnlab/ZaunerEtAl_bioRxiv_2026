@@ -1,4 +1,4 @@
-# Fit, diagnose, summarize, and bootstrap the approved H01 models.
+# Fit, diagnose, summarize, and bootstrap the specified H01 models.
 
 h01_required_model_columns <- function() {
   c(
@@ -1322,7 +1322,7 @@ h01_model_diagnostics <- function(bundle, frame, seed) {
       startsWith(timing$timing_status, "FAIL") ||
       identical(bounds$prediction_bound_status, "FAIL_OBSERVED_SUPPORT")
   ) {
-    "FAIL_MAJOR_GATE"
+    "MODEL_CHECK_FAILED"
   } else if (
     startsWith(residual$residual_status, "WARN") ||
       startsWith(bounds$prediction_bound_status, "WARN") ||
@@ -1752,23 +1752,33 @@ h01_bootstrap_r2 <- function(
       failures = tibble::tibble()
     ))
   }
-  attempts <- seq_len(maximum_attempts)
   worker <- function(attempt) {
     h01_bootstrap_one(attempt, bundle, frame, seed)
   }
-  results <- if (cores > 1L && .Platform$OS.type != "windows") {
-    parallel::mclapply(
-      attempts,
-      worker,
-      mc.cores = cores,
-      mc.preschedule = TRUE,
-      mc.set.seed = FALSE
-    )
-  } else {
-    lapply(attempts, worker)
+  # Every attempt has its own fixed seed. Stop after enough successful refits
+  # while retaining the same first successful attempts in the same order.
+  results <- list()
+  successful_indices <- integer()
+  while (length(successful_indices) < successful_refits &&
+         length(results) < maximum_attempts) {
+    needed <- successful_refits - length(successful_indices)
+    batch_size <- min(maximum_attempts - length(results), max(needed, cores))
+    attempts <- seq.int(length(results) + 1L, length(results) + batch_size)
+    batch <- if (cores > 1L && .Platform$OS.type != "windows") {
+      parallel::mclapply(
+        attempts,
+        worker,
+        mc.cores = cores,
+        mc.preschedule = TRUE,
+        mc.set.seed = FALSE
+      )
+    } else {
+      lapply(attempts, worker)
+    }
+    results <- c(results, batch)
+    success <- vapply(results, function(result) isTRUE(result$success), logical(1))
+    successful_indices <- which(success)
   }
-  success <- vapply(results, function(result) isTRUE(result$success), logical(1))
-  successful_indices <- which(success)
   if (length(successful_indices) < successful_refits) {
     h01_abort(
       paste0(

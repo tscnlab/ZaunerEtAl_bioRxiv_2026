@@ -1,0 +1,10 @@
+Metric,Category,Unit,Model,Transform,Reported effect
+Mean melEDI,level-based,lx,Gaussian,log10(value + 0.1),Ratio
+Brightest 10 h mean,level-based,lx,Gaussian,log10(value + 0.1),Ratio
+Darkest 10 h mean,level-based,lx,Gaussian,log10(value + 0.1),Ratio
+"Time above 1,000 lx melEDI",duration-based,h,"Tweedie, log link",None,Ratio
+Time above 250 lx melEDI during wake,duration-based,h,"Tweedie, log link",None,Ratio
+Time below 10 lx melEDI before sleep,duration-based,h,Gaussian,None,Difference in hours
+Time below 1 lx melEDI during sleep,duration-based,h,"Tweedie, log link",None,Ratio
+Longest continuous period above 250 lx melEDI,duration-based,h,Gaussian,log10(value + 0.1),Ratio
+melEDI dose,exposure-history-based,lx·h,Gaussian,log10(value + 0.1),Ratio

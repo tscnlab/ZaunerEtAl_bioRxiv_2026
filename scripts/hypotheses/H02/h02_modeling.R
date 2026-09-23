@@ -914,7 +914,7 @@ h02_variation_summary <- function(
   data,
   site_predictions,
   run_id,
-  replicates = 2000L
+  replicates = bootstrap_count(2000L)
 ) {
   contributions <- h02_fitted_contributions(
     fit,

@@ -1,0 +1,11 @@
+# Use R's compiler defaults and each package's own configuration.
+# Do not inherit unrelated flags from a personal ~/.R/Makevars.
+# Some macOS R installations lack the gettext development files required by
+# nlme. If installed via Homebrew, use those headers and libraries explicitly.
+ifeq ($(shell uname -s),Darwin)
+NH_GETTEXT_PREFIX := $(firstword $(wildcard /opt/homebrew/opt/gettext /usr/local/opt/gettext))
+ifneq ($(NH_GETTEXT_PREFIX),)
+PKG_CPPFLAGS += -I$(NH_GETTEXT_PREFIX)/include
+PKG_LIBS += -L$(NH_GETTEXT_PREFIX)/lib -lintl
+endif
+endif

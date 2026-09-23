@@ -1,0 +1,11 @@
+formula_id,formula
+primary_full,geo_medi_1h ~ site + activity
+secondary_mundlak_audit,geo_medi_1h ~ site + activity + between_activity_1 + between_activity_2 + between_activity_3 + between_activity_4 + between_activity_5
+primary_five_named_null,geo_medi_1h ~ site + other_indicator
+secondary_six_category_null,geo_medi_1h ~ site
+heterogeneity_five_named_full,geo_medi_1h ~ site * activity_named
+heterogeneity_five_named_additive,geo_medi_1h ~ site + activity_named
+heterogeneity_core_full,geo_medi_1h ~ site * activity_core
+heterogeneity_core_additive,geo_medi_1h ~ site + activity_core
+temporal_no_activity,"geo_medi_1h ~ s(time_hour, bs = ""cc"", k = 12) + s(time_hour, site, bs = ""sz"", k = 12) + s(time_hour, participant, bs = ""fs"", k = 10) + s(participant_day, bs = ""re"")"
+temporal_activity_long,"geo_medi_1h ~ s(time_hour, bs = ""cc"", k = 12) + s(time_hour, activity, bs = ""sz"", k = 12) + s(time_hour, site, bs = ""sz"", k = 12) + s(time_hour, participant, bs = ""fs"", k = 10) + s(participant_day, bs = ""re"")"

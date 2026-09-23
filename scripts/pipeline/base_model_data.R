@@ -1,6 +1,3 @@
-# Define pure contracts and joins for Preparation 06 canonical base-model data.
-#
-# Source scripts/pipeline/assertions.R before this file.
 
 base_model_placements <- function() {
   c("glasses", "chest")
@@ -47,7 +44,7 @@ base_model_disallowed_free_text_columns <- function() {
 }
 
 base_model_metric_specification <- function(root) {
-  metric_root <- file.path(root, "artifacts", "05_metrics")
+  metric_root <- file.path(root, "results", "intermediate/metrics")
   tibble::tribble(
     ~input_id,
     ~placement,
@@ -100,8 +97,7 @@ base_model_metric_specification <- function(root) {
 base_model_normalized_specification <- function(root) {
   normalized_root <- file.path(
     root,
-    "artifacts",
-    "06_model_data",
+    "results", "intermediate/model_data",
     "normalized_inputs"
   )
   modalities <- base_model_normalized_modalities()
@@ -112,123 +108,27 @@ base_model_normalized_specification <- function(root) {
   )
 }
 
-base_model_input_manifest_paths <- function(root) {
-  manifest_root <- file.path(root, "artifacts", "12_manifests")
-  c(
-    metrics = file.path(manifest_root, "metric_artifacts.csv"),
-    normalization = file.path(
-      manifest_root,
-      "model_input_normalization.csv"
-    ),
-    site_context = file.path(
-      manifest_root,
-      "site_solar_context_artifacts.csv"
-    )
-  )
-}
 
 base_model_paths <- function(root, output_root = root) {
-  root <- normalizePath(root, winslash = "/", mustWork = TRUE)
-  output_root <- normalizePath(
-    output_root,
-    winslash = "/",
-    mustWork = TRUE
-  )
-  base_root <- file.path(
-    output_root,
-    "artifacts",
-    "06_model_data",
-    "base"
-  )
-  data_paths <- c(
-    participant_metadata = file.path(
-      base_root,
-      "participant_metadata.rds"
-    ),
-    glasses_participant_day_context = file.path(
-      base_root,
-      "metrics_glasses_participant_day_context.rds"
-    ),
-    chest_participant_day_context = file.path(
-      base_root,
-      "metrics_chest_participant_day_context.rds"
-    ),
-    glasses_participant = file.path(
-      base_root,
-      "metrics_glasses_participant.rds"
-    ),
-    chest_participant = file.path(
-      base_root,
-      "metrics_chest_participant.rds"
-    ),
-    glasses_30_minute_context = file.path(
-      base_root,
-      "metrics_glasses_30_minute_context.rds"
-    ),
-    chest_30_minute_context = file.path(
-      base_root,
-      "metrics_chest_30_minute_context.rds"
-    ),
-    glasses_one_hour_context = file.path(
-      base_root,
-      "metrics_glasses_one_hour_context.rds"
-    ),
-    chest_one_hour_context = file.path(
-      base_root,
-      "metrics_chest_one_hour_context.rds"
-    ),
-    glasses_participant_day_enriched = file.path(
-      base_root,
-      "metrics_glasses_participant_day_enriched.rds"
-    ),
-    chest_participant_day_enriched = file.path(
-      base_root,
-      "metrics_chest_participant_day_enriched.rds"
-    ),
-    glasses_participant_enriched = file.path(
-      base_root,
-      "metrics_glasses_participant_enriched.rds"
-    ),
-    chest_participant_enriched = file.path(
-      base_root,
-      "metrics_chest_participant_enriched.rds"
-    )
-  )
-  audit_paths <- c(
-    input_provenance = file.path(base_root, "input_provenance.csv"),
-    metric_registry_firewall = file.path(
-      base_root,
-      "metric_registry_firewall.csv"
-    ),
-    metric_key_join = file.path(base_root, "metric_key_join_audit.csv"),
-    modality_key_join = file.path(
-      base_root,
-      "modality_key_join_audit.csv"
-    ),
-    participant_availability = file.path(
-      base_root,
-      "participant_availability_audit.csv"
-    ),
-    metadata_fields = file.path(base_root, "metadata_field_audit.csv"),
-    metric_metadata_availability = file.path(
-      base_root,
-      "metric_metadata_availability_audit.csv"
-    ),
-    contract = file.path(base_root, "base_model_contract.csv")
-  )
-  list(
-    root = root,
-    output_root = output_root,
-    base_root = base_root,
-    data_paths = data_paths,
-    audit_paths = audit_paths,
-    manifest = file.path(
-      output_root,
-      "artifacts",
-      "12_manifests",
-      "base_model_data_artifacts.csv"
-    )
-  )
+    root <- normalizePath(root, winslash = "/", mustWork = TRUE)
+    output_root <- normalizePath(output_root, winslash = "/", mustWork = TRUE)
+    base_root <- file.path(output_root, "results", "intermediate/model_data", "base")
+    data_paths <- c(participant_metadata = file.path(base_root, "participant_metadata.rds"),
+        glasses_participant_day_context = file.path(base_root, "metrics_glasses_participant_day_context.rds"),
+        chest_participant_day_context = file.path(base_root, "metrics_chest_participant_day_context.rds"),
+        glasses_participant = file.path(base_root, "metrics_glasses_participant.rds"), chest_participant = file.path(base_root,
+            "metrics_chest_participant.rds"), glasses_30_minute_context = file.path(base_root,
+            "metrics_glasses_30_minute_context.rds"), chest_30_minute_context = file.path(base_root,
+            "metrics_chest_30_minute_context.rds"), glasses_one_hour_context = file.path(base_root,
+            "metrics_glasses_one_hour_context.rds"), chest_one_hour_context = file.path(base_root,
+            "metrics_chest_one_hour_context.rds"), glasses_participant_day_enriched = file.path(base_root,
+            "metrics_glasses_participant_day_enriched.rds"), chest_participant_day_enriched = file.path(base_root,
+            "metrics_chest_participant_day_enriched.rds"), glasses_participant_enriched = file.path(base_root,
+            "metrics_glasses_participant_enriched.rds"), chest_participant_enriched = file.path(base_root,
+            "metrics_chest_participant_enriched.rds"))
+    list(root = root, output_root = output_root, base_root = base_root,
+         data_paths = data_paths)
+
 }
 
 base_model_metric_key <- function(resolution) {
@@ -271,7 +171,7 @@ base_model_assert_no_internal_window_boundaries <- function(
   invisible(data)
 }
 
-base_model_apply_metric_registry_firewall <- function(
+base_model_select_analysis_metrics <- function(
   data,
   input_id,
   placement,

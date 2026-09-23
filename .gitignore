@@ -1,16 +1,25 @@
-.Rproj.user
+.Rproj.user/
 .Rhistory
 .RData
 .Ruserdata
 .DS_Store
-BuchHCL.R
-German_sites_melidos.png
+.quarto/
+# Keep preprocessing datasets; regenerate serialized analysis objects locally.
+/results/**/*.[rR][dD][sS]
+!/results/intermediate/**/*.[rR][dD][sS]
+
+# Machine-specific model compilation products are regenerated during rendering.
+/results/models/**/compiled/
+**/*_cache/
+**/*_files/
+!/docs/**/*_files/
+!/docs/**/*_files/**
+
 /.quarto/
 **/*.quarto_ipynb
-.positai
-_descriptives_2nd_paper.html
-_descriptives_2nd_paper.qmd
-manuscript
-/artifacts/
-/_build_nathealth/
-/_build/
+**/*.rmarkdown
+Rplots.pdf
+
+/site_libs/
+
+**/*.knit.md

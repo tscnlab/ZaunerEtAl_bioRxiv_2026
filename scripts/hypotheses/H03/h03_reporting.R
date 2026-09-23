@@ -1,5 +1,3 @@
-# H03 publication-scale plots and display-source preparation.
-
 h03_figure_theme <- function() {
   cowplot::theme_cowplot(font_size = 14) +
     ggplot2::theme(
@@ -52,7 +50,6 @@ h03_save_plot <- function(
     info <- file.info(path)
     output[[extension]] <- list(
       path = normalizePath(path, winslash = "/", mustWork = TRUE),
-      sha256 = artifact_sha256(path),
       bytes = unname(info$size),
       producer = producer,
       r_version = as.character(getRversion()),
@@ -313,7 +310,7 @@ h03_site_context_figure <- function(data, category_registry, site_registry) {
       x = "Expected one-hour melEDI (lx)",
       y = NULL,
       caption = paste0(
-        "Estimates use the accepted seven-category interaction model; bars are participant-cluster-robust 95% confidence intervals.\n",
+        "Estimates use the selected seven-category interaction model; bars are participant-cluster-robust 95% confidence intervals.\n",
         "The dashed line is the geometric mean of model cell expectations with each site contributing equally on the fitted log scale. ",
         "Filled points differ from that mean after BH adjustment across ",
         family_size_text, " H03-F4 site-deviation contrasts.\n",
@@ -938,7 +935,7 @@ h03_temporal_figure <- function(
       x = NULL,
       y = if (ratio_panel) {
         if (is.null(ratio_y_label)) {
-          "Factor relative to global mean"
+          "Ratio to global mean"
         } else {
           ratio_y_label
         }
@@ -1011,7 +1008,7 @@ h03_temporal_figure <- function(
           if (is.null(ratio_caption)) {
             paste0(
               "Panel B divides each displayed category-specific mean by the displayed global time-of-day mean; ",
-              "the dashed null is 1 and no V0-style red significance segments are drawn without simultaneous bands.\n"
+              "the dashed null is 1; pointwise intervals do not support whole-curve significance claims.\n"
             )
           } else {
             paste0(ratio_caption, "\n")

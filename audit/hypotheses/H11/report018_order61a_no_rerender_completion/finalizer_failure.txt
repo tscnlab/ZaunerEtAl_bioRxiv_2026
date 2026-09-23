@@ -1,8 +1,0 @@
-REPORT-018 H11 Order 61a task-owned final seal
-Command: env RENV_CONFIG_AUTOLOADER_ENABLED=FALSE R_LIBS_USER=/Users/zauner/Library/R/arm64/4.6/library NATHEALTH_PROJECT_ROOT=/Users/zauner/Documents/Arbeit/12-TUM/MeLiDos/WP2.2.5_Data_Analysis/ZaunerEtAl_bioRxiv_2026 Rscript --vanilla audit/hypotheses/H11/report018_order61a_no_rerender_completion/finalize_order61a_no_drift.R
-Run count: 1
-Exit status: 1
-Failing assertion: the screenshot-dimension audit required the PNG signature 89 50 4e 47 0d 0a 1a 0a.
-Observed representation: the browser screenshot API returned JPEG/JFIF bytes beginning ff d8 ff e0 00 10 4a 46 49 46 while the evidence filenames used a .png suffix.
-Error: identical(as.integer(bytes[1:8]), c(137L, 80L, 78L, 71L, 13L, 10L, 26L, 10L)) is not TRUE
-Disposition: FAIL_CLOSED_NO_RETRY

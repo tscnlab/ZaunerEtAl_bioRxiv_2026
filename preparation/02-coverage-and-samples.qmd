@@ -1,0 +1,79 @@
+---
+title: "Coverage and analysis samples"
+---
+
+This document uses the one-minute aligned recordings to identify interpretable days and hours. Coverage is evaluated on a complete 24-hour local wall-clock grid. A usable day requires at least 80% finite melEDI minutes across that day, including diary-defined sleep. An hour requires at least 50% coverage for hourly outcomes. An unusable hour does not remove its finite minutes from daily calculations. Days containing only zero melEDI values are excluded.
+
+```{r}
+#| label: setup
+#| echo: false
+source("scripts/project.R")
+analysis_setup()
+for (helper in c("paths_io", "assertions", "time_axes", "time_support", "state_alignment", "aggregation_coverage", "build_coverage_sample_flow")) {
+  source(file.path("scripts/pipeline", paste0(helper, ".R")))
+}
+root <- project_root()
+paths <- pipeline_paths(root)
+ensure_pipeline_directories(paths)
+```
+## Apply the coverage rules
+
+The explicit wall-clock grid keeps missing minutes in the denominator. The output retains observations and validity indicators, allowing each later metric to apply its own temporal-support rule.
+
+```{r}
+#| label: evaluate-coverage
+sample_flows <- list()
+settings <- list()
+for (placement in c("glasses", "chest")) {
+  aligned <- read_rds_artifact(file.path(paths$aligned,
+    paste0("light_", placement, "_aligned.rds")), "data.frame")
+  validate_aligned_coverage_input(aligned, placement)
+  coverage <- apply_wall_clock_coverage_rules(
+    minute_data = aligned, value_cols = c("MEDI", "LIGHT"),
+    coverage_signal = "MEDI", id_cols = c("site", "Id", "position"),
+    participant_days = NULL, minimum_hour_coverage = 0.5,
+    minimum_day_coverage = 0.8, exclude_all_zero_days = TRUE
+  )
+  eligible <- add_eligible_signal_channels(aligned, coverage)
+  hourly <- dplyr::arrange(coverage$hourly, .data$site, .data$Id,
+    .data$position, .data$local_date, .data$clock_hour)
+  daily <- dplyr::arrange(coverage$daily, .data$site, .data$Id,
+    .data$position, .data$local_date)
+  gaps <- coverage_gap_runs(coverage$wall_grid, placement)
+  sample_flows[[placement]] <- coverage_sample_flow(eligible, placement)
+  validate_coverage_outputs(aligned, eligible, hourly, daily, placement)
+  settings[[placement]] <- tibble::tibble(
+    placement = placement, minimum_hour_coverage = 0.5,
+    minimum_day_coverage = 0.8, expected_wall_minutes_per_day = 1440L,
+    diary_sleep_excluded_from_denominator = FALSE,
+    minute_values_masked_by_hour_threshold = FALSE,
+    all_zero_medi_exclusion_applied = TRUE,
+    eligible_hours = sum(hourly$hour_eligible),
+    eligible_days = sum(daily$day_eligible),
+    ineligible_days = sum(!daily$day_eligible)
+  )
+  write_rds_artifact(eligible, file.path(paths$coverage,
+    paste0("light_", placement, "_coverage.rds")), "preparation/02-coverage-and-samples.qmd")
+  for (name in c("hourly", "daily")) {
+    write_csv_artifact(get(name), file.path(paths$coverage,
+      paste0("light_", placement, "_", name, "_coverage.csv")), "preparation/02-coverage-and-samples.qmd")
+  }
+  write_csv_artifact(gaps, file.path(paths$coverage,
+    paste0("light_", placement, "_gap_runs.csv")), "preparation/02-coverage-and-samples.qmd")
+  rm(aligned, coverage, eligible)
+  invisible(gc())
+}
+dplyr::bind_rows(settings)
+```
+## Sample flow
+
+Participant and day counts below show how the coverage rules determine the available analysis sample. Metric-specific missingness is handled in the metric document rather than removing an otherwise usable day.
+
+```{r}
+#| label: coverage-sample-flow
+sample_flow <- dplyr::bind_rows(sample_flows) |>
+  dplyr::arrange(.data$placement, .data$scope, .data$site, .data$stage_order)
+write_csv_artifact(sample_flow, file.path(paths$coverage, "sample_flow.csv"), "preparation/02-coverage-and-samples.qmd")
+write_csv_artifact(dplyr::bind_rows(settings), file.path(paths$coverage, "coverage_settings.csv"), "preparation/02-coverage-and-samples.qmd")
+dplyr::filter(sample_flow, .data$scope == "overall")
+```

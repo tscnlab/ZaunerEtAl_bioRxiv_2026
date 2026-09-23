@@ -1,0 +1,18 @@
+metric_order,metric_id,analysis_unit,source_field,response_family,response_transform,effect_scale,lower_bound,upper_bound,audit_upper_threshold,manuscript_name,abbreviation,manuscript_category,display_analysis_unit,display_unit,variant_label
+1,interdaily_stability,participant,interdaily_stability,gaussian,logit,odds_ratio,0,1,,Interdaily stability,IS,dynamics-based,participant,dimensionless,Repeated-day regularity
+2,intradaily_variability,participant,intradaily_variability,gaussian,identity,difference,0,,,Intradaily variability,IV,dynamics-based,participant,dimensionless,Within-day fragmentation
+3,daily_geometric_mean_medi,participant_day,daily_geometric_mean_medi_lx,gaussian,log10_offset_0.1,ratio,0,,,Mean melEDI,Mean,level-based,participant-day,lx,Daily geometric mean
+4,m10_mean_medi,participant_day,m10_mean_medi_lx,gaussian,log10_offset_0.1,ratio,0,,,Brightest 10 h mean,M10mean,level-based,participant-day,lx,Supported 10-hour window
+5,l10_mean_medi,participant_day,l10_mean_medi_lx,gaussian,log10_offset_0.1,ratio,0,,,Darkest 10 h mean,L10mean,level-based,participant-day,lx,Supported 10-hour window
+6,duration_above_1000,participant_day,duration_above_1000_h,tweedie_log,identity,ratio,0,24,,"Time above 1,000 lx melEDI",TAT1000,duration-based,participant-day,h,Full 24-hour cycle
+7,duration_above_250_wake,participant_day,duration_above_250_wake_h,tweedie_log,identity,ratio,0,,,Time above 250 lx melEDI during wake,TAT250,duration-based,participant-day,h,Waking near-eye measurement
+8,duration_below_10_pre_sleep,participant_day,duration_below_10_pre_sleep_h,gaussian,identity,difference,0,24,6,Time below 10 lx melEDI before sleep,TBT10,duration-based,participant-day,h,Three hours before attempted sleep
+9,duration_below_1_sleep_environment,participant_day,duration_below_1_sleep_environment_h,tweedie_log,identity,ratio,0,,,Time below 1 lx melEDI during sleep,TBT1,duration-based,participant-day,h,Bedside sleep-environment measurement
+10,longest_bout_above_250,participant_day,longest_bout_above_250_h,gaussian,log10_offset_0.1,ratio,0,24,,Longest continuous period above 250 lx melEDI,PAT250,duration-based,participant-day,h,Observed lower bound
+11,m10_midpoint,participant_day,m10_midpoint_clock_minute,gaussian,clock_minutes,difference,0,1440,,Midpoint of the brightest 10 hours,M10,timing-based,participant-day,clock time,Supported 10-hour window
+12,l10_midpoint,participant_day,l10_midpoint_clock_minute,gaussian,clock_minutes_after_16,difference,-1440,1440,,Midpoint of the darkest 10 hours,L10,timing-based,participant-day,clock time,Supported midnight-wrapping 10-hour window
+13,mean_timing_above_250,participant_day,mean_timing_above_250_clock_minute,gaussian,clock_minutes,difference,0,1440,,Mean timing of exposure above 250 lx melEDI,MLIT250,timing-based,participant-day,clock time,Duration-weighted mean timing
+14,first_timing_above_250,participant_day,first_timing_above_250_clock_minute,gaussian,clock_minutes,difference,0,1440,,First light timing above 250 lx melEDI,FLIT250,timing-based,participant-day,clock time,Boundary-censoring rule
+15,last_timing_above_250,participant_day,last_timing_above_250_clock_minute,gaussian,clock_minutes,difference,0,1440,,Last light timing above 250 lx melEDI,LLIT250,timing-based,participant-day,clock time,Boundary-censoring rule
+16,dose_time_sensitive_corrected_medi,participant_day,dose_corrected_medi_lx_h,gaussian,log10_offset_0.1,ratio,0,,,melEDI dose,Dose,exposure-history-based,participant-day,lx·h,Time-sensitive missing-coverage correction
+17,mder_mean_of_viable_ratios,participant_day,mder,gaussian,identity,difference,0,,,Melanopic daylight efficacy ratio,MDER,spectrum-based,participant-day,dimensionless,Mean of viable one-minute melEDI/illuminance ratios

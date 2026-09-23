@@ -1,3 +1,0 @@
-sequence,stage,outcome,scientific_or_source_discrepancy,durable_outputs_changed,explanation
-1,prerender_development_check,STOPPED,FALSE,FALSE,"The new verifier used identical() after read.csv(); the authorized decimal heights changed column type inference for unchanged V0 integer values. Raw V0 CSV lines and zero-tolerance values were identical. The verifier was corrected to use byte-exact row evidence."
-2,stopped_seal_development_check,STOPPED,FALSE,FALSE,"The stopped verifier required the implementation token Deno.openKv, while the captured Quarto stack reports Object.openKv. The recorded stack and local Quarto source identify the same Deno KV call. The verifier was corrected to require the exact captured token."

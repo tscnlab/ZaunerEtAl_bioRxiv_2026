@@ -1,0 +1,6 @@
+Aspect,Registered_or_unspecified,Analysis,Reason_or_consequence
+30-minute support,Hourly outcome; no 30-minute rule,At least 15 valid one-minute values per 30-minute bin,Unsupported bins remain missing rather than being treated as darkness.
+Whole-day handling,Coverage-based exclusion; no exact-zero-day rule,No additional daily-coverage deletion for H02; entirely exact-zero days are excluded,Preserves partly observed days while removing the fixed signal-plausibility failure.
+Clock and DST,Not operationally specified,Local wall clock for profiles; true UTC for ordering; fall-back folds retained,AR sequences reset at every participant-day and discontinuity.
+Measurement context,Wear and sleep removal described generally,Wake values are worn measurements; sleep values describe the bedside environment,The 24-hour record is hybrid and is not continuous ocular exposure.
+Operating range,"Values above 120,000 lx excluded","melEDI must be below 100,000 lx after one-minute aggregation",Uses the manufacturer operating boundary.

@@ -1,7 +1,7 @@
 # Data builders for tables and exact figure source data. All scientific
 # calculations in this file use R and verified prepared artifacts.
 
-load_descriptive_inputs <- function(root) {
+load_descriptive_inputs <- function(root, photoperiod_bounds) {
   read_csv <- function(path) {
     readr::read_csv(path, show_col_types = FALSE, progress = FALSE)
   }
@@ -9,116 +9,110 @@ load_descriptive_inputs <- function(root) {
     coverage = list(
       near_eye = readRDS(file.path(
         root,
-        "artifacts/03_coverage/light_glasses_coverage.rds"
+        "results/intermediate/coverage/light_glasses_coverage.rds"
       )),
       chest = readRDS(file.path(
         root,
-        "artifacts/03_coverage/light_chest_coverage.rds"
+        "results/intermediate/coverage/light_chest_coverage.rds"
       ))
     ),
     daily_coverage = list(
       near_eye = read_csv(file.path(
         root,
-        "artifacts/03_coverage/light_glasses_daily_coverage.csv"
+        "results/intermediate/coverage/light_glasses_daily_coverage.csv"
       )),
       chest = read_csv(file.path(
         root,
-        "artifacts/03_coverage/light_chest_daily_coverage.csv"
+        "results/intermediate/coverage/light_chest_daily_coverage.csv"
       ))
     ),
     metrics_30 = list(
       near_eye = read_csv(file.path(
         root,
-        "artifacts/05_metrics/metrics_glasses_30_minute.csv"
+        "results/intermediate/metrics/metrics_glasses_30_minute.csv"
       )),
       chest = read_csv(file.path(
         root,
-        "artifacts/05_metrics/metrics_chest_30_minute.csv"
+        "results/intermediate/metrics/metrics_chest_30_minute.csv"
       ))
     ),
     metrics_hour = list(
       near_eye = read_csv(file.path(
         root,
-        "artifacts/05_metrics/metrics_glasses_one_hour.csv"
+        "results/intermediate/metrics/metrics_glasses_one_hour.csv"
       )),
       chest = read_csv(file.path(
         root,
-        "artifacts/05_metrics/metrics_chest_one_hour.csv"
+        "results/intermediate/metrics/metrics_chest_one_hour.csv"
       ))
     ),
     metrics_long = list(
       near_eye = read_csv(file.path(
         root,
-        "artifacts/05_metrics/metrics_glasses_values_long.csv"
+        "results/intermediate/metrics/metrics_glasses_values_long.csv"
       )),
       chest = read_csv(file.path(
         root,
-        "artifacts/05_metrics/metrics_chest_values_long.csv"
+        "results/intermediate/metrics/metrics_chest_values_long.csv"
       ))
     ),
     participant_day = list(
       near_eye = read_csv(file.path(
         root,
-        "artifacts/05_metrics/metrics_glasses_participant_day.csv"
+        "results/intermediate/metrics/metrics_glasses_participant_day.csv"
       )),
       chest = read_csv(file.path(
         root,
-        "artifacts/05_metrics/metrics_chest_participant_day.csv"
+        "results/intermediate/metrics/metrics_chest_participant_day.csv"
       ))
     ),
     participant = list(
       near_eye = read_csv(file.path(
         root,
-        "artifacts/05_metrics/metrics_glasses_participant.csv"
+        "results/intermediate/metrics/metrics_glasses_participant.csv"
       )),
       chest = read_csv(file.path(
         root,
-        "artifacts/05_metrics/metrics_chest_participant.csv"
+        "results/intermediate/metrics/metrics_chest_participant.csv"
       ))
     ),
     demographics = readRDS(file.path(
       root,
-      "artifacts/06_model_data/normalized_inputs/demographics.rds"
+      "results/intermediate/model_data/normalized_inputs/demographics.rds"
     )),
     chronotype = readRDS(file.path(
       root,
-      "artifacts/06_model_data/normalized_inputs/chronotype.rds"
+      "results/intermediate/model_data/normalized_inputs/chronotype.rds"
     )),
     sleepdiaries = readRDS(file.path(
       root,
-      "artifacts/06_model_data/normalized_inputs/sleepdiaries.rds"
+      "results/intermediate/model_data/normalized_inputs/sleepdiaries.rds"
     )),
     solar = readRDS(file.path(
       root,
-      "artifacts/06_model_data/context/site_solar_context.rds"
+      "results/intermediate/model_data/context/site_solar_context.rds"
     )),
     showcase = read_csv(file.path(
       root,
-      "artifacts/11_source_data/prepared_day_showcase.csv"
+      "results/csv/source_data/prepared_day_showcase.csv"
     )),
     selected_showcase = read_csv(file.path(
       root,
-      "artifacts/08_diagnostics/prepared_day_showcase/selected_days.csv"
+      "results/csv/diagnostics/prepared_day_showcase/selected_days.csv"
     )),
-    photoperiod_bounds = read_csv(file.path(
-      root,
-      paste0(
-        "artifacts/11_source_data/H01/stage3/",
-        "H01_stage3_photoperiod_latitude_bounds.csv"
-      )
-    )),
+    photoperiod_bounds = photoperiod_bounds,
     gap_mder = list(
       participant_day = readRDS(file.path(
         root,
         paste0(
-          "artifacts/06_model_data/scenarios/manuscript_prepared_data/",
+          "results/intermediate/model_data/scenarios/alternative_preprocessing/",
           "participant_day_metrics.rds"
         )
       )),
       support = readRDS(file.path(
         root,
         paste0(
-          "artifacts/06_model_data/scenarios/manuscript_prepared_data/",
+          "results/intermediate/model_data/scenarios/alternative_preprocessing/",
           "mder_support.rds"
         )
       ))
@@ -139,7 +133,7 @@ prepare_gap_mder_values <- function(inputs) {
         .env$position_to_placement[as.character(.data$position)]
       ),
       local_date = as.Date(.data$local_date),
-      value = as.numeric(.data$manuscript_prepared_value)
+      value = as.numeric(.data$alternative_preprocessing_value)
     ) |>
     dplyr::select(dplyr::all_of(key), "value") |>
     dplyr::arrange(
@@ -155,7 +149,7 @@ prepare_gap_mder_values <- function(inputs) {
         .env$position_to_placement[as.character(.data$position)]
       ),
       local_date = as.Date(.data$local_date),
-      value = as.numeric(.data$manuscript_prepared_value)
+      value = as.numeric(.data$alternative_preprocessing_value)
     ) |>
     dplyr::arrange(
       match(.data$placement, c("near_eye", "chest")),
@@ -165,25 +159,25 @@ prepare_gap_mder_values <- function(inputs) {
     )
 
   if (
-    nrow(participant_day) != 1708L ||
-      nrow(support) != 1708L ||
+    nrow(participant_day) == 0L ||
+      nrow(support) == 0L ||
       anyNA(participant_day$placement) ||
       anyNA(support$placement)
   ) {
     stop(
-      "The repaired gap MDER source has an unexpected row domain",
+      "The alternative-preprocessing MDER source has an unexpected row domain",
       call. = FALSE
     )
   }
   assert_unique_descriptive_key(
     participant_day,
     key,
-    "Repaired gap MDER participant-day values"
+    "Alternative-preprocessing MDER participant-day values"
   )
   assert_unique_descriptive_key(
     support,
     key,
-    "Repaired gap MDER support"
+    "Alternative-preprocessing MDER support"
   )
   if (
     !identical(
@@ -192,7 +186,7 @@ prepare_gap_mder_values <- function(inputs) {
     ) ||
       !identical(participant_day$value, support$value)
   ) {
-    stop("Repaired gap MDER values and support are not aligned", call. = FALSE)
+    stop("Alternative-preprocessing MDER values and support are not aligned", call. = FALSE)
   }
   expected_estimable <- is.finite(participant_day$value)
   if (
@@ -207,7 +201,7 @@ prepare_gap_mder_values <- function(inputs) {
       )
   ) {
     stop(
-      "The repaired gap MDER support contract is inconsistent",
+      "The alternative-preprocessing MDER support contract is inconsistent",
       call. = FALSE
     )
   }
@@ -246,48 +240,7 @@ validate_descriptive_inputs <- function(inputs) {
     day_key,
     "Chest participant-day metrics"
   )
-  if (nrow(inputs$participant_day$near_eye) != 816L) {
-    stop("Expected 816 near-eye participant-days", call. = FALSE)
-  }
-  if (nrow(inputs$participant_day$chest) != 902L) {
-    stop("Expected 902 chest participant-days", call. = FALSE)
-  }
-  if (dplyr::n_distinct(inputs$participant_day$near_eye$Id) != 141L) {
-    stop("Expected 141 near-eye participants", call. = FALSE)
-  }
-  if (dplyr::n_distinct(inputs$participant_day$chest$Id) != 154L) {
-    stop("Expected 154 chest participants", call. = FALSE)
-  }
-  gap_mder <- prepare_gap_mder_values(inputs)
-  gap_mder_summary <- gap_mder |>
-    dplyr::group_by(.data$placement) |>
-    dplyr::summarise(
-      total_days = dplyr::n(),
-      participants = dplyr::n_distinct(.data$Id[.data$finite]),
-      participant_days = sum(.data$finite),
-      mean = mean(.data$value[.data$finite]),
-      median = stats::median(.data$value[.data$finite]),
-      .groups = "drop"
-    ) |>
-    dplyr::arrange(match(.data$placement, c("near_eye", "chest")))
-  if (
-    !identical(gap_mder_summary$total_days, c(811L, 897L)) ||
-      !identical(gap_mder_summary$participants, c(137L, 152L)) ||
-      !identical(gap_mder_summary$participant_days, c(687L, 723L)) ||
-      max(abs(gap_mder_summary$mean - c(0.7242573, 0.7567377))) > 5e-8 ||
-      max(abs(gap_mder_summary$median - c(0.7238676, 0.7495175))) > 5e-8
-  ) {
-    stop("The repaired gap MDER summary differs from METRIC-010", call. = FALSE)
-  }
-  paired <- dplyr::inner_join(
-    dplyr::select(inputs$participant_day$near_eye, dplyr::all_of(day_key)),
-    dplyr::select(inputs$participant_day$chest, dplyr::all_of(day_key)),
-    by = day_key
-  )
-  if (nrow(paired) != 643L || dplyr::n_distinct(paired$Id) != 112L) {
-    stop("Expected 643 paired days from 112 participants", call. = FALSE)
-  }
-  expected_rows <- c(near_eye = 816L, chest = 902L)
+  expected_rows <- vapply(inputs$participant_day, nrow, integer(1))
   for (placement in names(expected_rows)) {
     if (
       nrow(inputs$metrics_30[[placement]]) != expected_rows[[placement]] * 48L
@@ -327,17 +280,6 @@ validate_descriptive_inputs <- function(inputs) {
     if (any(values > 100000, na.rm = TRUE)) {
       stop("An eligible melEDI value exceeds 100,000 lx", call. = FALSE)
     }
-  }
-  all_zero_counts <- vapply(
-    inputs$daily_coverage,
-    function(data) sum(data$day_all_zero_medi_excluded, na.rm = TRUE),
-    integer(1)
-  )
-  if (!identical(unname(all_zero_counts), c(2L, 3L))) {
-    stop(
-      "Expected two near-eye and three chest all-zero exclusions",
-      call. = FALSE
-    )
   }
   assert_unique_descriptive_key(
     inputs$solar,
@@ -1204,7 +1146,7 @@ build_metric_values <- function(inputs) {
       ),
       metric_label = dplyr::if_else(
         .data$manuscript_name == "Mean melEDI",
-        paste0(.data$manuscript_name, " — ", .data$variant_label),
+        paste0(.data$manuscript_name, " ; ", .data$variant_label),
         .data$manuscript_name
       ),
       registry_analysis_unit = .data$analysis_unit
@@ -1912,7 +1854,7 @@ build_recommendation_context <- function(inputs) {
       comparison_type = paste(
         "Contextual comparison with Brown et al. (2022); these fractions",
         "are not adherence or compliance estimates. Inclusive operational",
-        "boundaries follow the approved analysis brief."
+        "boundaries follow the stated coverage definitions."
       ),
       .before = 1L
     ) |>

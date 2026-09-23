@@ -1,5 +1,0 @@
-The at-least-80% coverage sensitivity analysis preserved the direction and
-interval-exclusion status of all four effects. The largest response-scale
-change was
-0.60
-percentage points.

@@ -1,5 +1,3 @@
-# Prepare, fit, diagnose, and summarize the approved H09 models.
-
 h09_local_midpoint_clock_minute <- function(onset, offset, timezone) {
   mapply(
     FUN = function(on, off, tz) {
@@ -138,7 +136,7 @@ h09_prepare_gap_long <- function(gap, chronotype, score_contract) {
     dplyr::mutate(
       data_scenario_id = "gap_timing_unaware",
       local_date = as.Date(.data$local_date),
-      timing_hour = as.numeric(.data$manuscript_prepared_value),
+      timing_hour = as.numeric(.data$alternative_preprocessing_value),
       participant_key = paste(.data$site, .data$Id, sep = ":"),
       valid_measurement_minutes = NA_real_,
       expected_measurement_minutes = NA_real_,
@@ -235,29 +233,12 @@ h09_prepare_model_frame <- function(rows, instrument_id, site_levels) {
   tibble::as_tibble(frame)
 }
 
-h09_frame_hash <- function(frame, include_values = TRUE) {
+# Check participant/date-key equality across paired analytical samples.
+h09_key_hash <- function(frame) {
   if (nrow(frame) == 0L) return(NA_character_)
   columns <- c("site", "Id", "local_date")
-  if (include_values) {
-    columns <- c(
-      columns,
-      intersect(
-        c(
-          "timing_hour", "mctq_hour_centered", "meq_10_centered",
-          "participant_mean_timing_hour"
-        ),
-        names(frame)
-      )
-    )
-  }
-  digest::digest(
-    as.data.frame(frame[columns]),
-    algo = "sha256",
-    serialize = TRUE
-  )
+  digest::digest(as.data.frame(frame[columns]), algo = "sha256", serialize = TRUE)
 }
-
-h09_key_hash <- function(frame) h09_frame_hash(frame, include_values = FALSE)
 
 h09_sample_summary <- function(frame) {
   if (nrow(frame) == 0L) {
@@ -356,9 +337,7 @@ h09_fit_bundle <- function(frame, instrument_id) {
     reml = list(
       M1_main = h09_fit_lmer(frame, formulas$M1_main, TRUE),
       M2_interaction = h09_fit_lmer(frame, formulas$M2_interaction, TRUE)
-    ),
-    frame_key_hash = h09_key_hash(frame),
-    frame_hash = h09_frame_hash(frame)
+    )
   )
 }
 
@@ -525,7 +504,7 @@ h09_performance_summary <- function(model) {
     conditional_r2 = (fixed_variance + random_variance) / denominator,
     performance_interval_status = paste(
       "Point summaries only; a valid 95% interval would require resampling",
-      "and remains outside the approved no-production-resampling gate"
+      "which is not part of this analysis"
     )
   )
 }
@@ -1120,117 +1099,5 @@ h09_loo_summary <- function(rows) {
     } else {
       "not acceptable"
     }
-  )
-}
-
-h09_load_v0_metrics <- function(path) {
-  environment <- new.env(parent = emptyenv())
-  object_name <- load(path, envir = environment)
-  environment[[object_name[[1L]]]]
-}
-
-h09_prepare_v0_rows <- function(path, placement, chronotype, site_levels) {
-  object <- h09_load_v0_metrics(path)
-  crosswalk <- tibble::tribble(
-    ~v0_name, ~metric_id,
-    "brightest_10h_midpoint", "m10_midpoint",
-    "darkest_10h_midpoint", "l10_midpoint",
-    "mean_timing_above_250", "mean_timing_above_250",
-    "first_timing_above_250", "first_timing_above_250",
-    "last_timing_above_250", "last_timing_above_250"
-  )
-  chronotype_rows <- chronotype |>
-    dplyr::transmute(
-      .data$site,
-      .data$Id,
-      mctq_hour = as.numeric(.data$msf_sc) / 3600
-    )
-  purrr::map_dfr(seq_len(nrow(crosswalk)), function(index) {
-    metric_index <- match(crosswalk$v0_name[index], object$name)
-    object$data[[metric_index]] |>
-      tibble::as_tibble() |>
-      dplyr::rename(local_date = .data$Date) |>
-      dplyr::left_join(
-        chronotype_rows,
-        by = c("site", "Id"),
-        relationship = "many-to-one"
-      ) |>
-      dplyr::filter(is.finite(.data$metric), is.finite(.data$mctq_hour)) |>
-      dplyr::transmute(
-        placement = placement,
-        metric_id = crosswalk$metric_id[index],
-        v0_name = crosswalk$v0_name[index],
-        .data$site,
-        .data$Id,
-        local_date = as.Date(.data$local_date),
-        timing_hour = as.numeric(.data$metric),
-        .data$mctq_hour,
-        photoperiod_hours = as.numeric(.data$photoperiod)
-      )
-  }) |>
-    dplyr::mutate(
-      site = factor(.data$site, levels = site_levels),
-      Id = factor(.data$Id)
-    ) |>
-    droplevels()
-}
-
-h09_reproduce_v0_target <- function(frame) {
-  formulas <- h09_v0_formula_set()
-  fits <- lapply(formulas, function(formula) {
-    h09_fit_lmer(frame, formula, TRUE)
-  })
-  if (any(vapply(fits, function(x) is.null(x$model), logical(1)))) {
-    return(list(
-      summary = tibble::tibble(
-        v0_status = "NON_ESTIMABLE",
-        participants = dplyr::n_distinct(frame$Id),
-        participant_days = nrow(frame),
-        sites = dplyr::n_distinct(frame$site),
-        estimate = NA_real_,
-        std_error = NA_real_,
-        conf_low = NA_real_,
-        conf_high = NA_real_,
-        p_raw = NA_real_,
-        p_scalar_fdr_n5 = NA_real_,
-        interaction_p_scalar_fdr_n5 = NA_real_,
-        site_p_scalar_fdr_n5 = NA_real_,
-        marginal_r2 = NA_real_
-      ),
-      fits = fits
-    ))
-  }
-  comparison <- function(a, b) {
-    result <- suppressMessages(stats::anova(a$model, b$model))
-    as.numeric(result$`Pr(>Chisq)`[nrow(result)])
-  }
-  p_main <- comparison(fits$H9_00, fits$H9_ns)
-  p_interaction <- comparison(fits$H9_ni, fits$H9_1)
-  p_site <- comparison(fits$H9_ns, fits$H9_ni)
-  coefficient <- summary(fits$H9_ns$model)$coefficients["mctq_hour", ]
-  performance <- h09_performance_summary(fits$H9_ns$model)
-  list(
-    summary = tibble::tibble(
-      v0_status = "REPRODUCED",
-      participants = dplyr::n_distinct(frame$Id),
-      participant_days = nrow(frame),
-      sites = dplyr::n_distinct(frame$site),
-      estimate = unname(coefficient["Estimate"]),
-      std_error = unname(coefficient["Std. Error"]),
-      conf_low = unname(coefficient["Estimate"] -
-        stats::qnorm(0.975) * coefficient["Std. Error"]),
-      conf_high = unname(coefficient["Estimate"] +
-        stats::qnorm(0.975) * coefficient["Std. Error"]),
-      p_raw = p_main,
-      p_scalar_fdr_n5 = stats::p.adjust(p_main, method = "fdr", n = 5L),
-      interaction_p_scalar_fdr_n5 = stats::p.adjust(
-        p_interaction, method = "fdr", n = 5L
-      ),
-      site_p_scalar_fdr_n5 = stats::p.adjust(
-        p_site, method = "fdr", n = 5L
-      ),
-      marginal_r2 = performance$marginal_r2
-    ),
-    fits = fits
   )
 }

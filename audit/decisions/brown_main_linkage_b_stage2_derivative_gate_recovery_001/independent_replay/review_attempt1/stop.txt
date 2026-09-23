@@ -1,5 +1,0 @@
-Central temporary-audit harness stop, before sandbox creation or any owner write:
-the isolated function environment incorrectly used baseenv(), excluding the
-normally attached utils::read.csv function. No owner or proposed checker defect
-was identified. The corrected central harness uses globalenv() as its parent,
-matching normal Rscript evaluation. No model, likelihood or fit was run.

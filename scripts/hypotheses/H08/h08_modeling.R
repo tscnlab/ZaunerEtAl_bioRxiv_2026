@@ -1,5 +1,3 @@
-# Prepare, fit, diagnose, and summarize the approved H08 models.
-
 h08_transform_response <- function(value, spec) {
   value <- as.numeric(value)
   if (spec$response_transform == "log10_offset_0.1") {
@@ -167,28 +165,12 @@ h08_prepare_participant_summary <- function(frame, spec, site_levels) {
   summary
 }
 
-h08_frame_hash <- function(frame, include_values = TRUE) {
-  if (nrow(frame) == 0L) {
-    return(NA_character_)
-  }
+# Check participant/date-key equality across paired analytical samples.
+h08_key_hash <- function(frame) {
+  if (nrow(frame) == 0L) return(NA_character_)
   columns <- c("site", "Id")
   if ("local_date" %in% names(frame)) columns <- c(columns, "local_date")
-  if (include_values) {
-    value_columns <- intersect(
-      c("value", "response_value", "participant_value", "participant_response"),
-      names(frame)
-    )
-    columns <- c(columns, value_columns)
-  }
-  digest::digest(
-    as.data.frame(frame[columns]),
-    algo = "sha256",
-    serialize = TRUE
-  )
-}
-
-h08_key_hash <- function(frame) {
-  h08_frame_hash(frame, include_values = FALSE)
+  digest::digest(as.data.frame(frame[columns]), algo = "sha256", serialize = TRUE)
 }
 
 h08_capture_fit <- function(expression) {
@@ -266,9 +248,7 @@ h08_fit_bundle <- function(
     spec = spec,
     formula_kind = formula_kind,
     formulas = formulas,
-    fits = fits,
-    frame_key_hash = h08_key_hash(frame),
-    frame_hash = h08_frame_hash(frame)
+    fits = fits
   )
 }
 
@@ -928,7 +908,7 @@ h08_model_diagnostics <- function(bundle, frame) {
     startsWith(bounds$prediction_bound_status, "REVIEW") ||
     nzchar(fit_warnings)
   issue_codes <- c(
-    if (major_failure) "ADDITIVE_NUMERICAL_GATE",
+    if (major_failure) "ADDITIVE_NUMERICAL_CHECK",
     if (interaction_failure) "INTERACTION_NON_ESTIMABLE_OR_UNSTABLE",
     if (isTRUE(additive_status$singular)) "RANDOM_INTERCEPT_BOUNDARY",
     if (is.finite(qq_correlation) && qq_correlation < 0.95)
@@ -971,7 +951,7 @@ h08_model_diagnostics <- function(bundle, frame) {
         "ESTIMABLE"
       },
       diagnostic_status = if (major_failure) {
-        "FAIL_MAJOR_GATE"
+        "MODEL_CHECK_FAILED"
       } else if (review || interaction_failure) {
         "REVIEW_WITH_LIMITATIONS"
       } else {
@@ -1007,7 +987,7 @@ h08_diagnostic_plot_data <- function(model, frame) {
   )
 }
 
-h08_model_manifest_rows <- function(bundle) {
+h08_fit_index_rows <- function(bundle) {
   dplyr::bind_rows(lapply(names(bundle$fits), function(model_name) {
     fit <- bundle$fits[[model_name]]
     model <- fit$model
@@ -1122,196 +1102,4 @@ h08_leave_one_site_out <- function(frame, spec, score_sd, full_estimate) {
       }
     )
   }))
-}
-
-h08_load_v0_metrics <- function(path) {
-  environment <- new.env(parent = emptyenv())
-  object_names <- load(path, envir = environment)
-  if (length(object_names) != 1L) {
-    h08_abort("Unexpected number of V0 objects in `%s`", path)
-  }
-  object <- environment[[object_names[[1L]]]]
-  if (
-    !is.data.frame(object) ||
-      !all(c("name", "data", "metric_type") %in% names(object))
-  ) {
-    h08_abort("Unexpected V0 metric object in `%s`", path)
-  }
-  object
-}
-
-h08_v0_fit_model <- function(frame, formula, engine) {
-  if (engine == "lmer") {
-    return(h08_capture_fit(lme4::lmer(formula = formula, data = frame)))
-  }
-  h08_capture_fit(glmmTMB::glmmTMB(
-    formula = formula,
-    data = frame,
-    family = glmmTMB::tweedie(link = "log")
-  ))
-}
-
-h08_v0_comparison <- function(reduced_fit, full_fit) {
-  if (is.null(reduced_fit$model) || is.null(full_fit$model)) {
-    return(tibble::tibble(
-      statistic = NA_real_,
-      df = NA_real_,
-      p_raw = NA_real_,
-      status = "NON_ESTIMABLE"
-    ))
-  }
-  comparison <- tryCatch(
-    stats::anova(reduced_fit$model, full_fit$model),
-    error = function(condition) condition
-  )
-  if (inherits(comparison, "error")) {
-    return(tibble::tibble(
-      statistic = NA_real_,
-      df = NA_real_,
-      p_raw = NA_real_,
-      status = "NON_ESTIMABLE"
-    ))
-  }
-  p_column <- "Pr(>Chisq)"
-  statistic_column <- if ("Chisq" %in% names(comparison)) "Chisq" else
-    NA_character_
-  tibble::tibble(
-    statistic = if (is.na(statistic_column)) NA_real_ else {
-      as.numeric(comparison[[statistic_column]][2L])
-    },
-    df = if ("Chi Df" %in% names(comparison)) {
-      as.numeric(comparison[["Chi Df"]][2L])
-    } else {
-      NA_real_
-    },
-    p_raw = if (p_column %in% names(comparison)) {
-      as.numeric(comparison[[p_column]][2L])
-    } else {
-      NA_real_
-    },
-    status = if (p_column %in% names(comparison)) "PASS" else "NON_ESTIMABLE"
-  )
-}
-
-h08_reproduce_v0_placement <- function(path, placement, vlsq, metric_registry) {
-  v0 <- h08_load_v0_metrics(path) |>
-    dplyr::inner_join(
-      metric_registry |>
-        dplyr::select(
-          .data$metric_order,
-          .data$metric_id,
-          .data$manuscript_name,
-          .data$v0_name
-        ),
-      by = c("name" = "v0_name"),
-      relationship = "one-to-one"
-    ) |>
-    dplyr::arrange(.data$metric_order)
-  if (nrow(v0) != 9L) {
-    h08_abort(
-      "V0 `%s` reconstruction does not contain nine H08 metrics",
-      placement
-    )
-  }
-  formulas <- h08_v0_formula_set()
-  log_metrics <- c(
-    "daily_geometric_mean_medi",
-    "m10_mean_medi",
-    "l10_mean_medi",
-    "longest_bout_above_250",
-    "dose_time_sensitive_corrected_medi"
-  )
-  result_rows <- vector("list", nrow(v0))
-  model_rows <- vector("list", nrow(v0))
-  model_objects <- vector("list", nrow(v0))
-  for (index in seq_len(nrow(v0))) {
-    row <- v0[index, , drop = FALSE]
-    frame <- row$data[[1L]] |>
-      dplyr::left_join(
-        vlsq |>
-          dplyr::select(.data$site, .data$Id, .data$VLSQ8),
-        by = c("site", "Id"),
-        relationship = "many-to-one"
-      ) |>
-      dplyr::filter(is.finite(.data$metric), is.finite(.data$VLSQ8)) |>
-      dplyr::mutate(
-        response_value = if (row$metric_id %in% log_metrics) {
-          log10(.data$metric + 0.1)
-        } else {
-          .data$metric
-        }
-      )
-    engine <- if (
-      row$metric_id %in%
-        c(
-          "duration_above_1000",
-          "duration_above_250_wake",
-          "duration_below_10_pre_sleep",
-          "duration_below_1_sleep_environment"
-        )
-    ) {
-      "glmmTMB"
-    } else {
-      "lmer"
-    }
-    fits <- lapply(formulas, function(formula) {
-      h08_v0_fit_model(frame, formula, engine)
-    })
-    association <- h08_v0_comparison(fits$site_only, fits$full)
-    interaction <- h08_v0_comparison(fits$additive, fits$full)
-    site <- h08_v0_comparison(fits$vlsq_only, fits$additive)
-    scalar_adjusted <- if (is.finite(association$p_raw)) {
-      stats::p.adjust(association$p_raw, method = "fdr", n = 9L)
-    } else {
-      NA_real_
-    }
-    result_rows[[index]] <- dplyr::bind_cols(
-      tibble::tibble(
-        placement = placement,
-        metric_order = row$metric_order,
-        metric_id = row$metric_id,
-        manuscript_name = row$manuscript_name,
-        v0_name = row$name,
-        engine = engine,
-        participants = dplyr::n_distinct(frame$site, frame$Id),
-        participant_days = nrow(frame),
-        sites = dplyr::n_distinct(frame$site),
-        association_scalar_adjusted_p = scalar_adjusted
-      ),
-      association |>
-        dplyr::rename_with(~ paste0("association_", .x)),
-      interaction |>
-        dplyr::rename_with(~ paste0("interaction_", .x)),
-      site |>
-        dplyr::rename_with(~ paste0("site_", .x))
-    )
-    model_rows[[index]] <- frame |>
-      dplyr::transmute(
-        placement = placement,
-        metric_id = row$metric_id,
-        site = .data$site,
-        Id = .data$Id,
-        Date = if ("Date" %in% names(frame)) .data$Date else as.Date(NA),
-        metric = .data$metric,
-        VLSQ8 = .data$VLSQ8,
-        response_value = .data$response_value
-      )
-    model_objects[[index]] <- fits
-    names(model_objects)[[index]] <- paste(placement, row$metric_id, sep = "__")
-  }
-  results <- dplyr::bind_rows(result_rows) |>
-    dplyr::group_by(.data$placement) |>
-    dplyr::mutate(
-      consistent_vector_bh_p = stats::p.adjust(
-        .data$association_p_raw,
-        method = "BH",
-        n = 9L
-      )
-    ) |>
-    dplyr::ungroup()
-  list(
-    results = results,
-    model_rows = dplyr::bind_rows(model_rows),
-    models = model_objects
-  )
 }

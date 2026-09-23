@@ -1,0 +1,18 @@
+Category,Metric,Unit,Model unit,Response family
+Dynamics,Interdaily stability,dimensionless,Participant,Gaussian after logit transformation
+Dynamics,Intradaily variability,dimensionless,Participant,Gaussian on the identity scale
+Level,Mean melEDI,lx,Participant-day,Gaussian after log10(value + 0.1)
+Level,Brightest 10 h mean,lx,Participant-day,Gaussian after log10(value + 0.1)
+Level,Darkest 10 h mean,lx,Participant-day,Gaussian after log10(value + 0.1)
+Duration,"Time above 1,000 lx melEDI",h,Participant-day,Tweedie with log link
+Duration,Time above 250 lx melEDI during wake,h,Participant-day,Tweedie with log link
+Duration,Time below 10 lx melEDI before sleep,h,Participant-day,Gaussian on the identity scale
+Duration,Time below 1 lx melEDI during sleep,h,Participant-day,Tweedie with log link
+Duration,Longest continuous period above 250 lx melEDI,h,Participant-day,Gaussian after log10(value + 0.1)
+Timing,Midpoint of the brightest 10 hours,clock time,Participant-day,Gaussian on the linear clock scale
+Timing,Midpoint of the darkest 10 hours,clock time,Participant-day,Gaussian on the linear clock scale (strict after-16:00 cut)
+Timing,Mean timing of exposure above 250 lx melEDI,clock time,Participant-day,Gaussian on the linear clock scale
+Timing,First light timing above 250 lx melEDI,clock time,Participant-day,Gaussian on the linear clock scale
+Timing,Last light timing above 250 lx melEDI,clock time,Participant-day,Gaussian on the linear clock scale
+Exposure history,melEDI dose,lx·h,Participant-day,Gaussian after log10(value + 0.1)
+Spectrum,Melanopic daylight efficacy ratio,dimensionless,Participant-day,Gaussian on the identity scale

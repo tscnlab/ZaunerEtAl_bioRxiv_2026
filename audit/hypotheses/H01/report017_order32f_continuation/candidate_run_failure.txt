@@ -1,8 +1,0 @@
-COMMAND=env R_PROFILE_USER=/dev/null R_LIBS_USER="$PWD/renv/library/macos/R-4.6/aarch64-apple-darwin23" RENV_PATHS_SANDBOX=/private/tmp/H01-order32f-renv-sandbox NATHEALTH_PROJECT_ROOT="$PWD" Rscript --vanilla scripts/hypotheses/H01/refresh_h01_order32d_figures.R /private/tmp/H01-order32f-candidates.eDOsrp attempt01
-EXIT_STATUS=1
-WALL_TIME_SECONDS=9.210666167
-ERROR=Error in mutate(): In argument: expected_width = expected$png_width. Caused by error: expected_width must be size 1, not 3.
-FAILURE_LOCATION=scripts/hypotheses/H01/refresh_h01_order32d_figures.R:778-792
-FAILURE_CLASSIFICATION=NEW_FAIL_CLOSED_HARNESS_DEFECT
-ROOT_CAUSE=Inside the geometry-check lapply, filter(.data$figure_id == figure_id) resolves the right-hand figure_id through the data mask, retains all three baseline-spec rows, and supplies three expected widths and heights to a one-row mutate().
-DISPOSITION=Stopped without patch, retry, durable replacement, manifest reseal, builder edit, test edit, Quarto render, browser QA, scientific computation, commit, push, or upload.

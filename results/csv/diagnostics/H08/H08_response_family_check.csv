@@ -1,0 +1,10 @@
+metric_order,metric_id,manuscript_name,response_family,response_transform,inferential_targets,major_failures,review_targets,average_non_estimable,interaction_non_estimable,family_check_status
+1,daily_geometric_mean_medi,Mean melEDI,gaussian,log10_offset_0.1,4,0,0,0,0,PASS
+2,m10_mean_medi,Brightest 10 h mean,gaussian,log10_offset_0.1,4,0,0,0,0,PASS
+3,l10_mean_medi,Darkest 10 h mean,gaussian,log10_offset_0.1,4,0,4,0,0,RETAIN_WITH_EXPLICIT_LIMITATIONS
+4,duration_above_1000,"Time above 1,000 lx melEDI",tweedie_log,identity,4,0,0,0,0,PASS
+5,duration_above_250_wake,Time above 250 lx melEDI during wake,tweedie_log,identity,4,0,0,0,0,PASS
+6,duration_below_10_pre_sleep,Time below 10 lx melEDI before sleep,gaussian,identity,4,0,0,0,0,PASS
+7,duration_below_1_sleep_environment,Time below 1 lx melEDI during sleep,tweedie_log,identity,4,0,4,0,0,RETAIN_WITH_EXPLICIT_LIMITATIONS
+8,longest_bout_above_250,Longest continuous period above 250 lx melEDI,gaussian,log10_offset_0.1,4,0,0,0,0,PASS
+9,dose_time_sensitive_corrected_medi,melEDI dose,gaussian,log10_offset_0.1,4,0,2,0,0,RETAIN_WITH_EXPLICIT_LIMITATIONS

@@ -1,3 +1,4 @@
+
 parse_utc_offset_minutes <- function(offset) {
   if (!is.character(offset)) {
     abort_pipeline("UTC offset must be a character vector")

@@ -1,0 +1,120 @@
+---
+title: "Alternative preprocessing analysis"
+---
+
+The primary analysis derives its metrics from the downloaded recordings using
+explicit rules for missing intervals, temporal support, and measurement states.
+This sensitivity analysis asks how the results change when the metrics instead
+start from a fixed prepared baseline that is less explicit about gap timing.
+The model specifications are held fixed within each hypothesis.
+
+## Fixed local inputs
+
+The six files in `data/alternative-baseline/` contain near-eye and chest data:
+
+- `metrics_glasses.RData` and `metrics_chest.RData` contain participant and daily metrics.
+- `metrics_separate_glasses.RData` and `metrics_separate_chest.RData` contain the prepared 30-minute values.
+- `preprocessed_glasses_2.RData` and `preprocessed_chest_2.RData` contain the minute series used to derive hourly means and MDER.
+
+[Preparation of the analysis datasets](../preparation/06-analysis-datasets.qmd)
+imports these local inputs on every render. It checks their object structure,
+applies the metric crosswalk, derives hourly means, and recalculates MDER as the
+mean of positive, finite simultaneous minute ratios. MDER requires at least
+720 viable ratios on a complete 1,440-minute local-clock grid. Other baseline
+metrics retain their input values.
+
+The prepared baseline is the input to this alternative analysis. The primary
+analysis is reproduced from the downloaded recordings. No network download
+is needed when either analysis is rendered.
+
+## Compare metric values and sample support
+
+The following comparison uses the model-ready inputs from the same render.
+It reports available rows in each scenario and differences on their common
+sample. Participant-level metrics use one row per participant; daily metrics
+use one row per participant and date. Missing alternatives remain explicit.
+
+```{r}
+#| label: alternative-setup
+library(dplyr)
+library(tibble)
+library(gt)
+source("scripts/project.R")
+analysis_setup()
+source("scripts/hypotheses/H01/h01_contract.R")
+source("scripts/hypotheses/H01/h01_modeling.R")
+root <- getOption("nh.root")
+inputs <- h01_input_contract(root)
+primary <- readRDS(inputs$main$path)
+alternative <- readRDS(inputs$alternative_preprocessing$path)
+registry <- h01_metric_registry()
+```
+
+```{r}
+#| label: alternative-metric-comparison
+comparisons <- list()
+for (placement in c("glasses", "chest")) {
+  for (i in seq_len(nrow(registry))) {
+    spec <- registry[i, , drop = FALSE]
+    main_frame <- h01_prepare_model_frame(primary, spec, placement, "all_available")
+    alternative_frame <- h01_prepare_model_frame(alternative, spec, placement, "all_available")
+    common <- if (nrow(main_frame) && nrow(alternative_frame)) {
+      inner_join(
+        select(main_frame, site, participant_key, local_date, primary_value = value),
+        select(alternative_frame, site, participant_key, local_date, alternative_value = value),
+        by = c("site", "participant_key", "local_date"),
+        relationship = "one-to-one")
+    } else {
+      tibble(primary_value = numeric(), alternative_value = numeric())
+    }
+    difference <- common$alternative_value - common$primary_value
+    comparisons[[paste(placement, spec$metric_id)]] <- tibble(
+      placement = placement, metric_id = spec$metric_id,
+      analysis_unit = spec$analysis_unit,
+      primary_rows = nrow(main_frame), alternative_rows = nrow(alternative_frame),
+      common_rows = nrow(common),
+      mean_alternative_minus_primary = if (length(difference)) mean(difference) else NA_real_,
+      maximum_absolute_difference = if (length(difference)) max(abs(difference)) else NA_real_)
+  }
+}
+comparison <- bind_rows(comparisons)
+metric_labels <- readr::read_csv("config/metric_display_registry.csv",
+  show_col_types = FALSE) |>
+  select(metric_id, manuscript_name, display_unit)
+comparison |>
+  left_join(metric_labels, by = "metric_id", relationship = "many-to-one") |>
+  mutate(
+    placement = recode(placement, glasses = "Near eye", chest = "Chest"),
+    analysis_unit = recode(analysis_unit,
+      participant = "Participant", participant_day = "Participant-day"),
+    display_unit = if_else(display_unit == "clock time", "min", display_unit)
+  ) |>
+  select(placement, manuscript_name, display_unit, analysis_unit,
+    primary_rows, alternative_rows, common_rows,
+    mean_alternative_minus_primary, maximum_absolute_difference) |>
+  gt(groupname_col = "placement", rowname_col = "manuscript_name") |>
+  cols_label(display_unit = "Unit", analysis_unit = "Analysis unit",
+    primary_rows = "Primary rows", alternative_rows = "Alternative rows",
+    common_rows = "Common rows", mean_alternative_minus_primary = "Mean difference",
+    maximum_absolute_difference = "Maximum absolute difference") |>
+  fmt_number(columns = c(mean_alternative_minus_primary, maximum_absolute_difference), decimals = 3)
+```
+
+Differences in available rows describe changes in the analysis sample.
+Differences on common rows describe changes in the untransformed metric values,
+calculated as alternative minus primary. Timing values are stored as minutes
+since midnight, so their differences use that linear scale, not the shortest
+circular distance across midnight. These summaries alone do not assess the
+stability of model estimates. The individual
+hypothesis pages fit both scenarios where the alternative metric is available
+and report their estimates and uncertainty.
+
+```{r}
+#| label: alternative-export
+#| code-fold: true
+readr::write_csv(comparison,
+  "results/csv/source_data/alternative_preprocessing_metric_comparison.csv")
+```
+
+[Download the metric and sample comparison](../results/csv/source_data/alternative_preprocessing_metric_comparison.csv)
+for the full-precision values and metric identifiers.

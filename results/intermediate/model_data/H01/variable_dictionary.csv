@@ -1,0 +1,46 @@
+variable,meaning
+data_scenario_id,Prepared-data input used with the unchanged H01 model-data rules
+model_implementation_id,Model implementation used for both the main and prepared-data sensitivity inputs
+placement,Sensor placement: near-eye glasses or chest
+scenario,All available data or paired common participant-days
+metric_id,Stable internal identifier for one of the 17 H01 metrics
+analysis_unit,One participant or one participant-day
+site,Study-site code
+Id,Participant identifier within site
+local_date,Participant-local calendar date; missing for participant metrics
+participant_days_contributing,Number of participant-days represented by the model row
+prepared_record_expected_minutes,Expected minutes in the prepared 24-hour record represented by the row
+prepared_record_valid_melEDI_minutes,Valid melEDI minutes in the prepared 24-hour record represented by the row
+prepared_record_valid_illuminance_minutes,Valid illuminance minutes in the prepared 24-hour record; not applicable to IS or IV
+metric_support_valid_minutes,Valid minutes in the time window used to calculate this metric
+metric_support_expected_minutes,Expected minutes in the time window used to calculate this metric
+prepared_record_support_available,Whether exact support minutes are available for the prepared 24-hour record
+prepared_record_support_unavailability_reason,Reason exact prepared-record support minutes are unavailable
+metric_support_available,Whether exact support minutes are available for this metric value
+metric_support_unavailability_reason,Reason exact metric-support minutes are unavailable
+value,Untransformed metric value in source_unit
+metric_estimable,Whether the metric producer declared the value estimable
+metric_failure_reason,Exact producer-recorded reason when the metric is not estimable
+scenario_estimable,Whether the metric is available under the selected data scenario
+scenario_failure_reason,Exact reason the metric is unavailable under the selected data scenario
+photoperiod_hours,Civil-dawn to civil-dusk duration in hours
+photoperiod_centered_hours,Photoperiod minus the exact model-frame mean
+latitude_deg,Signed site latitude in degrees
+absolute_latitude_10deg,Absolute site latitude in units of 10 degrees
+absolute_latitude_10deg_centered,Absolute latitude minus the equal-site mean for the model frame
+site_photoperiod_included,Exact row flag for the site and photoperiod full/reduced comparison
+site_photoperiod_exclusion_reason,Reason a row is absent from the site and photoperiod comparison
+latitude_photoperiod_included,Exact row flag for the latitude and photoperiod full/reduced comparison
+latitude_photoperiod_exclusion_reason,Reason a row is absent from the latitude and photoperiod comparison
+model_observations,Number of participant or participant-day values fitted in the model
+participants,Number of distinct participants fitted in the model
+participant_days,Number of participant-days fitted; not applicable to participant-level models
+participant_hours,Number of participant-hours fitted; not applicable to H01 models
+contributing_participant_days,Participant-days used to derive the fitted metric values
+metric_support_missing_observations,Fitted values for which the metric producer did not report support minutes
+metric_support_valid_hours,Valid hours in the time window used to calculate the fitted metric values
+metric_support_expected_hours,Expected hours in the time window used to calculate the fitted metric values
+prepared_record_valid_melEDI_hours,Valid melEDI hours in the complete prepared 24-hour records represented by the fitted values
+prepared_record_valid_illuminance_hours,Valid illuminance hours in those complete prepared 24-hour records
+prepared_record_support_missing_observations,Fitted values for which exact support minutes for the complete prepared record are unavailable
+excluded_observations,Prepared participant or participant-day values excluded before fitting

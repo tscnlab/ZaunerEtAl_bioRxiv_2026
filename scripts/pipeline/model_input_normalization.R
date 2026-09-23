@@ -1,4 +1,3 @@
-# Contracts and pure helpers for Preparation 06 model-input normalization.
 
 model_input_normalization_modalities <- function() {
   c(
@@ -90,84 +89,6 @@ model_input_time_contract <- function() {
   )
 }
 
-model_input_normalization_paths <- function(root = project_root()) {
-  root <- normalizePath(root, winslash = "/", mustWork = TRUE)
-  normalized_root <- file.path(
-    root,
-    "artifacts",
-    "06_model_data",
-    "normalized_inputs"
-  )
-  audit_root <- file.path(normalized_root, "audits")
-  modality_paths <- stats::setNames(
-    file.path(
-      normalized_root,
-      paste0(model_input_normalization_modalities(), ".rds")
-    ),
-    model_input_normalization_modalities()
-  )
-  audit_paths <- c(
-    source_schema = file.path(audit_root, "source_schema_audit.csv"),
-    labels = file.path(audit_root, "label_audit.csv"),
-    keys = file.path(audit_root, "key_audit.csv"),
-    missingness = file.path(audit_root, "missingness_audit.csv"),
-    intervals = file.path(audit_root, "interval_audit.csv"),
-    interval_issues = file.path(audit_root, "interval_issue_audit.csv"),
-    free_text = file.path(audit_root, "free_text_audit.csv"),
-    value_preservation = file.path(
-      audit_root,
-      "value_preservation_audit.csv"
-    )
-  )
-  list(
-    root = root,
-    normalized_root = normalized_root,
-    audit_root = audit_root,
-    modality_paths = modality_paths,
-    audit_paths = audit_paths,
-    manifest = file.path(
-      root,
-      "artifacts",
-      "12_manifests",
-      "model_input_normalization.csv"
-    )
-  )
-}
-
-model_input_normalization_manifest_columns <- function() {
-  c(
-    "artifact_id",
-    "artifact_type",
-    "modality",
-    "path",
-    "sha256",
-    "bytes",
-    "rows",
-    "columns",
-    "input_manifest_sha256",
-    "producer",
-    "r_version"
-  )
-}
-
-model_input_normalization_expected_artifacts <- function() {
-  c(
-    paste0("normalized_", model_input_normalization_modalities()),
-    paste0(
-      "audit_",
-      c(
-        "source_schema",
-        "labels",
-        "keys",
-        "missingness",
-        "intervals",
-        "interval_issues",
-        "free_text",
-        "value_preservation"
-      )
-    )
-  )
-}
 
 model_input_attribute_text <- function(column, attribute) {
   value <- attr(column, attribute, exact = TRUE)
@@ -224,101 +145,6 @@ model_input_known_label_difference <- function(
       is.na(source_label)
   ] <- "rise_sleep_duration_label_missing"
   code
-}
-
-load_verified_model_input_object <- function(
-  manifest_row,
-  root = project_root()
-) {
-  if (nrow(manifest_row) != 1L) {
-    abort_pipeline(
-      "A verified model-input manifest row must contain one record"
-    )
-  }
-  path <- model_input_absolute_path(
-    manifest_row$cache_path,
-    root = root,
-    must_work = TRUE
-  )
-  if (
-    !identical(artifact_sha256(path), manifest_row$sha256) ||
-      !isTRUE(unname(file.info(path)$size) == manifest_row$bytes)
-  ) {
-    abort_pipeline(
-      "Verified model-input content changed for %s/%s",
-      manifest_row$site,
-      manifest_row$modality
-    )
-  }
-  source_environment <- new.env(parent = emptyenv())
-  loaded_names <- load(path, envir = source_environment)
-  if (
-    length(loaded_names) != 1L ||
-      !identical(loaded_names, manifest_row$object_name)
-  ) {
-    abort_pipeline(
-      "Verified model input %s/%s no longer contains the exact sole object",
-      manifest_row$site,
-      manifest_row$modality
-    )
-  }
-  object <- source_environment[[loaded_names]]
-  if (!is.data.frame(object)) {
-    abort_pipeline(
-      "Verified model input %s/%s is not a data frame",
-      manifest_row$site,
-      manifest_row$modality
-    )
-  }
-  object
-}
-
-collect_model_input_records <- function(
-  manifest,
-  site_sources,
-  root = project_root()
-) {
-  present <- manifest$observed_status %in%
-    c("present_reused", "present_downloaded")
-  manifest <- manifest[present, , drop = FALSE]
-  expected_modalities <- model_input_normalization_modalities()
-  if (!setequal(unique(manifest$modality), expected_modalities)) {
-    abort_pipeline(
-      "Verified model inputs do not contain the exact normalization modalities"
-    )
-  }
-  site_order <- match(manifest$site, site_sources$site)
-  modality_order <- match(manifest$modality, expected_modalities)
-  if (anyNA(site_order) || anyNA(modality_order)) {
-    abort_pipeline("Verified model-input manifest has unknown site or modality")
-  }
-  manifest <- manifest[
-    order(site_order, modality_order),
-    ,
-    drop = FALSE
-  ]
-
-  records <- lapply(seq_len(nrow(manifest)), function(row_index) {
-    source_row <- manifest[row_index, , drop = FALSE]
-    site_row <- site_sources[
-      match(source_row$site, site_sources$site),
-      ,
-      drop = FALSE
-    ]
-    list(
-      site = source_row$site,
-      modality = source_row$modality,
-      manifest = source_row,
-      site_source = site_row,
-      data = load_verified_model_input_object(source_row, root = root)
-    )
-  })
-  names(records) <- paste(
-    vapply(records, `[[`, character(1), "site"),
-    vapply(records, `[[`, character(1), "modality"),
-    sep = "/"
-  )
-  records
 }
 
 build_model_input_source_audits <- function(records) {
@@ -1236,31 +1062,4 @@ validate_normalized_model_inputs <- function(
     )
   }
   invisible(normalized)
-}
-
-model_input_normalization_manifest_row <- function(
-  metadata,
-  artifact_id,
-  artifact_type,
-  modality,
-  root,
-  input_manifest_sha256
-) {
-  tibble::tibble(
-    artifact_id = artifact_id,
-    artifact_type = artifact_type,
-    modality = modality,
-    path = model_input_project_relative_path(
-      metadata$path,
-      root = root,
-      must_work = TRUE
-    ),
-    sha256 = metadata$sha256,
-    bytes = as.numeric(metadata$bytes),
-    rows = as.integer(metadata$rows),
-    columns = as.integer(metadata$columns),
-    input_manifest_sha256 = input_manifest_sha256,
-    producer = metadata$producer,
-    r_version = metadata$r_version
-  )
 }

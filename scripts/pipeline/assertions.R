@@ -1,3 +1,4 @@
+
 abort_pipeline <- function(message, ..., call = NULL) {
   rlang::abort(sprintf(message, ...), call = call)
 }

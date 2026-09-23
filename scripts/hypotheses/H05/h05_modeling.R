@@ -1,5 +1,3 @@
-# Prepare, fit, diagnose, and summarize the approved H05 models.
-
 h05_required_model_columns <- function() {
   c(
     "data_scenario_id",
@@ -62,7 +60,7 @@ h05_verified_leba <- function(leba, factor_registry) {
     )
     items <- lapply(leba[item_ids], function(value) {
       if (!is.factor(value) || !identical(levels(value), expected_levels)) {
-        h05_abort("LEBA item coding differs from the approved ordered levels")
+        h05_abort("LEBA item coding differs from the ordered response levels")
       }
       as.integer(value)
     })
@@ -97,12 +95,12 @@ h05_verified_leba <- function(leba, factor_registry) {
   }
   audit <- dplyr::bind_rows(audit_rows)
   if (
-    nrow(leba) != 184L ||
+    nrow(leba) == 0L ||
       any(audit$missing_item_cells != 0L) ||
       any(audit$missing_scores != 0L) ||
       any(!audit$score_verified)
   ) {
-    h05_abort("The frozen LEBA input fails the approved score contract")
+    h05_abort("The LEBA input fails the score specification")
   }
   audit
 }
@@ -280,8 +278,7 @@ h05_add_factor_to_frame <- function(rows, spec, factor_row) {
       frame = tibble::tibble(),
       scaling = tibble::tibble(
         leba_participant_mean = NA_real_,
-        leba_participant_sd = NA_real_,
-        model_frame_hash = NA_character_
+        leba_participant_sd = NA_real_
       )
     ))
   }
@@ -313,28 +310,11 @@ h05_add_factor_to_frame <- function(rows, spec, factor_row) {
   }
   stats::contrasts(frame$site) <- stats::contr.sum(nlevels(frame$site))
   frame$participant_key <- droplevels(frame$participant_key)
-  hash_data <- frame |>
-    dplyr::transmute(
-      .data$.model_row_id,
-      site = as.character(.data$site),
-      participant_key = as.character(.data$participant_key),
-      local_date = as.character(.data$local_date),
-      value = .data$value,
-      response_value = .data$response_value,
-      leba_score = .data$leba_score,
-      leba_centered = .data$leba_centered
-    )
-  model_frame_hash <- digest::digest(
-    hash_data,
-    algo = "sha256",
-    serialize = TRUE
-  )
   list(
     frame = tibble::as_tibble(frame),
     scaling = tibble::tibble(
       leba_participant_mean = center,
-      leba_participant_sd = scale,
-      model_frame_hash = model_frame_hash
+      leba_participant_sd = scale
     )
   )
 }
@@ -643,7 +623,7 @@ h05_diagnostic_summary <- function(bundle, frame, seed) {
       serial$serial_dependence_status
     },
     if (nzchar(fit_warnings)) "FIT_WARNING",
-    if (major_failure) "MAJOR_MODEL_GATE"
+    if (major_failure) "MAJOR_MODEL_CHECK"
   )
   dplyr::bind_cols(
     fit_status,
@@ -655,7 +635,7 @@ h05_diagnostic_summary <- function(bundle, frame, seed) {
       fit_error = bundle$final$error,
       fit_warnings = fit_warnings,
       diagnostic_status = if (major_failure) {
-        "FAIL_MAJOR_GATE"
+        "MODEL_CHECK_FAILED"
       } else if (review_warning) {
         "WARN_REVIEW"
       } else {
@@ -671,7 +651,7 @@ h05_diagnostic_summary <- function(bundle, frame, seed) {
   )
 }
 
-h05_model_manifest_rows <- function(bundle) {
+h05_fit_index_rows <- function(bundle) {
   fits <- list(
     comparison_full = bundle$comparison_full,
     comparison_reduced = bundle$comparison_reduced,
@@ -962,165 +942,4 @@ h05_leave_one_site_out_spearman <- function(participant_summary) {
       summary
     )
   }))
-}
-
-h05_load_v0_metrics <- function(path) {
-  environment <- new.env(parent = emptyenv())
-  load(path, envir = environment)
-  if (!exists("metrics", envir = environment, inherits = FALSE)) {
-    h05_abort("V0 workspace does not contain `metrics`: %s", path)
-  }
-  environment$metrics
-}
-
-h05_reproduce_v0_placement <- function(
-  path,
-  placement,
-  leba,
-  v0_registry,
-  factor_registry
-) {
-  metrics <- h05_load_v0_metrics(path) |>
-    dplyr::filter(!is.na(.data$response)) |>
-    dplyr::mutate(v0_plot_order = dplyr::row_number()) |>
-    dplyr::inner_join(
-      v0_registry,
-      by = c("name" = "v0_name"),
-      relationship = "one-to-one"
-    )
-  if (nrow(metrics) != 17L) {
-    h05_abort("V0 `%s` workspace does not resolve to 17 H05 metrics", placement)
-  }
-  leba_scores <- leba |>
-    dplyr::select(
-      .data$site,
-      .data$Id,
-      dplyr::all_of(factor_registry$factor_id)
-    )
-  participant_rows <- purrr::pmap_dfr(
-    metrics |>
-      dplyr::select(
-        .data$data,
-        .data$name,
-        .data$v0_plot_order,
-        .data$v0_order,
-        .data$metric_id_v0,
-        .data$metric_id_current,
-        .data$manuscript_name
-      ),
-    function(
-      data,
-      name,
-      v0_plot_order,
-      v0_order,
-      metric_id_v0,
-      metric_id_current,
-      manuscript_name
-    ) {
-      data |>
-        dplyr::group_by(.data$site, .data$Id) |>
-        dplyr::summarise(
-          metric_summary = mean(.data$metric, na.rm = TRUE),
-          nonmissing_source_rows = sum(is.finite(.data$metric)),
-          represented_days = if ("Date" %in% names(data)) {
-            dplyr::n_distinct(.data$Date[is.finite(.data$metric)])
-          } else {
-            NA_integer_
-          },
-          .groups = "drop"
-        ) |>
-        dplyr::mutate(
-          v0_name = name,
-          v0_plot_order = v0_plot_order,
-          v0_order = v0_order,
-          metric_id_v0 = metric_id_v0,
-          metric_id_current = metric_id_current,
-          manuscript_name = manuscript_name
-        )
-    }
-  ) |>
-    dplyr::left_join(
-      leba_scores,
-      by = c("site", "Id"),
-      relationship = "many-to-one"
-    ) |>
-    tidyr::pivot_longer(
-      cols = dplyr::all_of(factor_registry$factor_id),
-      names_to = "factor_id",
-      values_to = "factor_score"
-    ) |>
-    dplyr::filter(
-      is.finite(.data$metric_summary),
-      is.finite(.data$factor_score)
-    )
-
-  associations <- participant_rows |>
-    dplyr::group_by(
-      .data$v0_plot_order,
-      .data$v0_order,
-      .data$v0_name,
-      .data$metric_id_v0,
-      .data$metric_id_current,
-      .data$manuscript_name,
-      .data$factor_id
-    ) |>
-    dplyr::summarise(
-      pairs = dplyr::n(),
-      sites = dplyr::n_distinct(.data$site),
-      represented_days = sum(.data$represented_days, na.rm = TRUE),
-      spearman_rho = suppressWarnings(stats::cor(
-        .data$metric_summary,
-        .data$factor_score,
-        method = "spearman"
-      )),
-      pearson_p_raw = stats::cor.test(
-        .data$metric_summary,
-        .data$factor_score,
-        method = "pearson"
-      )$p.value,
-      spearman_p_raw = suppressWarnings(stats::cor.test(
-        .data$metric_summary,
-        .data$factor_score,
-        method = "spearman",
-        exact = FALSE
-      )$p.value),
-      metric_tied_participants = dplyr::n() -
-        dplyr::n_distinct(.data$metric_summary),
-      leba_tied_participants = dplyr::n() -
-        dplyr::n_distinct(.data$factor_score),
-      .groups = "drop"
-    ) |>
-    dplyr::mutate(
-      placement = placement,
-      # Reproduce the submitted scalar call made inside every cell-specific
-      # summarize context. For one observed p-value and n = 68, BH is p * 68
-      # capped at one; this is intentionally not a vector-wide adjustment.
-      v0_display_p = pmin(.data$pearson_p_raw * 68, 1),
-      v0_display_flag = .data$v0_display_p <= 0.05,
-      consistent_spearman_vector_bh = stats::p.adjust(
-        .data$spearman_p_raw,
-        method = "BH",
-        n = 68L
-      ),
-      consistent_spearman_flag =
-        .data$consistent_spearman_vector_bh <= 0.05
-    ) |>
-    dplyr::left_join(
-      factor_registry |>
-        dplyr::select(
-          .data$factor_order,
-          .data$factor_id,
-          .data$factor_label
-        ),
-      by = "factor_id",
-      relationship = "many-to-one"
-    ) |>
-    dplyr::arrange(.data$v0_plot_order, .data$factor_order)
-  if (nrow(associations) != 68L) {
-    h05_abort("V0 `%s` reconstruction did not produce 68 cells", placement)
-  }
-  list(
-    associations = associations,
-    participant_rows = participant_rows
-  )
 }

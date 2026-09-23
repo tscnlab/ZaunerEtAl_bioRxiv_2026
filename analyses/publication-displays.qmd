@@ -1,0 +1,237 @@
+---
+title: "Publication figures and tables"
+css: ../styles/manuscript.css
+format:
+  html:
+    code-fold: false
+execute:
+  echo: true
+  freeze: false
+---
+
+The preceding pages prepare the data, fit the models, and display their results.
+This page assembles the figures and tables used in the manuscript and its
+supplementary material. Every input is generated earlier in the same project
+render. The table objects retain the data and formatting shown on the analysis
+pages; the paired CSV files make the displayed values available independently.
+
+```{r}
+#| label: publication-setup
+
+source("scripts/project.R")
+analysis_setup()
+source("scripts/reporting/publication.R")
+```
+
+## Descriptive and hypothesis tables
+
+The main participant table and the detailed supplementary results use the same
+styled table objects that are displayed beside their analyses. The table below
+identifies each source by its executable Quarto cell label. These are regenerated
+objects, so changing an analysis propagates to the manuscript in the same render.
+
+```{r}
+#| label: publication-table-sources
+
+source_tables <- tibble::tribble(
+  ~publication_table, ~analysis_cell,
+  "table-1", "tbl-participant-site-manuscript",
+  "table-s1", "tbl-descriptive-sample-flow",
+  "table-s2", "tbl-near-eye-metrics",
+  "table-s3", "tbl-recommendation-context",
+  "table-s7", "tbl-h01-primary-publication-summary",
+  "table-s8", "tbl-h07-near-results",
+  "table-s9", "tbl-h06-primary-effects",
+  "table-s11a", "tbl-h05-near-results-a",
+  "table-s11b", "tbl-h05-near-results-b",
+  "table-s12", "tbl-h08-near-eye-results",
+  "table-s13", "tbl-h09-near-eye-results",
+  "table-s14", "tbl-h10-main-results",
+  "table-s15", "tbl-h11-global-tests"
+)
+source_tables
+```
+
+```{r}
+#| label: publication-share-tables
+
+for (i in seq_len(nrow(source_tables))) {
+  table <- read_analysis_table(source_tables$analysis_cell[[i]])
+  if (source_tables$publication_table[[i]] == "table-s8") {
+    table <- gt::text_transform(table, function(x) ifelse(x == ";", "Not applicable", x),
+      locations = gt::cells_body())
+  }
+  save_publication_table(table, source_tables$publication_table[[i]])
+}
+```
+
+Table 3 combines the metric definitions, descriptive distributions, fitted
+associations and represented variation. Its inferential quantities are those
+shown in the geographic analysis, and the supplementary tables retain the
+complete geographic and photoperiod results. The compact table uses the same
+regenerated distributions as the descriptive metric dictionary, with site colours
+and no site-name labels inside the thumbnails. Decimal hours are used for duration
+summaries, while timing summaries retain clock notation.
+
+```{r}
+#| label: tbl-publication-metric-context
+#| tbl-cap: "Near-eye light-exposure metrics, their distributions and geographic context."
+
+metric_context_table <- build_metric_publication_table()
+save_publication_table(metric_context_table, "table-3")
+publication_html_metric_table(metric_context_table)
+```
+
+## Recommendation adherence
+
+The main adherence table combines descriptive pooled-minute fractions with
+modelled recommendation-window estimates. These have different denominators.
+Only the primary any-valid sample contributes the model estimates in this table;
+coverage sensitivities remain on the recommendation-adherence analysis page.
+
+```{r}
+#| label: tbl-publication-recommendation-adherence
+#| tbl-cap: "Recommendation adherence by recommendation window and day type."
+
+adherence_table <- build_adherence_publication_table()
+save_publication_table(adherence_table, "table-2")
+adherence_table
+```
+
+The exploratory cross-window table separates within-participant contrasts from
+between-participant differences. Its displayed effects come from the four-effect
+FDR family and preserve the temporal-dependence qualification.
+
+```{r}
+#| label: tbl-publication-cross-window-associations
+#| tbl-cap: "Exploratory cross-window adherence associations."
+
+cross_window_table <- build_cross_window_table()
+save_publication_table(cross_window_table, "table-s4")
+cross_window_table
+```
+
+## Daily-pattern variation
+
+Fitted-curve dispersion and Shapley allocation summarise different aspects of the
+same daily-pattern models. Each position is assembled separately from its
+regenerated estimates and bootstrap intervals. The bootstrap count follows the
+central full or quick-run setting.
+
+```{r}
+#| label: tbl-publication-near-eye-variation
+#| tbl-cap: "Near-eye fitted-curve dispersion and allocation of in-sample model fit."
+
+near_eye_variation <- build_temporal_summary_table("glasses")
+save_publication_table(near_eye_variation, "table-s5")
+near_eye_variation
+```
+
+```{r}
+#| label: tbl-publication-chest-variation
+#| tbl-cap: "Complementary chest fitted-curve dispersion and allocation of in-sample model fit."
+
+chest_variation <- build_temporal_summary_table("chest")
+save_publication_table(chest_variation, "table-s6")
+chest_variation
+```
+
+## Person-level synthesis
+
+The synthesis selects the prespecified near-eye analyses. Retained associations,
+confidence intervals, exact samples and FDR decisions are read from the current
+model outputs. This keeps an inconclusive association distinct from evidence of
+absence and keeps the two chronotype instruments separate.
+
+```{r}
+#| label: tbl-publication-person-level-synthesis
+#| tbl-cap: "Person-level evidence synthesis."
+
+person_level_table <- build_person_level_summary()
+save_publication_table(person_level_table, "table-s10")
+person_level_table
+```
+
+## Light-source and activity figure assembly
+
+The temporal curve panels are generated on the light-source and activity pages.
+Here, the site-average estimates, site-specific ratios, confidence intervals,
+FDR decisions, and exact category support are read from their current CSV
+exports and laid out as the fourth panel. The activity display keeps Other as
+an additive descriptive estimate separate from its five-category interaction.
+
+```{r}
+#| label: publication-context-figures
+
+source("scripts/reporting/context-figures.R")
+build_light_source_publication_figure()
+build_activity_publication_figure()
+```
+
+## Figures
+
+The figure files below are produced by their respective analyses. This page
+assigns manuscript filenames to the regenerated images. Vector images are used
+when available; PNG versions provide a portable alternative for Word. Each
+analysis also exports the exact data used to draw its figures.
+
+```{r}
+#| label: publication-figure-sources
+
+figure_sources <- tibble::tribble(
+  ~figure, ~source_pattern,
+  "figure-1", "^descriptive_overview[.](svg|png)$",
+  "figure-2", "^daily_patterns[.](svg|png)$",
+  "figure-3", "^H04.*manuscript_figure3[.](svg|png)$",
+  "figure-s1", "^near_eye_metric_distributions[.](svg|png)$",
+  "figure-s2", "^time_series_to_metrics[.](svg|png)$",
+  "figure-s3", "^latitude_photoperiod_diagnostic[.](svg|png)$",
+  "figure-s4", "^main_adherence_levels[.](svg|png)$",
+  "figure-s5a", "^main_site_workday[.](svg|png)$",
+  "figure-s5b", "^main_site_free_work[.](svg|png)$",
+  "figure-s6", "^participant_state_raincloud[.](svg|png)$",
+  "figure-s7", "^H01.*model_support[.](svg|png)$",
+  "figure-s8", "^H07.*smooth_derivative_pairs_near_eye[.](svg|png)$",
+  "figure-s9", "^H03_light_source_patterns[.](svg|png)$",
+  "figure-s10", "^H06_paired_placement_effects[.](svg|png)$",
+  "figure-s11", "^H06_reader_temporal_day_type[.](svg|png)$",
+  "figure-s12", "^H06_reader_temporal_activity[.](svg|png)$",
+  "figure-s13", "^H06.*site_specific_significance_screen[.](svg|png)$",
+  "figure-s14", "^H05_reader_near_eye_effects[.](svg|png)$",
+  "figure-s15", "^H08_near_eye_effects[.](svg|png)$",
+  "figure-s16", "^H09_primary_effects[.](svg|png)$",
+  "figure-s17", "^H09_observed_timing_patterns[.](svg|png)$",
+  "figure-s18", "^H10_age_site_significant_associations[.](svg|png)$",
+  "figure-s19", "^H11_reader_primary_near_eye_curves[.](svg|png)$"
+)
+figure_sources
+```
+
+```{r}
+#| label: publication-save-figures
+
+figure_paths <- purrr::map2_dfr(
+  figure_sources$figure,
+  figure_sources$source_pattern,
+  publish_figure
+)
+readr::write_csv(
+  figure_paths,
+  "results/csv/source_data/publication/figure-paths.csv"
+)
+figure_paths
+```
+
+The [manuscript](../index.qmd) and [supplementary material](../supplementary.qmd)
+now read these tables and images. Their figures and tables do not require
+pre-existing rendered pages or manual copying.
+
+
+## Word table layout
+
+The manuscript uses native, editable Word tables. After Quarto writes `docs/index.docx`,
+the project hook `scripts/reporting/word-layout.R` normalises paragraph alignment,
+keeps table rows together, repeats column headings and gives wide tables landscape
+pages. It reads the newly rendered Word file and changes layout properties only;
+the text, numerical cells and embedded figures are preserved. This step runs
+automatically as part of `quarto render`.

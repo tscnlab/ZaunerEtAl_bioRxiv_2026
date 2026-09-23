@@ -1,0 +1,231 @@
+div.manuscript-table,
+div.supplementary-table {
+  margin: 1.25rem 0 1.75rem;
+}
+
+
+#tbl-participant-site .quarto-float-caption,
+#tbl-participant-site figcaption,
+#tbl-participant-site > p:last-child {
+  text-align: left !important;
+}
+
+
+div.manuscript-table .gt_table,
+div.supplementary-table .gt_table {
+  font-size: 12px !important;
+}
+
+div.manuscript-table .gt_col_heading,
+div.manuscript-table .gt_group_heading,
+div.manuscript-table .gt_row,
+div.manuscript-table .gt_stub,
+div.supplementary-table .gt_col_heading,
+div.supplementary-table .gt_group_heading,
+div.supplementary-table .gt_row,
+div.supplementary-table .gt_stub {
+  font-size: 12px !important;
+}
+
+div.manuscript-table .gt_col_heading > *,
+div.manuscript-table .gt_group_heading > *,
+div.manuscript-table .gt_row > *,
+div.manuscript-table .gt_stub > *,
+div.supplementary-table .gt_col_heading > *,
+div.supplementary-table .gt_group_heading > *,
+div.supplementary-table .gt_row > *,
+div.supplementary-table .gt_stub > * {
+  font-size: inherit !important;
+}
+
+div.manuscript-table .gt_title,
+div.supplementary-table .gt_title {
+  font-size: 125% !important;
+}
+
+div.manuscript-table .gt_sourcenote,
+div.manuscript-table .gt_footnote,
+div.supplementary-table .gt_sourcenote,
+div.supplementary-table .gt_footnote {
+  font-size: 90% !important;
+}
+
+.manuscript-table .gt_table,
+.supplementary-table .gt_table {
+  max-width: 100%;
+}
+
+
+#tbl-near-eye-metrics .gt_table {
+  min-width: 126rem !important;
+  max-width: none !important;
+}
+
+#tbl-near-eye-metrics .gt_stub,
+#tbl-near-eye-metrics thead th:first-child {
+  width: 22rem !important;
+  min-width: 22rem !important;
+}
+
+.local-table-scroll,
+div.manuscript-table,
+div.supplementary-table {
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+
+
+
+.local-table-scroll:focus,
+div.manuscript-table:focus-within,
+div.supplementary-table:focus-within {
+  outline: 2px solid #2b6f85;
+  outline-offset: 2px;
+}
+
+.display-figure img,
+.panel-item img,
+figure img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+
+#fig-s3 img {
+  width: 61.5%;
+  max-width: 33rem;
+  margin-inline: auto;
+}
+
+.supplementary-panel-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  align-items: start;
+  margin: 1rem 0;
+}
+
+.panel-item {
+  position: relative;
+  min-width: 0;
+}
+
+.panel-tag {
+  position: absolute;
+  top: 0.45rem;
+  left: 0.45rem;
+  z-index: 2;
+  min-width: 1.8rem;
+  padding: 0.12rem 0.35rem;
+  border-radius: 0.18rem;
+  background: rgba(255, 255, 255, 0.9);
+  color: #111;
+  font-weight: 800;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.supplementary-caption {
+  margin-top: 0.6rem;
+  color: #303840;
+}
+
+#refs .csl-entry,
+#refs .csl-right-inline,
+#refs a {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 708px) {
+  .quarto-title-meta-author {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) !important;
+    column-gap: 0.75rem;
+  }
+
+  .quarto-title-meta-author > .quarto-title-meta-heading,
+  .quarto-title-meta-author > .quarto-title-meta-contents {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .supplementary-panel-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .manuscript-table .gt_table,
+  .supplementary-table .gt_table {
+    min-width: 44rem;
+  }
+
+  #fig-s3 img {
+    width: 100%;
+    max-width: 100%;
+  }
+}
+
+
+#supp-table-s2 #near-eye-metric-summary .gt_table,
+#supp-table-s2 #near-eye-metric-summary .gt_row,
+#supp-table-s2 #near-eye-metric-summary .gt_stub,
+#supp-table-s2 #near-eye-metric-summary .gt_col_heading,
+#supp-table-s2 #near-eye-metric-summary .gt_group_heading {font-size:12px !important;}
+#supp-table-s2 #near-eye-metric-summary {position:relative;max-width:100%;min-width:0;}
+#supp-table-s5 *, #supp-table-s6 *, #supp-table-s10 * {font-family:Arial,Helvetica,sans-serif !important;}
+.figure-panel {display:block;width:100%;margin:0 0 1.25rem;}
+.panel-tag {display:block;text-align:left;font-weight:700;margin:0 0 .3rem;}
+
+
+div.manuscript-table.column-page-left,
+div.supplementary-table.column-page-left {
+  grid-column:screen-start-inset / body-content-end !important;
+  width:auto; max-width:none;
+}
+#supp-table-s2 #near-eye-metric-summary {
+  width:100% !important; min-width:0 !important; max-width:100% !important;
+  overflow-x:auto; overflow-y:visible;
+}
+#supp-table-s2 #near-eye-metric-summary .gt_table {
+  width:1755px !important; min-width:1755px !important; max-width:none !important;
+  table-layout:fixed;
+}
+#supp-table-s2 #near-eye-metric-summary .gt_row img {
+  display:block; height:54px !important; width:auto !important;
+  max-width:100%; object-fit:contain; margin:auto;
+}
+#supp-table-s2 #near-eye-metric-summary .gt_stub > span[style*="font-size:10.5px"] {
+  font-size:10.5px !important;
+}
+#supp-table-s2 #near-eye-metric-summary .gt_row > span[style*="font-size:10px"] {
+  font-size:10px !important;
+}
+
+/* Layout shared by the manuscript and supplementary material. */
+.display-figure img { display: block; max-width: 100%; height: auto; margin: 1rem auto; }
+.figure-panel { position: relative; margin: 1.5rem 0; }
+.panel-tag { font-weight: 700; font-size: 1.2rem; }
+.manuscript-table, .supplementary-table { max-width: 100%; overflow-x: auto; }
+@media print { .manuscript-table, .supplementary-table { overflow: visible; } }
+
+/* Web-only geometry; Word retains its own accepted column widths. */
+#metric-context-summary { max-width: 100%; overflow-x: auto; }
+#metric-context-summary .gt_table {
+  width: 1240px !important; min-width: 1240px !important; max-width: none !important;
+  table-layout: fixed; font-size: 12px !important;
+}
+#metric-context-summary .gt_col_heading,
+#metric-context-summary .gt_row,
+#metric-context-summary .gt_stub { font-size: 12px !important; }
+#metric-context-summary .metric-density-thumb {
+  display: block; width: 180px !important; max-width: 180px !important; height: 82px;
+  object-fit: contain; margin: auto;
+}
+#metric-context-summary .compact-line { margin: 0 0 2px; line-height: 1.18; }
+#metric-context-summary .compact-line > strong { white-space: nowrap; }
+#metric-context-summary .gt_stub { font-weight: 400; line-height: 1.2; }
+#metric-context-summary tbody tr:not(:has(.gt_group_heading)) td,
+#metric-context-summary tbody tr:not(:has(.gt_group_heading)) th {
+  vertical-align: middle; min-height: 90px;
+}

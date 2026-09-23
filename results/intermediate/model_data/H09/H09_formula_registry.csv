@@ -1,0 +1,27 @@
+analysis_kind,instrument,formula_id,formula
+participant_day,MCTQ,M0_site_only,timing_hour ~ site + (1 | site:Id)
+participant_day,MCTQ,M1_main,timing_hour ~ site + mctq_hour_centered + (1 | site:Id)
+participant_day,MCTQ,M2_interaction,timing_hour ~ site * mctq_hour_centered + (1 | site:Id)
+participant_day,MCTQ,D_spline,"timing_hour ~ site + splines::ns(mctq_hour_centered, df = 3) +      (1 | site:Id)"
+participant_day,MEQ,M0_site_only,timing_hour ~ site + (1 | site:Id)
+participant_day,MEQ,M1_main,timing_hour ~ site + meq_10_centered + (1 | site:Id)
+participant_day,MEQ,M2_interaction,timing_hour ~ site * meq_10_centered + (1 | site:Id)
+participant_day,MEQ,D_spline,"timing_hour ~ site + splines::ns(meq_10_centered, df = 3) + (1 |      site:Id)"
+photoperiod_sensitivity,MCTQ,P0_site_photoperiod,timing_hour ~ site + photoperiod_within_site + (1 | site:Id)
+photoperiod_sensitivity,MCTQ,P1_main,timing_hour ~ site + photoperiod_within_site + mctq_hour_centered +      (1 | site:Id)
+photoperiod_sensitivity,MCTQ,P2_interaction,timing_hour ~ site * mctq_hour_centered + photoperiod_within_site +      (1 | site:Id)
+photoperiod_sensitivity,MEQ,P0_site_photoperiod,timing_hour ~ site + photoperiod_within_site + (1 | site:Id)
+photoperiod_sensitivity,MEQ,P1_main,timing_hour ~ site + photoperiod_within_site + meq_10_centered +      (1 | site:Id)
+photoperiod_sensitivity,MEQ,P2_interaction,timing_hour ~ site * meq_10_centered + photoperiod_within_site +      (1 | site:Id)
+participant_summary_sensitivity,MCTQ,S0_site_only,participant_mean_timing_hour ~ site
+participant_summary_sensitivity,MCTQ,S1_main,participant_mean_timing_hour ~ site + mctq_hour_centered
+participant_summary_sensitivity,MCTQ,S2_interaction,participant_mean_timing_hour ~ site * mctq_hour_centered
+participant_summary_sensitivity,MEQ,S0_site_only,participant_mean_timing_hour ~ site
+participant_summary_sensitivity,MEQ,S1_main,participant_mean_timing_hour ~ site + meq_10_centered
+participant_summary_sensitivity,MEQ,S2_interaction,participant_mean_timing_hour ~ site * meq_10_centered
+continuous_time_ar1_sensitivity,MCTQ,fixed,timing_hour ~ site + mctq_hour_centered
+continuous_time_ar1_sensitivity,MCTQ,random,~1 | participant_key
+continuous_time_ar1_sensitivity,MCTQ,correlation,~elapsed_day | participant_key
+continuous_time_ar1_sensitivity,MEQ,fixed,timing_hour ~ site + meq_10_centered
+continuous_time_ar1_sensitivity,MEQ,random,~1 | participant_key
+continuous_time_ar1_sensitivity,MEQ,correlation,~elapsed_day | participant_key

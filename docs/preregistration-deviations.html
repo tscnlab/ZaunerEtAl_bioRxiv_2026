@@ -1,0 +1,1451 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.37">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Preregistration deviations – Personal light exposome</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./analyses/alternative-preprocessing.html" rel="next">
+<link href="./README.html" rel="prev">
+<script src="site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-7f8f88aac4f3542376d5c11b86a4c14d.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-158031087360bce0ff56dc785ce39e06.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+
+<link rel="stylesheet" href="styles/navigation.css">
+</head>
+
+<body class="nav-fixed quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-xl " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="./index.html">
+    <span class="navbar-title">Personal light exposome</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="./index.html"> 
+<span class="menu-text">Manuscript</span></a>
+  </li>  
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-study--data" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Study &amp; data</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-study--data">    
+        <li class="dropdown-header">Prepare the analysis data</li>
+        <li>
+    <a class="dropdown-item" href="./preparation/01-import-and-alignment.html">
+ <span class="dropdown-text">Import and alignment</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./preparation/02-coverage-and-samples.html">
+ <span class="dropdown-text">Coverage and samples</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./preparation/03-reference-profiles.html">
+ <span class="dropdown-text">Reference profiles</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./preparation/04-light-metrics.html">
+ <span class="dropdown-text">Light metrics</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./preparation/05-questionnaires-and-diaries.html">
+ <span class="dropdown-text">Questionnaires and diaries</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./preparation/06-analysis-datasets.html">
+ <span class="dropdown-text">Analysis datasets</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./preparation/07-example-days.html">
+ <span class="dropdown-text">Example days</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Understand the study</li>
+        <li>
+    <a class="dropdown-item" href="./analyses/descriptives.html">
+ <span class="dropdown-text">Descriptive summaries</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./analyses/sensor-placement.html">
+ <span class="dropdown-text">Sensor placement</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-environment" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Environment</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-environment">    
+        <li class="dropdown-header">Site and daily patterns</li>
+        <li>
+    <a class="dropdown-item" href="./analyses/H01-site-differences.html#findings">
+ <span class="dropdown-text">H01 · Findings: site differences</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./analyses/H01-site-differences.html#methods">
+ <span class="dropdown-text">H01 · Data and methods</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./analyses/H02-daily-patterns.html#findings">
+ <span class="dropdown-text">H02 · Findings: daily patterns</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./analyses/H02-daily-patterns.html#methods">
+ <span class="dropdown-text">H02 · Data and methods</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-behaviour--time" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Behaviour &amp; time</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-behaviour--time">    
+        <li class="dropdown-header">Reported context</li>
+        <li>
+    <a class="dropdown-item" href="./analyses/H03-light-source.html#findings">
+ <span class="dropdown-text">H03 · Findings: light source</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./analyses/H03-light-source.html#methods">
+ <span class="dropdown-text">H03 · Data and methods</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./analyses/H04-activity.html#findings">
+ <span class="dropdown-text">H04 · Findings: activity</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./analyses/H04-activity.html#methods">
+ <span class="dropdown-text">H04 · Data and methods</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Habitual and daily context</li>
+        <li>
+    <a class="dropdown-item" href="./analyses/H05-habitual-behaviour.html#findings">
+ <span class="dropdown-text">H05 · Findings: habitual behaviour</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./analyses/H05-habitual-behaviour.html#methods">
+ <span class="dropdown-text">H05 · Data and methods</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./analyses/H06-day-type-exercise-sleep.html#findings">
+ <span class="dropdown-text">H06 · Findings: day type, exercise and sleep</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./analyses/H06-day-type-exercise-sleep.html#methods">
+ <span class="dropdown-text">H06 · Data and methods</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Photoperiod</li>
+        <li>
+    <a class="dropdown-item" href="./analyses/H07-photoperiod.html#findings">
+ <span class="dropdown-text">H07 · Findings: photoperiod and transitions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./analyses/H07-photoperiod.html#methods">
+ <span class="dropdown-text">H07 · Data and methods</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Light recommendations</li>
+        <li>
+    <a class="dropdown-item" href="./analyses/recommendation-adherence.html">
+ <span class="dropdown-text">Recommendation adherence</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./analyses/cross-state-association.html">
+ <span class="dropdown-text">Associations between daily periods</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-individual-factors" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Individual factors</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-individual-factors">    
+        <li class="dropdown-header">Individual characteristics</li>
+        <li>
+    <a class="dropdown-item" href="./analyses/H08-light-sensitivity.html#findings">
+ <span class="dropdown-text">H08 · Findings: light sensitivity</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./analyses/H08-light-sensitivity.html#methods">
+ <span class="dropdown-text">H08 · Data and methods</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./analyses/H09-chronotype.html#findings">
+ <span class="dropdown-text">H09 · Findings: chronotype</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./analyses/H09-chronotype.html#methods">
+ <span class="dropdown-text">H09 · Data and methods</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./analyses/H10-age-sex.html#findings">
+ <span class="dropdown-text">H10 · Findings: age and sex</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./analyses/H10-age-sex.html#methods">
+ <span class="dropdown-text">H10 · Data and methods</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./analyses/H11-sex-daily-patterns.html#findings">
+ <span class="dropdown-text">H11 · Findings: sex and daily patterns</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./analyses/H11-sex-daily-patterns.html#methods">
+ <span class="dropdown-text">H11 · Data and methods</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-supporting-material" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Supporting material</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-supporting-material">    
+        <li class="dropdown-header">Read and reproduce</li>
+        <li>
+    <a class="dropdown-item" href="./supplementary.html">
+ <span class="dropdown-text">Supplementary information</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./README.html">
+ <span class="dropdown-text">Reproduce the analysis</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./preregistration-deviations.html">
+ <span class="dropdown-text">Preregistration deviations</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Additional analyses and displays</li>
+        <li>
+    <a class="dropdown-item" href="./analyses/alternative-preprocessing.html">
+ <span class="dropdown-text">Alternative preprocessing</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./analyses/publication-displays.html">
+ <span class="dropdown-text">Publication figures and tables</span></a>
+  </li>  
+    </ul>
+  </li>
+</ul>
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/tscnlab/ZaunerEtAl_bioRxiv_2026"> <i class="bi bi-github" role="img" aria-label="Source repository">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul class="collapse">
+  <li><a href="#how-to-read" id="toc-how-to-read" class="nav-link active" data-scroll-target="#how-to-read">How to read this page</a>
+  <ul class="collapse">
+  <li><a href="#statistical-terms-used-across-entries" id="toc-statistical-terms-used-across-entries" class="nav-link" data-scroll-target="#statistical-terms-used-across-entries">Statistical terms used across entries</a></li>
+  <li><a href="#light-exposure-measures-named-in-entries" id="toc-light-exposure-measures-named-in-entries" class="nav-link" data-scroll-target="#light-exposure-measures-named-in-entries">Light-exposure measures named in entries</a></li>
+  </ul></li>
+  <li><a href="#scientific-deviation" id="toc-scientific-deviation" class="nav-link" data-scroll-target="#scientific-deviation">Current scientific deviations</a>
+  <ul class="collapse">
+  <li><a href="#study-population-samples-placement-and-context" id="toc-study-population-samples-placement-and-context" class="nav-link" data-scroll-target="#study-population-samples-placement-and-context">Study population, samples, placement, and context</a></li>
+  <li><a href="#data-preparation-timing-state-and-support" id="toc-data-preparation-timing-state-and-support" class="nav-link" data-scroll-target="#data-preparation-timing-state-and-support">Data preparation, timing, state, and support</a></li>
+  <li><a href="#metric-and-outcome-definitions" id="toc-metric-and-outcome-definitions" class="nav-link" data-scroll-target="#metric-and-outcome-definitions">Metric and outcome definitions</a></li>
+  <li><a href="#hypothesis-models-estimands-and-inference" id="toc-hypothesis-models-estimands-and-inference" class="nav-link" data-scroll-target="#hypothesis-models-estimands-and-inference">Hypothesis models, estimands, and inference</a></li>
+  </ul></li>
+  <li><a href="#current-qualification" id="toc-current-qualification" class="nav-link" data-scroll-target="#current-qualification">Eligibility and generalisation</a>
+  <ul class="collapse">
+  <li><a href="#entries" id="toc-entries" class="nav-link" data-scroll-target="#entries">Entries</a></li>
+  </ul></li>
+  </ul>
+<div class="quarto-alternate-formats"><h2>Other Formats</h2><ul><li><a href="preregistration-deviations.docx"><i class="bi bi-file-word"></i>MS Word</a></li></ul></div></nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./supplementary.html">Read and reproduce</a></li><li class="breadcrumb-item"><a href="./preregistration-deviations.html">Preregistration deviations</a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title">Preregistration deviations</h1>
+<p class="subtitle lead">What changed from the registered plan, why it changed, and how to interpret the current analyses</p>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<p><a href="preregistration-deviations.docx">Download this document in Word format</a>.</p>
+<section id="how-to-read" class="level1">
+<h1>How to read this page</h1>
+<p>A preregistration records the analysis plan before the results are known. A deviation is a scientifically relevant difference between that plan and the analysis now used. This page states those differences directly. The result and preparation pages link to the relevant entries.</p>
+<p>The first section describes scientific deviations. The second explains the eligibility sensitivities for the age-related and employment-related hypotheses and the population to which those results apply.</p>
+<div class="callout callout-style-default callout-note callout-titled" title="Current interpretation">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Current interpretation
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Use <strong>Current analysis</strong> and <strong>What this means for interpretation</strong> to understand the reported analysis. The <strong>Preregistered or expected</strong> field shows what differed from the registered or anticipated analysis.</p>
+</div>
+</div>
+<section id="statistical-terms-used-across-entries" class="level2">
+<h2 class="anchored" data-anchor-id="statistical-terms-used-across-entries">Statistical terms used across entries</h2>
+<div class="callout callout-style-default callout-tip callout-titled" title="Short glossary">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>Short glossary
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<ul>
+<li>A <strong>site-average estimate</strong> is an average across sites that gives each site equal weight.</li>
+<li>A <strong>predictor-by-site interaction</strong> allows the association with a predictor to differ among study sites.</li>
+<li>A <strong>false-discovery-rate (FDR) adjustment</strong> accounts for a declared family of statistical tests; later entries use <strong>FDR</strong>.</li>
+<li><strong>Model checks</strong> (model diagnostics) assess whether the fitted model is adequate for its intended interpretation.</li>
+<li><strong>Participant-cluster-robust uncertainty</strong> allows repeated observations from the same participant to remain associated without treating them as independent.</li>
+<li>A <strong>sensitivity analysis</strong> repeats an analysis after one stated choice is changed to assess whether the interpretation is stable.</li>
+</ul>
+</div>
+</div>
+<div class="callout callout-style-default callout-tip callout-titled" title="Time curves and transformed results">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>Time curves and transformed results
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<ul>
+<li>A <strong>nonlinear generalized additive model (GAM) analysis</strong> lets the estimated exposure pattern vary flexibly over time rather than forcing a straight line; later entries may use <strong>GAM</strong>.</li>
+<li><strong>AR(1)</strong> is a model for autocorrelation in which observations closer together in a sequence are expected to be more similar; the similarity decreases with separation.</li>
+<li>A <strong>derivative</strong> is the estimated rate at which a fitted curve is changing at a given point.</li>
+<li>A <strong>Shapley allocation</strong> distributes fitted-model variation among model components by averaging their added contribution across possible entry orders.</li>
+<li>A <strong>back-transformed</strong> quantity has been converted from the model’s transformed scale to an interpretable response-scale quantity, such as a ratio or time difference.</li>
+<li>A <strong>95% confidence interval (95% CI)</strong> gives the range of parameter values compatible with the estimate under the stated model and uncertainty procedure.</li>
+</ul>
+</div>
+</div>
+</section>
+<section id="light-exposure-measures-named-in-entries" class="level2">
+<h2 class="anchored" data-anchor-id="light-exposure-measures-named-in-entries">Light-exposure measures named in entries</h2>
+<div class="callout callout-style-default callout-tip callout-titled" title="Measure glossary">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>Measure glossary
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<ul>
+<li><strong>Melanopic equivalent daylight illuminance (melEDI)</strong> describes light in terms of its stimulation of the melanopsin pathway and is reported in lux.</li>
+<li><strong>M10</strong> and <strong>L10</strong> describe the brightest and darkest supported consecutive 10-hour windows, respectively.</li>
+<li><strong>Melanopic daylight efficacy ratio (MDER)</strong> is the mean of viable one-minute ratios of melEDI to photopic illuminance in the current analysis.</li>
+<li><strong>Interdaily stability (IS)</strong> describes regularity across days; <strong>intradaily variability (IV)</strong> describes fragmentation across adjacent hours within days.</li>
+<li><strong>MCTQ</strong> and <strong>MEQ</strong> are distinct chronotype measures: corrected midsleep timing from the Munich Chronotype Questionnaire and morningness preference from the Morningness–Eveningness Questionnaire.</li>
+<li><strong>LEBA</strong> is the Light Exposure Behaviour Assessment, and <strong>VLSQ-8</strong> is an eight-item self-report measure of visual light sensitivity.</li>
+</ul>
+</div>
+</div>
+</section>
+</section>
+<section id="scientific-deviation" class="level1">
+<h1>Current scientific deviations</h1>
+<p>These entries describe changes relevant to what was measured, analysed, or inferred. They are grouped by their role in the scientific analysis, not by the date on which the difference was documented.</p>
+<section id="study-population-samples-placement-and-context" class="level2">
+<h2 class="anchored" data-anchor-id="study-population-samples-placement-and-context">Study population, samples, placement, and context</h2>
+<section id="all-hypotheses-placement" class="level3">
+<h3 class="anchored" data-anchor-id="all-hypotheses-placement">All hypotheses; placement</h3>
+<p><strong>Topic.</strong> All hypotheses; placement</p>
+<p><strong>Preregistered or expected.</strong> Chest data primary; repeat with glasses for robustness</p>
+<p><strong>Current analysis.</strong> Near-eye glasses measurements are primary for the ocular-exposure estimand. Chest measurements are complementary and are compared on placement-matched samples when a direct placement comparison is shown.</p>
+<p><strong>Why.</strong> The placements measure related but non-interchangeable light fields, so simple pooling or unmatched identity comparisons are not valid.</p>
+<p><strong>Affected hypotheses.</strong> All hypotheses (H01–H11)</p>
+<p><strong>What this means for interpretation.</strong> Primary conclusions come from near-eye data; chest evidence is labelled complementary and does not replace the primary estimand.</p>
+</section>
+<section id="site-sample-size-and-placement-availability" class="level3">
+<h3 class="anchored" data-anchor-id="site-sample-size-and-placement-availability">Site sample size and placement availability</h3>
+<p><strong>Topic.</strong> Site sample size and placement availability</p>
+<p><strong>Preregistered or expected.</strong> Target 15-30 participants per site using all eligible repository participants</p>
+<p><strong>Current analysis.</strong> Recruitment and placement availability remain uneven by site. Every reported hypothesis analysis now reports its exact participants, participant-days or participant-hours, observations, placements, and sites rather than presenting one universal sample size.</p>
+<p><strong>Why.</strong> Uneven support is an observed feature of the study design and cannot be repaired analytically; exact model-specific denominators and complementary-placement labels are the specified response.</p>
+<p><strong>Affected hypotheses.</strong> All hypotheses (H01–H11)</p>
+<p><strong>What this means for interpretation.</strong> Site and placement comparisons must be interpreted with their model-specific support, especially for Munich (DE), San José (CR), and glasses-versus-chest comparisons.</p>
+</section>
+<section id="metric-construct-full-day-and-sleep" class="level3">
+<h3 class="anchored" data-anchor-id="metric-construct-full-day-and-sleep">Metric construct; full-day and sleep</h3>
+<p><strong>Topic.</strong> Metric construct; full-day and sleep</p>
+<p><strong>Preregistered or expected.</strong> The intended 24-hour environmental-light record combines worn near-eye waking measurements with bedside sleep-environment measurements during the diary-defined sleep window</p>
+<p><strong>Current analysis.</strong> The full-day hybrid record combines worn waking measurements with retained bedside sleep-environment measurements and is described explicitly as such.</p>
+<p><strong>Why.</strong> This preserves the practical 24-hour environmental record without mislabelling sleep values as ocular exposure.</p>
+<p><strong>Affected hypotheses.</strong> All hypotheses (H01–H11)</p>
+<p><strong>What this means for interpretation.</strong> Full-day metrics are hybrid personal/environmental summaries; sleep-specific interpretations remain environmental.</p>
+</section>
+<section id="placement-pooling" class="level3">
+<h3 class="anchored" data-anchor-id="placement-pooling">Placement pooling</h3>
+<p><strong>Topic.</strong> Placement pooling</p>
+<p><strong>Preregistered or expected.</strong> No pooled placement model was preregistered; chest was primary and glasses a robustness repeat</p>
+<p><strong>Current analysis.</strong> Simple pooling of near-eye and chest measurements is rejected; placements retain separate estimands.</p>
+<p><strong>Why.</strong> The placements differ systematically and are not duplicate measures of one interchangeable quantity.</p>
+<p><strong>Affected hypotheses.</strong> All hypotheses (H01–H11)</p>
+<p><strong>What this means for interpretation.</strong> No pooled placement claim is permitted.</p>
+</section>
+<section id="chest-complementary-analysis" class="level3">
+<h3 class="anchored" data-anchor-id="chest-complementary-analysis">Chest complementary analysis</h3>
+<p><strong>Topic.</strong> Chest complementary analysis</p>
+<p><strong>Preregistered or expected.</strong> Registered glasses analysis was a robustness repeat</p>
+<p><strong>Current analysis.</strong> Direct near-eye/chest displays use placement-matched participant, local-date, and clock keys, while chest remains complementary in all-available analyses.</p>
+<p><strong>Why.</strong> Matching makes the compared placements refer to the same observed periods and avoids conflating placement with sample composition.</p>
+<p><strong>Affected hypotheses.</strong> All hypotheses (H01–H11)</p>
+<p><strong>What this means for interpretation.</strong> Matched comparisons describe placement sensitivity, not equivalence, and unmatched all-available estimates are not plotted against each other as identities.</p>
+</section>
+<section id="sleep-period-construct-language" class="level3">
+<h3 class="anchored" data-anchor-id="sleep-period-construct-language">Sleep-period construct language</h3>
+<p><strong>Topic.</strong> Sleep-period construct language</p>
+<p><strong>Preregistered or expected.</strong> Registered outcomes referred to chest-mounted measurements, including sleep metrics</p>
+<p><strong>Current analysis.</strong> Retained sleep-period logger values are described as bedside sleep-environment exposure.</p>
+<p><strong>Why.</strong> This language matches what the logger can measure when wear is not verified during sleep.</p>
+<p><strong>Affected hypotheses.</strong> All hypotheses (H01–H11)</p>
+<p><strong>What this means for interpretation.</strong> Sleep-period results must not be called ocular exposure.</p>
+</section>
+</section>
+<section id="data-preparation-timing-state-and-support" class="level2">
+<h2 class="anchored" data-anchor-id="data-preparation-timing-state-and-support">Data preparation, timing, state, and support</h2>
+<section id="preprocessing-non-wear" class="level3">
+<h3 class="anchored" data-anchor-id="preprocessing-non-wear">Preprocessing; non-wear</h3>
+<p><strong>Topic.</strong> Preprocessing; non-wear</p>
+<p><strong>Preregistered or expected.</strong> Remove non-wear periods identified by device logs</p>
+<p><strong>Current analysis.</strong> Logged non-wear outside reported sleep is set to missing, whereas logger values during the reported sleep interval are retained as measurements of the sleep environment and are not described as worn ocular exposure.</p>
+<p><strong>Why.</strong> The retained sleep values answer a different construct question from waking personal exposure; the placement decision and reader reports now distinguish those constructs.</p>
+<p><strong>Affected hypotheses.</strong> All hypotheses (H01–H11)</p>
+<p><strong>What this means for interpretation.</strong> Sleep-environment results describe light at the logger location during attempted sleep, not verified eye-level exposure while the device was worn.</p>
+</section>
+<section id="preprocessing-sleep-windows" class="level3">
+<h3 class="anchored" data-anchor-id="preprocessing-sleep-windows">Preprocessing; sleep windows</h3>
+<p><strong>Topic.</strong> Preprocessing; sleep windows</p>
+<p><strong>Preregistered or expected.</strong> Registered rule refers to sleep but does not define attempted-sleep versus estimated-onset boundary</p>
+<p><strong>Current analysis.</strong> Attempted-sleep time is the operational boundary for sleep-environment and pre-sleep metrics rather than estimated physiological sleep onset.</p>
+<p><strong>Why.</strong> Attempted sleep aligns the analysed interval with the intention to sleep and is now defined consistently in preparation and reader-facing methods.</p>
+<p><strong>Affected hypotheses.</strong> All hypotheses (H01–H11)</p>
+<p><strong>What this means for interpretation.</strong> Sleep and pre-sleep denominators refer to attempted sleep; they should not be interpreted as intervals anchored to measured sleep onset.</p>
+</section>
+<section id="preprocessing-saturation-boundary" class="level3">
+<h3 class="anchored" data-anchor-id="preprocessing-saturation-boundary">Preprocessing saturation boundary</h3>
+<p><strong>Topic.</strong> Preprocessing saturation boundary</p>
+<p><strong>Preregistered or expected.</strong> Set melanopic EDI values above 120000 lx to missing</p>
+<p><strong>Current analysis.</strong> ActLumus melEDI values at or above 100000 lx are treated as outside the instrument’s valid operating range and set to invalid rather than retained.</p>
+<p><strong>Why.</strong> The strict upper-bound rule follows the specified saturation decision and is applied before metric calculation.</p>
+<p><strong>Affected hypotheses.</strong> All hypotheses (H01–H11)</p>
+<p><strong>What this means for interpretation.</strong> Extremely high invalid readings do not contribute to exposure metrics or model samples.</p>
+</section>
+<section id="timestamp-integrity-dst-fall-back" class="level3">
+<h3 class="anchored" data-anchor-id="timestamp-integrity-dst-fall-back">Timestamp integrity; DST fall-back</h3>
+<p><strong>Topic.</strong> Timestamp integrity; DST fall-back</p>
+<p><strong>Preregistered or expected.</strong> International site-local timestamps retain their absolute instants and remain uniquely keyed through daylight-saving transitions</p>
+<p><strong>Current analysis.</strong> Timestamp processing uses UTC to preserve real instants and a separate local wall-clock axis for cross-site clock-time summaries. Repeated fall-back minutes are averaged only for clock-aligned profiles and retained as separate real intervals for elapsed-time and sequential metrics.</p>
+<p><strong>Why.</strong> The dual-axis rule prevents daylight-saving transitions from either duplicating wall-clock profiles or erasing real elapsed intervals.</p>
+<p><strong>Affected hypotheses.</strong> All hypotheses (H01–H11)</p>
+<p><strong>What this means for interpretation.</strong> Clock-aligned and elapsed-time metrics can legitimately treat the repeated hour differently; the preparation pages explain which time axis each calculation uses.</p>
+</section>
+<section id="state-precedence-measurement-context" class="level3">
+<h3 class="anchored" data-anchor-id="state-precedence-measurement-context">State precedence; measurement context</h3>
+<p><strong>Topic.</strong> State precedence; measurement context</p>
+<p><strong>Preregistered or expected.</strong> The sleep diary defines the relevant sleepprep-to-wake bedside window; wear logs are not sufficiently consistent to define sleep</p>
+<p><strong>Current analysis.</strong> Diary state is authoritative for sleep context. Wear=‘sleep’ records device-log context only; wear=‘off’ invalidates waking measurements outside diary sleep, while off or missing wear during diary sleep and site-leave records are retained according to the specified context rules.</p>
+<p><strong>Why.</strong> The rule separates measurement-context validity from the participant’s diary-defined state.</p>
+<p><strong>Affected hypotheses.</strong> All hypotheses (H01–H11)</p>
+<p><strong>What this means for interpretation.</strong> Waking non-wear is excluded, whereas retained sleep values remain environmental rather than verified worn exposure.</p>
+</section>
+<section id="h02-and-h11-participant-day-inclusion" class="level3">
+<h3 class="anchored" data-anchor-id="h02-and-h11-participant-day-inclusion">H02 and H11 participant-day inclusion</h3>
+<p><strong>Topic.</strong> H02 and H11 participant-day inclusion</p>
+<p><strong>Preregistered or expected.</strong> The registration excludes days using declared coverage rules and does not exclude a day merely because its binned outcome is constant</p>
+<p><strong>Current analysis.</strong> H02 and H11 preserve supported constant profiles and exclude only otherwise eligible participant-days whose finite one-minute melEDI values are all exactly zero under the specified upstream plausibility rule.</p>
+<p><strong>Why.</strong> Individual zero observations are valid; the day-level exclusion targets only an implausible complete zero signal and is retained as a data sensitivity.</p>
+<p><strong>Affected hypotheses.</strong> H02 and H11</p>
+<p><strong>What this means for interpretation.</strong> The reported samples do not apply a general constant-profile deletion.</p>
+</section>
+<section id="daily-80-coverage-denominator" class="level3">
+<h3 class="anchored" data-anchor-id="daily-80-coverage-denominator">Daily 80% coverage denominator</h3>
+<p><strong>Topic.</strong> Daily 80% coverage denominator</p>
+<p><strong>Preregistered or expected.</strong> The signed preregistration excludes participant-days below 80% valid wear time with sleep excluded from the daily denominator</p>
+<p><strong>Current analysis.</strong> Primary daily coverage uses finite melEDI minutes across a fixed 1440-wall-minute day for the hybrid waking-plus-bedside-sleep record. Hourly eligibility is applied separately and does not remove finite minutes from daily coverage. Sleep-excluded denominators are fixed sensitivities.</p>
+<p><strong>Why.</strong> The hybrid 24-hour construct is primary; alternative denominators show dependence on sleep handling.</p>
+<p><strong>Affected hypotheses.</strong> All hypotheses (H01–H11)</p>
+<p><strong>What this means for interpretation.</strong> Primary daily metrics intentionally treat unobserved eligible minutes as missing against the full wall-clock day and should be interpreted as hybrid full-day exposure summaries.</p>
+</section>
+<section id="tum-exercise-diary-participant-key" class="level3">
+<h3 class="anchored" data-anchor-id="tum-exercise-diary-participant-key">TUM exercise-diary participant key</h3>
+<p><strong>Topic.</strong> TUM exercise-diary participant key</p>
+<p><strong>Preregistered or expected.</strong> Questionnaire and diary source records should be joined under their correct immutable site-participant identifiers</p>
+<p><strong>Current analysis.</strong> The corrected upstream TUM exercise diary assigns the seven affected May 2024 records to TUM_S001, not TUM_S101; no local identifier rewrite is applied.</p>
+<p><strong>Why.</strong> The local exercise-diary input contains the corrected participant key.</p>
+<p><strong>Affected hypotheses.</strong> H06</p>
+<p><strong>What this means for interpretation.</strong> H06 exercise analyses use the authoritative corrected participant identity without altering shared data locally.</p>
+</section>
+<section id="participant-day-light-signal-plausibility" class="level3">
+<h3 class="anchored" data-anchor-id="participant-day-light-signal-plausibility">Participant-day light-signal plausibility</h3>
+<p><strong>Topic.</strong> Participant-day light-signal plausibility</p>
+<p><strong>Preregistered or expected.</strong> The preregistration uses coverage and signal-validity rules but does not specify exclusion of an otherwise eligible complete day-long exact-zero melEDI series</p>
+<p><strong>Current analysis.</strong> The main analysis excludes an otherwise eligible participant-day only when every finite one-minute melEDI value is exactly 0 lx. Individual zeros remain valid, the original rows remain available, and retaining these days is a sensitivity analysis.</p>
+<p><strong>Why.</strong> A complete exact-zero day is treated as a signal-plausibility failure rather than ordinary darkness.</p>
+<p><strong>Affected hypotheses.</strong> All hypotheses (H01–H11)</p>
+<p><strong>What this means for interpretation.</strong> Affected samples lose only the documented all-zero participant-days; zero-capable metrics and models otherwise retain zero observations.</p>
+</section>
+</section>
+<section id="metric-and-outcome-definitions" class="level2">
+<h2 class="anchored" data-anchor-id="metric-and-outcome-definitions">Metric and outcome definitions</h2>
+<section id="metric-definition-darkest-level-window" class="level3">
+<h3 class="anchored" data-anchor-id="metric-definition-darkest-level-window">Metric definition; darkest level window</h3>
+<p><strong>Topic.</strong> Metric definition; darkest level window</p>
+<p><strong>Preregistered or expected.</strong> Geometric mean melanopic EDI during the 5 darkest hours</p>
+<p><strong>Current analysis.</strong> The darkest-window level metric is the geometric mean melEDI during the ten darkest supported hours (L10 mean); no L5 level metric is used.</p>
+<p><strong>Why.</strong> The ten-hour window is the specified operational definition and is subject to the current complete-window support rule.</p>
+<p><strong>Affected hypotheses.</strong> H01, H05, H06, H07, H08, and H10</p>
+<p><strong>What this means for interpretation.</strong> Results labelled L10 mean refer to a ten-hour darkest supported window and must not be interpreted as L5.</p>
+</section>
+<section id="melanopic-edi-dose" class="level3">
+<h3 class="anchored" data-anchor-id="melanopic-edi-dose">Melanopic EDI dose</h3>
+<p><strong>Topic.</strong> Melanopic EDI dose</p>
+<p><strong>Preregistered or expected.</strong> Daily dose should represent an adequately supported integration interval</p>
+<p><strong>Current analysis.</strong> Melanopic EDI dose is defined as observed actual-duration dose, with the specified time-sensitive correction applied only when profile-weighted coverage reaches 0.80. It is not treated as an unqualified complete-day sum when exposure is missing.</p>
+<p><strong>Why.</strong> The rule preserves the observed integration interval and avoids universal scaling over missing low-exposure night periods.</p>
+<p><strong>Affected hypotheses.</strong> H01, H05, H06, H07, H08, and H10</p>
+<p><strong>What this means for interpretation.</strong> Dose scale and model samples depend on the duration and temporal coverage of the valid measurements.</p>
+</section>
+<section id="is-and-iv-temporal-support" class="level3">
+<h3 class="anchored" data-anchor-id="is-and-iv-temporal-support">IS and IV temporal support</h3>
+<p><strong>Topic.</strong> IS and IV temporal support</p>
+<p><strong>Preregistered or expected.</strong> IS and IV should quantify repeated-day regularity and true adjacent-hour fragmentation without bridging unobserved time</p>
+<p><strong>Current analysis.</strong> IS and IV use explicit one-hour grids and true temporal support: at least three eligible days, at least 20 repeated clock hours for IS, and at least 24 true adjacent pairs across three days for IV; repeated fall-back hours collapse only for IS.</p>
+<p><strong>Why.</strong> These rules prevent missing intervals from being treated as observed regularity or adjacency.</p>
+<p><strong>Affected hypotheses.</strong> H01, H05, H06, and H10</p>
+<p><strong>What this means for interpretation.</strong> Values and estimability depend on observed repeated-day support and true adjacent-hour pairs, without bridging gaps.</p>
+</section>
+<section id="window-continuous-period-and-timing-support" class="level3">
+<h3 class="anchored" data-anchor-id="window-continuous-period-and-timing-support">Window, continuous-period, and timing support</h3>
+<p><strong>Topic.</strong> Window, continuous-period, and timing support</p>
+<p><strong>Preregistered or expected.</strong> M10/L10, continuous threshold periods, and threshold timings should represent supported contiguous clock intervals without compressing gaps</p>
+<p><strong>Current analysis.</strong> M10/L10 require 20 consecutive supported 30-minute bins with deterministic ties and midnight wrap for L10; continuous periods terminate at gaps; mean timing is circular and duration-weighted; first and last timing require boundary support.</p>
+<p><strong>Why.</strong> The rules preserve clock continuity and prevent incomplete windows or observed edges from being treated as complete events.</p>
+<p><strong>Affected hypotheses.</strong> H01, H05, H06, H07, H08, H09, and H10</p>
+<p><strong>What this means for interpretation.</strong> Window levels, durations, timings, and analytical samples depend on the temporal support required by each metric. The alternative preprocessing sensitivity assesses dependence on gap handling.</p>
+</section>
+<section id="mder-metric-definition-and-support" class="level3">
+<h3 class="anchored" data-anchor-id="mder-metric-definition-and-support">MDER metric definition and support</h3>
+<p><strong>Topic.</strong> MDER metric definition and support</p>
+<p><strong>Preregistered or expected.</strong> MDER summarizes momentary MEDI/LIGHT ratios; the preregistration does not specify a ratio-of-integrals definition</p>
+<p><strong>Current analysis.</strong> MDER is the arithmetic mean of viable one-minute MEDI/LIGHT ratios. A minute is viable only when both channels are finite and strictly positive; a day requires at least 720 viable minutes on the fixed 1440-minute local wall-clock grid, otherwise MDER is missing for that day.</p>
+<p><strong>Why.</strong> Averaging momentary ratios across viable measurement pairs preserves the intended MDER construct; a ratio of integrals defines a different quantity.</p>
+<p><strong>Affected hypotheses.</strong> H01, H05, H06, and H10</p>
+<p><strong>What this means for interpretation.</strong> MDER represents the average spectral ratio during viable paired minutes, not a ratio of daily totals; metric-specific missingness and model samples follow the 50% viable-minute rule.</p>
+</section>
+<section id="h01-l10-midpoint-response-conversion" class="level3">
+<h3 class="anchored" data-anchor-id="h01-l10-midpoint-response-conversion">H01 L10 midpoint response conversion</h3>
+<p><strong>Topic.</strong> H01 L10 midpoint response conversion</p>
+<p><strong>Preregistered or expected.</strong> A noon-based linearization represents L10 midpoint clock times strictly after noon on the preceding negative-hour scale</p>
+<p><strong>Current analysis.</strong> For H01 L10 midpoint models, clock times strictly after 16:00 are represented on the preceding negative-hour scale; a noon-based conversion is retained as a same-row, same-model sensitivity.</p>
+<p><strong>Why.</strong> The primary conversion avoids splitting the darkest-window midpoint across midnight in the fitted linear timing model.</p>
+<p><strong>Affected hypotheses.</strong> H01</p>
+<p><strong>What this means for interpretation.</strong> H01 L10 midpoint coefficients depend on the declared circular-to-linear representation and are interpreted with its sensitivity.</p>
+</section>
+<section id="h01-time-below-10-lx-meledi-before-sleep" class="level3">
+<h3 class="anchored" data-anchor-id="h01-time-below-10-lx-meledi-before-sleep">H01 time below 10 lx melEDI before sleep</h3>
+<p><strong>Topic.</strong> H01 time below 10 lx melEDI before sleep</p>
+<p><strong>Preregistered or expected.</strong> The outcome was described as time below 10 lx melEDI in the three hours before sleep and was checked against a three-hour ceiling</p>
+<p><strong>Current analysis.</strong> Time below 10 lx melEDI before sleep is the cumulative duration across all diary-defined pre-sleep intervals on the local calendar date; no three-hour or six-hour cap is imposed, and values above six hours trigger a diagnostic warning only.</p>
+<p><strong>Why.</strong> The stated definition makes the temporal denominator explicit.</p>
+<p><strong>Affected hypotheses.</strong> H01</p>
+<p><strong>What this means for interpretation.</strong> The metric can exceed six hours and should not be interpreted as exposure within a fixed pre-sleep window.</p>
+</section>
+</section>
+<section id="hypothesis-models-estimands-and-inference" class="level2">
+<h2 class="anchored" data-anchor-id="hypothesis-models-estimands-and-inference">Hypothesis models, estimands, and inference</h2>
+<section id="h01-model" class="level3">
+<h3 class="anchored" data-anchor-id="h01-model">H01 model</h3>
+<p><strong>Topic.</strong> H01 model</p>
+<p><strong>Preregistered or expected.</strong> Metric ~ Site + Latitude + participant-within-site random intercept; photoperiod for day/night duration metrics</p>
+<p><strong>Current analysis.</strong> H01 now evaluates overall site, photoperiod, absolute latitude, and same-frame site-versus-linear-latitude adequacy as separate prespecified model-level questions with complete 17-metric FDR families; it does not select between separate site and latitude models by AIC.</p>
+<p><strong>Why.</strong> Site and latitude are structurally linked because each site has one latitude. The reported analysis separates the questions and uses the adequacy comparison to show when a linear latitude gradient does not capture site differences.</p>
+<p><strong>Affected hypotheses.</strong> H01</p>
+<p><strong>What this means for interpretation.</strong> Site effects and latitude gradients are not mutually interchangeable, and an adequacy result is not a residual site effect after latitude adjustment.</p>
+</section>
+<section id="h02-smooth-basis" class="level3">
+<h3 class="anchored" data-anchor-id="h02-smooth-basis">H02 smooth basis</h3>
+<p><strong>Topic.</strong> H02 smooth basis</p>
+<p><strong>Preregistered or expected.</strong> Cyclic site-specific time smooth with bs=‘cc’</p>
+<p><strong>Current analysis.</strong> H02 uses a cyclic common time smooth with sum-to-zero site time deviations whose marginal basis is not forced cyclic; a fully cyclic site and participant formulation is retained as a model-form sensitivity.</p>
+<p><strong>Why.</strong> The reported basis comparison favoured the cyclic common smooth and found no residual benefit from replacing it with a non-cyclic global smooth.</p>
+<p><strong>Affected hypotheses.</strong> H02</p>
+<p><strong>What this means for interpretation.</strong> Midnight continuity is enforced for the global curve; site-deviation topology is an acknowledged model-form choice tested in sensitivity analysis.</p>
+</section>
+<section id="h02-model-structure" class="level3">
+<h3 class="anchored" data-anchor-id="h02-model-structure">H02 model structure</h3>
+<p><strong>Topic.</strong> H02 model structure</p>
+<p><strong>Preregistered or expected.</strong> Registered formula does not state a separate overall time smooth</p>
+<p><strong>Current analysis.</strong> H02 uses a cyclic common time smooth, sum-to-zero site time deviations, participant-specific time curves, and a participant-day intercept with boundary-aware AR(1) sequences.</p>
+<p><strong>Why.</strong> The hierarchy was selected through the H02 model evaluation and is inherited by H11.</p>
+<p><strong>Affected hypotheses.</strong> H02</p>
+<p><strong>What this means for interpretation.</strong> Variation and uncertainty are partitioned across time, site, participant, and participant-day under this richer hierarchy rather than the simpler registered structure.</p>
+</section>
+<section id="h02-outcome-and-epoch" class="level3">
+<h3 class="anchored" data-anchor-id="h02-outcome-and-epoch">H02 outcome and epoch</h3>
+<p><strong>Topic.</strong> H02 outcome and epoch</p>
+<p><strong>Preregistered or expected.</strong> Hourly geometric mean melanopic EDI</p>
+<p><strong>Current analysis.</strong> H02 models arithmetic-mean melEDI in supported 30-minute bins as log10(melEDI + 0.1 lx), while the registered hourly geometric-mean outcome remains documented as the preregistered specification.</p>
+<p><strong>Why.</strong> The 30-minute zero-aware outcome preserves the temporal curve and exact zeros needed by the reported model and diagnostic workflow.</p>
+<p><strong>Affected hypotheses.</strong> H02</p>
+<p><strong>What this means for interpretation.</strong> H02 estimates, sample counts, and autocorrelation refer to supported 30-minute arithmetic-mean observations, not registered hourly geometric means.</p>
+</section>
+<section id="h03-h04-site-structure" class="level3">
+<h3 class="anchored" data-anchor-id="h03-h04-site-structure">H03-H04 site structure</h3>
+<p><strong>Topic.</strong> H03-H04 site structure</p>
+<p><strong>Preregistered or expected.</strong> Predictor random slope by site</p>
+<p><strong>Current analysis.</strong> H03 and H04 use fixed study-site adjustment for the population-average category association and fit separate category-by-site interaction models to evaluate variation among sites.</p>
+<p><strong>Why.</strong> The available number and support of sites did not justify the registered random-slope formulation. Separating the average association from the site interaction makes the two questions explicit.</p>
+<p><strong>Affected hypotheses.</strong> H03 and H04</p>
+<p><strong>What this means for interpretation.</strong> Primary effects describe the study-site-average association; site interactions are separate tests and do not redefine the primary omnibus test.</p>
+</section>
+<section id="h03-h04-error-distribution" class="level3">
+<h3 class="anchored" data-anchor-id="h03-h04-error-distribution">H03-H04 error distribution</h3>
+<p><strong>Topic.</strong> H03-H04 error distribution</p>
+<p><strong>Preregistered or expected.</strong> Registered as LMM without a non-Gaussian family specified</p>
+<p><strong>Current analysis.</strong> H03 and H04 use fixed-power quasi-Tweedie log-mean models with participant-cluster robust covariance rather than Gaussian linear mixed models.</p>
+<p><strong>Why.</strong> The response is non-negative, right-skewed, and includes exact zeros. The reported working mean models are supported by targeted diagnostics but are not treated as calibrated zero-generating distributions.</p>
+<p><strong>Affected hypotheses.</strong> H03 and H04</p>
+<p><strong>What this means for interpretation.</strong> Effects are multiplicative mean comparisons on the response scale; residual dependence and zero-mass mismatch remain stated limitations.</p>
+</section>
+<section id="h06-outcome" class="level3">
+<h3 class="anchored" data-anchor-id="h06-outcome">H06 outcome</h3>
+<p><strong>Topic.</strong> H06 outcome</p>
+<p><strong>Preregistered or expected.</strong> Daily light-exposure metrics</p>
+<p><strong>Current analysis.</strong> H06 analyses supported hourly geometric-mean melEDI rather than the preregistered daily metric set.</p>
+<p><strong>Why.</strong> The hourly formulation supports a parsimonious, directly interpretable association with temporal context.</p>
+<p><strong>Affected hypotheses.</strong> H06</p>
+<p><strong>What this means for interpretation.</strong> The main H06 result concerns hourly melEDI and repeated supported hours; it must not be presented as the preregistered daily-metric estimand.</p>
+</section>
+<section id="h07-predictors-and-outcome-selection" class="level3">
+<h3 class="anchored" data-anchor-id="h07-predictors-and-outcome-selection">H07 predictors and outcome selection</h3>
+<p><strong>Topic.</strong> H07 predictors and outcome selection</p>
+<p><strong>Preregistered or expected.</strong> Absolute-latitude-by-photoperiod tensor applied to all level, duration, and exposure-history metrics</p>
+<p><strong>Current analysis.</strong> H07 retains all nine eligible metrics. The registered latitude-by-photoperiod surface is reported as non-identifiable in this design, and a separately labelled site-adjusted nonlinear photoperiod analysis provides descriptive evidence, including a derivative-defined plateau pattern.</p>
+<p><strong>Why.</strong> Absolute latitude is determined by site and the observed joint support cannot identify the registered surface. The adapted analysis avoids significance-based outcome selection and avoids a mechanistic ceiling claim.</p>
+<p><strong>Affected hypotheses.</strong> H07</p>
+<p><strong>What this means for interpretation.</strong> The nonlinear patterns are descriptive, sensitive to model and site choices, and are not causal latitude effects or evidence of a physiological ceiling.</p>
+</section>
+<section id="h01-predictor-scope" class="level3">
+<h3 class="anchored" data-anchor-id="h01-predictor-scope">H01 predictor scope</h3>
+<p><strong>Topic.</strong> H01 predictor scope</p>
+<p><strong>Preregistered or expected.</strong> Photoperiod adjustment was explicitly registered only for metrics with a day/night-duration component</p>
+<p><strong>Current analysis.</strong> H01 includes photoperiod in all 17 primary metric models and retains the narrower literal preregistration scope as a named sensitivity.</p>
+<p><strong>Why.</strong> A common primary adjustment set makes the analyses comparable; a sensitivity follows the literal registered predictor scope.</p>
+<p><strong>Affected hypotheses.</strong> H01</p>
+<p><strong>What this means for interpretation.</strong> Primary H01 estimates are photoperiod-adjusted even for metrics where the preregistration named it only selectively.</p>
+</section>
+<section id="h01-response-models" class="level3">
+<h3 class="anchored" data-anchor-id="h01-response-models">H01 response models</h3>
+<p><strong>Topic.</strong> H01 response models</p>
+<p><strong>Preregistered or expected.</strong> H01 registered linear mixed models for the metric outcomes</p>
+<p><strong>Current analysis.</strong> H01 uses a specified metric-specific set of Gaussian, transformed-Gaussian, and Tweedie models with fixed diagnostic criteria and prespecified alternatives across data scenarios.</p>
+<p><strong>Why.</strong> The 17 metrics differ in scale, bounds, exact-zero mass, and tail behaviour, so one universal Gaussian mixed model is not adequate.</p>
+<p><strong>Affected hypotheses.</strong> H01</p>
+<p><strong>What this means for interpretation.</strong> Effect scales and diagnostic limitations differ by metric and are reported explicitly.</p>
+</section>
+<section id="h02-photoperiod-representation" class="level3">
+<h3 class="anchored" data-anchor-id="h02-photoperiod-representation">H02 photoperiod representation</h3>
+<p><strong>Topic.</strong> H02 photoperiod representation</p>
+<p><strong>Preregistered or expected.</strong> H02 registered time site participant pattern and an AR(1) correction; it did not register a categorical day/night-state temporal deviation</p>
+<p><strong>Current analysis.</strong> The H02 primary model does not include a categorical day/night-state smooth as a representation of photoperiod.</p>
+<p><strong>Why.</strong> A categorical day/night state does not represent daily photoperiod duration.</p>
+<p><strong>Affected hypotheses.</strong> H02</p>
+<p><strong>What this means for interpretation.</strong> H02 temporal results are not adjusted for a day/night-state smooth labelled as photoperiod.</p>
+</section>
+<section id="h02-hierarchy" class="level3">
+<h3 class="anchored" data-anchor-id="h02-hierarchy">H02 hierarchy</h3>
+<p><strong>Topic.</strong> H02 hierarchy</p>
+<p><strong>Preregistered or expected.</strong> H02 registered participant-time patterns within sites</p>
+<p><strong>Current analysis.</strong> H02 uses participant-specific time curves, a participant-day random intercept, and boundary-aware AR(1) sequence starts.</p>
+<p><strong>Why.</strong> The repeated 30-minute structure requires participant, day, and within-sequence dependence beyond the registered simple participant effect.</p>
+<p><strong>Affected hypotheses.</strong> H02</p>
+<p><strong>What this means for interpretation.</strong> Uncertainty and fitted variation reflect this hierarchy; H11 inherits it.</p>
+</section>
+<section id="h03-light-source-categories" class="level3">
+<h3 class="anchored" data-anchor-id="h03-light-source-categories">H03 light-source categories</h3>
+<p><strong>Topic.</strong> H03 light-source categories</p>
+<p><strong>Preregistered or expected.</strong> H03 registered all prespecified hourly primary light-source categories</p>
+<p><strong>Current analysis.</strong> H03 retains seven prespecified light-source categories under one placement-independent support rule: indoor electric light, outdoor electric light, indoor daylight, outdoor daylight, emissive display light, darkness during sleep, and external light during sleep.</p>
+<p><strong>Why.</strong> The same category definitions apply to both placements, and unsupported category-site cells are reported explicitly.</p>
+<p><strong>Affected hypotheses.</strong> H03</p>
+<p><strong>What this means for interpretation.</strong> The H03 association pertains to the seven retained categories; sparse site-category cells are not silently removed to change the construct.</p>
+</section>
+<section id="h03-primary-test-estimand" class="level3">
+<h3 class="anchored" data-anchor-id="h03-primary-test-estimand">H03 primary test estimand</h3>
+<p><strong>Topic.</strong> H03 primary test estimand</p>
+<p><strong>Preregistered or expected.</strong> H03 registered a light-source association with predictor variation by site</p>
+<p><strong>Current analysis.</strong> H03 uses the additive site-plus-light-source model for the primary six-restriction category omnibus and a separate category-by-site interaction model for site-specific variation and descriptive estimates.</p>
+<p><strong>Why.</strong> Separating the two models isolates the study-site-average category association from the interaction question.</p>
+<p><strong>Affected hypotheses.</strong> H03</p>
+<p><strong>What this means for interpretation.</strong> The primary omnibus is not a joint association-plus-interaction test; site-varying summaries are secondary to that primary test.</p>
+</section>
+<section id="h03-multiplicity-and-contrasts" class="level3">
+<h3 class="anchored" data-anchor-id="h03-multiplicity-and-contrasts">H03 multiplicity and contrasts</h3>
+<p><strong>Topic.</strong> H03 multiplicity and contrasts</p>
+<p><strong>Preregistered or expected.</strong> H03 requires FDR control within a declared hypothesis family</p>
+<p><strong>Current analysis.</strong> H03 applies FDR correction to explicitly assembled complete contrast families; category and site-interaction questions are labelled separately and no hidden by-group adjustment is described as a single family.</p>
+<p><strong>Why.</strong> Vector-wide adjustment keeps each contrast within its declared complete comparison family.</p>
+<p><strong>Affected hypotheses.</strong> H03</p>
+<p><strong>What this means for interpretation.</strong> Highlighted contrasts depend on the declared complete family rather than software defaults.</p>
+</section>
+<section id="h04-activity-categories" class="level3">
+<h3 class="anchored" data-anchor-id="h04-activity-categories">H04 activity categories</h3>
+<p><strong>Topic.</strong> H04 activity categories</p>
+<p><strong>Preregistered or expected.</strong> H04 registered all prespecified hourly activity categories</p>
+<p><strong>Current analysis.</strong> H04 converts selected activity flags to a long activity variable, collapses outdoor work, outdoor free time, and open-air travel into Outdoors before pivoting, removes duplicate labels within hour, gives each co-selected category weight 1/k, and retains Other only when it is the sole selected category for descriptive display.</p>
+<p><strong>Why.</strong> This construction preserves multi-label hours without allowing them to contribute more total weight than single-label hours, while combining sparse conceptually related outdoor activities.</p>
+<p><strong>Affected hypotheses.</strong> H04</p>
+<p><strong>What this means for interpretation.</strong> H04 estimates compare the defined activity categories; Other is not part of the primary five-category omnibus and multi-label hours are fractionally weighted.</p>
+</section>
+<section id="h04-primary-test-estimand" class="level3">
+<h3 class="anchored" data-anchor-id="h04-primary-test-estimand">H04 primary test estimand</h3>
+<p><strong>Topic.</strong> H04 primary test estimand</p>
+<p><strong>Preregistered or expected.</strong> H04 registered an activity association with predictor variation by site</p>
+<p><strong>Current analysis.</strong> H04 uses the additive site-plus-activity model for the primary activity omnibus and a separate activity-by-site interaction model for site-specific variation and descriptive estimates.</p>
+<p><strong>Why.</strong> The separation isolates the study-site-average activity association from variation among sites.</p>
+<p><strong>Affected hypotheses.</strong> H04</p>
+<p><strong>What this means for interpretation.</strong> The primary result is not a joint main-plus-interaction test.</p>
+</section>
+<section id="h04-multiplicity-and-contrasts" class="level3">
+<h3 class="anchored" data-anchor-id="h04-multiplicity-and-contrasts">H04 multiplicity and contrasts</h3>
+<p><strong>Topic.</strong> H04 multiplicity and contrasts</p>
+<p><strong>Preregistered or expected.</strong> H04 requires FDR control within a declared hypothesis family</p>
+<p><strong>Current analysis.</strong> H04 applies FDR correction to explicitly assembled complete activity and site-interaction contrast families rather than relying on hidden by-groups or default Dunnett adjustments.</p>
+<p><strong>Why.</strong> Explicit family definitions keep every displayed adjusted p-value tied to the complete set of comparisons.</p>
+<p><strong>Affected hypotheses.</strong> H04</p>
+<p><strong>What this means for interpretation.</strong> Highlighted activity/site comparisons reflect the declared full families.</p>
+</section>
+<section id="h05-registered-model" class="level3">
+<h3 class="anchored" data-anchor-id="h05-registered-model">H05 registered model</h3>
+<p><strong>Topic.</strong> H05 registered model</p>
+<p><strong>Preregistered or expected.</strong> H05 registered correlation matrices plus a site-adjusted Metric ~ LEBA + (1|Site) model</p>
+<p><strong>Current analysis.</strong> H05 uses site-adjusted association models for each personal light-exposure metric and LEBA factor rather than participant-level pooled bivariate correlations.</p>
+<p><strong>Why.</strong> Site adjustment preserves the registered scientific question while the reported fixed-site implementation supplies a stable population-average estimate and a separate site-interaction assessment.</p>
+<p><strong>Affected hypotheses.</strong> H05</p>
+<p><strong>What this means for interpretation.</strong> H05 effects are site-adjusted model associations, not pooled correlation coefficients.</p>
+</section>
+<section id="h05-metric-factor-set-and-multiplicity" class="level3">
+<h3 class="anchored" data-anchor-id="h05-metric-factor-set-and-multiplicity">H05 metric-factor set and multiplicity</h3>
+<p><strong>Topic.</strong> H05 metric-factor set and multiplicity</p>
+<p><strong>Preregistered or expected.</strong> The registration refers to selected metrics and LEBA factors with FDR within H05 but does not enumerate the complete family</p>
+<p><strong>Current analysis.</strong> H05 analyses four LEBA factors across 17 metrics and treats each declared 68-test vector as a complete FDR family, including non-significant members.</p>
+<p><strong>Why.</strong> Retaining the full factor-by-metric grid controls multiplicity across the complete set of associations.</p>
+<p><strong>Affected hypotheses.</strong> H05</p>
+<p><strong>What this means for interpretation.</strong> Individual raw associations are interpreted only in the context of their complete 68-test family; the reported analysis retains no primary association after adjustment.</p>
+</section>
+<section id="h06-predictor-scope" class="level3">
+<h3 class="anchored" data-anchor-id="h06-predictor-scope">H06 predictor scope</h3>
+<p><strong>Topic.</strong> H06 predictor scope</p>
+<p><strong>Preregistered or expected.</strong> H06 registered weekday/weekend and free/work day, daily exercise, and sleep onset, wake time, and duration as predictors of daily exposure metrics</p>
+<p><strong>Current analysis.</strong> H06 uses three primary predictors: work versus free day, Active versus Sedentary day, and previous-night sleep duration. Weekday/weekend is a sensitivity; other registered sleep and exercise predictors are exploratory rather than members of the primary family.</p>
+<p><strong>Why.</strong> This narrower predictor set was used for parsimony and interpretability in the hourly adaptation.</p>
+<p><strong>Affected hypotheses.</strong> H06</p>
+<p><strong>What this means for interpretation.</strong> The primary H06 claim is limited to these three predictors and cannot be generalized to all preregistered sleep or exercise variables.</p>
+</section>
+<section id="h06-model-and-site-structure" class="level3">
+<h3 class="anchored" data-anchor-id="h06-model-and-site-structure">H06 model and site structure</h3>
+<p><strong>Topic.</strong> H06 model and site structure</p>
+<p><strong>Preregistered or expected.</strong> H06 registered metric-specific daily models with measure random slopes by site and participant nested in site</p>
+<p><strong>Current analysis.</strong> H06 fits a zero-inclusive quasi-Poisson log-mean model with fixed site, participant-cluster HC3 covariance, and finite-cluster inference. The primary additive model estimates study-site-average associations; separate predictor-by-site models evaluate interactions. Local clock is reserved for a distinct exploratory nonlinear analysis.</p>
+<p><strong>Why.</strong> The robust population-average route addresses repeated supported hours without claiming a Gaussian individual-level error model; the separate nonlinear analysis describes time of day.</p>
+<p><strong>Affected hypotheses.</strong> H06</p>
+<p><strong>What this means for interpretation.</strong> Primary ratios are marginal mean comparisons for supported hourly melEDI. Residual zero mass, clustering, site dependence, and temporal-model limitations remain explicit.</p>
+</section>
+<section id="h06-multiplicity-and-contrasts" class="level3">
+<h3 class="anchored" data-anchor-id="h06-multiplicity-and-contrasts">H06 multiplicity and contrasts</h3>
+<p><strong>Topic.</strong> H06 multiplicity and contrasts</p>
+<p><strong>Preregistered or expected.</strong> H06 requires FDR control within a declared hypothesis family</p>
+<p><strong>Current analysis.</strong> H06 uses separately declared complete FDR families for the three primary average associations, three site interactions, three practical contrasts, and corresponding gap-timing-unaware sensitivity families; exploratory site screens are labelled separately.</p>
+<p><strong>Why.</strong> Separate complete families distinguish average effects from interactions.</p>
+<p><strong>Affected hypotheses.</strong> H06</p>
+<p><strong>What this means for interpretation.</strong> Adjusted decisions must be read within their declared three-member family and exploratory site screens cannot override a non-retained interaction.</p>
+</section>
+<section id="h07-outcome-selection-and-multiplicity" class="level3">
+<h3 class="anchored" data-anchor-id="h07-outcome-selection-and-multiplicity">H07 outcome selection and multiplicity</h3>
+<p><strong>Topic.</strong> H07 outcome selection and multiplicity</p>
+<p><strong>Preregistered or expected.</strong> H07 registered all nine eligible level, duration, and exposure-history outcomes with FDR within H07</p>
+<p><strong>Current analysis.</strong> H07 retains the complete nine-metric outcome set and does not select metrics using H01 significance or H07 AIC. Non-identifiable or diagnostically limited planned members remain visible rather than being dropped from the family.</p>
+<p><strong>Why.</strong> Keeping the complete family prevents outcome selection based on significance in H01 or H07.</p>
+<p><strong>Affected hypotheses.</strong> H07</p>
+<p><strong>What this means for interpretation.</strong> The nonlinear descriptive evidence must be interpreted across all nine planned metrics, including non-identifiable and limited branches.</p>
+</section>
+<section id="h07-response-model" class="level3">
+<h3 class="anchored" data-anchor-id="h07-response-model">H07 response model</h3>
+<p><strong>Topic.</strong> H07 response model</p>
+<p><strong>Preregistered or expected.</strong> The registered H07 GAMM applies to metrics with different units and support properties</p>
+<p><strong>Current analysis.</strong> H07 uses metric-specific response specifications and diagnostics rather than one universal zero-aware log-Gaussian model for level, duration, and dose outcomes.</p>
+<p><strong>Why.</strong> The metrics differ in units, bounds, exact-zero mass, and tail behaviour; the reported working families are chosen and assessed per metric.</p>
+<p><strong>Affected hypotheses.</strong> H07</p>
+<p><strong>What this means for interpretation.</strong> Model adequacy and the meaning of changes differ by metric, and the sleep-environment Tweedie branch remains descriptive because its zero-mass diagnostic fails.</p>
+</section>
+<section id="h08-primary-test-estimand" class="level3">
+<h3 class="anchored" data-anchor-id="h08-primary-test-estimand">H08 primary test estimand</h3>
+<p><strong>Topic.</strong> H08 primary test estimand</p>
+<p><strong>Preregistered or expected.</strong> H08 registered Metric ~ VLSQ8 * Site with the VLSQ-8 association and site heterogeneity distinguishable</p>
+<p><strong>Current analysis.</strong> H08 estimates the study-site-average visual-light-sensitivity association separately from the visual-light-sensitivity-by-site interaction for each metric.</p>
+<p><strong>Why.</strong> Separate nested comparisons preserve the registered distinction between an average association and variation among sites.</p>
+<p><strong>Affected hypotheses.</strong> H08</p>
+<p><strong>What this means for interpretation.</strong> A non-significant average association is not a joint statement that both the average and every site difference are absent.</p>
+</section>
+<section id="h08-multiplicity" class="level3">
+<h3 class="anchored" data-anchor-id="h08-multiplicity">H08 multiplicity</h3>
+<p><strong>Topic.</strong> H08 multiplicity</p>
+<p><strong>Preregistered or expected.</strong> H08 requires FDR within a declared family across nine outcomes</p>
+<p><strong>Current analysis.</strong> H08 uses separate complete nine-metric FDR families for average associations and site interactions; scalar adjustments are not used.</p>
+<p><strong>Why.</strong> Separate complete families distinguish the average-association question from variation among sites.</p>
+<p><strong>Affected hypotheses.</strong> H08</p>
+<p><strong>What this means for interpretation.</strong> No H08 association or site interaction is retained after its declared family adjustment.</p>
+</section>
+<section id="h09-chronotype-predictors" class="level3">
+<h3 class="anchored" data-anchor-id="h09-chronotype-predictors">H09 chronotype predictors</h3>
+<p><strong>Topic.</strong> H09 chronotype predictors</p>
+<p><strong>Preregistered or expected.</strong> H09 registered both MCTQ and MEQ chronotype predictors</p>
+<p><strong>Current analysis.</strong> H09 includes both MCTQ midsleep on free days corrected for sleep debt and MEQ morningness score as distinct chronotype constructs, with separate models and families.</p>
+<p><strong>Why.</strong> The available aggregate fields represent distinct instruments and are analysed separately.</p>
+<p><strong>Affected hypotheses.</strong> H09</p>
+<p><strong>What this means for interpretation.</strong> MCTQ effects are per one hour later timing; MEQ effects are per ten points greater morning preference. They are not interchangeable measures.</p>
+</section>
+<section id="h09-site-adjustment" class="level3">
+<h3 class="anchored" data-anchor-id="h09-site-adjustment">H09 site adjustment</h3>
+<p><strong>Topic.</strong> H09 site adjustment</p>
+<p><strong>Preregistered or expected.</strong> H09 registered Metric ~ chronotype * Site with participant nested in site</p>
+<p><strong>Current analysis.</strong> H09 reports site-adjusted main chronotype models and evaluates chronotype-by-site interactions separately; estimates and intervals come from the declared fitted model for each instrument and timing outcome.</p>
+<p><strong>Why.</strong> Using a fixed formula and sample for each reported estimate avoids significance-driven model selection.</p>
+<p><strong>Affected hypotheses.</strong> H09</p>
+<p><strong>What this means for interpretation.</strong> Chronotype slopes are study-site-adjusted associations; site interactions are a separate question.</p>
+</section>
+<section id="h09-multiplicity-and-model-selection" class="level3">
+<h3 class="anchored" data-anchor-id="h09-multiplicity-and-model-selection">H09 multiplicity and model selection</h3>
+<p><strong>Topic.</strong> H09 multiplicity and model selection</p>
+<p><strong>Preregistered or expected.</strong> H09 requires within-hypothesis FDR for five timing outcomes crossed with both registered chronotype instruments and site interactions</p>
+<p><strong>Current analysis.</strong> H09 uses four separate complete five-outcome FDR families: MCTQ average associations, MEQ average associations, MCTQ-by-site interactions, and MEQ-by-site interactions. Model selection is not driven by adjusted significance.</p>
+<p><strong>Why.</strong> The family partition reflects the two instruments and the distinction between average and interaction tests.</p>
+<p><strong>Affected hypotheses.</strong> H09</p>
+<p><strong>What this means for interpretation.</strong> Each reported adjusted p-value belongs to one named five-member family; non-estimable interaction branches remain visible.</p>
+</section>
+<section id="h10-sex-by-site-interaction" class="level3">
+<h3 class="anchored" data-anchor-id="h10-sex-by-site-interaction">H10 sex-by-site interaction</h3>
+<p><strong>Topic.</strong> H10 sex-by-site interaction</p>
+<p><strong>Preregistered or expected.</strong> H10 registered age and biological-sex predictors each interacting with site</p>
+<p><strong>Current analysis.</strong> H10 now fits, tests, and reports both age-by-site and biological-sex-by-site interactions for all planned metrics, with non-estimable branches explicitly identified rather than omitted.</p>
+<p><strong>Why.</strong> This retains the full registered interaction scope while keeping sensor placements separate.</p>
+<p><strong>Affected hypotheses.</strong> H10</p>
+<p><strong>What this means for interpretation.</strong> H10 can distinguish average age/sex associations from variation of those associations among sites; sparse interactions remain qualified by diagnostics.</p>
+</section>
+<section id="h10-multiplicity" class="level3">
+<h3 class="anchored" data-anchor-id="h10-multiplicity">H10 multiplicity</h3>
+<p><strong>Topic.</strong> H10 multiplicity</p>
+<p><strong>Preregistered or expected.</strong> H10 requires within-hypothesis FDR for age and sex associations and their site interactions</p>
+<p><strong>Current analysis.</strong> H10 uses four separate complete 17-metric FDR families for age average associations, biological-sex average associations, age-by-site interactions, and biological-sex-by-site interactions.</p>
+<p><strong>Why.</strong> The partition was fixed in the reported analysis and all planned slots, including non-estimable ones, are retained.</p>
+<p><strong>Affected hypotheses.</strong> H10</p>
+<p><strong>What this means for interpretation.</strong> The current conclusion of 11 primary average associations and two chest age-by-site interactions is evaluated within these complete families.</p>
+</section>
+<section id="h11-outcome-and-epoch" class="level3">
+<h3 class="anchored" data-anchor-id="h11-outcome-and-epoch">H11 outcome and epoch</h3>
+<p><strong>Topic.</strong> H11 outcome and epoch</p>
+<p><strong>Preregistered or expected.</strong> H11 registered hourly geometric-mean melanopic EDI</p>
+<p><strong>Current analysis.</strong> H11 deliberately inherits H02’s zero-aware transformed arithmetic-mean melEDI in 30-minute bins rather than the registered hourly geometric-mean outcome.</p>
+<p><strong>Why.</strong> Using the H02 temporal frame provides consistent epochs, temporal support, gap handling, autocorrelation, and placement definitions for the sex-specific curve analysis.</p>
+<p><strong>Affected hypotheses.</strong> H11</p>
+<p><strong>What this means for interpretation.</strong> H11 estimates sex-specific 30-minute daily curves on the inherited transformed scale; its sample size and dependence structure differ from the preregistered hourly analysis.</p>
+</section>
+<section id="h11-sex-estimand" class="level3">
+<h3 class="anchored" data-anchor-id="h11-sex-estimand">H11 sex estimand</h3>
+<p><strong>Topic.</strong> H11 sex estimand</p>
+<p><strong>Preregistered or expected.</strong> The registered H11 full model contains both a parametric sex effect and a sex-specific cyclic time smooth</p>
+<p><strong>Current analysis.</strong> The reported H11 full model contains a parametric biological-sex level term and a cyclic sex-specific time-deviation smooth. The primary test evaluates the complete level-plus-shape Female-minus-Male curve.</p>
+<p><strong>Why.</strong> This construction restores the registered distinction between a time-constant level difference and a time-varying shape difference while making their joint curve the primary estimand.</p>
+<p><strong>Affected hypotheses.</strong> H11</p>
+<p><strong>What this means for interpretation.</strong> The global result is about the whole sex-specific curve; secondary level and shape tests are attribution analyses and do not replace it.</p>
+</section>
+<section id="h11-temporal-and-site-smooths" class="level3">
+<h3 class="anchored" data-anchor-id="h11-temporal-and-site-smooths">H11 temporal and site smooths</h3>
+<p><strong>Topic.</strong> H11 temporal and site smooths</p>
+<p><strong>Preregistered or expected.</strong> H11 registered cyclic sex smooths, a site factor smooth, and a site random effect</p>
+<p><strong>Current analysis.</strong> H11 uses the H02 temporal architecture: a cyclic global time smooth, a cyclic biological-sex deviation, sum-to-zero site time deviations, participant-specific time curves, and a participant-day intercept. The separate registered site random intercept is replaced by this inherited site and participant hierarchy.</p>
+<p><strong>Why.</strong> The inherited architecture is evaluated in H02 and checked for H11 with boundary-aware autocorrelation and robust complete-curve inference.</p>
+<p><strong>Affected hypotheses.</strong> H11</p>
+<p><strong>What this means for interpretation.</strong> Site and participant temporal structure is richer than the preregistered formula; interpretation is conditional on the reported inherited architecture and diagnostics.</p>
+</section>
+<section id="h11-participant-hierarchy" class="level3">
+<h3 class="anchored" data-anchor-id="h11-participant-hierarchy">H11 participant hierarchy</h3>
+<p><strong>Topic.</strong> H11 participant hierarchy</p>
+<p><strong>Preregistered or expected.</strong> H11 registered a participant random-effect smooth</p>
+<p><strong>Current analysis.</strong> H11 models participant-specific time curves and participant-day intercepts rather than only a participant random intercept.</p>
+<p><strong>Why.</strong> The reported hierarchy reflects repeated 30-minute observations within days and repeated days within participants and is inherited from H02.</p>
+<p><strong>Affected hypotheses.</strong> H11</p>
+<p><strong>What this means for interpretation.</strong> Uncertainty and weighting account for participant and day structure; variance components refer to the stated hierarchy.</p>
+</section>
+<section id="h11-contextual-activity-analysis" class="level3">
+<h3 class="anchored" data-anchor-id="h11-contextual-activity-analysis">H11 contextual activity analysis</h3>
+<p><strong>Topic.</strong> H11 contextual activity analysis</p>
+<p><strong>Preregistered or expected.</strong> No activity-adjusted causal or mediation estimand was registered for H11</p>
+<p><strong>Current analysis.</strong> H11 includes an explicitly exploratory same-sample activity-context sensitivity. It first refits the reported model without activity on the activity-complete sample and then adds activity on exactly the same observations.</p>
+<p><strong>Why.</strong> The paired same-sample design separates sample restriction from covariate adjustment as far as the observational data allow.</p>
+<p><strong>Affected hypotheses.</strong> H11</p>
+<p><strong>What this means for interpretation.</strong> The analysis cannot establish mediation or a behavioural mechanism; near-eye support was already lost through sample restriction and the chest attenuation is non-causal context only.</p>
+</section>
+<section id="h11-curve-inference-and-multiplicity" class="level3">
+<h3 class="anchored" data-anchor-id="h11-curve-inference-and-multiplicity">H11 curve inference and multiplicity</h3>
+<p><strong>Topic.</strong> H11 curve inference and multiplicity</p>
+<p><strong>Preregistered or expected.</strong> H11 registered one temporal sex hypothesis with FDR if multiple tests were used</p>
+<p><strong>Current analysis.</strong> H11 uses one participant-cluster-robust global complete-curve test per placement as the primary decision. Level and shape form a secondary two-test FDR family. Displayed clock-time intervals are pointwise, not simultaneous, and do not define a familywise-significant period.</p>
+<p><strong>Why.</strong> The analysis uses AR-whitened participant-cluster CR1 curve inference with smoothing-bias covariance and a finite-cluster reference distribution.</p>
+<p><strong>Affected hypotheses.</strong> H11</p>
+<p><strong>What this means for interpretation.</strong> The supported global curves may be described, but local clock ranges are descriptive and the secondary decomposition does not cleanly attribute the effect to level or shape.</p>
+</section>
+</section>
+</section>
+<section id="current-qualification" class="level1">
+<h1>Eligibility and generalisation</h1>
+<p>The eligibility checks below assess the age-related and employment-related hypotheses in restricted samples. They describe the robustness of these analyses while retaining the distinction between the observed study population and the registered target population.</p>
+<section id="entries" class="level2">
+<h2 class="anchored" data-anchor-id="entries">Entries</h2>
+<section id="inclusion-criteria" class="level3">
+<h3 class="anchored" data-anchor-id="inclusion-criteria">Inclusion criteria</h3>
+<p><strong>Topic.</strong> Inclusion criteria</p>
+<p><strong>Preregistered or expected.</strong> Protocol age 18–65 years and employment at least 80%.</p>
+<p><strong>Current analysis.</strong> The study population included nine people outside the registered age or employment criteria: one older than 65 years, two recorded as not employed and seven recorded as marginally employed, with one person meeting both the age and employment exclusion criteria. The age and biological-sex analysis (H10) jointly excluded these age and employment categories. Six affected participants contributed to the near-eye models and nine to the chest models; metric-specific samples fell from 137–141 to 131–135 near-eye participants and from 152–154 to 143–145 chest participants. All 11 FDR-supported main findings retained their direction and support, and all 68 main-effect FDR decisions were unchanged. This was a joint age-and-employment restriction, not an age-only refit.</p>
+<p>For the day-type, exercise and sleep analysis (H06), a separate near-eye employment sensitivity excluded six people recorded as not employed or marginally employed. The sample fell from 137 to 131 participants, from 715 to 684 participant-days and from 16,596 to 15,871 participant-hours. The additive and predictor-by-site models preserved the directions and FDR conclusions for the main associations and the site-heterogeneity conclusions. For example, the ratio for active versus sedentary days changed from 2.06 to 1.88 and remained FDR-supported. Students and trainees were retained in both H10 and H06; age above 65 years was an explicit exclusion only in H10.</p>
+<p><strong>Why.</strong> H10 directly examines age associations, and H06 examines work-free versus work-day patterns alongside exercise and prior sleep. These targeted restrictions assess whether the recorded age and employment exceptions account for those findings.</p>
+<p><strong>Affected hypotheses.</strong> H10 (age and biological sex) and H06 (day type, exercise and sleep) have the targeted eligibility checks described here. The retained-cohort eligibility deviation also applies to other analyses using these participants.</p>
+<p><strong>What this means for interpretation.</strong> The restricted samples support the same substantive conclusions for H10 main effects and H06 main associations and site heterogeneity, although individual estimates change. These checks do not establish equivalence between samples, isolate an age-only exclusion effect, or verify every protocol eligibility criterion. Estimates describe the observed populations under their stated sampling rules; the targeted checks do not establish eligibility-restricted results for the other hypotheses.</p>
+
+
+</section>
+</section>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+            // target, if specified
+            link.setAttribute("target", "_blank");
+            if (link.getAttribute("rel") === null) {
+              link.setAttribute("rel", "noopener");
+            }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="./README.html" class="pagination-link" aria-label="Reproduce the analysis">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">Reproduce the analysis</span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="./analyses/alternative-preprocessing.html" class="pagination-link" aria-label="Alternative preprocessing">
+        <span class="nav-page-text">Alternative preprocessing</span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

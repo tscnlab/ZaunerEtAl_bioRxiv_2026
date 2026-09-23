@@ -1,0 +1,4 @@
+model_id,model_label,analysis_scale,family_label,exact_formula,outcome_target
+quasi_tweedie_log,"Quasi-Tweedie, log link",melEDI (lx),quasi-Tweedie; p = 1.539919; log link,geo_medi_1h ~ site + light_source,conditional arithmetic mean of hourly melEDI
+gaussian_identity_raw,"Gaussian, identity link",melEDI (lx),Gaussian; identity link,geo_medi_1h ~ site + light_source,conditional arithmetic mean of hourly melEDI
+gaussian_log10_response,Gaussian on log10(melEDI + 0.1),log10(melEDI + 0.1 lx),Gaussian; identity link after log10 transform,log10(geo_medi_1h + 0.1) ~ site + light_source,conditional mean on log10 scale; direct inverse is geometric-scale target

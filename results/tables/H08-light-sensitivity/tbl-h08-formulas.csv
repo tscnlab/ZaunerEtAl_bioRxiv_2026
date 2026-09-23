@@ -1,0 +1,10 @@
+Model,Evaluated Wilkinson formula
+site_only,response_value ~ site + (1 | site:Id)
+additive,response_value ~ site + VLSQ8_c + (1 | site:Id)
+interaction,response_value ~ site * VLSQ8_c + (1 | site:Id)
+photoperiod_site_only,response_value ~ site + photoperiod_c + (1 | site:Id)
+photoperiod_additive,response_value ~ site + photoperiod_c + VLSQ8_c + (1 | site:Id)
+photoperiod_interaction,response_value ~ site * VLSQ8_c + photoperiod_c + (1 | site:Id)
+participant_site_only,participant_response ~ site
+participant_additive,participant_response ~ site + VLSQ8_c
+participant_interaction,participant_response ~ site * VLSQ8_c

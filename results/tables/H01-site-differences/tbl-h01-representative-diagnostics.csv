@@ -1,0 +1,5 @@
+Metric,Family,Review signal,Stored model-check values,Prediction-bound check
+Mean melEDI,Gaussian,Gaussian residual-shape warning,Shapiro–Wilk p <0.001; residual-variance ratio 2.20; |standardized residual| >3: 1.3%,No verified upper bound available
+Time below 10 lx melEDI before sleep,Gaussian,Gaussian residual-shape warning,Shapiro–Wilk p <0.001; residual-variance ratio 1.66; |standardized residual| >3: 0.8%,Passed
+Time above 250 lx melEDI during wake,"Tweedie, log link",Tweedie simulation-diagnostic warning,DHARMa uniformity p 0.005; dispersion p 0.064; zero-inflation p 0.456; outlier p 0.301,Passed
+Time below 1 lx melEDI during sleep,"Tweedie, log link",Strong Tweedie simulation-diagnostic warning,DHARMa uniformity p <0.001; dispersion p 0.280; zero-inflation p <0.001; outlier p 0.002,187 stored predictions above the physical upper bound

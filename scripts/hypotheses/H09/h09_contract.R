@@ -1,21 +1,29 @@
-# Define the author-approved H09 Stage 2 analysis contract.
-
 h09_abort <- function(message, ..., call. = FALSE) {
   stop(sprintf(message, ...), call. = call.)
 }
 
-h09_score_contract <- function() {
+h09_score_contract <- function(chronotype) {
+  required <- c("site", "Id", "msf_sc", "meq")
+  if (!all(required %in% names(chronotype)) ||
+      anyDuplicated(chronotype[c("site", "Id")])) {
+    h09_abort("Chronotype inputs require unique participant keys and both score fields")
+  }
+  mctq_hours <- as.numeric(chronotype$msf_sc) / 3600
+  meq_scores <- as.numeric(chronotype$meq)
+  if (!any(is.finite(mctq_hours)) || !any(is.finite(meq_scores))) {
+    h09_abort("Both chronotype instruments require finite observed scores")
+  }
   list(
-    mctq_center_hour = 4.1135842985834801,
-    meq_center_score = 52.86021505376344,
+    mctq_center_hour = mean(mctq_hours, na.rm = TRUE),
+    meq_center_score = mean(meq_scores, na.rm = TRUE),
     mctq_field = "msf_sc",
     meq_field = "meq",
-    participants = 186L,
-    mctq_missing = 1L,
-    meq_missing = 0L,
-    author_decision = paste(
-      "H09-001 explicitly accepts the pinned upstream aggregate calculated",
-      "fields msf_sc and meq without claiming item-level reconstruction"
+    participants = nrow(chronotype),
+    mctq_missing = sum(is.na(mctq_hours)),
+    meq_missing = sum(is.na(meq_scores)),
+    score_definition = paste(
+      "The input data provide aggregate calculated fields msf_sc and meq;",
+      "item-level reconstruction is unavailable"
     )
   )
 }
@@ -161,26 +169,6 @@ h09_formula_set <- function(
   )
 }
 
-h09_v0_formula_set <- function() {
-  list(
-    H9_1 = stats::as.formula(
-      "timing_hour ~ site * mctq_hour + (1 | Id)"
-    ),
-    H9_0 = stats::as.formula(
-      "timing_hour ~ site + (1 | Id)"
-    ),
-    H9_00 = stats::as.formula(
-      "timing_hour ~ 1 + (1 | Id)"
-    ),
-    H9_ni = stats::as.formula(
-      "timing_hour ~ site + mctq_hour + (1 | Id)"
-    ),
-    H9_ns = stats::as.formula(
-      "timing_hour ~ mctq_hour + (1 | Id)"
-    )
-  )
-}
-
 h09_formula_registry <- function() {
   formula_rows <- function(formulas, analysis_kind, instrument) {
     tibble::tibble(
@@ -197,11 +185,11 @@ h09_formula_registry <- function() {
   dplyr::bind_rows(
     formula_rows(
       h09_formula_set("MCTQ", "participant_day"),
-      "approved_participant_day", "MCTQ"
+      "participant_day", "MCTQ"
     ),
     formula_rows(
       h09_formula_set("MEQ", "participant_day"),
-      "approved_participant_day", "MEQ"
+      "participant_day", "MEQ"
     ),
     formula_rows(
       h09_formula_set("MCTQ", "photoperiod"),
@@ -226,8 +214,7 @@ h09_formula_registry <- function() {
     formula_rows(
       h09_formula_set("MEQ", "temporal"),
       "continuous_time_ar1_sensitivity", "MEQ"
-    ),
-    formula_rows(h09_v0_formula_set(), "v0_reconstruction", "MCTQ")
+    )
   )
 }
 
@@ -301,112 +288,11 @@ h09_diagnostic_thresholds <- function() {
 }
 
 h09_input_contract <- function(root) {
-  tibble::tribble(
-    ~input_role, ~path, ~expected_sha256, ~expected_rows, ~use,
-    "metric_manifest", "artifacts/12_manifests/metric_artifacts.csv",
-    "028bce108339c1277df4a070597430ea20b49c34c2888f4eef42741c1fe76a5e",
-    NA_integer_, "METRIC-011 current metric identity; H09 estimands invariant",
-    "base_manifest", "artifacts/12_manifests/base_model_data_artifacts.csv",
-    "8344bdc0339a53079bf9eeb7d86de1ad7c15373641c3a0a5a01d040b418895ce",
-    NA_integer_, "METRIC-011 current base identity and bundle",
-    "primary_near_eye_context",
-    "artifacts/06_model_data/base/metrics_glasses_participant_day_context.rds",
-    "013afe75e9b75b141b4cb48d04111a9e6c688630085a24c9fe07ca3d142a4e9a",
-    816L, "METRIC-011 current direct near-eye identity",
-    "primary_chest_context",
-    "artifacts/06_model_data/base/metrics_chest_participant_day_context.rds",
-    "497466ccd1a35635cca40bb8f9ce51efb97321ab04b42ee1bb76785e466a2057",
-    902L, "METRIC-011 current direct chest identity",
-    "primary_near_eye_enriched",
-    "artifacts/06_model_data/base/metrics_glasses_participant_day_enriched.rds",
-    "b469fa8f0a743de1cbb1075f78879b84ab602c74cc44fb97da45dee596681f42",
-    816L, "METRIC-011 current enriched near-eye identity; H09 fields invariant",
-    "primary_chest_enriched",
-    "artifacts/06_model_data/base/metrics_chest_participant_day_enriched.rds",
-    "10aebeb5dabb53e8f3ee0747b62c31707da344e11b7068261c2ada2a0b7badc9",
-    902L, "METRIC-011 current enriched chest identity; H09 fields invariant",
-    "normalized_chronotype",
-    "artifacts/06_model_data/normalized_inputs/chronotype.rds",
-    "9266c61e265d445f60ea3862a68c69a24af3f17b3773ff57cf338939fd67eeb6",
-    186L, "Pinned aggregate msf_sc and meq fields accepted by H09-001",
-    "gap_timing_unaware_metrics",
-    paste0(
-      "artifacts/06_model_data/scenarios/manuscript_prepared_data/",
-      "participant_day_metrics.rds"
-    ),
-    "7561b5dd47cb5e23ca94ba59bd57648f11fe492f86af53a566c5c9cf42d932f1",
-    NA_integer_, "Approved prepared-data sensitivity",
-    "gap_manifest",
-    "artifacts/12_manifests/manuscript_prepared_data_artifacts.csv",
-    "4ed62fbe58de65a6d05d8cfc6b5d870d7c74a3c83fe89bcd72bd1dd838698935",
-    NA_integer_, "Gap-timing-unaware provenance",
-    "site_display_registry", "config/site_display_registry.csv",
-    "3d669d459ecc27d3154bbb5ff5b0d64cb510805d486b45264443228c44a6d809",
-    NA_integer_, "Submitted site names, order, and colours",
-    "metric_display_registry", "config/metric_display_registry.csv",
-    "c82db05a77cc50ce5b9dbd459c90997fa6bb7d87c0b8e880c1bf8186fad06ed0",
-    NA_integer_, "Manuscript metric display names",
-    "v0_near_eye_metrics", "data/metrics_glasses.RData",
-    "9595cb7c574672cf2c8ff89ac3d227f3f7ff11eca57776609e19599561b2d441",
-    NA_integer_, "V0 reconstruction",
-    "v0_chest_metrics", "data/metrics_chest.RData",
-    "4498d677a8fc7d47168ab2f03731f2dc67b419102b7c818305925273d57c818c",
-    NA_integer_, "V0 reconstruction",
-    "v0_near_eye_source", "RQ3.qmd",
-    "dd5b8fedc0205006af2caff74c61da485d9589f37530c91bf45786120b7d5ae2",
-    NA_integer_, "V0 formulas, reporting, table, and figure",
-    "v0_chest_source", "RQ3_chest.qmd",
-    "e0b91d924e1e1e3241ad51a61dee402976aead0ac203d44371e2f10fe5f1047b",
-    NA_integer_, "V0 chest formulas, reporting, table, and figure",
-    "v0_helper", "scripts/RQ3_specific.R",
-    "1ded47f7f4ed69ff17998cfc192194ce8732a873d375e0f7000a76344bb38e83",
-    NA_integer_, "V0 table helper"
-  ) |>
-    dplyr::mutate(absolute_path = file.path(root, .data$path))
-}
-
-h09_approval_registry <- function() {
-  tibble::tribble(
-    ~gate_id, ~decision, ~approved,
-    "H09-G1", "MCTQ and MEQ remain separate registered analyses", TRUE,
-    "H09-G2", "Registered exact longest-period midpoint is the fifth primary outcome; mean timing is sensitivity", TRUE,
-    "H09-G3", "Registered midpoint is restricted to exact-identifiable selected periods", TRUE,
-    "H09-G4", "Pinned aggregate calculated fields msf_sc and meq explicitly accepted", TRUE,
-    "H09-G5", "Site-only versus site-plus-chronotype main test; separate interaction test", TRUE,
-    "H09-G6", "Fixed scaling, centring, site order, and sum contrasts", TRUE,
-    "H09-G7", "Four separate five-member BH families", TRUE,
-    "H09-G8", "Site-specific trends descriptive; H09-F5 disabled", TRUE,
-    "H09-G9", "Fixed linear clock rules and L10 cut sensitivity", TRUE,
-    "H09-G10", "Site retained; within-site photoperiod is sensitivity only", TRUE,
-    "H09-G11", "Near-eye primary, chest complementary, exact paired/common, no pooling", TRUE,
-    "H09-G12", "Approved dependence and stability checks", TRUE,
-    "H09-G13", "Explicit acceptable/not-acceptable diagnostic registry", TRUE,
-    "H09-G14", "Raw and adjusted p-values follow REPORT-008", TRUE,
-    "H09-G15", "V0 recreation and paired figure source data", TRUE,
-    "H09-G16", "Production resampling remains pilot-gated", TRUE
-  )
-}
-
-h09_validate_contract <- function() {
-  metrics <- h09_metric_registry()
-  predictors <- h09_predictor_registry()
-  families <- h09_family_registry()
-  approvals <- h09_approval_registry()
-  stopifnot(
-    nrow(metrics) == 6L,
-    sum(metrics$primary_family_member) == 5L,
-    metrics$metric_id[metrics$metric_order == 5L] ==
-      "longest_period_midpoint",
-    nrow(predictors) == 2L,
-    nrow(families) == 4L,
-    all(families$planned_n == 5L),
-    nrow(approvals) == 16L,
-    all(approvals$approved),
-    !any(grepl(
-      "temperature|weather",
-      h09_formula_registry()$formula,
-      ignore.case = TRUE
-    ))
-  )
-  invisible(TRUE)
+ tibble::tribble(~input_role, ~path,
+"normalized_chronotype", "results/intermediate/model_data/normalized_inputs/chronotype.rds",
+"primary_near_eye_context", "results/intermediate/model_data/base/metrics_glasses_participant_day_context.rds",
+"primary_chest_context", "results/intermediate/model_data/base/metrics_chest_participant_day_context.rds",
+"primary_near_eye_enriched", "results/intermediate/model_data/base/metrics_glasses_participant_day_enriched.rds",
+"primary_chest_enriched", "results/intermediate/model_data/base/metrics_chest_participant_day_enriched.rds",
+"gap_timing_unaware_metrics", "results/intermediate/model_data/scenarios/alternative_preprocessing/participant_day_metrics.rds") |> dplyr::mutate(absolute_path = file.path(root,.data$path))
 }

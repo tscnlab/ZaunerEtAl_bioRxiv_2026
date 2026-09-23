@@ -1,6 +1,3 @@
-# Derive deterministic civil-twilight context on true and wall-clock planes.
-#
-# Source scripts/pipeline/assertions.R before this file.
 
 expected_site_codes <- function() {
   c(

@@ -1,0 +1,6 @@
+Model,Wilkinson_formula,Purpose
+Reduced,response ~ site + (1 | site:Id),Site adjustment
+Age,response ~ site + age_decade + (1 | site:Id),Common age association
+Age × site,response ~ site * age_decade + (1 | site:Id),Age-by-site interaction
+Biological sex,response ~ site + biological_sex + (1 | site:Id),Common Female-minus-Male contrast
+Biological sex × site,response ~ site * biological_sex + (1 | site:Id),Biological-sex-by-site interaction

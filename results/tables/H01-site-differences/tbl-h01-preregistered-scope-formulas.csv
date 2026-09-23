@@ -1,0 +1,11 @@
+Model unit,Model,Formula
+Participant,Site full,response_value ~ site
+Participant,No site,response_value ~ 1
+Participant,No photoperiod,response_value ~ site
+Participant,Latitude full,response_value ~ absolute_latitude_10deg_centered
+Participant,Random site,response_value ~ 1 + (1 | site)
+Participant-day,Site full,response_value ~ site + (1 | participant_key)
+Participant-day,No site,response_value ~ 1 + (1 | participant_key)
+Participant-day,No photoperiod,response_value ~ site + (1 | participant_key)
+Participant-day,Latitude full,response_value ~ absolute_latitude_10deg_centered + (1 | participant_key)
+Participant-day,Random site,response_value ~ 1 + (1 | site) + (1 | participant_key)

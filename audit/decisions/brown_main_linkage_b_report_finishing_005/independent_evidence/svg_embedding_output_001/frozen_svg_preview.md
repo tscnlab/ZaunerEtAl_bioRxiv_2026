@@ -1,1 +1,0 @@
-![Frozen participant-profile SVG](/Users/zauner/.codex/worktrees/82ab/ZaunerEtAl_bioRxiv_2026/audit/analyses/brown_adherence/stage3_cross_state_association/figures/participant_state_raincloud.svg){#fig-participant-state-raincloud width="100%"}

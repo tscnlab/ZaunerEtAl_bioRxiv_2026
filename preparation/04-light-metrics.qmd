@@ -1,0 +1,75 @@
+---
+title: "Derive light-exposure metrics"
+---
+
+Daily light metrics use the coverage-qualified one-minute recordings and reference profiles. We retain the temporal gaps and evaluate support separately for each metric. Sleep, pre-sleep, and wake domains are projected from the original diary intervals onto true time, including minutes where the logger has no observation.
+
+```{r}
+#| label: setup
+#| echo: false
+source("scripts/project.R")
+analysis_setup()
+for (helper in c("paths_io", "assertions", "time_axes", "time_support", "state_alignment", "aggregation_coverage", "reference_profiles", "state_interval_projection", "metric_derivation", "build_metric_derivation")) {
+  source(file.path("scripts/pipeline", paste0(helper, ".R")))
+}
+root <- project_root()
+paths <- pipeline_paths(root)
+ensure_pipeline_directories(paths)
+```
+## Fixed definitions and support requirements
+
+The primary calculation requires 80% support for rolling windows, relevance-weighted dose, and state-specific metrics. Melanopic daylight efficacy ratio (MDER) is the arithmetic mean of positive, finite one-minute melEDI/illuminance ratios and requires viable pairs in at least 50% of the day. Geometric means use a 0.1 lx offset; numerical roundoff is normalized to zero only when the contributing source values are all zero. Timing means require a circular resultant of at least 0.10.
+
+```{r}
+#| label: metric-inputs
+profiles <- read_rds_artifact(file.path(paths$profiles, "reference_profiles.rds"), "data.frame")
+distributions <- read_rds_artifact(file.path(paths$profiles, "timing_exceedance_distributions.rds"), "data.frame")
+maps <- read_rds_artifact(file.path(paths$profiles, "metric_relevance_maps.rds"), "data.frame")
+validate_fixed_metric_profiles(profiles, maps, distribution_profiles = distributions)
+metric_summary <- list()
+```
+
+## Calculate each sensor placement
+
+The brightest and darkest windows each span ten hours. The darkest window may cross midnight; the brightest window stays within the day. Missing or invalid minutes interrupt observed above-threshold bouts. Separate availability indicators preserve a participant-day when only one metric lacks enough support.
+
+```{r}
+#| label: derive-light-metrics
+for (placement in c("glasses", "chest")) {
+  message("Deriving light metrics for ", placement, " recordings...")
+  coverage <- read_rds_artifact(file.path(paths$coverage,
+    paste0("light_", placement, "_coverage.rds")), "data.frame")
+  intervals <- read_metric_state_interval_inputs(file.path(paths$aligned, "state_intervals"),
+    sort(unique(as.character(coverage$site))))
+  metrics <- derive_metric_set(coverage = coverage, state_intervals = intervals,
+    profiles = profiles, maps = maps, placement = placement, profile_variant = "pooled",
+    zero_offset = 0.1, minimum_window_support = 0.80,
+    minimum_relevance_support = 0.80, minimum_state_support = 0.80,
+    minimum_mder_viable_fraction = 0.50, minimum_circular_resultant = 0.10)
+  validate_metric_builder_outputs(metrics, placement)
+  message("Completed ", placement, ": ", nrow(metrics$daily_metrics), " participant-days")
+  outputs <- metric_output_paths(paths$metrics, placement)
+  for (name in c("daily_metrics", "participant_metrics", "thirty_minute", "hourly")) {
+    stem <- switch(name, daily_metrics = "participant_day", participant_metrics = "participant",
+                   thirty_minute = "30_minute", hourly = "one_hour")
+    write_result_pair(metrics[[name]], file.path(paths$metrics,
+      paste0("metrics_", placement, "_", stem)))
+  }
+  additional <- c(metric_values = "values", admissibility = "admissibility",
+    support = "support", censoring = "censoring", gap = "gaps",
+    numerical_zero_audit = "numerical_zero_audit")
+  for (name in names(additional)) {
+    write_csv_artifact(metrics[[name]], outputs[[additional[[name]]]],
+      "preparation/04-light-metrics.qmd")
+  }
+  metric_summary[[placement]] <- tibble::tibble(
+    placement = placement, participant_days = nrow(metrics$daily_metrics),
+    participants = nrow(metrics$participant_metrics),
+    half_hour_rows = nrow(metrics$thirty_minute), hourly_rows = nrow(metrics$hourly)
+  )
+  rm(coverage, metrics, intervals)
+  invisible(gc())
+}
+dplyr::bind_rows(metric_summary)
+```
+The saved RDS tables retain typed dates, time variables, and metric support. The paired CSV tables make the daily, participant, half-hour, and hourly values available for independent numerical inspection. Model preparation joins these outcomes to questionnaire and solar context without recomputing the outcomes.

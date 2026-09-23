@@ -1,0 +1,106 @@
+---
+title: "Reference profiles and temporal support"
+---
+
+Reference profiles describe when light normally occurs and support correction for missing periods. They are estimated before participant-day metrics. Profiles weight days equally within participants and then participants equally. Separate profiles describe full-day, waking, pre-sleep, and sleep-environment measurements for each sensor placement and light channel.
+
+```{r}
+#| label: setup
+#| echo: false
+source("scripts/project.R")
+analysis_setup()
+for (helper in c("paths_io", "assertions", "time_axes", "time_support", "state_alignment", "aggregation_coverage", "reference_profiles", "build_reference_profiles")) {
+  source(file.path("scripts/pipeline", paste0(helper, ".R")))
+}
+root <- project_root()
+paths <- pipeline_paths(root)
+ensure_pipeline_directories(paths)
+```
+## Learn the profiles
+
+Thirty-minute bins contain the profiles. The full-day pooled and leave-one-site-out profiles require at least 20 participants; state-specific and site-specific profiles require at least five. The same input grid also provides the probability of exceeding 250 lx melEDI in each time bin, used for timing-support calculations.
+
+```{r}
+#| label: learn-reference-profiles
+profile_sets <- list()
+distribution_sets <- list()
+domains <- c("full_day", "wake", "pre-sleep", "sleep")
+for (placement in c("glasses", "chest")) {
+  coverage <- read_rds_artifact(file.path(paths$coverage,
+    paste0("light_", placement, "_coverage.rds")), "data.frame")
+  validate_reference_profile_input(coverage, placement)
+  wall_planes <- stats::setNames(lapply(domains, function(state_domain) {
+    collapse_reference_profile_wall_minutes(coverage, state_domain)
+  }), domains)
+  wall_minutes <- wall_planes$full_day
+  placement_profiles <- list()
+  for (signal in c("MEDI", "LIGHT")) {
+    for (state_domain in domains) {
+      training <- profile_training_rows(wall_planes[[state_domain]],
+        signal = signal, state_domain = state_domain,
+        skeleton_wall_minutes = wall_minutes)
+      placement_profiles[[paste(signal, state_domain, sep = "/")]] <-
+        learn_reference_profile_set(
+          data = training, value_col = "profile_value", participant_col = "Id",
+          participant_day_col = "local_date", site_col = "site",
+          clock_bin_col = "clock_bin", strata = c("placement", "state_domain", "signal"),
+          bin_minutes = 30L, variants = c("pooled", "site_specific", "leave_one_site_out"),
+          pooled_full_day_min = 20L, leave_one_site_out_full_day_min = 20L,
+          state_specific_min = 5L, site_specific_min = 5L)
+    }
+  }
+  distribution_training <- timing_distribution_training_rows(wall_minutes)
+  distribution_sets[[placement]] <- learn_exceedance_distribution_profile_set(
+    data = distribution_training, value_col = "profile_value", participant_col = "Id",
+    participant_day_col = "local_date", site_col = "site", clock_minute_col = "clock_minute",
+    clock_bin_col = "clock_bin", strata = c("placement", "state_domain", "signal"),
+    bin_minutes = 30L, threshold = 250,
+    variants = c("pooled", "site_specific", "leave_one_site_out"),
+    pooled_full_day_min = 20L, leave_one_site_out_full_day_min = 20L,
+    state_specific_min = 5L, site_specific_min = 5L)
+  profile_sets[[placement]] <- dplyr::bind_rows(placement_profiles)
+  rm(coverage, wall_planes, wall_minutes, placement_profiles, distribution_training)
+  invisible(gc())
+}
+profiles <- dplyr::bind_rows(profile_sets) |>
+  dplyr::arrange(.data$profile_scope, .data$profile_variant, .data$placement,
+    .data$state_domain, .data$signal, .data$clock_bin)
+distribution_profiles <- dplyr::bind_rows(distribution_sets) |>
+  dplyr::arrange(.data$profile_scope, .data$profile_variant, .data$placement,
+    .data$state_domain, .data$signal, .data$clock_bin)
+attr(profiles, "profile_learning") <- "fixed_once_before_participant_day_metrics"
+attr(profiles, "profile_strata") <- c("placement", "state_domain", "signal")
+attr(profiles, "bin_minutes") <- 30L
+attr(distribution_profiles, "profile_learning") <- "fixed_once_before_participant_day_metrics"
+attr(distribution_profiles, "profile_strata") <- c("placement", "state_domain", "signal")
+attr(distribution_profiles, "bin_minutes") <- 30L
+attr(distribution_profiles, "distribution_profile_type") <- "participant_balanced_valid_minute_exceedance_probability"
+attr(distribution_profiles, "threshold_lx") <- 250
+attr(distribution_profiles, "comparison") <- "strict_greater_than"
+summarise_profile_support(profiles)
+```
+## Match temporal support to each metric
+
+A relevance map identifies which observed portions of a day support a particular metric. Timing uses the exceedance probability; dose uses the light profile. Missing periods remain missing and are never filled with profile values.
+
+```{r}
+#| label: derive-relevance-maps
+maps <- derive_metric_relevance_maps(profiles,
+  distribution_profiles = distribution_profiles, signal_col = "signal",
+  clock_bin_col = "clock_bin", strata = c("placement", "state_domain"), zero_offset = 0.1)
+attr(maps, "profile_learning") <- "fixed_once_before_participant_day_metrics"
+attr(maps, "bin_minutes") <- 30L
+validate_reference_profile_outputs(profiles, distribution_profiles, maps,
+  placements = c("glasses", "chest"), bin_minutes = 30L)
+summarise_relevance_map_support(maps)
+```
+
+```{r}
+#| label: save-reference-profiles
+#| code-fold: true
+write_result_pair(profiles, file.path(paths$profiles, "reference_profiles"))
+write_result_pair(distribution_profiles, file.path(paths$profiles, "timing_exceedance_distributions"))
+write_result_pair(maps, file.path(paths$profiles, "metric_relevance_maps"))
+write_csv_artifact(summarise_profile_support(profiles), file.path(paths$profiles,
+  "reference_profile_support.csv"), "preparation/03-reference-profiles.qmd")
+```

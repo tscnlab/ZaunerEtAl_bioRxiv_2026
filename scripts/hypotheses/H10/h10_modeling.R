@@ -1,5 +1,3 @@
-# Prepare, fit, diagnose, and summarize the approved H10 models.
-
 h10_transform_response <- function(value, spec, variant = "primary") {
   value <- as.numeric(value)
   if (spec$response_transform == "logit") {
@@ -202,42 +200,6 @@ h10_prepare_model_frame <- function(
   tibble::as_tibble(frame)
 }
 
-h10_frame_hash <- function(frame, include_values = TRUE) {
-  if (nrow(frame) == 0L) {
-    return(NA_character_)
-  }
-  columns <- intersect(
-    c(
-      "data_scenario",
-      "placement",
-      "sample_scenario",
-      "metric_id",
-      "site",
-      "Id",
-      "local_date"
-    ),
-    names(frame)
-  )
-  if (include_values) {
-    columns <- c(
-      columns,
-      intersect(
-        c("value", "response", "age", "age_decade", "biological_sex"),
-        names(frame)
-      )
-    )
-  }
-  digest::digest(
-    as.data.frame(frame[columns]),
-    algo = "sha256",
-    serialize = TRUE
-  )
-}
-
-h10_key_hash <- function(frame) {
-  h10_frame_hash(frame, include_values = FALSE)
-}
-
 h10_capture_fit <- function(expression) {
   warnings <- character()
   model <- tryCatch(
@@ -328,9 +290,7 @@ h10_fit_bundle <- function(frame, spec) {
     spec = spec,
     formulas = formulas,
     ml_fits = ml_fits,
-    final_fits = final_fits,
-    frame_key_hash = h10_key_hash(frame),
-    frame_hash = h10_frame_hash(frame)
+    final_fits = final_fits
   )
 }
 
@@ -1031,7 +991,7 @@ h10_model_diagnostics <- function(fit, frame, spec) {
     startsWith(bounds$prediction_bound_status, "REVIEW") ||
     nzchar(warnings)
   issue_codes <- c(
-    if (major_failure) "NUMERICAL_OR_RANK_GATE",
+    if (major_failure) "NUMERICAL_OR_RANK_CHECK",
     if (isTRUE(status$singular)) "RANDOM_INTERCEPT_BOUNDARY",
     if (is.finite(qq_correlation) && qq_correlation < 0.95) {
       "RESIDUAL_QQ_REVIEW"
@@ -1225,7 +1185,7 @@ h10_delete_participant_influence <- function(
   )
 }
 
-h10_model_manifest_rows <- function(bundle) {
+h10_fit_index_rows <- function(bundle) {
   ml <- dplyr::bind_rows(lapply(names(bundle$ml_fits), function(model_name) {
     fit <- bundle$ml_fits[[model_name]]
     model <- fit$model

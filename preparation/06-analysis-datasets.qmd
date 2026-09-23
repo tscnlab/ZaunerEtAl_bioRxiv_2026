@@ -1,0 +1,200 @@
+---
+title: "Prepare the analysis datasets"
+---
+
+This document assembles model inputs without fitting models. It uses the derived light metrics and normalized questionnaires, computes civil photoperiod for each site-date, and preserves true elapsed-time sequences for temporal models. A fixed local alternative baseline supports the comparison of preprocessing choices.
+
+```{r}
+#| label: setup
+#| echo: false
+source("scripts/project.R")
+analysis_setup()
+for (helper in c("paths_io", "assertions", "time_axes", "time_support", "state_alignment", "aggregation_coverage", "metric_display_registry", "alternative_preprocessing", "build_alternative_preprocessing", "site_solar_context", "build_site_solar_context", "base_model_data", "build_base_model_data", "h01_model_data", "build_h01_model_data", "h01_alternative_preprocessing_adapter", "temporal_sequence_provenance")) {
+  source(file.path("scripts/pipeline", paste0(helper, ".R")))
+}
+root <- project_root()
+paths <- pipeline_paths(root)
+ensure_pipeline_directories(paths)
+```
+## Alternative preprocessing inputs
+
+The six files in `data/alternative-baseline` contain the fixed input baseline for the alternative preprocessing scenario. Their object names and structures are checked on import. The same current definition of MDER is applied to its one-minute input: average only positive, finite simultaneous melEDI/illuminance ratios, with viable pairs for at least half of the day. Other fixed baseline metrics retain their values. Hourly means are recomputed from the baseline minute series.
+
+```{r}
+#| label: alternative-inputs
+source_contract <- alternative_preprocessing_source_contract()
+source_objects <- stats::setNames(lapply(seq_len(nrow(source_contract)), function(index) {
+  alternative_preprocessing_load_rdata(file.path(root, "data", "alternative-baseline",
+    basename(source_contract$path[index])), source_contract$expected_objects[index])
+}), source_contract$source_id)
+mapping <- alternative_preprocessing_output_metric_mapping(root)
+participant <- participant_day <- mder_support <- thirty_minute <- one_hour <- list()
+for (position in alternative_preprocessing_positions()) {
+  nested <- source_objects[[paste0("metrics_", position)]][[paste0("metrics_", position)]]
+  separate <- source_objects[[paste0("metrics_separate_", position)]]
+  preprocessed <- source_objects[[paste0("preprocessed_", position, "_2")]][[paste0("light_", position, "_processed2")]]
+  participant[[position]] <- alternative_preprocessing_extract_metric_rows(nested, mapping, position, "participant")
+  participant_day[[position]] <- alternative_preprocessing_extract_metric_rows(nested, mapping, position, "participant_day")
+  mder_support[[position]] <- alternative_preprocessing_build_mder_support(preprocessed, position)
+  participant_day[[position]] <- alternative_preprocessing_replace_mder(participant_day[[position]], mder_support[[position]])
+  thirty_source <- alternative_preprocessing_add_occurrence(separate[[paste0("metric_", position, "_participanthour")]])
+  thirty_minute[[position]] <- alternative_preprocessing_normalize_clock_data(thirty_source, position, "30_minute")
+  one_hour[[position]] <- alternative_preprocessing_normalize_clock_data(
+    alternative_preprocessing_build_one_hour(preprocessed), position, "one_hour")
+}
+alternative <- list(participant_metrics = dplyr::bind_rows(participant),
+  participant_day_metrics = dplyr::bind_rows(participant_day),
+  mder_support = dplyr::bind_rows(mder_support),
+  thirty_minute_data = dplyr::bind_rows(thirty_minute), one_hour_data = dplyr::bind_rows(one_hour))
+alternative_paths <- alternative_preprocessing_output_paths(root)
+for (name in names(alternative)) {
+  write_result_pair(alternative[[name]], sub("[.]rds$", "", alternative_paths$rds[[name]]))
+}
+write_csv_artifact(mapping, alternative_paths$csv[["metric_crosswalk"]], "preparation/06-analysis-datasets.qmd")
+tibble::tibble(table = names(alternative), rows = vapply(alternative, nrow, integer(1)))
+```
+## Site and solar context
+
+Civil photoperiod runs from dawn to dusk at solar altitude −6°. The union of primary and alternative participant-day dates gives both scenarios the same site metadata and astronomical context. The time-zone conversion retains daylight-saving transitions explicitly.
+
+```{r}
+#| label: solar-context
+metric_paths <- site_solar_default_metric_paths(root)
+metric_inputs <- read_site_solar_metric_inputs(metric_paths, root)
+validate_site_solar_resolution_domains(metric_inputs)
+dates <- derive_site_solar_date_domain(metric_inputs,
+  supplemental_dates = list(alternative$participant_day_metrics))
+context <- build_site_solar_context(dates, read_site_metadata("config/site_metadata.csv"))
+context_checks <- audit_site_solar_context_joins(metric_inputs, context)
+stopifnot(all(context_checks$unmatched_rows == 0L))
+write_rds_artifact(context, file.path(paths$model_data, "context", "site_solar_context.rds"),
+  "preparation/06-analysis-datasets.qmd")
+write_csv_artifact(format_site_solar_context_csv(context),
+  file.path(paths$model_data, "context", "site_solar_context.csv"), "preparation/06-analysis-datasets.qmd")
+dplyr::select(context, dplyr::any_of(c("site", "local_date", "photoperiod_hours", "civil_dawn_wall", "civil_dusk_wall"))) |>
+  head(12)
+```
+## True elapsed-time sequences
+
+The temporal models need actual elapsed time as well as local clock time. For each sensor placement and resolution, the following joins link observed UTC source intervals to the corresponding wall-clock outcomes. This preserves the outcome grid while recording gaps and repeated local clock times.
+
+```{r}
+#| label: elapsed-time-sequences
+source_outputs <- link_outputs <- list()
+for (placement in c("glasses", "chest")) {
+  coverage <- readRDS(file.path(paths$coverage, paste0("light_", placement, "_coverage.rds")))
+  for (resolution in c("30_minute", "one_hour")) {
+    metric <- readRDS(file.path(paths$metrics, paste0("metrics_", placement, "_", resolution, ".rds")))
+    sequence <- build_temporal_sequence_provenance(coverage, metric, placement, resolution)
+    label <- paste(placement, resolution)
+    source_outputs[[label]] <- sequence$source_bins
+    link_outputs[[label]] <- sequence$wall_links
+  }
+  rm(coverage)
+  invisible(gc())
+}
+source_bins <- dplyr::bind_rows(source_outputs) |>
+  dplyr::arrange(.data$resolution, .data$site, .data$Id, .data$position, .data$true_utc_start)
+wall_links <- dplyr::bind_rows(link_outputs) |>
+  dplyr::arrange(.data$resolution, .data$site, .data$Id, .data$position, .data$local_date, .data$wall_bin_start_minute)
+validate_combined_temporal_provenance(source_bins, wall_links)
+sequence_root <- file.path(paths$model_data, "temporal_provenance")
+write_rds_artifact(source_bins, file.path(sequence_root, "true_utc_source_bins.rds"), "preparation/06-analysis-datasets.qmd")
+write_rds_artifact(wall_links, file.path(sequence_root, "wall_outcome_links.rds"), "preparation/06-analysis-datasets.qmd")
+write_csv_artifact(temporal_provenance_csv_data(source_bins), file.path(sequence_root, "true_utc_source_bins.csv"), "preparation/06-analysis-datasets.qmd")
+write_csv_artifact(temporal_provenance_csv_data(wall_links), file.path(sequence_root, "wall_outcome_links.csv"), "preparation/06-analysis-datasets.qmd")
+dplyr::count(source_bins, .data$position, .data$resolution)
+```
+## Join participant metadata to outcomes
+
+These joins preserve measurement keys and outcome values. Questionnaire fields use participant identifiers, while photoperiod uses site and local date. The model tables retain explicit availability indicators for missing questionnaire information.
+
+```{r}
+#| label: join-analysis-data
+metric_specification <- base_model_metric_specification(root)
+metric_inputs <- stats::setNames(lapply(metric_specification$path, readRDS), metric_specification$input_id)
+normalized_specification <- base_model_normalized_specification(root)
+normalized_inputs <- stats::setNames(lapply(normalized_specification$path, readRDS), normalized_specification$modality)
+for (index in seq_len(nrow(metric_specification))) {
+  spec <- metric_specification[index, ]
+  validate_base_model_metric_input(metric_inputs[[spec$input_id]], spec$placement, spec$resolution)
+  selected <- base_model_select_analysis_metrics(metric_inputs[[spec$input_id]],
+    spec$input_id, spec$placement, spec$resolution)
+  stopifnot(all(selected$audit$status == "PASS"), all(selected$audit$row_order_preserved),
+    all(selected$audit$key_set_preserved), !any(selected$audit$outcome_values_recalculated))
+  metric_inputs[[spec$input_id]] <- selected$data
+}
+for (modality in names(normalized_inputs)) {
+  validate_base_model_normalized_input(normalized_inputs[[modality]], modality)
+}
+participant_metadata <- base_model_build_participant_metadata(normalized_inputs, metric_inputs)
+data_tables <- list(participant_metadata = participant_metadata)
+for (placement in base_model_placements()) {
+  day_id <- paste0(placement, "_participant_day")
+  participant_id <- paste0(placement, "_participant")
+  day <- base_model_join_context(metric_inputs[[day_id]], context, placement, "participant_day", day_id)
+  data_tables[[paste0(placement, "_participant_day_context")]] <- day$data
+  data_tables[[participant_id]] <- metric_inputs[[participant_id]]
+  for (resolution in c("30_minute", "one_hour")) {
+    id <- paste(placement, resolution, sep = "_")
+    joined <- base_model_join_context(metric_inputs[[id]], context, placement, resolution, id)
+    data_tables[[paste0(id, "_context")]] <- joined$data
+  }
+  joined <- base_model_join_participant_metadata(day$data, participant_metadata,
+    placement, "participant_day", paste0(day_id, "_context"))
+  data_tables[[paste0(placement, "_participant_day_enriched")]] <- joined$data
+  joined <- base_model_join_participant_metadata(metric_inputs[[participant_id]], participant_metadata,
+    placement, "participant", participant_id)
+  data_tables[[paste0(placement, "_participant_enriched")]] <- joined$data
+}
+base_paths <- base_model_paths(root)
+stopifnot(setequal(names(data_tables), names(base_paths$data_paths)))
+for (name in names(data_tables)) write_rds_artifact(data_tables[[name]], base_paths$data_paths[[name]],
+  "preparation/06-analysis-datasets.qmd")
+tibble::tibble(table = names(data_tables), rows = vapply(data_tables, nrow, integer(1)))
+```
+## Model rows and complete-case samples
+
+Site comparisons use the same metric definitions and centering procedure in both preprocessing scenarios. The all-available and paired-placement samples are kept separate. The alternative baseline cannot reconstruct every minute-level support quantity, which remains explicitly unavailable rather than being inferred from stored daily values.
+
+```{r}
+#| label: assemble-site-model-rows
+contract <- h01_metric_contract(root)
+inputs <- stats::setNames(lapply(h01_placements(), function(placement) {
+  list(participant_day = data_tables[[paste0(placement, "_participant_day_enriched")]],
+    participant = data_tables[[paste0(placement, "_participant_enriched")]],
+    admissibility = readr::read_csv(h01_admissibility_input_paths(root)[[placement]], show_col_types = FALSE),
+    metric_support = readr::read_csv(h01_metric_support_input_paths(root)[[placement]], show_col_types = FALSE))
+}), h01_placements())
+inputs <- h01_add_main_support_status(inputs)
+adapted <- h01_build_alternative_preprocessing_inputs(root)
+scenario_inputs <- list(main = list(inputs = inputs, contract = contract),
+  alternative_preprocessing = list(inputs = adapted$inputs, contract = adapted$contract))
+model_sample_flow <- list()
+for (data_scenario_id in names(scenario_inputs)) {
+  specification <- scenario_inputs[[data_scenario_id]]
+  centered <- h01_build_model_rows_from_inputs(specification$inputs, specification$contract,
+    data_scenario_id = data_scenario_id, model_implementation_id = "hypothesis_models")
+  rows <- centered$rows |>
+    dplyr::arrange(factor(.data$scenario, levels = h01_scenarios()),
+      factor(.data$placement, levels = h01_placements()), .data$metric_order,
+      .data$site, .data$Id, .data$local_date)
+  status <- h01_scenario_status(specification$contract, data_scenario_id, "hypothesis_models")
+  object <- list(hypothesis_id = "H01", model_rows = rows,
+    metric_contract = specification$contract, sample_flow = h01_build_sample_flow(rows, status),
+    exclusion_reasons = h01_build_exclusion_summary(rows, status), scenario_status = status,
+    predictor_centers = centered$centers, variable_dictionary = h01_variable_dictionary(),
+    metadata = list(r_version = as.character(getRversion()), data_scenario_id = data_scenario_id,
+      model_implementation_id = "hypothesis_models", site_levels = sort(unique(rows$site))))
+  output_paths <- if (data_scenario_id == "main") h01_model_data_paths(root) else
+    h01_alternative_preprocessing_output_paths(root)
+  write_rds_artifact(object, output_paths$rds, "preparation/06-analysis-datasets.qmd")
+  for (name in intersect(names(object), names(output_paths$csv))) {
+    if (is.data.frame(object[[name]])) write_csv_artifact(object[[name]], output_paths$csv[[name]],
+      "preparation/06-analysis-datasets.qmd")
+  }
+  model_sample_flow[[data_scenario_id]] <- object$sample_flow
+}
+dplyr::bind_rows(model_sample_flow, .id = "data_scenario") |>
+  head(20)
+```

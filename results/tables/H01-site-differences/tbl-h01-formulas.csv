@@ -1,0 +1,28 @@
+Model unit,Model,Role,Formula,Engine,Method,Family
+Participant,latitude full,Comparison,response_value ~ absolute_latitude_10deg_centered + photoperiod_centered_hours,lm,Maximum likelihood,Gaussian / identity_after_declared_transformation
+Participant,latitude full,Final,response_value ~ absolute_latitude_10deg_centered + photoperiod_centered_hours,lm,Maximum likelihood,Gaussian / identity_after_declared_transformation
+Participant,no photoperiod,Comparison,response_value ~ site,lm,Maximum likelihood,Gaussian / identity_after_declared_transformation
+Participant,no photoperiod,Final,response_value ~ site,lm,Maximum likelihood,Gaussian / identity_after_declared_transformation
+Participant,no site,Comparison,response_value ~ photoperiod_centered_hours,lm,Maximum likelihood,Gaussian / identity_after_declared_transformation
+Participant,no site,Final,response_value ~ photoperiod_centered_hours,lm,Maximum likelihood,Gaussian / identity_after_declared_transformation
+Participant,random site,Comparison,response_value ~ photoperiod_centered_hours + (1 | site),lm,Maximum likelihood,Gaussian / identity_after_declared_transformation
+Participant,site full,Comparison,response_value ~ site + photoperiod_centered_hours,lm,Maximum likelihood,Gaussian / identity_after_declared_transformation
+Participant,site full,Final,response_value ~ site + photoperiod_centered_hours,lm,Maximum likelihood,Gaussian / identity_after_declared_transformation
+Participant-day,latitude full,Comparison,response_value ~ absolute_latitude_10deg_centered + photoperiod_centered_hours +      (1 | participant_key),glmmTMB,Maximum likelihood,Tweedie / log
+Participant-day,latitude full,Comparison,response_value ~ absolute_latitude_10deg_centered + photoperiod_centered_hours +      (1 | participant_key),lmer,Maximum likelihood,Gaussian / identity_after_declared_transformation
+Participant-day,latitude full,Final,response_value ~ absolute_latitude_10deg_centered + photoperiod_centered_hours +      (1 | participant_key),glmmTMB,Maximum likelihood,Tweedie / log
+Participant-day,latitude full,Final,response_value ~ absolute_latitude_10deg_centered + photoperiod_centered_hours +      (1 | participant_key),lmer,Restricted maximum likelihood,Gaussian / identity_after_declared_transformation
+Participant-day,no photoperiod,Comparison,response_value ~ site + (1 | participant_key),glmmTMB,Maximum likelihood,Tweedie / log
+Participant-day,no photoperiod,Comparison,response_value ~ site + (1 | participant_key),lmer,Maximum likelihood,Gaussian / identity_after_declared_transformation
+Participant-day,no photoperiod,Final,response_value ~ site + (1 | participant_key),glmmTMB,Maximum likelihood,Tweedie / log
+Participant-day,no photoperiod,Final,response_value ~ site + (1 | participant_key),lmer,Restricted maximum likelihood,Gaussian / identity_after_declared_transformation
+Participant-day,no site,Comparison,response_value ~ photoperiod_centered_hours + (1 | participant_key),glmmTMB,Maximum likelihood,Tweedie / log
+Participant-day,no site,Comparison,response_value ~ photoperiod_centered_hours + (1 | participant_key),lmer,Maximum likelihood,Gaussian / identity_after_declared_transformation
+Participant-day,no site,Final,response_value ~ photoperiod_centered_hours + (1 | participant_key),glmmTMB,Maximum likelihood,Tweedie / log
+Participant-day,no site,Final,response_value ~ photoperiod_centered_hours + (1 | participant_key),lmer,Restricted maximum likelihood,Gaussian / identity_after_declared_transformation
+Participant-day,random site,Comparison,response_value ~ photoperiod_centered_hours + (1 | site) + (1 |      participant_key),glmmTMB,Maximum likelihood,Tweedie / log
+Participant-day,random site,Comparison,response_value ~ photoperiod_centered_hours + (1 | site) + (1 |      participant_key),lmer,Maximum likelihood,Gaussian / identity_after_declared_transformation
+Participant-day,site full,Comparison,response_value ~ site + photoperiod_centered_hours + (1 | participant_key),glmmTMB,Maximum likelihood,Tweedie / log
+Participant-day,site full,Comparison,response_value ~ site + photoperiod_centered_hours + (1 | participant_key),lmer,Maximum likelihood,Gaussian / identity_after_declared_transformation
+Participant-day,site full,Final,response_value ~ site + photoperiod_centered_hours + (1 | participant_key),glmmTMB,Maximum likelihood,Tweedie / log
+Participant-day,site full,Final,response_value ~ site + photoperiod_centered_hours + (1 | participant_key),lmer,Restricted maximum likelihood,Gaussian / identity_after_declared_transformation

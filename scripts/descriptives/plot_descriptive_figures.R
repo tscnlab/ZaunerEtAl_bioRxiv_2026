@@ -718,7 +718,7 @@ make_latitude_photoperiod_figure <- function(latitude_source) {
       participant_days = dplyr::n(),
       .groups = "drop"
     ) |>
-    dplyr::mutate(reader_site = replica_site_label(.data$site))
+    dplyr::mutate(reader_site = display_site_label(.data$site))
   ggplot2::ggplot(
     latitude_source,
     ggplot2::aes(

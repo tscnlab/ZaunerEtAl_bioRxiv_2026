@@ -1,0 +1,2 @@
+formula_id,formula,family,link,method,discrete,rho_rule,knots,biological_sex_encoding
+proposed_mpattern,"response ~ sex + s(time_hour, bs = ""cc"", k = 12) + s(time_hour, by = sex_smooth, bs = ""cc"", k = 12) + s(time_hour, site, bs = ""sz"", k = 12) + s(time_hour, participant, bs = ""fs"", k = 10) + s(participant_day, bs = ""re"")",Gaussian,identity,fREML,TRUE,one run-specific rho from preliminary full model,"time_hour = c(0, 24)",sex treatment contrast with Male reference; sex_smooth ordered Male then Female for cyclic Female-minus-Male deviation

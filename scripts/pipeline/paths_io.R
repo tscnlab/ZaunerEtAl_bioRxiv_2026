@@ -20,22 +20,21 @@ project_root <- function(start = getwd()) {
 }
 
 pipeline_paths <- function(root = project_root()) {
-  artifact_root <- file.path(root, "artifacts")
+  artifact_root <- file.path(root, "results")
   list(
     root = root,
     artifacts = artifact_root,
-    imported = file.path(artifact_root, "01_imported"),
-    aligned = file.path(artifact_root, "02_aligned"),
-    coverage = file.path(artifact_root, "03_coverage"),
-    profiles = file.path(artifact_root, "04_reference_profiles"),
-    metrics = file.path(artifact_root, "05_metrics"),
-    model_data = file.path(artifact_root, "06_model_data"),
-    models = file.path(artifact_root, "07_models"),
-    diagnostics = file.path(artifact_root, "08_diagnostics"),
-    tables = file.path(artifact_root, "09_tables"),
-    figures = file.path(artifact_root, "10_figures"),
-    source_data = file.path(artifact_root, "11_source_data"),
-    manifests = file.path(artifact_root, "12_manifests")
+    imported = file.path(artifact_root, "intermediate/imported"),
+    aligned = file.path(artifact_root, "intermediate/aligned"),
+    coverage = file.path(artifact_root, "intermediate/coverage"),
+    profiles = file.path(artifact_root, "intermediate/reference_profiles"),
+    metrics = file.path(artifact_root, "intermediate/metrics"),
+    model_data = file.path(artifact_root, "intermediate/model_data"),
+    models = file.path(artifact_root, "models"),
+    diagnostics = file.path(artifact_root, "csv/diagnostics"),
+    tables = file.path(artifact_root, "tables"),
+    figures = file.path(artifact_root, "images"),
+    source_data = file.path(artifact_root, "csv/source_data")
   )
 }
 
@@ -87,21 +86,10 @@ write_rds_artifact <- function(object, path, producer, metadata = list()) {
     tmpdir = dirname(path)
   )
   on.exit(unlink(temporary), add = TRUE)
-  saveRDS(object, temporary, version = 3, compress = "xz")
+  saveRDS(object, temporary, version = 3, compress = TRUE)
   atomic_replace_artifact(temporary, path)
 
-  info <- file.info(path)
-  c(
-    list(
-      path = normalizePath(path, winslash = "/", mustWork = TRUE),
-      sha256 = artifact_sha256(path),
-      bytes = unname(info$size),
-      producer = producer,
-      r_version = as.character(getRversion()),
-      written_utc = format(Sys.time(), tz = "UTC", usetz = TRUE)
-    ),
-    metadata
-  )
+  invisible(list(path = path))
 }
 
 read_rds_artifact <- function(path, expected_class = NULL) {
@@ -135,23 +123,33 @@ write_csv_artifact <- function(data, path, producer, metadata = list()) {
   on.exit(unlink(temporary), add = TRUE)
   readr::write_csv(data, temporary, na = "")
   atomic_replace_artifact(temporary, path)
-  info <- file.info(path)
-  c(
-    list(
-      path = normalizePath(path, winslash = "/", mustWork = TRUE),
-      sha256 = artifact_sha256(path),
-      bytes = unname(info$size),
-      rows = nrow(data),
-      columns = ncol(data),
-      producer = producer,
-      r_version = as.character(getRversion()),
-      written_utc = format(Sys.time(), tz = "UTC", usetz = TRUE)
-    ),
-    metadata
-  )
+  invisible(list(path = path))
 }
 
-manifest_row <- function(metadata) {
-  scalar <- vapply(metadata, length, integer(1)) == 1L
-  as.data.frame(metadata[scalar], stringsAsFactors = FALSE, optional = TRUE)
+write_result_pair <- function(data, stem) {
+  write_rds_artifact(data, paste0(stem, ".rds"), "quarto render")
+  write_csv_artifact(data, paste0(stem, ".csv"), "quarto render")
+  invisible(data)
+}
+
+read_downloaded_object <- function(path, object_name) {
+  if (!file.exists(path)) stop("Downloaded input is missing: ", path, call. = FALSE)
+  environment <- new.env(parent = emptyenv())
+  loaded <- load(path, envir = environment)
+  if (!identical(loaded, object_name)) {
+    stop("Expected only object ", object_name, " in ", path, call. = FALSE)
+  }
+  object <- environment[[object_name]]
+  if (!is.data.frame(object)) stop("Expected a data frame in ", path, call. = FALSE)
+  dplyr::ungroup(object)
+}
+
+recording_source <- function(site_sources, site, modality, root = project_root()) {
+  specification <- source_specification(site_sources, site, modality)
+  path <- file.path(root, "data", "downloaded", "recordings", paste0(
+    site, "_", modality, "_", substr(specification$commit, 1, 12), ".RData"
+  ))
+  list(data = read_downloaded_object(path, specification$object_name),
+       specification = specification,
+       downloaded_source = list(local_path = path, sha256 = artifact_sha256(path)))
 }

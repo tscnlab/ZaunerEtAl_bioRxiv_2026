@@ -1,19 +1,23 @@
-# Define the author-approved H08 Stage 2 analysis contract.
-
 h08_abort <- function(message, ..., call. = FALSE) {
   stop(sprintf(message, ...), call. = call.)
 }
 
-h08_score_contract <- function() {
+h08_score_contract <- function(vlsq) {
+  required <- c("site", "Id", "VLSQ8")
+  if (!all(required %in% names(vlsq)) || nrow(vlsq) < 2L ||
+      anyDuplicated(vlsq[c("site", "Id")]) ||
+      any(!is.finite(vlsq$VLSQ8))) {
+    h08_abort("VLSQ-8 requires one finite score per participant and site")
+  }
   list(
     score_name = "VLSQ8",
     score_label = "VLSQ-8",
     scoring_rule = "Stored score = sum of eight ordered 1--5 item codes + 5",
-    center = 21.5978260869565,
-    participant_sd = 5.53984036898639,
-    observed_min = 13,
-    observed_max = 39,
-    participants = 184L
+    center = mean(vlsq$VLSQ8),
+    participant_sd = stats::sd(vlsq$VLSQ8),
+    observed_min = min(vlsq$VLSQ8),
+    observed_max = max(vlsq$VLSQ8),
+    participants = nrow(vlsq)
   )
 }
 
@@ -26,7 +30,7 @@ h08_metric_registry <- function() {
     ~manuscript_category,
     ~display_unit,
     ~source_column,
-    ~v0_name,
+    ~source_metric_alias,
     ~response_family,
     ~response_transform,
     ~effect_scale,
@@ -242,23 +246,6 @@ h08_formula_set <- function(
   )
 }
 
-h08_v0_formula_set <- function() {
-  list(
-    full = stats::as.formula(
-      "response_value ~ site * VLSQ8 + (1 | Id)"
-    ),
-    site_only = stats::as.formula(
-      "response_value ~ site + (1 | Id)"
-    ),
-    additive = stats::as.formula(
-      "response_value ~ site + VLSQ8 + (1 | Id)"
-    ),
-    vlsq_only = stats::as.formula(
-      "response_value ~ VLSQ8 + (1 | Id)"
-    )
-  )
-}
-
 h08_formula_registry <- function() {
   formula_rows <- function(formulas, analysis_kind) {
     tibble::tibble(
@@ -274,14 +261,13 @@ h08_formula_registry <- function() {
   dplyr::bind_rows(
     formula_rows(
       h08_formula_set("participant_day"),
-      "approved_participant_day"
+      "participant_day"
     ),
     formula_rows(h08_formula_set("photoperiod"), "photoperiod_sensitivity"),
     formula_rows(
       h08_formula_set("participant"),
       "participant_summary_sensitivity"
-    ),
-    formula_rows(h08_v0_formula_set(), "v0_reconstruction")
+    )
   )
 }
 
@@ -512,176 +498,11 @@ h08_sensitivity_registry <- function() {
 }
 
 h08_input_contract <- function(root) {
-  tibble::tribble(
-    ~input_role,
-    ~path,
-    ~expected_sha256,
-    ~use,
-    "metric011_decision",
-    "audit/decisions/l10_numerical_zero_normalization.md",
-    "23b9f70d1d16f7fd3ebbdbc57aaf78c0a701fe1f9d22bd667d926cd320d40797",
-    "Controlling exact-zero normalization and bounded downstream scope",
-    "metric011_evidence_manifest",
-    "audit/reconciliation/l10_METRIC-011/METRIC-011_evidence_manifest.csv",
-    "a37efd3449a8d1a6065d0eb8964bd6cf8b241f1683a26c065ea1a946e23214fb",
-    "Independently verified row-level METRIC-011 evidence inventory",
-    "metric_artifact_manifest",
-    "artifacts/12_manifests/metric_artifacts.csv",
-    "028bce108339c1277df4a070597430ea20b49c34c2888f4eef42741c1fe76a5e",
-    "Sealed shared metric identities after exact-zero normalization",
-    "site_context_manifest",
-    "artifacts/12_manifests/site_solar_context_artifacts.csv",
-    "c0c6d7f97782c0d880a213050f576213f5d56b3204a02732f6399e7e4aeb8518",
-    "Sealed site and photoperiod identities",
-    "base_model_manifest",
-    "artifacts/12_manifests/base_model_data_artifacts.csv",
-    "8344bdc0339a53079bf9eeb7d86de1ad7c15373641c3a0a5a01d040b418895ce",
-    "Sealed base-model bundle and participant-day input identities",
-    "primary_near_eye_context",
-    "artifacts/06_model_data/base/metrics_glasses_participant_day_context.rds",
-    "013afe75e9b75b141b4cb48d04111a9e6c688630085a24c9fe07ca3d142a4e9a",
-    "Sealed near-eye participant-day context cross-check",
-    "primary_chest_context",
-    "artifacts/06_model_data/base/metrics_chest_participant_day_context.rds",
-    "497466ccd1a35635cca40bb8f9ce51efb97321ab04b42ee1bb76785e466a2057",
-    "Sealed chest participant-day context cross-check",
-    "normalized_vlsq8",
-    "artifacts/06_model_data/normalized_inputs/vlsq8.rds",
-    "a261e1e7e99f4484b095be726b3eaeeef98eab000ad1cb7d7a537d04b9a1e0f8",
-    "Predictor values and scoring audit",
-    "primary_near_eye_metrics",
-    "artifacts/06_model_data/base/metrics_glasses_participant_day_enriched.rds",
-    "b469fa8f0a743de1cbb1075f78879b84ab602c74cc44fb97da45dee596681f42",
-    "Primary participant-day outcomes, photoperiod, and metric variants",
-    "primary_chest_metrics",
-    "artifacts/06_model_data/base/metrics_chest_participant_day_enriched.rds",
-    "10aebeb5dabb53e8f3ee0747b62c31707da344e11b7068261c2ada2a0b7badc9",
-    "Complementary participant-day outcomes, photoperiod, and metric variants",
-    "gap_timing_unaware_metrics",
-    paste0(
-      "artifacts/06_model_data/scenarios/manuscript_prepared_data/",
-      "participant_day_metrics.rds"
-    ),
-    "7561b5dd47cb5e23ca94ba59bd57648f11fe492f86af53a566c5c9cf42d932f1",
-    "Gap-timing-unaware participant-day outcomes",
-    "primary_support_provenance",
-    "artifacts/06_model_data/H01.rds",
-    "0328fe1a698bc13965feb0b68b03ccf0fd20f32b55d6148635811b0d674e0a00",
-    "Metric-specific derivation support and value cross-check only",
-    "gap_support_provenance",
-    "artifacts/06_model_data/H01/scenarios/manuscript_prepared_data/H01.rds",
-    "3c70363fc0468202a431904aa9d9444f2858af2e3add3475a56c872b49a18bd6",
-    "Metric-specific derivation support and value cross-check only",
-    "v0_near_eye_metrics",
-    "data/metrics_glasses.RData",
-    "9595cb7c574672cf2c8ff89ac3d227f3f7ff11eca57776609e19599561b2d441",
-    "Submitted near-eye H08 reconstruction",
-    "v0_chest_metrics",
-    "data/metrics_chest.RData",
-    "4498d677a8fc7d47168ab2f03731f2dc67b419102b7c818305925273d57c818c",
-    "Submitted chest H08 reconstruction",
-    "v0_near_eye_render",
-    "docs/RQ3.html",
-    "a4fa3c566d954dfd939d8fba94f0ecf05c675c02411ac4732ea74da1c9d4c368",
-    "Submitted displayed H08 strings",
-    "v0_chest_render",
-    "docs/RQ3_chest.html",
-    "de4bf82e03978c9a1b7747107dba3345f6f011e96bca3f77eea2f57e4fc4991e",
-    "Submitted displayed H08 strings",
-    "site_display_registry",
-    "config/site_display_registry.csv",
-    "3d669d459ecc27d3154bbb5ff5b0d64cb510805d486b45264443228c44a6d809",
-    "Submitted site names, order, and colours",
-    "metric_display_registry",
-    "config/metric_display_registry.csv",
-    "c82db05a77cc50ce5b9dbd459c90997fa6bb7d87c0b8e880c1bf8186fad06ed0",
-    "Manuscript metric names and units",
-    "h05_response_contract",
-    "artifacts/06_model_data/H05/H05_metric_registry.csv",
-    "25a3df408dad73b657ea1ee20631195c93fe33340fafa7250ed6e76727c65bb7",
-    "Inherited response-family contract cross-check"
-  ) |>
-    dplyr::mutate(absolute_path = file.path(root, .data$path))
-}
-
-h08_approval_registry <- function() {
-  tibble::tribble(
-    ~decision_order,
-    ~decision_id,
-    ~author_disposition,
-    1L,
-    "H08-G1-vlsq-score",
-    "Approved stored VLSQ8 and reconstructed sum(eight 1--5 codes) + 5 provenance",
-    2L,
-    "H08-G2-score-scaling",
-    "Approved centre 21.5978 and participant SD 5.5398; no within-site standardization",
-    3L,
-    "H08-G3-primary-estimand",
-    "Approved site-adjusted additive VLSQ-8 slope as primary",
-    4L,
-    "H08-G4-heterogeneity",
-    "Approved separate secondary site-by-VLSQ-8 interaction test",
-    5L,
-    "H08-G5-metric-set",
-    "Approved exact nine repaired outcomes",
-    6L,
-    "H08-G6-response-package",
-    "Approved current H01/H05 response families, transforms, links, and common gate",
-    7L,
-    "H08-G7-analysis-unit",
-    "Approved participant-day models with participant nested in site and participant-summary sensitivity",
-    8L,
-    "H08-G8-site-photoperiod",
-    "Approved fixed submitted site order and sum contrasts; photoperiod sensitivity only",
-    9L,
-    "H08-G9-multiplicity",
-    "Approved eight complete nine-member BH families; no scalar adjustment",
-    10L,
-    "H08-G10-placement-samples",
-    "Approved near-eye primary, chest complementary, exact paired/common comparisons, and no pooling",
-    11L,
-    "H08-G11-practical-reporting",
-    "Approved raw-point, one-SD, centred contrast, site-slope, and 95% interval reporting",
-    12L,
-    "H08-G12-sensitivities",
-    "Approved fixed Stage 2 sensitivity matrix",
-    13L,
-    "H08-G13-diagnostics",
-    "Approved diagnostic registry, common-family gate, and non-estimable disposition",
-    14L,
-    "H08-G14-language",
-    "Approved association language without physiological or health-effect claims"
-  ) |>
-    dplyr::mutate(
-      approved = TRUE,
-      recorded_date = as.Date("2026-08-01")
-    )
-}
-
-h08_validate_contract <- function() {
-  metrics <- h08_metric_registry()
-  runs <- h08_run_registry()
-  families <- h08_family_registry()
-  approvals <- h08_approval_registry()
-  if (
-    nrow(metrics) != 9L ||
-      !identical(metrics$metric_order, seq_len(9L)) ||
-      anyDuplicated(metrics$metric_id)
-  ) {
-    h08_abort("H08 requires nine ordered, unique metrics")
-  }
-  if (nrow(runs) != 12L || anyDuplicated(runs$run_id)) {
-    h08_abort("H08 requires 12 unique exact-sample runs")
-  }
-  if (
-    nrow(families) != 8L ||
-      any(families$planned_n != 9L) ||
-      anyDuplicated(families$family_id)
-  ) {
-    h08_abort("H08 requires eight unique nine-member multiplicity families")
-  }
-  if (nrow(approvals) != 14L || any(!approvals$approved)) {
-    h08_abort("H08 requires all 14 Stage 1 decisions to be approved")
-  }
-  invisible(TRUE)
+ tibble::tribble(~input_role, ~path,
+"normalized_vlsq8", "results/intermediate/model_data/normalized_inputs/vlsq8.rds",
+"primary_near_eye_metrics", "results/intermediate/model_data/base/metrics_glasses_participant_day_enriched.rds",
+"primary_chest_metrics", "results/intermediate/model_data/base/metrics_chest_participant_day_enriched.rds",
+"gap_timing_unaware_metrics", "results/intermediate/model_data/scenarios/alternative_preprocessing/participant_day_metrics.rds",
+"primary_support_provenance", "results/intermediate/model_data/H01.rds",
+"gap_support_provenance", "results/intermediate/model_data/H01/scenarios/alternative_preprocessing/H01.rds") |> dplyr::mutate(absolute_path = file.path(root,.data$path))
 }

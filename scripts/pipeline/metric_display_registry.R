@@ -1,7 +1,3 @@
-# Define the manuscript-facing metric naming contract.
-#
-# Internal metric identifiers remain stable for computation. This registry is
-# the only authority for names and categories shown to authors and readers.
 
 metric_display_registry_columns <- function() {
   c(

@@ -1,5 +1,3 @@
-# H04 Stage 2 publication-scale figures and plot persistence.
-
 h04_figure_theme <- function() {
   cowplot::theme_cowplot(font_size = 14) +
     ggplot2::theme(
@@ -74,7 +72,6 @@ h04_save_plot <- function(plot, stem, directory, width, height, producer) {
     info <- file.info(path)
     output[[extension]] <- list(
       path = normalizePath(path, winslash = "/", mustWork = TRUE),
-      sha256 = artifact_sha256(path),
       bytes = unname(info$size),
       producer = producer,
       r_version = as.character(getRversion()),
@@ -338,7 +335,7 @@ h04_site_activity_figure <- function(data) {
       )
     ) +
     ggplot2::labs(
-      title = "Support-gated site-specific activity-associated melEDI",
+      title = "Site-specific activity-associated melEDI with observed support",
       subtitle = paste(
         "Dashed line: equal-site category mean; filled points:",
         "BH-adjusted site deviation p < 0.050"

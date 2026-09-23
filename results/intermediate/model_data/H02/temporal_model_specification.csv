@@ -1,0 +1,36 @@
+field,value
+implementation_id,h02_sum_to_zero_site_model
+response_name,30-minute arithmetic mean melEDI
+response_transform,log10(melEDI + 0.1 lx)
+response_offset_lx,0.1
+clock_coordinate,local wall-clock bin midpoint in hours
+clock_support_hours,"0, 24"
+clock_bins_minutes,"0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330, 360, 390, 420, 450, 480, 510, 540, 570, 600, 630, 660, 690, 720, 750, 780, 810, 840, 870, 900, 930, 960, 990, 1020, 1050, 1080, 1110, 1140, 1170, 1200, 1230, 1260, 1290, 1320, 1350, 1380, 1410"
+overall_basis,cyclic cubic regression spline
+overall_k,12
+site_pattern_basis,sum-to-zero factor smooth with default thin-plate marginal basis
+site_pattern_k,12
+participant_basis,factor smooth with default thin-plate marginal basis and shared smoothing
+participant_k,10
+participant_day_basis,random intercept
+formula_sensitivity_id,cyclic_ordered_factor
+formula_sensitivity_site_basis,ordered-factor cyclic cubic deviations plus parametric site levels
+formula_sensitivity_participant_basis,factor smooth with cyclic cubic marginal basis and shared smoothing
+formula_sensitivity_participant_k,8
+formula_sensitivity_scope,main and alternative-preprocessing all-available near-eye samples
+structure_selection_method,selected sum-to-zero site model fitted a priori; fREML restricted-likelihood/AIC diagnostics use a common fixed rho and identical parametric fixed effects
+final_estimation_method,fREML
+structure_rule,"retain the selected sum-to-zero site, participant factor-smooth, and participant-day components; reduced fits are diagnostics"
+autocorrelation,"AR(1), rho estimated from boundary-aware lag-1 preliminary residuals"
+autocorrelation_boundaries,"reset at every participant-day, after omitted or discontinuous bins, and on both sides of non-one-to-one fall-back wall outcomes"
+multiplicity_family,H02-F1-site-pattern
+multiplicity_method,BH
+multiplicity_n,1
+variation_scale,squared log10(melEDI + 0.1 lx) model-prediction units
+variation_ci,"hierarchical cluster bootstrap of fitted contributions, 2000 replicates"
+dominance_scope,main all-available near-eye and complementary chest only; no alternative-preprocessing or model-form sensitivity
+dominance_estimand,exact conditional Shapley/general-dominance allocation of in-sample row-weighted R2 on the transformed response scale; the common time curve is a mandatory hierarchy-respecting baseline
+dominance_components,site pattern; participant pattern; participant-day intercept; eight subset models including the common-time-only baseline
+dominance_ci,"95% percentile hierarchical cluster bootstrap of fixed predictions from all eight subset models, 2000 replicates; conditional on fits"
+primary_placement,glasses
+complementary_placement,chest
