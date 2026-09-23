@@ -1,5 +1,7 @@
 # Environmental and behavioural determinants of the personal light exposome
 
+> **Legacy analysis.** This branch preserves the analysis accompanying [bioRxiv version 1](https://www.biorxiv.org/content/10.64898/2026.06.04.730226v1) and [version 2](https://www.biorxiv.org/content/10.64898/2026.06.04.730226v2). The newer analysis is available on the [main branch](https://github.com/tscnlab/ZaunerEtAl_bioRxiv_2026/tree/main) and the [current analysis website](https://tscnlab.github.io/ZaunerEtAl_bioRxiv_2026/), prepared for [bioRxiv version 3](https://www.biorxiv.org/content/10.64898/2026.06.04.730226v3), whose update is forthcoming.
+
 This repository is a Quarto research compendium for the manuscript **"Environmental and behavioural determinants of the personal light exposome"**. It contains the manuscript, analysis notebooks, figures, tables, a frozen `renv` dependency lockfile, and Quarto website configuration for reproducing the analyses and rendered outputs.
 
 
@@ -39,7 +41,7 @@ quarto --version
 ### 2. Clone the repository
 
 ```sh
-git clone https://github.com/tscnlab/ZaunerEtAl_bioRxiv_2026.git
+git clone --branch legacy https://github.com/tscnlab/ZaunerEtAl_bioRxiv_2026.git
 cd ZaunerEtAl_bioRxiv_2026
 ```
 
