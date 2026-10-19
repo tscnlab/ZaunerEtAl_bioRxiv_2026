@@ -410,6 +410,16 @@ Model checks addressed convergence, rank, singularity, residual distribution, ze
 
 The study was preregistered with AsPredicted (#273407) [@zauner2026melidos_preregistration]. The final analyses preserve the registered scientific questions but include documented changes to placement priority, state and coverage rules, metric definitions, outcome construction, model families, site structure, multiplicity and sensitivity handling. The main manuscript is organised around the resulting scientific estimands. `r if (knitr::pandoc_to("docx")) "Supplementary Methods: Preregistration deviations (supplied as a separate Word document) describes the scientific changes and qualifications." else "The [preregistration deviations](preregistration-deviations.qmd) describe the scientific changes and qualifications."`
 
+## Artificial-intelligence assistance
+
+During the original manuscript preparation, generative artificial intelligence tools (ChatGPT 5.5) were used to support language editing, structural refinement and text condensation. AI assistance was used to improve clarity, coherence, concision and journal fit, but **not** to generate, analyse or interpret primary data.
+
+During primary data analysis, AI assistance was used to debug code sections, support figure and table styling, and resolve modelling convergence and singularity issues. Participant comments in their native languages were translated into English with AI assistance. All translations were reviewed and approved or corrected by the respective site authors. AI assistance was **not** used to develop the primary analysis strategy, write analysis scripts or interpret results.
+
+During review, an agentic AI assistant (ChatGPT 5.6 Sol) was used to review the analyses for potential issues. This review prompted additional sensitivity analyses to evaluate data-preparation and model-selection choices, expanded model diagnostics, and improved effect-size reporting through Shapley decompositions and more precise language. AI assistance also supported expanded analysis documentation and reproducibility checks.
+
+All AI-assisted text was critically reviewed, edited, and approved by the authors, who take full responsibility for the content, accuracy, integrity, and conclusions of the manuscript.
+
 # Data availability {.unnumbered}
 
 All data used in this study are available through the [MeLiDos Project GitHub organisation](https://github.com/MeLiDosProject) and are archived in the [MeLiDos Zenodo community](https://zenodo.org/communities/22nrm05_melidos/). Public site datasets have persistent records for Kumasi (GH), Madrid (ES), Dortmund (DE), Izmir (TR), Tübingen (DE), San José (CR), Munich (DE), Borås (SE) and Delft (NL) [@akuffo2025; @baezamoyano2025; @broszio2025; @didikoglu2025; @guidolin2025; @sancho-salas2026; @hilden2025; @nilssontengelin2026; @aerts2025]. These records and other project resources are indexed through the MeLiDos Project Data Hub [@zauner2026a] and accessed reproducibly through the documented `melidosData` interface [@melidosData].
